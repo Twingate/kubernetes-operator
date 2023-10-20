@@ -8,18 +8,6 @@ and manage Twingate resources within a Kubernetes environment. It provides
 seamless integration between your Kubernetes clusters and the Twingate Zero
 Trust Network.
 
-## Features
-
-- [x] **Define Twingate Resources as Kubernetes Objects:** The controller
-      automatically synchronizes `TwingateResource` objects from Kubernetes to
-      Twingate.
-- [ ] **Automatic Resource Management:** The controller automatically
-      synchronizes Kubernetes Services and Ingress resources with Twingate
-      resources, ensuring that access policies are consistently applied.
-- [ ] **Define and Provision Twingate Remote Network+Connectors:** Define a
-      `TwingateRemoteNetwork` object to create a remote network and deploy
-      connectors on it to allow configuring access to Kubernetes resources.
-
 ## Prerequisites
 
 - Kubernetes cluster (1.16+)

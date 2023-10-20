@@ -23,15 +23,6 @@ __pycache__
 .venv
 tests_integration
 
-# Jupyter
-*.ipynb
-
-# npm
-node_modules
-
-# Django stuff:
-*.log
-
 # IDEs (JetBrains, VS Code, ...)
 .idea
 .vscode
@@ -45,15 +36,12 @@ node_modules
 .pylintrc
 .python-version
 .tool-versions
-.sops.yaml
 .cspell.json
 .coveragerc
 .envrc
 .envrc.local*
 .python-version
 .tool-versions
-.sops.yaml
-verchew.ini
 dictionary.txt
 README.mdi
 mypy.ini

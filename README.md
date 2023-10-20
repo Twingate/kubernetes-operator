@@ -16,7 +16,7 @@ Trust Network.
 ## Installation
 
 1. Clone this repository to your local machine.
-1. User the `helm` chart in `./deploy/twingate-operator`:
+1. Use the `helm` chart in `./deploy/twingate-operator`:
 
    1. Create a custom `values.yaml`:
 

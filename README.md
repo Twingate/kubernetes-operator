@@ -1,6 +1,7 @@
 # Twingate Kubernetes Controller
 
-> [!NOTE] > **Beta:** The Twingate K8S Operator is currently in beta
+> [!IMPORTANT]
+> **Beta:** The Twingate K8S Operator is currently in beta
 
 The Twingate Kubernetes Controller is a custom controller designed to automate
 and manage Twingate resources within a Kubernetes environment. It provides

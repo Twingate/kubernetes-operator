@@ -3,7 +3,7 @@ source = app
 branch = true
 parallel = true
 concurrency = multiprocessing
-omit = .venv/*, */tests/*, manage.py
+omit = .venv/*, */tests/*
 
 [report]
 show_missing = true

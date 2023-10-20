@@ -9,7 +9,6 @@ ENV LC_ALL=C.UTF-8 \
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN echo "CACHE_BUSTER=1693774919" && apt-get update && \
-    apt-get install -y --no-install-recommends dumb-init=1.2.5-2 && \
     apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 FROM base as builder

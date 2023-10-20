@@ -1,0 +1,9 @@
+apiVersion: twingate.com/v1
+kind: TwingateResourceAccess
+metadata:
+  name: my-twingate-access
+spec:
+  resourceRef:
+    name: my-twingate-resource
+    namespace: default
+  principalId: R3JvdXA6NTcyNDU=

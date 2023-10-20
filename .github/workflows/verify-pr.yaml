@@ -1,0 +1,31 @@
+name: "PR Checks"
+on: [pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-pr-conventional-title:
+    name: Validate PR title follows Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        if: github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  danger:
+    name: "Verify PR title and desc"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+      - name: Danger
+        uses: danger/danger-js@11.3.0
+        if: github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]'
+        with:
+          args: "--failOnErrors --dangerfile ./scripts/dangerfile.js"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DANGER_DISABLE_TRANSPILATION: true

@@ -1,0 +1,63 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "title": "Twingate Connector Chart Schema",
+    "properties": {
+        "image": {
+            "type": "object",
+            "default": {},
+            "title": "The image Schema",
+            "properties": {
+                "repository": {
+                    "type": "string",
+                    "default": "",
+                    "title": "The repository Schema",
+                    "examples": [
+                        "twingate/connector"
+                    ]
+                },
+                "tag": {
+                    "oneOf": [
+                        {"type": "integer"},
+                        {"type": "string"}
+                    ],
+                    "default": 0,
+                    "title": "The tag Schema",
+                    "examples": [
+                        1, "latest"
+                    ]
+                },
+                "pullPolicy": {
+                    "type": "string",
+                    "default": "",
+                    "title": "The pullPolicy Schema",
+                    "enum": [
+                        "Always",
+                        "IfNotPresent",
+                        "Never"
+                    ]
+                }
+            },
+            "examples": [{
+                "repository": "twingate/connector",
+                "tag": 1,
+                "pullPolicy": "Always"
+            }]
+        },
+        "twingateOperator": {
+            "type": "object",
+            "default": {},
+            "title": "The twingateOperator Schema",
+            "required": ["apiKey", "network", "remoteNetworkId"],
+            "properties": {
+                "apiKey": { "type": "string" },
+                "network": { "type": "string" },
+                "remoteNetworkId": { "type": "string" }
+            },
+            "examples": [{
+              "apiKey": "sdlkwdlsknsldknsldkcnm",
+              "network": "my-network",
+              "remoteNetworkId": "UmVtb3RlTmV0d29yazo5Njc0OTU="
+            }]
+        }
+    }
+}

@@ -1,5 +1,5 @@
 [run]
-source = twingate
+source = app
 branch = true
 parallel = true
 concurrency = multiprocessing

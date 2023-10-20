@@ -42,7 +42,6 @@ tests_integration
 .envrc.local*
 .python-version
 .tool-versions
-dictionary.txt
 README.mdi
 mypy.ini
 .bandit

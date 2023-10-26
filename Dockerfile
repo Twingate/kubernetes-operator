@@ -58,4 +58,4 @@ RUN groupadd --gid 1000 -r ${APP_USER} && \
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV
 COPY . .
 
-CMD ["kopf", "run", "./main.py", "-A", "--verbose", "--liveness=http://0.0.0.0:8080/healthz"]
+CMD ["kopf", "run", "./main.py", "-A", "--verbose", "--liveness=http://127.0.0.1:8080/healthz"]

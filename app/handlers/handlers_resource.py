@@ -20,7 +20,6 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
 
 @kopf.on.update("twingateresource")
 def twingate_resource_update(old, new, diff, status, memo, logger, **kwargs):
-    # status looks like  {'twingate_resource_create': {'twingate_id': 'UmVzb3VyY2U6ODcyNDY2'}}
     logger.info("Got an update request: %s. Diff: %s. Status: %s.", new, diff, status)
     crd = ResourceSpec(**new["spec"])
     if crd.id:
@@ -36,7 +35,6 @@ def twingate_resource_update(old, new, diff, status, memo, logger, **kwargs):
 
 @kopf.on.delete("twingateresource")
 def twingate_resource_delete(spec, status, memo, logger, **kwargs):
-    # status looks like {'twingate_resource_create': {'twingate_id': 'UmVzb3VyY2U6ODcyNDYz'}}
     logger.info("Got a delete request: %s. Status: %s", spec, status)
     if not status:
         return

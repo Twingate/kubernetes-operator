@@ -34,7 +34,7 @@ spec:
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
-  scope: Cluster
+  scope: Namespaced
   names:
     plural: twingateresources
     singular: twingateresource

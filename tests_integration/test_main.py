@@ -130,55 +130,55 @@ def test_resource_flows(kopf_settings):
     # fmt: on
 
 
-# @pytest.mark.integration()
-# def test_resource_created_before_operator_runs(kopf_settings):
-#     OBJ = """
-#         apiVersion: twingate.com/v1
-#         kind: TwingateResource
-#         metadata:
-#           name: my-twingate-resource
-#         spec:
-#           name: My K8S Resource
-#           address: my.default.cluster.local
-#     """
-#
-#     kubectl_create(OBJ)
-#     time.sleep(5)  # give it some time to react
-#
-#     # Make sure no `status` as kopf isnt running yet
-#     created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
-#     assert "status" not in created_object
-#
-#     # fmt: off
-#     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-#         time.sleep(5)  # give it some time to react
-#         created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
-#
-#         delete_command = kubectl("delete tgr/my-twingate-resource")
-#         time.sleep(1)  # give it some time to react
-#
-#     # fmt: on
-#
-#     # Ensure that the operator did not die on start, or during the operation.
-#     assert runner.exception is None
-#     assert runner.exit_code == 0
-#
-#     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
-#
-#     logs = load_stdout(runner.stdout)
-#
-#     # fmt: off
-#
-#     # Create
-#     assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-#     assert twingate_id
-#
-#     # Delete
-#     assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-#     assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-#     assert delete_command.stdout == b'twingateresource.twingate.com "my-twingate-resource" deleted\n'
-#
-#     # Shutdown
-#     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
-#
-#     # fmt: on
+@pytest.mark.integration()
+def test_resource_created_before_operator_runs(kopf_settings):
+    OBJ = """
+        apiVersion: twingate.com/v1
+        kind: TwingateResource
+        metadata:
+          name: my-twingate-resource
+        spec:
+          name: My K8S Resource
+          address: my.default.cluster.local
+    """
+
+    kubectl_create(OBJ)
+    time.sleep(5)  # give it some time to react
+
+    # Make sure no `status` as kopf isnt running yet
+    created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
+    assert "status" not in created_object
+
+    # fmt: off
+    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+        time.sleep(5)  # give it some time to react
+        created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
+
+        delete_command = kubectl("delete tgr/my-twingate-resource")
+        time.sleep(1)  # give it some time to react
+
+    # fmt: on
+
+    # Ensure that the operator did not die on start, or during the operation.
+    assert runner.exception is None
+    assert runner.exit_code == 0
+
+    twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
+
+    logs = load_stdout(runner.stdout)
+
+    # fmt: off
+
+    # Create
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert twingate_id
+
+    # Delete
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert delete_command.stdout == b'twingateresource.twingate.com "my-twingate-resource" deleted\n'
+
+    # Shutdown
+    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
+
+    # fmt: on

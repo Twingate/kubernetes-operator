@@ -12,7 +12,9 @@ Trust Network.
 
 - Kubernetes cluster (1.16+)
 - Twingate account and resources (Gateways, Networks, Applications, etc.)
-
+- Twingate account setup with a `Remote Network` for the Kubernetes cluster and 
+connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-charts) if required)
+- `Read/Write` API token - this can be generated in the Twingate Admin Console 
 ## Installation
 
 1. Clone this repository to your local machine.

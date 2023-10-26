@@ -45,11 +45,11 @@ def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProce
 
 
 def kubectl_create(obj: str) -> subprocess.CompletedProcess:
-    return kubectl("create -n default -f -", input=obj)
+    return kubectl("create -f -", input=obj)
 
 
 def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
-    return kubectl("apply -n default -f -", input=obj)
+    return kubectl("apply -f -", input=obj)
 
 
 @pytest.fixture(scope="module")

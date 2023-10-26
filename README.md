@@ -34,6 +34,12 @@ connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-char
    helm upgrade twop ./deploy/twingate-operator --install --wait -f ./deploy/twingate-operator/values.local.yaml
    ```
 
+## Support
+
+- For general issues using this operator please open a GitHub issue. 
+- For account specific issues, please visit the [Twingate forum](https://forum.twingate.com/) or open a [support ticket](https://help.twingate.com/)
+
+
 ## Development
 
 1. `cp .envrc.local.example .envrc.local` and edit the values to match your
@@ -49,9 +55,9 @@ connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-char
    1. You'll also want to `peotry run pre-commit install` to make sure you have
       the pre-commit checks running locally.
 
-## Release process
+### Release process
 
-### Dev Releases
+#### Dev Releases
 
 When a PR is merged to `main` the `CI` github workflow will run and publish a
 new dev release to docker. This dev release version is determined by patching
@@ -64,7 +70,7 @@ tags:
 - `dev` - latest development
 - `0.4.1-dev.<build num>`
 
-### Production Releases
+#### Production Releases
 
 - Run `./scripts/release.sh`:
    - Calculate new version based on conventional commits

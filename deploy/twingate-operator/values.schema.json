@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2019-09/schema",
-    "title": "Twingate Connector Chart Schema",
+    "title": "Twingate Kubernetes Operator Chart Schema",
     "properties": {
         "image": {
             "type": "object",

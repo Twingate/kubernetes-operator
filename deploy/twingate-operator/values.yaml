@@ -9,7 +9,7 @@ twingateOperator: {}
 
 
 image:
-  repository: europe-west2-docker.pkg.dev/twingate-labs/twingate-operator/twingate-operator
+  repository: twingate/kubernetes-operator
   pullPolicy: IfNotPresent
   tag: "latest"
 

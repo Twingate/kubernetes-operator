@@ -1,5 +1,8 @@
 # Twingate Kubernetes Controller
 
+[![CI](https://github.com/Twingate/kubernetes-operator/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/Twingate/kubernetes-operator/actions/workflows/ci.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/Twingate/kubernetes-operator/badge.svg?branch=main&t=7BQPrK)](https://coveralls.io/github/Twingate/kubernetes-operator?branch=main)
+
 > [!IMPORTANT]
 > **Beta:** The Twingate K8S Operator is currently in beta
 
@@ -13,8 +16,10 @@ Trust Network.
 - Kubernetes cluster (1.16+)
 - Twingate account and resources (Gateways, Networks, Applications, etc.)
 - Twingate account setup with a `Remote Network` for the Kubernetes cluster and
-connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-charts) if required)
+ connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-charts)
+ if required)
 - `Read/Write` API token - this can be generated in the Twingate Admin Console
+
 ## Installation
 
 1. Clone this repository to your local machine.
@@ -37,8 +42,8 @@ connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-char
 ## Support
 
 - For general issues using this operator please open a GitHub issue.
-- For account specific issues, please visit the [Twingate forum](https://forum.twingate.com/) or open a [support ticket](https://help.twingate.com/)
-
+- For account specific issues, please visit the [Twingate forum](https://forum.twingate.com/)
+ or open a [support ticket](https://help.twingate.com/)
 
 ## Development
 

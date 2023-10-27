@@ -1,4 +1,4 @@
-apiVersion: twingate.com/v1
+apiVersion: twingate.com/v1beta
 kind: TwingateResource
 metadata:
   name: my-twingate-resource

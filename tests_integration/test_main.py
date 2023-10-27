@@ -62,7 +62,7 @@ def kopf_settings():
 @pytest.mark.integration()
 def test_resource_flows(kopf_settings):
     OBJ = """
-        apiVersion: twingate.com/v1
+        apiVersion: twingate.com/v1beta
         kind: TwingateResource
         metadata:
           name: my-twingate-resource
@@ -72,7 +72,7 @@ def test_resource_flows(kopf_settings):
     """
 
     OBJ_UPDATED = """
-            apiVersion: twingate.com/v1
+            apiVersion: twingate.com/v1beta
             kind: TwingateResource
             metadata:
               name: my-twingate-resource
@@ -112,16 +112,16 @@ def test_resource_flows(kopf_settings):
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete
     assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert delete_command.stdout == b'twingateresource.twingate.com "my-twingate-resource" deleted\n'
 
     # Shutdown
@@ -133,7 +133,7 @@ def test_resource_flows(kopf_settings):
 @pytest.mark.integration()
 def test_resource_created_before_operator_runs(kopf_settings):
     OBJ = """
-        apiVersion: twingate.com/v1
+        apiVersion: twingate.com/v1beta
         kind: TwingateResource
         metadata:
           name: my-twingate-resource
@@ -170,12 +170,12 @@ def test_resource_created_before_operator_runs(kopf_settings):
     # fmt: off
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Delete
     assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert delete_command.stdout == b'twingateresource.twingate.com "my-twingate-resource" deleted\n'
 
     # Shutdown

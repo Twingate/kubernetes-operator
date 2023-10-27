@@ -159,6 +159,7 @@ jobs:
 
       - name: Set DEV release version
         run: |
+          poetry install --with build -n
           poetry version $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
           poetry version -s
 

@@ -5,7 +5,7 @@ metadata:
 spec:
   group: twingate.com
   versions:
-    - name: v1
+    - name: v1beta
       served: true
       storage: true
       schema:

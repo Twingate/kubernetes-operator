@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+from datetime import timedelta
 from typing import Any
 
 import kopf
@@ -85,7 +86,12 @@ def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
         )
 
 
-@kopf.timer("twingateresourceaccess", interval=60 * 5, initial_delay=60, idle=60)
+@kopf.timer(
+    "twingateresourceaccess",
+    interval=timedelta(hours=10).seconds,
+    initial_delay=60,
+    idle=60,
+)
 def twingate_resource_access_sync(body, spec, status, memo, logger, **kwargs):
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource()

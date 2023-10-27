@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import kopf
 
 from app.crds import ResourceSpec
@@ -44,7 +46,9 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
         memo.twingate_client.resource_delete(resource_id)
 
 
-@kopf.timer("twingateresource", interval=60 * 5, initial_delay=60, idle=60)
+@kopf.timer(
+    "twingateresource", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
+)
 def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
     crd = ResourceSpec(**spec)
 

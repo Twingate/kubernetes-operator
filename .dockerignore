@@ -1,0 +1,61 @@
+
+# Pre-commit
+.cache
+
+# Git
+.git
+.gitignore
+.gitmodules
+.github
+CODEOWNERS
+
+# Docker
+docker-compose.yml
+Dockerfile
+.docker
+.dockerignore
+
+# Python
+*.pyc
+__pycache__
+**/__pycache__
+**/tests
+.venv
+tests_integration
+
+# IDEs (JetBrains, VS Code, ...)
+.idea
+.vscode
+
+# Misc.
+.coverage
+.ruff_cache
+.pytest_cache
+.mypy_cache
+.pre-commit-config.yaml
+.pylintrc
+.python-version
+.tool-versions
+.cspell.json
+.coveragerc
+.envrc
+.envrc.local*
+.python-version
+.tool-versions
+README.mdi
+mypy.ini
+.bandit
+conftest.py
+
+coverage_html_report
+
+**/.git
+**/.gitignore
+**/.DS_Store
+
+./README.md
+./Makefile
+./obj.yaml
+./deploy
+./scripts
+./examples

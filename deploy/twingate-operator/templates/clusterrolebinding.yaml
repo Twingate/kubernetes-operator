@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "twingate-operator.serviceAccountName" . }}-rolebinding-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "twingate-operator.serviceAccountName" . }}-role-cluster
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "twingate-operator.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

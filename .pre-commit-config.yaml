@@ -1,0 +1,90 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-docstring-first
+      - id: check-json
+        exclude: ^.vscode/
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: check-xml
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: >
+          (?x)^(
+            deploy/twingate-operator/templates/.*|
+          )$
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: end-of-file-fixer
+      - id: forbid-new-submodules
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: pyupgrade
+        name: pyupgrade
+        entry: poetry run pyupgrade
+        language: system
+        types: [python]
+        args: [--py311-plus]
+
+      - id: autoflake
+        name: autoflake
+        entry: poetry run autoflake
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: isort
+        name: isort
+        entry: poetry run isort
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: black
+        name: black
+        entry: poetry run black
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: ruff
+        name: ruff
+        entry: poetry run ruff
+        language: system
+        types: [ python ]
+        require_serial: true
+
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.9.0
+    hooks:
+      - id: shellcheck
+        files: ^\.envrc|.*\.sh$
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.7.0-1
+    hooks:
+      - id: shfmt-docker
+        files: ^\.envrc|.*\.sh$
+
+  - repo: https://github.com/markdownlint/markdownlint
+    rev: v0.12.0
+    hooks:
+      - id: markdownlint
+        exclude: >
+          (?x)^(
+            .github/pull_request_template.md
+          )$
+
+exclude: 'CHANGELOG.md'

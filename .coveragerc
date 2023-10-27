@@ -1,0 +1,37 @@
+[run]
+source = app
+branch = true
+parallel = true
+concurrency = multiprocessing
+omit = .venv/*, */tests/*
+
+[report]
+show_missing = true
+
+exclude_lines =
+    # Re-enable default pragma in comment to ignore coverage
+    pragma: no cover
+
+    # Ignore debug-only code
+    def __repr__
+    if self\.debug:
+
+    # Ignore defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+
+    # Ignore if non-runnable code isn't run
+    if 0:
+    if __name__ == .__main__.:
+
+    # Ignore abstract methods
+    @(abc\.)?abstractmethod
+
+    # Ignore type checking code
+    if TYPE_CHECKING:
+
+    # Ignore typing overloads
+    @overload
+
+[html]
+directory = coverage_html_report

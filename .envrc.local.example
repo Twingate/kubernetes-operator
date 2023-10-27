@@ -1,0 +1,4 @@
+TWINGATE_API_KEY=<Twingate API Key>
+TWINGATE_NETWORK=<Twingate network name. ex: my-network if at https://my-network.twingate.com>
+TWINGATE_HOST=<for debugging purposes. twingate.com by default>
+TWINGATE_REMOTE_NETWORK_ID=<Global ID for the remote network this operator is running at>

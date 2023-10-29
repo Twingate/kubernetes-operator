@@ -84,7 +84,7 @@ class Resource(BaseModel):
                   value
                 }
                 alias
-                isActive
+                isVisible
                 isBrowserShortcutEnabled
                 remoteNetwork { id }
                 securityPolicy { id }

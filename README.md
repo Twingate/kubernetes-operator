@@ -34,7 +34,7 @@ Trust Network.
 
    1. Edit the settings (`twingateOperator` specifically) in
       `./deploy/twingate-operator/values.local.yaml`
-   1. Deploy:
+   1. Deploy (add `-n [namespace]` if you want to install to a specific namespace):
 
    ```bash
    helm upgrade twop ./deploy/twingate-operator --install --wait -f ./deploy/twingate-operator/values.local.yaml

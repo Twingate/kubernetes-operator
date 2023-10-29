@@ -175,8 +175,18 @@ MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
 )
 
 MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation UpdateResource($id: ID!, $name: String!, $address: String, $alias: String, $remoteNetworkId: ID!, $securityPolicyId: ID) {
-        resourceUpdate(id: $id, name: $name, address: $address, alias: $alias, remoteNetworkId: $remoteNetworkId, securityPolicyId: $securityPolicyId) {
+    mutation UpdateResource($id: ID!, $name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID) {
+        resourceUpdate(
+            id: $id,
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            isBrowserShortcutEnabled: $isBrowserShortcutEnabled
+            protocols: $protocols
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+        ) {
             ok
             error
             entity {
@@ -242,8 +252,11 @@ class TwingateResourceAPIs:
                 "name": resource.name,
                 "address": resource.address,
                 "alias": resource.alias,
+                "isVisible": resource.is_visible,
+                "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
+                "protocols": resource.protocols,
             },
         )
         return Resource(**result["entity"])

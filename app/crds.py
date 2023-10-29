@@ -84,9 +84,9 @@ class ResourceProtocols(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    allow_icmp: bool = Field(alias="allowICMP")
-    tcp: ResourceProtocol
-    udp: ResourceProtocol
+    allow_icmp: bool | None = None
+    tcp: ResourceProtocol | None = None
+    udp: ResourceProtocol | None = None
 
 
 class ResourceSpec(BaseModel):

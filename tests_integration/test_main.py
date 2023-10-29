@@ -202,9 +202,7 @@ def test_resource_created_before_operator_runs(kopf_settings, unique_resource_na
 
 @pytest.mark.integration()
 class TestResourceCRD:
-    def test_crd_resource_validation_browser_shortcut_false_allows_wildcard_address(
-        self, unique_resource_name
-    ):
+    def test_browser_shortcut_false_allows_wildcard_address(self, unique_resource_name):
         result = kubectl_create(
             f"""
             apiVersion: twingate.com/v1beta
@@ -220,9 +218,7 @@ class TestResourceCRD:
 
         assert result.returncode == 0
 
-    def test_crd_resource_validation_browser_shortcut_cant_have_wildcard_address(
-        self, unique_resource_name
-    ):
+    def test_browser_shortcut_cant_have_wildcard_address(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
             kubectl_create(
                 f"""

@@ -442,3 +442,53 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0, result.value.stderr.decode()
+
+    def test_protocols_tcp_restricted_port_values_must_be_valid(
+        self, unique_resource_name
+    ):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo.default.cluster.local"
+                    protocols:
+                        tcp:
+                            policy: RESTRICTED
+                            ports:
+                                - start: -1
+                                  end: 10
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "Invalid value: -1" in stderr
+
+    def test_protocols_udp_restricted_port_values_must_be_valid(
+        self, unique_resource_name
+    ):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo.default.cluster.local"
+                    protocols:
+                        tcp:
+                            policy: RESTRICTED
+                            ports:
+                                - start: 1
+                                  end: 1000000000
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "Invalid value: 1000000000" in stderr, stderr

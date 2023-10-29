@@ -20,7 +20,7 @@ spec:
               properties:
                 id:
                   type: string
-                  nullable: True
+                  nullable: true
                 name:
                   type: string
                   nullable: false
@@ -62,19 +62,20 @@ spec:
                              - RESTRICTED
                          ports:
                            type: array
-                           nullable: []
+                           default: []
                            items:
                              type: object
-                             x-kubernetes-validations:
-                               - rule: self.start >= 1 && self.end >= 1
-                                 message: "Port values have to be positive"
                              properties:
                                start:
                                  type: integer
                                  nullable: false
+                                 minimum: 0
+                                 maximum: 65535
                                end:
                                  type: integer
                                  nullable: false
+                                 minimum: 0
+                                 maximum: 65535
                     udp:
                       type: object
                       nullable: true
@@ -100,9 +101,13 @@ spec:
                                start:
                                  type: integer
                                  nullable: false
+                                 minimum: 0
+                                 maximum: 65535
                                end:
                                  type: integer
                                  nullable: false
+                                 minimum: 0
+                                 maximum: 65535
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

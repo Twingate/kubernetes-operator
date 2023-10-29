@@ -62,7 +62,7 @@ spec:
                              - RESTRICTED
                          ports:
                            type: array
-                           nullable: true
+                           nullable: []
                            items:
                              type: object
                              x-kubernetes-validations:
@@ -78,29 +78,31 @@ spec:
                     udp:
                       type: object
                       nullable: true
+                      x-kubernetes-validations:
+                        - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED" && size(self.ports) > 0)
+                          message: "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
                       properties:
-                        policy:
-                          type: string
-                          nullable: true
-                          enum:
-                            - ALLOW_ALL
-                            - RESTRICTED
-                        ports:
-                          type: array
-                          nullable: true
-                          items:
-                            type: object
-                            properties:
-                              start:
-                                type: integer
-                                nullable: false
-                              end:
-                                type: integer
-                                nullable: false
-
-
-
-
+                         policy:
+                           type: string
+                           nullable: true
+                           enum:
+                             - ALLOW_ALL
+                             - RESTRICTED
+                         ports:
+                           type: array
+                           default: []
+                           items:
+                             type: object
+                             x-kubernetes-validations:
+                               - rule: self.start >= 1 && self.end >= 1
+                                 message: "Port values have to be positive"
+                             properties:
+                               start:
+                                 type: integer
+                                 nullable: false
+                               end:
+                                 type: integer
+                                 nullable: false
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

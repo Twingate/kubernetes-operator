@@ -126,16 +126,23 @@ def test_resource_flows(kopf_settings, unique_resource_name):
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY,
+            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,
+            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY,
+            "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY,
+            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert delete_command.stdout.decode() == f'twingateresource.twingate.com "{unique_resource_name}" deleted\n'
 
     # Shutdown
@@ -186,12 +193,17 @@ def test_resource_created_before_operator_runs(kopf_settings, unique_resource_na
     # fmt: off
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY,
+            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY,
+            "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY,
+            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert delete_command.stdout.decode() == f'twingateresource.twingate.com "{unique_resource_name}" deleted\n'
 
     # Shutdown
@@ -258,3 +270,175 @@ class TestResourceCRD:
             "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
             in stderr
         )
+
+    def test_protocols_tcp_allowall_cant_specify_ports(self, unique_resource_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo.default.cluster.local"
+                    protocols:
+                        tcp:
+                            policy: ALLOW_ALL
+                            ports:
+                                - start: 80
+                                  end: 80
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
+            in stderr
+        )
+
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: "*.default.cluster.local"
+                protocols:
+                    tcp:
+                        policy: ALLOW_ALL
+        """
+        )
+
+        assert result.returncode == 0, result.value.stderr.decode()
+
+    def test_protocols_udp_allowall_cant_specify_ports(self, unique_resource_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo.default.cluster.local"
+                    protocols:
+                        udp:
+                            policy: ALLOW_ALL
+                            ports:
+                                - start: 80
+                                  end: 80
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
+            in stderr
+        )
+
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: "*.default.cluster.local"
+                protocols:
+                    udp:
+                        policy: ALLOW_ALL
+        """
+        )
+
+        assert result.returncode == 0, result.value.stderr.decode()
+
+    def test_protocols_tcp_restricted_must_specify_ports(self, unique_resource_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo.default.cluster.local"
+                    protocols:
+                        tcp:
+                            policy: RESTRICTED
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
+            in stderr
+        )
+
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: "foo.default.cluster.local"
+                protocols:
+                    tcp:
+                        policy: RESTRICTED
+                        ports:
+                            - start: 80
+                              end: 80
+        """
+        )
+
+        assert result.returncode == 0, result.value.stderr.decode()
+
+    def test_protocols_udp_restricted_must_specify_ports(self, unique_resource_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo.default.cluster.local"
+                    protocols:
+                        udp:
+                            policy: RESTRICTED
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
+            in stderr
+        )
+
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: "foo.default.cluster.local"
+                protocols:
+                    udp:
+                        policy: RESTRICTED
+                        ports:
+                            - start: 80
+                              end: 80
+        """
+        )
+
+        assert result.returncode == 0, result.value.stderr.decode()

@@ -70,7 +70,7 @@ def unique_resource_name(request):
 
 @pytest.fixture(scope="module", autouse=True)
 def _load_crds():
-    kubectl("apply -f ../deploy/twingate-operator/crds/")
+    kubectl("apply -f ./deploy/twingate-operator/crds/")
 
 
 @pytest.mark.integration()

@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+import uuid
 from unittest.mock import ANY
 
 import kopf
@@ -57,6 +58,16 @@ def kopf_settings():
     settings = kopf.OperatorSettings()
     settings.watching.server_timeout = 10
     return settings
+
+
+@pytest.fixture()
+def unique_resource_name(request):
+    return request.node.name.replace("_", "-") + "-" + str(uuid.uuid4())
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _load_crds():
+    kubectl("apply -f ../deploy/twingate-operator/crds/")
 
 
 @pytest.mark.integration()
@@ -182,3 +193,68 @@ def test_resource_created_before_operator_runs(kopf_settings):
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
 
     # fmt: on
+
+
+@pytest.mark.integration()
+def test_crd_resource_validation_browser_shortcut_false_allows_wildcard_address(
+    unique_resource_name,
+):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+            name: {unique_resource_name}
+        spec:
+            name: My K8S Resource
+            address: "*.default.cluster.local"
+            isBrowserShortcutEnabled: false
+    """
+    )
+
+    assert result.returncode == 0
+
+
+@pytest.mark.integration()
+def test_crd_resource_validation_browser_shortcut_cant_have_wildcard_address(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: "*.default.cluster.local"
+                isBrowserShortcutEnabled: true
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
+        in stderr
+    )
+
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: "foo?.default.cluster.local"
+                isBrowserShortcutEnabled: true
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
+        in stderr
+    )

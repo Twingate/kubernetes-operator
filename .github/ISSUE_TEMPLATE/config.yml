@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Twingate's Support Forum"
+    url: https://forum.twingate.com/
+    about: "Join us for questions, answers or twingate related chat. Please do create issues on Github for better collaboration."
+  - name: "Twingate Support"
+    url: https://help.twingate.com/
+    about: "Please ask and answer questions here for async response."

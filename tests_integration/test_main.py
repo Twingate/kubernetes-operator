@@ -55,6 +55,9 @@ def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
 
 @pytest.fixture(scope="module")
 def kopf_settings():
+    assert "TWINGATE_API_KEY" in os.environ
+    assert "TWINGATE_NETWORK" in os.environ
+
     settings = kopf.OperatorSettings()
     settings.watching.server_timeout = 10
     return settings
@@ -71,22 +74,22 @@ def _load_crds():
 
 
 @pytest.mark.integration()
-def test_resource_flows(kopf_settings):
-    OBJ = """
+def test_resource_flows(kopf_settings, unique_resource_name):
+    OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateResource
         metadata:
-          name: my-twingate-resource
+          name: {unique_resource_name}
         spec:
           name: My K8S Resource
           address: my.default.cluster.local
     """
 
-    OBJ_UPDATED = """
+    OBJ_UPDATED = f"""
             apiVersion: twingate.com/v1beta
             kind: TwingateResource
             metadata:
-              name: my-twingate-resource
+              name: {unique_resource_name}
             spec:
               name: My K8S Resource Renamed
               address: my.default.cluster.local
@@ -97,13 +100,13 @@ def test_resource_flows(kopf_settings):
         kubectl_create(OBJ)
         time.sleep(5)  # give it some time to react
 
-        created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
+        created_object = json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
 
         # Update the name
         kubectl_apply(OBJ_UPDATED)
-        json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
+        json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
 
-        delete_command = kubectl("delete tgr/my-twingate-resource")
+        delete_command = kubectl(f"delete tgr/{unique_resource_name}")
         time.sleep(1)  # give it some time to react
 
     # fmt: on
@@ -123,17 +126,17 @@ def test_resource_flows(kopf_settings):
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete
     assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-    assert delete_command.stdout == b'twingateresource.twingate.com "my-twingate-resource" deleted\n'
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert delete_command.stdout.decode() == f'twingateresource.twingate.com "{unique_resource_name}" deleted\n'
 
     # Shutdown
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
@@ -142,12 +145,12 @@ def test_resource_flows(kopf_settings):
 
 
 @pytest.mark.integration()
-def test_resource_created_before_operator_runs(kopf_settings):
-    OBJ = """
+def test_resource_created_before_operator_runs(kopf_settings, unique_resource_name):
+    OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateResource
         metadata:
-          name: my-twingate-resource
+          name: {unique_resource_name}
         spec:
           name: My K8S Resource
           address: my.default.cluster.local
@@ -157,15 +160,17 @@ def test_resource_created_before_operator_runs(kopf_settings):
     time.sleep(5)  # give it some time to react
 
     # Make sure no `status` as kopf isnt running yet
-    created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
+    created_object = json.loads(
+        kubectl(f"get tgr/{unique_resource_name} -o json").stdout
+    )
     assert "status" not in created_object
 
     # fmt: off
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         time.sleep(5)  # give it some time to react
-        created_object = json.loads(kubectl("get tgr/my-twingate-resource -o json").stdout)
+        created_object = json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
 
-        delete_command = kubectl("delete tgr/my-twingate-resource")
+        delete_command = kubectl(f"delete tgr/{unique_resource_name}")
         time.sleep(1)  # give it some time to react
 
     # fmt: on
@@ -181,13 +186,13 @@ def test_resource_created_before_operator_runs(kopf_settings):
     # fmt: off
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Delete
     assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": "my-twingate-resource", "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-    assert delete_command.stdout == b'twingateresource.twingate.com "my-twingate-resource" deleted\n'
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert delete_command.stdout.decode() == f'twingateresource.twingate.com "{unique_resource_name}" deleted\n'
 
     # Shutdown
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
@@ -196,31 +201,11 @@ def test_resource_created_before_operator_runs(kopf_settings):
 
 
 @pytest.mark.integration()
-def test_crd_resource_validation_browser_shortcut_false_allows_wildcard_address(
-    unique_resource_name,
-):
-    result = kubectl_create(
-        f"""
-        apiVersion: twingate.com/v1beta
-        kind: TwingateResource
-        metadata:
-            name: {unique_resource_name}
-        spec:
-            name: My K8S Resource
-            address: "*.default.cluster.local"
-            isBrowserShortcutEnabled: false
-    """
-    )
-
-    assert result.returncode == 0
-
-
-@pytest.mark.integration()
-def test_crd_resource_validation_browser_shortcut_cant_have_wildcard_address(
-    unique_resource_name,
-):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
+class TestResourceCRD:
+    def test_crd_resource_validation_browser_shortcut_false_allows_wildcard_address(
+        self, unique_resource_name
+    ):
+        result = kubectl_create(
             f"""
             apiVersion: twingate.com/v1beta
             kind: TwingateResource
@@ -229,32 +214,51 @@ def test_crd_resource_validation_browser_shortcut_cant_have_wildcard_address(
             spec:
                 name: My K8S Resource
                 address: "*.default.cluster.local"
-                isBrowserShortcutEnabled: true
+                isBrowserShortcutEnabled: false
         """
         )
 
-    stderr = ex.value.stderr.decode()
-    assert (
-        "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
-        in stderr
-    )
+        assert result.returncode == 0
 
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-                name: {unique_resource_name}
-            spec:
-                name: My K8S Resource
-                address: "foo?.default.cluster.local"
-                isBrowserShortcutEnabled: true
-        """
+    def test_crd_resource_validation_browser_shortcut_cant_have_wildcard_address(
+        self, unique_resource_name
+    ):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "*.default.cluster.local"
+                    isBrowserShortcutEnabled: true
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
+            in stderr
         )
 
-    stderr = ex.value.stderr.decode()
-    assert (
-        "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
-        in stderr
-    )
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                    name: {unique_resource_name}
+                spec:
+                    name: My K8S Resource
+                    address: "foo?.default.cluster.local"
+                    isBrowserShortcutEnabled: true
+            """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
+            in stderr
+        )

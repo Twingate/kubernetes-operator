@@ -1,3 +1,4 @@
+{{- $logFormat := .Values.twingateOperator.logFormat | default "full" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,6 +35,15 @@ spec:
           {{- toYaml .Values.securityContext | nindent 12 }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+          - kopf
+          - run
+          - ./main.py
+          - "-A"
+          - "--standalone"
+          - "--verbose"
+          - "--liveness=http://0.0.0.0:8080/healthz"
+          - "--log-format={{ $logFormat }}"
         envFrom:
           - secretRef:
               name: {{ include "twingate-operator.fullname" . }}

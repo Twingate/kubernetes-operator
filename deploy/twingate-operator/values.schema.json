@@ -51,7 +51,16 @@
             "properties": {
                 "apiKey": { "type": "string" },
                 "network": { "type": "string" },
-                "remoteNetworkId": { "type": "string" }
+                "remoteNetworkId": { "type": "string" },
+                "logFormat": {
+                    "type": "string",
+                    "default": "full",
+                    "enum": [
+                        "json",
+                        "plain",
+                        "full"
+                    ]
+                }
             },
             "examples": [{
               "apiKey": "sdlkwdlsknsldknsldkcnm",

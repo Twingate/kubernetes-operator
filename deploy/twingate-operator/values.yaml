@@ -6,6 +6,7 @@ twingateOperator: {}
 #  apiKey: "<api key>"
 #  network: "<network slug>"
 #  remoteNetworkId: "<remote network id>"
+#  logFormat: "plain|full|json"
 
 
 image:

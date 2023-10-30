@@ -65,6 +65,9 @@ spec:
                            default: []
                            items:
                              type: object
+                             x-kubernetes-validations:
+                               - rule: (self.start <= self.end)
+                                 message: "Start port value must be less or equal to end port value"
                              properties:
                                start:
                                  type: integer
@@ -95,8 +98,8 @@ spec:
                            items:
                              type: object
                              x-kubernetes-validations:
-                               - rule: self.start >= 1 && self.end >= 1
-                                 message: "Port values have to be positive"
+                               - rule: (self.start <= self.end)
+                                 message: "Start port value must be less or equal to end port value"
                              properties:
                                start:
                                  type: integer

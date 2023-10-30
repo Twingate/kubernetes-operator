@@ -40,8 +40,9 @@ spec:
           - run
           - ./main.py
           - "-A"
+          - "--standalone"
           - "--verbose"
-          - "--liveness=http://127.0.0.1:8080/healthz"
+          - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format={{ $logFormat }}"
         envFrom:
           - secretRef:

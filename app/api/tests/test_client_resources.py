@@ -15,6 +15,8 @@ def mock_resource_data():
         "createdAt": "2021-08-18T15:00:00.000Z",
         "updatedAt": "2021-08-18T15:00:00.000Z",
         "alias": "my-k8s-resource",
+        "isVisible": True,
+        "isBrowserShortcutEnabled": False,
         "address": {"type": "DNS", "value": "my-k8s-resource.default.cluster.local"},
         "remoteNetwork": {"id": "rn1"},
         "securityPolicy": {"id": "sp1"},

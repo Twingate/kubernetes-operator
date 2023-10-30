@@ -55,6 +55,8 @@ class ResourceFactory(factory.Factory):
         ResourceAddressFactory, hostname=factory.SelfAttribute("..name")
     )
     alias = factory.SelfAttribute("name")
+    is_visible = True
+    is_browser_shortcut_enabled = False
     remote_network = factory.SubFactory(ResourceRemoteNetworkFactory)
     security_policy = factory.SubFactory(ResourceSecurityPolicyFactory)
 

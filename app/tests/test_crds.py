@@ -158,7 +158,7 @@ class TestTwingateResourceCRD:
                 },
             )
 
-    def test_resourceprotocol_validation(self):
+    def test_resourceprotocol_ports_validation(self):
         with pytest.raises(
             ValueError, match="Input should be less than or equal to 65535"
         ):
@@ -192,6 +192,25 @@ class TestTwingateResourceCRD:
                         "tcp": {
                             "policy": "RESTRICTED",
                             "ports": [{"start": -1, "end": 80}],
+                        }
+                    },
+                },
+            )
+
+        with pytest.raises(
+            ValueError, match="Start port value must be less or equal to end port value"
+        ):
+            TwingateResourceCRD(
+                apiVersion="twingate.com/v1",
+                kind="TwingateResource",
+                spec={
+                    "address": "my.default.cluster.local",
+                    "id": "UmVzb3VyY2U6OTM3Mzkw",
+                    "name": "My K8S Resource",
+                    "protocols": {
+                        "tcp": {
+                            "policy": "RESTRICTED",
+                            "ports": [{"start": 8080, "end": 7080}],
                         }
                     },
                 },

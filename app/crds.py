@@ -59,6 +59,13 @@ class ProtocoRange(BaseModel):
     start: int = Field(ge=0, le=65535)
     end: int = Field(ge=0, le=65535)
 
+    @model_validator(mode="after")
+    def check_ports(self):
+        if self.start > self.end:
+            raise ValueError("Start port value must be less or equal to end port value")
+
+        return self
+
 
 class ResourceProtocol(BaseModel):
     model_config = ConfigDict(

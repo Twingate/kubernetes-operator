@@ -158,7 +158,7 @@ class ResourceAccessSpec(BaseModel):
             kapi = kubernetes.client.CustomObjectsApi()
             response = kapi.get_namespaced_custom_object(
                 "twingate.com",
-                "v1",
+                "v1beta",
                 self.resource_ref.namespace,
                 "twingateresources",
                 self.resource_ref.name,

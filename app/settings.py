@@ -34,6 +34,10 @@ class TwingateOperatorSettings(BaseSettings):
     remote_network_id: GlobalID
     host: str = "twingate.com"
 
+    @property
+    def full_url(self) -> str:
+        return f"https://{self.network}.{self.host}"
+
 
 __settings: TwingateOperatorSettings | None = None
 __version: str | None = None

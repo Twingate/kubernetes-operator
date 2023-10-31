@@ -24,6 +24,21 @@ spec:
                 refreshToken:
                   type: string
                   nullable: false
+                versionPolicy:
+                    type: object
+                    properties:
+                        check:
+                          type: string
+                          nullable: false
+                        version:
+                          type: string
+                          nullable: false
+                containerExtra:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                podExtra:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

@@ -194,3 +194,36 @@ class TwingateResourceAccessCRD(BaseK8sModel):
 
 
 # endregion
+
+# region TwingateConnector
+
+
+class ConnectorVersionPolicy(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    check: str = "0 * * * *"
+    version: str = "latest"
+
+
+class TwingateConnectorSpec(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    name: str
+    access_token: str  # temp
+    refresh_token: str  # temp
+    version_policy: ConnectorVersionPolicy
+    container_extra: dict[str, Any] = {}
+    pod_extra: dict[str, Any] = {}
+
+
+class TwingateConnectorCRD(BaseK8sModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    spec: TwingateConnectorSpec
+
+
+# endregion

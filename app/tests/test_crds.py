@@ -3,7 +3,12 @@ from unittest.mock import patch
 import kubernetes.client
 import pytest
 
-from app.crds import K8sMetadata, TwingateResourceAccessCRD, TwingateResourceCRD
+from app.crds import (
+    K8sMetadata,
+    TwingateConnectorCRD,
+    TwingateResourceAccessCRD,
+    TwingateResourceCRD,
+)
 
 
 @pytest.fixture()
@@ -324,3 +329,36 @@ class TestTwingateResourceAccessCRD:
         crd = TwingateResourceAccessCRD(**self.SAMPLE_YAML)
         response = crd.spec.get_resource()
         assert response is None
+
+
+class TestTwingateConnectorCRD:
+    def test_deserialization(self):
+        DATA = {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateConnector",
+            "metadata": {
+                "name": "my-connector",
+                "namespace": "default",
+                "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            },
+            "spec": {
+                "name": "My K8S Connector",
+                "versionPolicy": {"check": "0 2 * * *", "version": "0.1.x"},
+                "podSpec": {
+                    "resources": {
+                        "requests": {"cpu": "100m", "memory": "128Mi"},
+                        "limits": {"cpu": "100m", "memory": "128Mi"},
+                    }
+                },
+            },
+        }
+        crd = TwingateConnectorCRD(**DATA)
+        assert crd.spec.name == "My K8S Connector"
+        assert crd.spec.version_policy.check == "0 2 * * *"
+        assert crd.spec.version_policy.version == "0.1.x"
+        assert crd.spec.pod_spec == {
+            "resources": {
+                "limits": {"cpu": "100m", "memory": "128Mi"},
+                "requests": {"cpu": "100m", "memory": "128Mi"},
+            }
+        }

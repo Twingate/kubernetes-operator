@@ -1,12 +1,11 @@
 import kopf
 import kubernetes.client
 
+from app.crds import TwingateConnectorCRD, TwingateConnectorSpec
 from app.settings import get_settings, get_version
 
 
-def get_connector_pod(
-    url: str, access_token: str, refresh_token: str
-) -> kubernetes.client.V1Pod:
+def get_connector_pod(url: str, spec: TwingateConnectorSpec) -> kubernetes.client.V1Pod:
     get_settings()
     # fmt: off
     pod_spec = {
@@ -17,20 +16,16 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": url},
                     {"name": "TWINGATE_LOG_LEVEL", "value": "7"},
-                    {"name": "TWINGATE_ACCESS_TOKEN", "value": access_token},
-                    {"name": "TWINGATE_REFRESH_TOKEN", "value": refresh_token},
+                    {"name": "TWINGATE_ACCESS_TOKEN", "value": spec.access_token},
+                    {"name": "TWINGATE_REFRESH_TOKEN", "value": spec.refresh_token},
                 ],
                 "image": "twingate/connector:1",
                 "imagePullPolicy": "Always",
                 "name": "connector",
-                "resources": {
-                    "requests": {
-                        "cpu": "50m",
-                        "memory": "100M"
-                    }
-                },
+                **spec.container_extra,
             }
         ],
+        **spec.pod_extra,
     }
     # fmt: on
     return kubernetes.client.V1Pod(spec=pod_spec)
@@ -39,10 +34,9 @@ def get_connector_pod(
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, spec, memo, logger, namespace, **_):
     logger.info("Got connectorcreate request: %s", body)
+    connector_spec = TwingateConnectorSpec(**spec)
 
-    pod = get_connector_pod(
-        memo.twingate_settings.full_url, spec["accessToken"], spec["refreshToken"]
-    )
+    pod = get_connector_pod(memo.twingate_settings.full_url, connector_spec)
     kopf.adopt(pod, owner=body, strict=True, forced=True)
     kopf.label(pod, {"operator.twingate.com/owner": "connector"})
 
@@ -71,13 +65,8 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **
             "twingateconnectors",
             connector_owner["name"],
         )
-        response_spec = response["spec"]
-
-        pod = get_connector_pod(
-            memo.twingate_settings.full_url,
-            response_spec["accessToken"],
-            response_spec["refreshToken"],
-        )
+        connector = TwingateConnectorCRD(**response)
+        pod = get_connector_pod(memo.twingate_settings.full_url, connector.spec)
         kopf.adopt(pod, owner=response)
         kopf.label(pod, {"operator.twingate.com/owner": "connector"})
 

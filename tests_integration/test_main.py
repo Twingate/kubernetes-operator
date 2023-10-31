@@ -615,4 +615,3 @@ def test_resource_access_flows(kopf_settings, unique_resource_name):
 
     # Shutdown
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
-

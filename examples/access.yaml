@@ -6,4 +6,4 @@ spec:
   resourceRef:
     name: my-twingate-resource
     namespace: default
-  principalId: R3JvdXA6NTcyNDU=
+  principalId: R3JvdXA6MTE1NzI2MA==

@@ -119,8 +119,6 @@ def test_resource_flows(kopf_settings, unique_resource_name):
     assert runner.exit_code == 0
 
     logs = load_stdout(runner.stdout)
-    for log in logs:
-        print(log)
 
     # fmt: off
 
@@ -549,8 +547,8 @@ class TestResourceCRD:
 
 @pytest.mark.integration()
 def test_resource_access_flows(kopf_settings, unique_resource_name):
-    assert "TWINGATE_PRINCIPAL_ID" in os.environ
-    principal_id = os.environ["TWINGATE_PRINCIPAL_ID"]
+    assert "TWINGATE_TEST_PRINCIPAL_ID" in os.environ
+    principal_id = os.environ["TWINGATE_TEST_PRINCIPAL_ID"]
 
     RESOURCE_OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -597,8 +595,6 @@ def test_resource_access_flows(kopf_settings, unique_resource_name):
     assert runner.exit_code == 0
 
     logs = load_stdout(runner.stdout)
-    for log in logs:
-        print(log)
 
 
     # Create

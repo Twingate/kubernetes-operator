@@ -2,7 +2,16 @@
 
 
 
-## v0.1.0 (2023-10-30)
+## v0.1.1 (2023-10-30)
+
+### Fix
+
+* fix: ResourceAccessSpec.get_resource_ref_object fetching wrong version (#20)
+
+Co-authored-by: semantic-release &lt;semantic-release&gt; ([`86b6557`](https://github.com/Twingate/kubernetes-operator/commit/86b6557107ea927ec0244ba91ccacb680aab9751))
+
+
+## v0.1.0 (2023-10-31)
 
 ### Build
 

@@ -9,7 +9,6 @@ import orjson as json
 import pytest
 from kopf.testing import KopfRunner
 
-
 # ruff: noqa: S602 (subprocess_popen_with_shell_equals_true)
 
 
@@ -560,7 +559,6 @@ def test_resource_access_flows(kopf_settings, unique_resource_name):
           address: my.default.cluster.local
     """
 
-
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateResourceAccess
@@ -580,13 +578,13 @@ def test_resource_access_flows(kopf_settings, unique_resource_name):
         kubectl_create(OBJ)
         time.sleep(5)  # give it some time to react
 
-        created_object = json.loads(kubectl(f"get tgra/{unique_resource_name} -o json").stdout)
+        json.loads(kubectl(f"get tgra/{unique_resource_name} -o json").stdout)
 
         delete_command = kubectl(f"delete tgra/{unique_resource_name}")
 
         time.sleep(1)  # give it some time to react
 
-        resource_delete_command = kubectl(f"delete tgr/{unique_resource_name}")
+        kubectl(f"delete tgr/{unique_resource_name}")
 
     # fmt: on
 
@@ -596,18 +594,45 @@ def test_resource_access_flows(kopf_settings, unique_resource_name):
 
     logs = load_stdout(runner.stdout)
 
-
     # Create
-    assert {"message": "Handler 'twingate_resource_access_create' succeeded.", "timestamp": ANY,
-            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResourceAccess", "name": unique_resource_name,
-                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {
+        "message": "Handler 'twingate_resource_access_create' succeeded.",
+        "timestamp": ANY,
+        "object": {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateResourceAccess",
+            "name": unique_resource_name,
+            "uid": ANY,
+            "namespace": "default",
+        },
+        "severity": "info",
+    } in logs
     # Delete
-    assert {"message": "Result: {'resourceAccessRemove': {'ok': True, 'error': None}}", "timestamp": ANY,
-            "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_access_delete' succeeded.", "timestamp": ANY,
-            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResourceAccess", "name": unique_resource_name,
-                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-    assert delete_command.stdout.decode() == f'twingateresourceaccess.twingate.com "{unique_resource_name}" deleted\n'
+    assert {
+        "message": "Result: {'resourceAccessRemove': {'ok': True, 'error': None}}",
+        "timestamp": ANY,
+        "severity": "info",
+    } in logs
+    assert {
+        "message": "Handler 'twingate_resource_access_delete' succeeded.",
+        "timestamp": ANY,
+        "object": {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateResourceAccess",
+            "name": unique_resource_name,
+            "uid": ANY,
+            "namespace": "default",
+        },
+        "severity": "info",
+    } in logs
+    assert (
+        delete_command.stdout.decode()
+        == f'twingateresourceaccess.twingate.com "{unique_resource_name}" deleted\n'
+    )
 
     # Shutdown
-    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
+    assert {
+        "message": "Activity 'shutdown' succeeded.",
+        "timestamp": ANY,
+        "severity": "info",
+    } in logs

@@ -51,27 +51,46 @@ def twingate_connector_create(body, spec, memo, logger, namespace, **_):
 
 
 @kopf.on.delete("", "v1", "pods", labels={"operator.twingate.com/owner": "connector"})
-def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, **_):
+def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **_):
     logger.info("twingate_connector_pod_deleted: %s", body)
 
-    owners = meta["ownerReferences"]
     connector_owner = next(
-        (o for o in owners if o["kind"] == "TwingateConnector"), None
+        (o for o in meta["ownerReferences"] if o["kind"] == "TwingateConnector"), None
     )
     if not connector_owner:
-        return
+        return None
 
-    kapi = kubernetes.client.CustomObjectsApi()
-    response = kapi.get_namespaced_custom_object(
-        "twingate.com",
-        connector_owner["apiVersion"],
-        namespace,
-        "twingateconnector",
-        connector_owner["name"],
-    )
+    owner_group, owner_version = connector_owner["apiVersion"].split("/")
 
-    pod = kubernetes.client.V1Pod(spec={"containers": spec["containers"]})
-    # logger.info("pod!: %s", pod)
-    kapi = kubernetes.client.CoreV1Api()
-    result = kapi.create_namespaced_pod(namespace=namespace, body=dict(**body))
-    logger.info("result: %s", result)
+    try:
+        kapi = kubernetes.client.CustomObjectsApi()
+        response = kapi.get_namespaced_custom_object(
+            owner_group,
+            owner_version,
+            namespace,
+            "twingateconnectors",
+            connector_owner["name"],
+        )
+        response_spec = response["spec"]
+
+        pod = get_connector_pod(
+            memo.twingate_settings.full_url,
+            response_spec["accessToken"],
+            response_spec["refreshToken"],
+        )
+        kopf.adopt(pod, owner=response)
+        kopf.label(pod, {"operator.twingate.com/owner": "connector"})
+
+        # logger.info("pod!: %s", pod)
+        kapi = kubernetes.client.CoreV1Api()
+        result = kapi.create_namespaced_pod(namespace=namespace, body=pod)
+        logger.info("result: %s", result)
+    except kubernetes.client.exceptions.ApiException as api_ex:
+        if api_ex.status == 404:
+            logger.warning(
+                "ResourceAccessCRD.get_resource_ref_object: resource not found."
+            )
+        else:
+            logger.exception("ResourceAccessCRD.get_resource_ref_object failed")
+
+        return None

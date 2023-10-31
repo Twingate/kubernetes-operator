@@ -8,11 +8,9 @@ import kopf
 import orjson as json
 import pytest
 from kopf.testing import KopfRunner
-import pydevd_pycharm
 
 
 # ruff: noqa: S602 (subprocess_popen_with_shell_equals_true)
-# pydevd_pycharm.settrace('192.168.50.224', port=3192, stdoutToServer=True, stderrToServer=True)
 
 
 main_py = os.path.relpath(os.path.join(os.path.dirname(__file__), "../main.py"))
@@ -78,7 +76,7 @@ def _load_crds():
     kubectl("apply -f ./deploy/twingate-operator/crds/")
 
 
-# @pytest.mark.integration()
+@pytest.mark.integration()
 def test_resource_flows(kopf_settings, unique_resource_name):
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -156,7 +154,7 @@ def test_resource_flows(kopf_settings, unique_resource_name):
     # fmt: on
 
 
-# @pytest.mark.integration()
+@pytest.mark.integration()
 def test_resource_created_before_operator_runs(kopf_settings, unique_resource_name):
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -217,7 +215,7 @@ def test_resource_created_before_operator_runs(kopf_settings, unique_resource_na
     # fmt: on
 
 
-# @pytest.mark.integration()
+@pytest.mark.integration()
 class TestResourceCRD:
     def test_browser_shortcut_false_allows_wildcard_address(self, unique_resource_name):
         result = kubectl_create(

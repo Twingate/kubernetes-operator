@@ -3,8 +3,11 @@ import kubernetes.client
 
 from app.settings import get_settings, get_version
 
-def get_connector_pod(url: str, access_token: str, refresh_token: str) -> kubernetes.client.V1Pod:
-    operator_settings = get_settings()
+
+def get_connector_pod(
+    url: str, access_token: str, refresh_token: str
+) -> kubernetes.client.V1Pod:
+    get_settings()
     # fmt: off
     pod_spec = {
         "containers": [
@@ -37,7 +40,9 @@ def get_connector_pod(url: str, access_token: str, refresh_token: str) -> kubern
 def twingate_connector_create(body, spec, memo, logger, namespace, **_):
     logger.info("Got connectorcreate request: %s", body)
 
-    pod = get_connector_pod(memo.twingate_settings.full_url, spec["accessToken"], spec["refreshToken"])
+    pod = get_connector_pod(
+        memo.twingate_settings.full_url, spec["accessToken"], spec["refreshToken"]
+    )
     kopf.adopt(pod, owner=body, strict=True, forced=True)
     kopf.label(pod, {"operator.twingate.com/owner": "connector"})
 
@@ -50,7 +55,9 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, **_):
     logger.info("twingate_connector_pod_deleted: %s", body)
 
     owners = meta["ownerReferences"]
-    connector_owner = next((o for o in owners if o["kind"] == "TwingateConnector"), None)
+    connector_owner = next(
+        (o for o in owners if o["kind"] == "TwingateConnector"), None
+    )
     if not connector_owner:
         return
 
@@ -63,10 +70,7 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, **_):
         connector_owner["name"],
     )
 
-
-    pod = kubernetes.client.V1Pod(spec={
-        "containers": spec["containers"],
-    })
+    pod = kubernetes.client.V1Pod(spec={"containers": spec["containers"]})
     # logger.info("pod!: %s", pod)
     kapi = kubernetes.client.CoreV1Api()
     result = kapi.create_namespaced_pod(namespace=namespace, body=dict(**body))

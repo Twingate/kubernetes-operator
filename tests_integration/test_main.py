@@ -323,7 +323,6 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0
-        kubectl(f"delete tgr/{unique_resource_name}")
 
     def test_browser_shortcut_cant_have_wildcard_address(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -408,7 +407,6 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0, result.value.stderr.decode()
-        kubectl(f"delete tgr/{unique_resource_name}")
 
     def test_protocols_udp_allowall_cant_specify_ports(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:

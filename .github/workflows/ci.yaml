@@ -106,6 +106,7 @@ jobs:
         TWINGATE_HOST: ${{ secrets.TWINGATE_HOST }}
         TWINGATE_NETWORK: ${{ secrets.TWINGATE_NETWORK }}
         TWINGATE_REMOTE_NETWORK_ID: ${{ secrets.TWINGATE_REMOTE_NETWORK_ID }}
+        TWINGATE_TEST_PRINCIPAL_ID: ${{ secrets.TWINGATE_TEST_PRINCIPAL_ID }}
 
   build:
     runs-on: ubuntu-latest

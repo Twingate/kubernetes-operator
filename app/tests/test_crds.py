@@ -344,7 +344,9 @@ class TestTwingateConnectorCRD:
             "spec": {
                 "name": "My K8S Connector",
                 "versionPolicy": {"check": "0 2 * * *", "version": "0.1.x"},
-                "podSpec": {
+                "accessToken": "access-token",
+                "refreshToken": "refresh-token",
+                "containerExtra": {
                     "resources": {
                         "requests": {"cpu": "100m", "memory": "128Mi"},
                         "limits": {"cpu": "100m", "memory": "128Mi"},
@@ -356,7 +358,7 @@ class TestTwingateConnectorCRD:
         assert crd.spec.name == "My K8S Connector"
         assert crd.spec.version_policy.check == "0 2 * * *"
         assert crd.spec.version_policy.version == "0.1.x"
-        assert crd.spec.pod_spec == {
+        assert crd.spec.container_extra == {
             "resources": {
                 "limits": {"cpu": "100m", "memory": "128Mi"},
                 "requests": {"cpu": "100m", "memory": "128Mi"},

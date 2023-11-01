@@ -1,0 +1,60 @@
+# serializer version: 1
+# name: test_get_all_operator_semver_tags_by_specifier
+  list([
+    Version('0.1.2'),
+    Version('0.1.1'),
+    Version('0.1.0'),
+  ])
+# ---
+# name: test_get_all_operator_tags
+  list([
+    'latest',
+    'dev',
+    '0.1.2-dev.6722290577',
+    '0.1.2',
+    '0.1',
+    '0',
+    '0.1.2-dev.6716132391',
+    '0.1.2-dev.6716010709',
+    '0.1.1-dev.6702190178',
+    '0.1.1',
+    '0.1.1-dev.6702103173',
+    '0.1.0-dev.6698032918',
+    '0.1.0',
+    '0.1.0-dev.6697571821',
+    '0.1.0-dev.6697098399',
+    '0.1.0-dev.6697032623',
+    '0.1.0-dev.6686861896',
+    '0.1.0-dev.6683812832',
+    '0.1.0-dev.6672988848',
+  ])
+# ---
+# name: test_get_operator_semver_tags
+  list([
+    Version('1.1.2'),
+    Version('0.1.2'),
+    Version('0.1.1'),
+    Version('0.1.0'),
+  ])
+# ---
+# name: test_get_operator_semver_tags_prerelease
+  list([
+    Version('1.1.2-dev.6722290577'),
+    Version('1.1.2'),
+    Version('0.1.2-dev.6722290577'),
+    Version('0.1.2'),
+    Version('0.1.2-dev.6716132391'),
+    Version('0.1.2-dev.6716010709'),
+    Version('0.1.1-dev.6702190178'),
+    Version('0.1.1'),
+    Version('0.1.1-dev.6702103173'),
+    Version('0.1.0-dev.6698032918'),
+    Version('0.1.0'),
+    Version('0.1.0-dev.6697571821'),
+    Version('0.1.0-dev.6697098399'),
+    Version('0.1.0-dev.6697032623'),
+    Version('0.1.0-dev.6686861896'),
+    Version('0.1.0-dev.6683812832'),
+    Version('0.1.0-dev.6672988848'),
+  ])
+# ---

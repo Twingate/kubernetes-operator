@@ -62,6 +62,10 @@ typecheck:
 test:
 	poetry run pytest -m "not integration"
 
+.PHONY: test-snapshot-update
+test-snapshot-update:
+	poetry run pytest -m "not integration" --snapshot-update
+
 .PHONY: test-cov
 test-cov:
 	poetry run pytest --cov=app --cov-report html -m "not integration"

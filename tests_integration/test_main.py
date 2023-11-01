@@ -240,9 +240,8 @@ def test_resource_access_flows(kopf_settings, unique_resource_name):
 
     # fmt: off
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-        time.sleep(5) # give it some time to react
         kubectl_create(RESOURCE_OBJ)
-        time.sleep(10)  # give it some time to react
+        time.sleep(5)  # give it some time to react
 
         kubectl_create(OBJ)
         time.sleep(5)  # give it some time to react

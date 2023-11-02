@@ -4,6 +4,13 @@ import uuid
 import kopf
 import pytest
 
+from .utils import kubectl
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _load_crds():
+    kubectl("apply -f ./deploy/twingate-operator/crds/")
+
 
 @pytest.fixture(scope="module")
 def kopf_settings():

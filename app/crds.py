@@ -7,8 +7,16 @@ from typing import Any
 import kubernetes.client
 import pendulum
 from croniter import croniter
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 from pydantic.alias_generators import to_camel
+from semantic_version import NpmSpec
 
 from app.dockerhub import get_latest
 from app.settings import get_settings
@@ -207,11 +215,26 @@ class ConnectorVersionPolicy(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
     )
 
-    check: str = "0 * * * *"
-    version: str = "latest"
+    check: str | None = "0 0 * * *"
+    version: str = "^1.0.0"
     allow_prerelease: bool = False
 
-    def get_next_date_iso8601(self) -> str:
+    @field_validator("version")
+    @classmethod
+    def check_valid_version_specifier(cls, v: str, info: ValidationInfo) -> str:
+        NpmSpec(v)
+        return v
+
+    @field_validator("check")
+    @classmethod
+    def check_valid_crontab(cls, v: str, info: ValidationInfo) -> str:
+        croniter(v)
+        return v
+
+    def get_next_date_iso8601(self) -> str | None:
+        if not self.check:
+            return None
+
         next_date = croniter(self.check, pendulum.now()).get_next(datetime)
         return pendulum.instance(next_date).to_iso8601_string()
 
@@ -223,19 +246,22 @@ class ConnectorSpec(BaseModel):
 
     id: str | None = None
     name: str | None = None
-    version_policy: ConnectorVersionPolicy | None = None
+    version_policy: ConnectorVersionPolicy = Field(
+        default_factory=ConnectorVersionPolicy
+    )
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}
 
     def get_image_tag_by_policy(self) -> str:
-        tag = "latest"
-        if latest_tag := self.version_policy and get_latest(
+        if tag := get_latest(
             self.version_policy.version,
             allow_prerelease=self.version_policy.allow_prerelease,
         ):
-            tag = latest_tag
+            return tag
 
-        return str(tag)
+        raise ValueError(
+            f"Could not find valid tag for '{self.version_policy.version}'"
+        )
 
 
 class TwingateConnectorCRD(BaseK8sModel):

@@ -112,10 +112,9 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
     kapi.create_namespaced_pod(namespace=namespace, body=pod)
 
-    if vp := crd.spec.version_policy:
-        patch.meta["annotations"] = {
-            ANNOTATION_NEXT_VERSION_CHECK: vp.get_next_date_iso8601()
-        }
+    patch.meta["annotations"] = {
+        ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
+    }
 
     return success(twingate_id=connector_id, image_tag=image_tag)
 
@@ -123,22 +122,18 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 @kopf.on.resume("twingateconnector")
 def twingate_connector_resume(body, patch, **_):
     crd = TwingateConnectorCRD(**body)
-    if vp := crd.spec.version_policy:
-        patch.meta["annotations"] = {
-            ANNOTATION_NEXT_VERSION_CHECK: vp.get_next_date_iso8601()
-        }
+    patch.meta["annotations"] = {
+        ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
+    }
 
 
 @kopf.on.field("twingateconnector", field="spec.versionPolicy")
 def twingate_connector_version_policy_update(body, patch, logger, **_):
     logger.info("twingate_connector_version_policy_update: %s", body)
     crd = TwingateConnectorCRD(**body)
-    if vp := crd.spec.version_policy:
-        patch.meta["annotations"] = {
-            ANNOTATION_NEXT_VERSION_CHECK: vp.get_next_date_iso8601()
-        }
-    else:
-        patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: None}
+    patch.meta["annotations"] = {
+        ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
+    }
 
 
 @kopf.on.timer(

@@ -2,6 +2,7 @@ import base64
 
 import kopf
 import kubernetes.client
+import pendulum
 
 from app.crds import TwingateConnectorCRD
 from app.handlers.base import success
@@ -80,7 +81,7 @@ def get_connector_secret(
 
 
 @kopf.on.create("twingateconnector")
-def twingate_connector_create(body, memo, logger, namespace, patch, reason, **_):
+def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
     client = memo.twingate_client
 
@@ -111,7 +112,70 @@ def twingate_connector_create(body, memo, logger, namespace, patch, reason, **_)
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
     kapi.create_namespaced_pod(namespace=namespace, body=pod)
 
+    if vp := crd.spec.version_policy:
+        patch.meta["annotations"] = {
+            ANNOTATION_NEXT_VERSION_CHECK: vp.get_next_date_iso8601()
+        }
+
     return success(twingate_id=connector_id, image_tag=image_tag)
+
+
+@kopf.on.resume("twingateconnector")
+def twingate_connector_resume(body, patch, **_):
+    crd = TwingateConnectorCRD(**body)
+    if vp := crd.spec.version_policy:
+        patch.meta["annotations"] = {
+            ANNOTATION_NEXT_VERSION_CHECK: vp.get_next_date_iso8601()
+        }
+
+
+@kopf.on.field("twingateconnector", field="spec.versionPolicy")
+def twingate_connector_version_policy_update(body, patch, logger, **_):
+    logger.info("twingate_connector_version_policy_update: %s", body)
+    crd = TwingateConnectorCRD(**body)
+    if vp := crd.spec.version_policy:
+        patch.meta["annotations"] = {
+            ANNOTATION_NEXT_VERSION_CHECK: vp.get_next_date_iso8601()
+        }
+    else:
+        patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: None}
+
+
+@kopf.on.timer(
+    "twingateconnector",
+    interval=60.0,
+    annotations={ANNOTATION_NEXT_VERSION_CHECK: kopf.PRESENT},
+)
+def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
+    settings = memo.twingate_settings
+    crd = TwingateConnectorCRD(**body)
+    if not crd.spec.version_policy:
+        patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: None}
+        return
+
+    now = pendulum.now()
+    next_check = pendulum.parse(
+        body["metadata"]["annotations"][ANNOTATION_NEXT_VERSION_CHECK]
+    )
+    if now < next_check:
+        return
+
+    logger.info("Checking connector %s for new image version", crd.metadata.name)
+
+    try:
+        image_tag = crd.spec.get_image_tag_by_policy()
+        pod = get_connector_pod(crd, settings.full_url, image_tag)
+        kapi = kubernetes.client.CoreV1Api()
+        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+        patch.meta["annotations"] = {
+            ANNOTATION_LAST_VERSION_CHECK: now.isoformat(),
+            ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601(),
+        }
+    except kubernetes.client.exceptions.ApiException:
+        logger.exception("Failed to remove label from pod %s", meta.name)
+
+
+# region Delete related
 
 
 @kopf.on.update(
@@ -177,3 +241,6 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **
         )
     except kubernetes.client.exceptions.ApiException:
         logger.exception("Failed to annotate connector %s", owner["name"])
+
+
+# endregion

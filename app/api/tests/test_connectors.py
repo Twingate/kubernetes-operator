@@ -14,8 +14,8 @@ class TestConnectorModel:
 class TestConnectorTokens:
     def test_construction(self):
         c = ConnectorTokens(accessToken="at", refreshToken="rt")
-        assert c.access_token == "at"  # noqa: S105
-        assert c.refresh_token == "rt"  # noqa: S105
+        assert c.access_token == "at"  # noqa: S105 # nosec
+        assert c.refresh_token == "rt"  # noqa: S105 # nosec
 
 
 class TestTwingateConnectorsAPI:

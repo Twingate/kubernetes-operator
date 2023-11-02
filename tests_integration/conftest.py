@@ -13,7 +13,7 @@ def kopf_runner_args():
     return ["run", "--verbose", "--log-format=json", "-A", "--standalone", main_py]
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def _load_crds():
     kubectl("apply -f ./deploy/twingate-operator/crds/")
 

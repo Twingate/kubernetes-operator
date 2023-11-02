@@ -18,7 +18,7 @@ def _load_crds():
     kubectl("apply -f ./deploy/twingate-operator/crds/")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def kopf_settings():
     assert "TWINGATE_API_KEY" in os.environ
     assert "TWINGATE_NETWORK" in os.environ

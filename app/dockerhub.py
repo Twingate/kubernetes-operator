@@ -5,7 +5,7 @@ from semantic_version import NpmSpec, Version
 
 _DOCKER_HUB_API_BASE_URL = "https://hub.docker.com/v2"
 _DOCKER_HUB_TAGS_API_URL = (
-    f"{_DOCKER_HUB_API_BASE_URL}/repositories/twingate/kubernetes-operator/tags"
+    f"{_DOCKER_HUB_API_BASE_URL}/repositories/twingate/connector/tags"
 )
 
 

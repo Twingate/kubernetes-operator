@@ -2048,6 +2048,17 @@ files = [
 ]
 
 [[package]]
+name = "types-croniter"
+version = "2.0.0.0"
+description = "Typing stubs for croniter"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "types-croniter-2.0.0.0.tar.gz", hash = "sha256:f6b47bce88054127551091e9e447824cbb610e8ff9b84565903f7a53fa4933aa"},
+    {file = "types_croniter-2.0.0.0-py3-none-any.whl", hash = "sha256:a49162276f97a2924609768bcc494039fd5182e8f94eba900ce2bee989e8baa6"},
+]
+
+[[package]]
 name = "types-pyyaml"
 version = "6.0.12.11"
 description = "Typing stubs for PyYAML"
@@ -2236,4 +2247,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "16fdd93b9519be9664ba7c76aa1572005e8338787aaeda7ec9c6018f71a8f529"
+content-hash = "39af22f44b79ebc51231971098626bf3d35ddc610342cb533a38a3e07c7ac82c"

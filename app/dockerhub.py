@@ -34,10 +34,8 @@ def get_all_operator_semver_tags(
 def get_all_operator_semver_tags_by_specifier(
     specifier: str, *, allow_prerelease: bool = False
 ) -> Iterator[Version]:
-    specifier = NpmSpec(specifier)
-    return specifier.filter(
-        get_all_operator_semver_tags(allow_prerelease=allow_prerelease)
-    )
+    spec = NpmSpec(specifier)
+    return spec.filter(get_all_operator_semver_tags(allow_prerelease=allow_prerelease))
 
 
 def get_latest(specifier: str, *, allow_prerelease: bool = False) -> Version | None:

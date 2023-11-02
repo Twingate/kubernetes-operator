@@ -223,14 +223,17 @@ class ConnectorSpec(BaseModel):
 
     id: str | None = None
     name: str | None = None
-    version_policy: ConnectorVersionPolicy = None
+    version_policy: ConnectorVersionPolicy | None = None
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}
 
     def get_image_tag_by_policy(self) -> str:
         tag = "latest"
-        if vp := self.version_policy:
-            tag = get_latest(vp.version, allow_prerelease=vp.allow_prerelease)
+        if latest_tag := self.version_policy and get_latest(
+            self.version_policy.version,
+            allow_prerelease=self.version_policy.allow_prerelease,
+        ):
+            tag = latest_tag
 
         return str(tag)
 

@@ -6,18 +6,9 @@ from app.api.client_connectors import Connector, ConnectorTokens
 
 class TestConnectorModel:
     def test_construction(self):
-        c = Connector(
-            id="id",
-            name="name",
-            version="version",
-            hostname="hostname",
-            has_status_notifications_enabled=True,
-        )
+        c = Connector(id="id", name="name")
         assert c.id == "id"
         assert c.name == "name"
-        assert c.version == "version"
-        assert c.hostname == "hostname"
-        assert c.has_status_notifications_enabled is True
 
 
 class TestConnectorTokens:

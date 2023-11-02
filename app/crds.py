@@ -1,12 +1,16 @@
 import logging
 from collections.abc import MutableMapping
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import kubernetes.client
+import pendulum
+from croniter import croniter
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
+from app.dockerhub import get_latest
 from app.settings import get_settings
 
 K8sObject = MutableMapping[Any, Any]
@@ -207,6 +211,10 @@ class ConnectorVersionPolicy(BaseModel):
     version: str = "latest"
     allow_prerelease: bool = False
 
+    def get_next_date_iso8601(self) -> str:
+        next_date = croniter(self.check, pendulum.now()).get_next(datetime)
+        return pendulum.instance(next_date).to_iso8601_string()
+
 
 class ConnectorSpec(BaseModel):
     model_config = ConfigDict(
@@ -215,9 +223,16 @@ class ConnectorSpec(BaseModel):
 
     id: str | None = None
     name: str | None = None
-    version_policy: ConnectorVersionPolicy
+    version_policy: ConnectorVersionPolicy = None
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}
+
+    def get_image_tag_by_policy(self) -> str:
+        tag = "latest"
+        if vp := self.version_policy:
+            tag = get_latest(vp.version, allow_prerelease=vp.allow_prerelease)
+
+        return str(tag)
 
 
 class TwingateConnectorCRD(BaseK8sModel):

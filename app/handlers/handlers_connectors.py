@@ -1,12 +1,15 @@
+import base64
+
 import kopf
 import kubernetes.client
 
-from app.crds import TwingateConnectorCRD, TwingateConnectorSpec
-from app.settings import get_settings, get_version
+from app.crds import ConnectorSpec, TwingateConnectorCRD
+from app.settings import get_version
 
 
-def get_connector_pod(url: str, spec: TwingateConnectorSpec) -> kubernetes.client.V1Pod:
-    get_settings()
+def get_connector_pod(
+    name: str, url: str, spec: ConnectorSpec
+) -> kubernetes.client.V1Pod:
     # fmt: off
     pod_spec = {
         "containers": [
@@ -19,9 +22,20 @@ def get_connector_pod(url: str, spec: TwingateConnectorSpec) -> kubernetes.clien
                     {"name": "TWINGATE_ACCESS_TOKEN", "value": spec.access_token},
                     {"name": "TWINGATE_REFRESH_TOKEN", "value": spec.refresh_token},
                 ],
+                "envFrom": [
+                    {
+                        "secretRef": {
+                            "name": name,
+                            "optional": False
+                        }
+                    }
+                ],
                 "image": "twingate/connector:1",
                 "imagePullPolicy": "Always",
                 "name": "connector",
+                "securityContext": {
+                    "allowPrivilegeEscalation": False
+               },
                 **spec.container_extra,
             }
         ],
@@ -31,20 +45,40 @@ def get_connector_pod(url: str, spec: TwingateConnectorSpec) -> kubernetes.clien
     return kubernetes.client.V1Pod(spec=pod_spec)
 
 
+def get_connector_secret(
+    access_token: str, refresh_token: str
+) -> kubernetes.client.V1Secret:
+    return kubernetes.client.V1Secret(
+        immutable=True,
+        data={
+            "TWINGATE_ACCESS_TOKEN": base64.b64encode(
+                access_token.encode("ascii")
+            ).decode(),
+            "TWINGATE_REFRESH_TOKEN": base64.b64encode(
+                refresh_token.encode("ascii")
+            ).decode(),
+        },
+    )
+
+
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, spec, memo, logger, namespace, **_):
     logger.info("Got connectorcreate request: %s", body)
-    connector_spec = TwingateConnectorSpec(**spec)
+    crd = TwingateConnectorCRD(**body)
 
-    pod = get_connector_pod(memo.twingate_settings.full_url, connector_spec)
-    kopf.adopt(pod, owner=body, strict=True, forced=True)
-    kopf.label(pod, {"operator.twingate.com/owner": "connector"})
+    pod = get_connector_pod(
+        crd.metadata.name, memo.twingate_settings.full_url, crd.spec
+    )
+    secret = get_connector_secret(crd.spec.access_token, crd.spec.refresh_token)
+    kopf.adopt([pod, secret], owner=body, strict=True, forced=True)
+    kopf.label([pod, secret], {"twingate.com/owner": "connector"})
 
     kapi = kubernetes.client.CoreV1Api()
+    kapi.create_namespaced_secret(namespace=namespace, body=secret)
     kapi.create_namespaced_pod(namespace=namespace, body=pod)
 
 
-@kopf.on.delete("", "v1", "pods", labels={"operator.twingate.com/owner": "connector"})
+@kopf.on.delete("", "v1", "pods", labels={"twingate.com/owner": "connector"})
 def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **_):
     logger.info("twingate_connector_pod_deleted: %s", body)
 

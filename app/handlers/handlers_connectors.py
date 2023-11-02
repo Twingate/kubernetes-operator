@@ -132,7 +132,7 @@ def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
 
 
 @kopf.on.delete("twingateconnector")
-def twingate_connector_delete(spec, status, memo, logger, **kwargs):
+def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwargs):
     logger.info("Got a delete request: %s. Status: %s", spec, status)
     if not status:
         return
@@ -140,6 +140,17 @@ def twingate_connector_delete(spec, status, memo, logger, **kwargs):
     if connector_id := spec.get("id"):
         logger.info("Deleting connector %s", connector_id)
         memo.twingate_client.connector_delete(connector_id)
+
+    try:
+        # Remove label from pod so it's delete handler isn't triggered
+        kapi = kubernetes.client.CoreV1Api()
+        kapi.patch_namespaced_pod(
+            meta.name,
+            namespace,
+            body={"metadata": {"labels": {"twingate.com/connector": None}}},
+        )
+    except kubernetes.client.exceptions.ApiException:
+        logger.exception("Failed to remove label from pod %s", meta.name)
 
 
 @kopf.on.delete("", "v1", "pods", labels={"twingate.com/connector": kopf.PRESENT})
@@ -164,9 +175,5 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **
             owner["name"],
             {"metadata": {"labels": {"twingate.com/connector-pod-deleted": "true"}}},
         )
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.reason == "Conflict":
-            # This would happen when TwingateConnector is deleted -> pods is deleted -> tries to update its owner
-            # We can ignore this
-            return
+    except kubernetes.client.exceptions.ApiException:
         logger.exception("Failed to annotate connector %s", owner["name"])

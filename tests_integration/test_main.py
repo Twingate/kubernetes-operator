@@ -1,10 +1,8 @@
 import os
 import subprocess
 import time
-import uuid
 from unittest.mock import ANY
 
-import kopf
 import orjson as json
 import pytest
 from kopf.testing import KopfRunner
@@ -52,22 +50,6 @@ def kubectl_create(obj: str) -> subprocess.CompletedProcess:
 
 def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
     return kubectl("apply -f -", input=obj)
-
-
-@pytest.fixture(scope="module")
-def kopf_settings():
-    assert "TWINGATE_API_KEY" in os.environ
-    assert "TWINGATE_NETWORK" in os.environ
-    assert "TWINGATE_REMOTE_NETWORK_ID" in os.environ
-
-    settings = kopf.OperatorSettings()
-    settings.watching.server_timeout = 10
-    return settings
-
-
-@pytest.fixture()
-def unique_resource_name(request):
-    return request.node.name.replace("_", "-") + "-" + str(uuid.uuid4())
 
 
 @pytest.fixture(scope="module", autouse=True)

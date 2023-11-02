@@ -16,6 +16,20 @@ def get_connector_pod(
 ) -> kubernetes.client.V1Pod:
     spec = crd.spec
     name = crd.metadata.name
+
+    env_labels_version_policy = []
+    if spec.version_policy:
+        env_labels_version_policy = [
+            {
+                "name": "TWINGATE_LABEL_VERSION_POLICY_CHECK",
+                "value": spec.version_policy.check,
+            },
+            {
+                "name": "TWINGATE_LABEL_VERSION_POLICY_SPEC",
+                "value": spec.version_policy.version,
+            },
+        ]
+
     # fmt: off
     pod_spec = {
         "containers": [
@@ -25,7 +39,7 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": tenant_url},
                     {"name": "TWINGATE_LOG_LEVEL", "value": "7"},
-                ],
+                ]+env_labels_version_policy,
                 "envFrom": [
                     {
                         "secretRef": {

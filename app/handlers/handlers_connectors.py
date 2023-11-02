@@ -128,3 +128,14 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **
             logger.exception("ResourceAccessCRD.get_resource_ref_object failed")
 
         return None
+
+
+@kopf.on.delete("twingateconnector")
+def twingate_connector_delete(spec, status, memo, logger, **kwargs):
+    logger.info("Got a delete request: %s. Status: %s", spec, status)
+    if not status:
+        return
+
+    if connector_id := spec.get("id"):
+        logger.info("Deleting connector %s", connector_id)
+        memo.twingate_client.connector_delete(connector_id)

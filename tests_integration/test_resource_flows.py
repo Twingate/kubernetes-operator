@@ -6,7 +6,7 @@ import orjson as json
 import pytest
 from kopf.testing import KopfRunner
 
-from .utils import (
+from tests_integration.utils import (
     assert_log_message_starts_with,
     kubectl,
     kubectl_apply,

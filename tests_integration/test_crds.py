@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from .utils import kubectl_create
+from tests_integration.utils import kubectl_create
 
 
 @pytest.mark.integration()

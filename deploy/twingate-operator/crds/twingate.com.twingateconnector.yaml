@@ -15,6 +15,9 @@ spec:
             spec:
               type: object
               properties:
+                id:
+                  type: string
+                  nullable: true
                 name:
                   type: string
                   nullable: false

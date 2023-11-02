@@ -24,9 +24,6 @@ class Connector(BaseModel):
 
     id: str
     name: str
-    version: str
-    hostname: str
-    has_status_notifications_enabled: bool
 
     @staticmethod
     def get_graphql_fragment():
@@ -34,9 +31,6 @@ class Connector(BaseModel):
             fragment ConnectorFields on Connector {
                 id
                 name
-                version
-                hostname
-                hasStatusNotificationsEnabled
             }
         """
 
@@ -57,7 +51,7 @@ QUERY_GET_CONNECTOR = gql(
 MUT_CREATE_CONNECTOR = gql(
     _CONNECTOR_FRAGMENT
     + """
-mutation CreateConnector($name: String!, $remoteNetworkId: ID!) {
+mutation CreateConnector($name: String, $remoteNetworkId: ID!) {
   connectorCreate(name: $name, remoteNetworkId: $remoteNetworkId) {
     ok
     error
@@ -71,10 +65,14 @@ mutation CreateConnector($name: String!, $remoteNetworkId: ID!) {
 
 MUT_CONNECTOR_GENERATE_TOKENS = gql(
     """
-mutation GenerateConnectorTokens($id: ID!) {
-    connectorGenerateTokens(id: $id) {
+mutation GenerateConnectorTokens($connectorId: ID!) {
+    connectorGenerateTokens(connectorId: $connectorId) {
         ok
         error
+        connectorTokens {
+            accessToken
+            refreshToken
+        }
     }
 }
 """
@@ -86,10 +84,6 @@ mutation DeleteResource($id: ID!) {
     resourceDelete(id: $id) {
         ok
         error
-        connectorTokens {
-            accessToken
-            refreshToken
-        }
     }
 }
 """
@@ -110,7 +104,7 @@ class TwingateConnectorsAPI:
             return None
 
     def connector_create(
-        self: TwingateClientProtocol, name: str, remote_network_id: str
+        self: TwingateClientProtocol, name: str | None, remote_network_id: str
     ) -> Connector | None:
         result = self.execute_mutation(
             "connectorCreate",
@@ -131,7 +125,7 @@ class TwingateConnectorsAPI:
         result = self.execute_mutation(
             "connectorGenerateTokens",
             MUT_CONNECTOR_GENERATE_TOKENS,
-            variable_values={"id": connector_id},
+            variable_values={"connectorId": connector_id},
         )
 
         if bool(result["ok"]):

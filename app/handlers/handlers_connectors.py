@@ -19,8 +19,6 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": url},
                     {"name": "TWINGATE_LOG_LEVEL", "value": "7"},
-                    {"name": "TWINGATE_ACCESS_TOKEN", "value": spec.access_token},
-                    {"name": "TWINGATE_REFRESH_TOKEN", "value": spec.refresh_token},
                 ],
                 "envFrom": [
                     {
@@ -62,14 +60,27 @@ def get_connector_secret(
 
 
 @kopf.on.create("twingateconnector")
-def twingate_connector_create(body, spec, memo, logger, namespace, **_):
+def twingate_connector_create(body, spec, memo, logger, namespace, patch, **_):
+    settings = memo.twingate_settings
+    client = memo.twingate_client
+
     logger.info("Got connectorcreate request: %s", body)
     crd = TwingateConnectorCRD(**body)
 
-    pod = get_connector_pod(
-        crd.metadata.name, memo.twingate_settings.full_url, crd.spec
-    )
-    secret = get_connector_secret(crd.spec.access_token, crd.spec.refresh_token)
+    if not crd.spec.id:
+        connector = client.connector_create(
+            crd.spec.name, memo.twingate_settings.remote_network_id
+        )
+        patch.spec["id"] = connector.id
+        patch.spec["name"] = connector.name
+    else:
+        connector = client.get_connector(crd.spec.id)
+
+    logger.info("connector: %s", connector)
+    tokens = client.connector_generate_tokens(connector.id)
+
+    pod = get_connector_pod(crd.metadata.name, settings.full_url, crd.spec)
+    secret = get_connector_secret(tokens.access_token, tokens.refresh_token)
     kopf.adopt([pod, secret], owner=body, strict=True, forced=True)
     kopf.label([pod, secret], {"twingate.com/owner": "connector"})
 

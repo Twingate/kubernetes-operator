@@ -213,9 +213,7 @@ class ConnectorSpec(BaseModel):
     )
 
     id: str | None = None
-    name: str
-    access_token: str  # temp
-    refresh_token: str  # temp
+    name: str | None = None
     version_policy: ConnectorVersionPolicy
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}

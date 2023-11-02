@@ -13,14 +13,14 @@ class TwingateSmartProgressStorage(kopf.SmartProgressStorage):
     def __init__(self, **kwargs):
         kwargs = kwargs or {}
         kwargs["name"] = "twingate"
-        kwargs["prefix"] = "operator.twingate.com"
+        kwargs["prefix"] = "twingate.com"
         super().__init__(**kwargs)
 
 
 class TwingateAnnotationsDiffBaseStorage(kopf.AnnotationsDiffBaseStorage):
     def __init__(self, **kwargs):
         kwargs = kwargs or {}
-        kwargs["prefix"] = "operator.twingate.com"
+        kwargs["prefix"] = "twingate.com"
         super().__init__(**kwargs)
 
 
@@ -33,7 +33,7 @@ def startup(
 ):
     logger.info("Operator is starting up...")
 
-    settings.persistence.finalizer = "operator.twingate.com/finalizer"
+    settings.persistence.finalizer = "twingate.com/finalizer"
     settings.persistence.diffbase_storage = TwingateAnnotationsDiffBaseStorage()
     settings.persistence.progress_storage = TwingateSmartProgressStorage()
 

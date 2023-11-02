@@ -2,7 +2,33 @@
 
 
 
-## v0.1.0 (2023-10-30)
+## v0.1.2 (2023-11-01)
+
+### Documentation
+
+* docs: Improve development docs (#25) ([`ebf8cdb`](https://github.com/Twingate/kubernetes-operator/commit/ebf8cdbbcc368636e9af76c8c7ed24233c2bf378))
+
+### Fix
+
+* fix: change persistence layer - operator.twingate.com to just twingate.com (#24) ([`d7ebd7b`](https://github.com/Twingate/kubernetes-operator/commit/d7ebd7bf624182430671989587c2c767018180a7))
+
+### Test
+
+* test: resourceaccess integration testing (#23)
+
+Co-authored-by: Eran Kampf &lt;eran@ekampf.com&gt; ([`8aa5621`](https://github.com/Twingate/kubernetes-operator/commit/8aa5621aa02f1efc0fef1dc49fb1624b3309ee4f))
+
+
+## v0.1.1 (2023-10-31)
+
+### Fix
+
+* fix: ResourceAccessSpec.get_resource_ref_object fetching wrong version (#20)
+
+Co-authored-by: semantic-release &lt;semantic-release&gt; ([`86b6557`](https://github.com/Twingate/kubernetes-operator/commit/86b6557107ea927ec0244ba91ccacb680aab9751))
+
+
+## v0.1.0 (2023-10-31)
 
 ### Build
 

@@ -205,6 +205,7 @@ class ConnectorVersionPolicy(BaseModel):
 
     check: str = "0 * * * *"
     version: str = "latest"
+    allow_prerelease: bool = False
 
 
 class ConnectorSpec(BaseModel):

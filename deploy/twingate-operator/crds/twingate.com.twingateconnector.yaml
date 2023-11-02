@@ -32,6 +32,7 @@ spec:
                   nullable: false
                 versionPolicy:
                     type: object
+                    nullable: true
                     properties:
                         check:
                           type: string
@@ -39,6 +40,9 @@ spec:
                         version:
                           type: string
                           nullable: false
+                        allow_prerelease:
+                          type: boolean
+                          default: false
                 containerExtra:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true

@@ -1,0 +1,17 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: my-connector
+spec:
+  versionPolicy:
+    check: "* * * * *"
+    version: "^1.0.0"
+  containerExtra:
+    resources:
+      requests:
+        cpu: 314m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  podExtra: {}

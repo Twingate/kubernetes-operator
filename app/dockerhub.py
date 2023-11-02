@@ -11,7 +11,7 @@ _DOCKER_HUB_TAGS_API_URL = (
 
 def get_all_operator_tags() -> Iterator[str]:
     url = f"{_DOCKER_HUB_TAGS_API_URL}?page_size=100"
-    response = requests.get(url, timeout=3)
+    response = requests.get(url, timeout=6)
     data = response.json()
     for result in data["results"]:
         yield result["name"]

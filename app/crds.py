@@ -215,27 +215,33 @@ class ConnectorVersionPolicy(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
     )
 
-    check: str | None = "0 0 * * *"
+    schedule: str | None = "0 0 * * *"
     version: str = "^1.0.0"
     allow_prerelease: bool = False
 
     @field_validator("version")
     @classmethod
     def check_valid_version_specifier(cls, v: str, info: ValidationInfo) -> str:
-        NpmSpec(v)
+        try:
+            NpmSpec(v)
+        except ValueError as vex:
+            raise ValueError("Invalid version specifier") from vex
         return v
 
-    @field_validator("check")
+    @field_validator("schedule")
     @classmethod
     def check_valid_crontab(cls, v: str, info: ValidationInfo) -> str:
-        croniter(v)
+        try:
+            croniter(v)
+        except ValueError as vex:
+            raise ValueError("Invalid schedule value") from vex
         return v
 
     def get_next_date_iso8601(self) -> str | None:
-        if not self.check:
+        if not self.schedule:
             return None
 
-        next_date = croniter(self.check, pendulum.now()).get_next(datetime)
+        next_date = croniter(self.schedule, pendulum.now()).get_next(datetime)
         return pendulum.instance(next_date).to_iso8601_string()
 
 

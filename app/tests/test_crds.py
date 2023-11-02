@@ -343,9 +343,7 @@ class TestTwingateConnectorCRD:
             },
             "spec": {
                 "name": "My K8S Connector",
-                "versionPolicy": {"check": "0 2 * * *", "version": "0.1.x"},
-                "accessToken": "access-token",
-                "refreshToken": "refresh-token",
+                "versionPolicy": {"schedule": "0 2 * * *", "version": "0.1.x"},
                 "containerExtra": {
                     "resources": {
                         "requests": {"cpu": "100m", "memory": "128Mi"},
@@ -356,7 +354,7 @@ class TestTwingateConnectorCRD:
         }
         crd = TwingateConnectorCRD(**DATA)
         assert crd.spec.name == "My K8S Connector"
-        assert crd.spec.version_policy.check == "0 2 * * *"
+        assert crd.spec.version_policy.schedule == "0 2 * * *"
         assert crd.spec.version_policy.version == "0.1.x"
         assert crd.spec.container_extra == {
             "resources": {
@@ -364,3 +362,49 @@ class TestTwingateConnectorCRD:
                 "requests": {"cpu": "100m", "memory": "128Mi"},
             }
         }
+
+    def test_deserialization_fails_on_invalid_version_specifier(self):
+        DATA = {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateConnector",
+            "metadata": {
+                "name": "my-connector",
+                "namespace": "default",
+                "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            },
+            "spec": {
+                "name": "My K8S Connector",
+                "versionPolicy": {"schedule": "0 2 * * *", "version": "invalid"},
+                "containerExtra": {
+                    "resources": {
+                        "requests": {"cpu": "100m", "memory": "128Mi"},
+                        "limits": {"cpu": "100m", "memory": "128Mi"},
+                    }
+                },
+            },
+        }
+        with pytest.raises(ValueError, match="Invalid version specifier"):
+            TwingateConnectorCRD(**DATA)
+
+    def test_deserialization_fails_on_invalid_cron(self):
+        DATA = {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateConnector",
+            "metadata": {
+                "name": "my-connector",
+                "namespace": "default",
+                "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            },
+            "spec": {
+                "name": "My K8S Connector",
+                "versionPolicy": {"schedule": "100 2 * * *", "version": "^1.0.0"},
+                "containerExtra": {
+                    "resources": {
+                        "requests": {"cpu": "100m", "memory": "128Mi"},
+                        "limits": {"cpu": "100m", "memory": "128Mi"},
+                    }
+                },
+            },
+        }
+        with pytest.raises(ValueError, match="Invalid schedule value"):
+            TwingateConnectorCRD(**DATA)

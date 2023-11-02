@@ -22,8 +22,8 @@ def get_connector_pod(
     if spec.version_policy:
         env_labels_version_policy = [
             {
-                "name": "TWINGATE_LABEL_VERSION_POLICY_CHECK",
-                "value": spec.version_policy.check,
+                "name": "TWINGATE_LABEL_VERSION_POLICY_SCHEDULE",
+                "value": spec.version_policy.schedule,
             },
             {
                 "name": "TWINGATE_LABEL_VERSION_POLICY_SPEC",

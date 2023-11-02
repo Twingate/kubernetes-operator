@@ -4,7 +4,7 @@ metadata:
   name: my-connector
 spec:
   versionPolicy:
-    check: "* * * * *"
+    schedule: "* * * * *"
     version: "^1.0.0"
   containerExtra:
     resources:

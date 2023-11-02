@@ -7,8 +7,13 @@ import orjson as json
 import pytest
 from kopf.testing import KopfRunner
 
-# ruff: noqa: S602 (subprocess_popen_with_shell_equals_true)
-
+from .utils import (
+    assert_log_message_starts_with,
+    kubectl,
+    kubectl_apply,
+    kubectl_create,
+    load_stdout,
+)
 
 main_py = os.path.relpath(os.path.join(os.path.dirname(__file__), "../main.py"))
 kopf_runner_args = [
@@ -19,42 +24,6 @@ kopf_runner_args = [
     "--standalone",
     main_py,
 ]
-
-kubectl_command = os.environ.get("KUBECTL_COMMAND", "kubectl")
-
-
-def load_stdout(stdout):
-    return [json.loads(line) for line in stdout.split("\n") if line]
-
-
-def assert_log_message_starts_with(logs, message):
-    assert any(
-        log["message"].startswith(message) for log in logs
-    ), f"Could not find log message starting with '{message}'"
-
-
-def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        f"{kubectl_command} {command}",
-        shell=True,
-        check=True,
-        timeout=10,
-        capture_output=True,
-        input=input.encode() if input else None,
-    )
-
-
-def kubectl_create(obj: str) -> subprocess.CompletedProcess:
-    return kubectl("create -f -", input=obj)
-
-
-def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
-    return kubectl("apply -f -", input=obj)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _load_crds():
-    kubectl("apply -f ./deploy/twingate-operator/crds/")
 
 
 @pytest.mark.integration()

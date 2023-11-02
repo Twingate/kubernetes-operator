@@ -1,8 +1,8 @@
-import time
 from collections.abc import Iterator
 from functools import lru_cache
 from typing import Any
 
+import pendulum
 import requests
 from semantic_version import NpmSpec, Version
 
@@ -20,7 +20,7 @@ def _cached_dockerhub_call(ttl_hash: int) -> dict[str, Any]:
 
 
 def get_all_operator_tags(ttl_hash=None) -> Iterator[str]:
-    ttl_hash = round(time.time() / 3600)  # TTL for 1h
+    ttl_hash = pendulum.now().set(minute=0, second=0).int_timestamp
     data = _cached_dockerhub_call(ttl_hash=ttl_hash)
     for result in data["results"]:
         yield result["name"]

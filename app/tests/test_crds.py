@@ -432,3 +432,22 @@ class TestTwingateConnectorCRD:
             expected = now.next(pendulum.MONDAY).start_of("day")
             result = crd.spec.version_policy.get_next_date_iso8601()
             assert result == expected.to_iso8601_string()
+
+    def test_spec_get_image_tag_by_policy(self, sample_connector_object):
+        sample_connector_object["spec"] = {"version_policy": {"version": "^1.0.0"}}
+        crd = TwingateConnectorCRD(**sample_connector_object)
+        with patch(
+            "app.dockerhub.get_all_operator_tags",
+            return_value=["1.0.0", "1.0.1", "2.0.0"],
+        ):
+            assert str(crd.spec.get_image_tag_by_policy()) == "1.0.1"
+
+    def test_spec_get_image_tag_by_policy_raises_if_no_match(
+        self, sample_connector_object
+    ):
+        sample_connector_object["spec"] = {"version_policy": {"version": "^10.0.0"}}
+        crd = TwingateConnectorCRD(**sample_connector_object)
+        with patch(
+            "app.dockerhub.get_all_operator_tags", return_value=["1.0.0", "latest"]
+        ), pytest.raises(ValueError, match="Could not find valid tag for"):
+            crd.spec.get_image_tag_by_policy()

@@ -48,9 +48,11 @@ def get_all_operator_semver_tags_by_specifier(
 
 
 def get_latest(specifier: str, *, allow_prerelease: bool = False) -> Version | None:
-    matched_versions = list(
+    if matched_versions := list(
         get_all_operator_semver_tags_by_specifier(
             specifier, allow_prerelease=allow_prerelease
         )
-    )
-    return max(matched_versions)
+    ):
+        return max(matched_versions)
+
+    return None

@@ -1,4 +1,7 @@
+import time
 from collections.abc import Iterator
+from functools import lru_cache
+from typing import Any
 
 import requests
 from semantic_version import NpmSpec, Version
@@ -9,10 +12,16 @@ _DOCKER_HUB_TAGS_API_URL = (
 )
 
 
-def get_all_operator_tags() -> Iterator[str]:
+@lru_cache(maxsize=2)
+def _cached_dockerhub_call(ttl_hash: int) -> dict[str, Any]:
     url = f"{_DOCKER_HUB_TAGS_API_URL}?page_size=100"
     response = requests.get(url, timeout=6)
-    data = response.json()
+    return response.json()
+
+
+def get_all_operator_tags(ttl_hash=None) -> Iterator[str]:
+    ttl_hash = round(time.time() / 3600)  # TTL for 1h
+    data = _cached_dockerhub_call(ttl_hash=ttl_hash)
     for result in data["results"]:
         yield result["name"]
 

@@ -35,3 +35,7 @@ def kubectl_create(obj: str) -> subprocess.CompletedProcess:
 
 def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
     return kubectl("apply -f -", input=obj)
+
+
+def kubectl_delete(resource: str) -> subprocess.CompletedProcess:
+    return kubectl(f"delete {resource}")

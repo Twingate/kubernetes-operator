@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from tests_integration.utils import kubectl_create
+from tests_integration.utils import kubectl_create, kubectl_delete
 
 
 @pytest.mark.integration()
@@ -22,6 +22,7 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0
+        kubectl_delete(f"tgr/{unique_resource_name}")
 
     def test_browser_shortcut_cant_have_wildcard_address(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -106,6 +107,7 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0, result.value.stderr.decode()
+        kubectl_delete(f"tgr/{unique_resource_name}")
 
     def test_protocols_udp_allowall_cant_specify_ports(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -149,6 +151,7 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0, result.value.stderr.decode()
+        kubectl_delete(f"tgr/{unique_resource_name}")
 
     def test_protocols_tcp_restricted_must_specify_ports(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -192,6 +195,7 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0, result.value.stderr.decode()
+        kubectl_delete(f"tgr/{unique_resource_name}")
 
     def test_protocols_udp_restricted_must_specify_ports(self, unique_resource_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -235,6 +239,7 @@ class TestResourceCRD:
         )
 
         assert result.returncode == 0, result.value.stderr.decode()
+        kubectl_delete(f"tgr/{unique_resource_name}")
 
     def test_protocols_tcp_restricted_port_values_must_be_valid(
         self, unique_resource_name

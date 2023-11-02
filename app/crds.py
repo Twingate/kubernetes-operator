@@ -231,17 +231,18 @@ class ConnectorVersionPolicy(BaseModel):
     @field_validator("schedule")
     @classmethod
     def check_valid_crontab(cls, v: str, info: ValidationInfo) -> str:
-        try:
-            croniter(v)
-        except ValueError as vex:
-            raise ValueError("Invalid schedule value") from vex
+        if v:
+            try:
+                croniter(v)
+            except ValueError as vex:
+                raise ValueError("Invalid schedule value") from vex
         return v
 
     def get_next_date_iso8601(self) -> str | None:
         if not self.schedule:
             return None
 
-        next_date = croniter(self.schedule, pendulum.now()).get_next(datetime)
+        next_date = croniter(self.schedule, pendulum.now("UTC")).get_next(datetime)
         return pendulum.instance(next_date).to_iso8601_string()
 
 

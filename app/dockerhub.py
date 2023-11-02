@@ -20,7 +20,7 @@ def _cached_dockerhub_call(ttl_hash: int) -> dict[str, Any]:
 
 
 def get_all_operator_tags(ttl_hash=None) -> Iterator[str]:
-    ttl_hash = pendulum.now().set(minute=0, second=0).int_timestamp
+    ttl_hash = pendulum.now().start_of("hour").int_timestamp
     data = _cached_dockerhub_call(ttl_hash=ttl_hash)
     for result in data["results"]:
         yield result["name"]

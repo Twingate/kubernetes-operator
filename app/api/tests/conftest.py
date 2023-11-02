@@ -6,7 +6,7 @@ import pytest
 from app.api import TwingateAPIClient
 from app.settings import TwingateOperatorSettings
 
-from .factories import resource_factory  # noqa
+from .factories import ConnectorFactory, ResourceFactory
 
 
 @pytest.fixture()
@@ -27,3 +27,13 @@ def api_client(twingate_settings):
 @pytest.fixture()
 def test_url():
     return "https://slug.test.com/api/graphql/"
+
+
+@pytest.fixture()
+def resource_factory():
+    return ResourceFactory
+
+
+@pytest.fixture()
+def connector_factory():
+    return ConnectorFactory

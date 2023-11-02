@@ -2,8 +2,8 @@ import datetime
 from base64 import b64encode
 
 import factory
-import pytest
 
+from app.api.client_connectors import Connector
 from app.api.client_resources import (
     Resource,
     ResourceAddress,
@@ -61,6 +61,12 @@ class ResourceFactory(factory.Factory):
     security_policy = factory.SubFactory(ResourceSecurityPolicyFactory)
 
 
-@pytest.fixture()
-def resource_factory():
-    return ResourceFactory
+class ConnectorFactory(factory.Factory):
+    class Meta:
+        model = Connector
+
+    id = factory.Sequence(lambda n: to_global_id("Connector", str(n)))
+    name = factory.Faker("slug")
+    version = "1.0.0"
+    hostname = factory.Faker("slug")
+    has_status_notifications_enabled = True

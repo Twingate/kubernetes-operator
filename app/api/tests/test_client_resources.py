@@ -203,9 +203,7 @@ class TestTwingateResourceAPIs:
         result = api_client.resource_update(crd)
         assert result == resource
 
-    def test_resource_delete(
-        self, test_url, api_client, resource_factory, mocked_responses
-    ):
+    def test_resource_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"resourceDelete": {"ok": True}}})
 
         mocked_responses.post(

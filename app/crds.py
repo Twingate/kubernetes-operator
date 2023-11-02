@@ -207,11 +207,12 @@ class ConnectorVersionPolicy(BaseModel):
     version: str = "latest"
 
 
-class TwingateConnectorSpec(BaseModel):
+class ConnectorSpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
     )
 
+    id: str | None = None
     name: str
     access_token: str  # temp
     refresh_token: str  # temp
@@ -223,7 +224,7 @@ class TwingateConnectorSpec(BaseModel):
 class TwingateConnectorCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
 
-    spec: TwingateConnectorSpec
+    spec: ConnectorSpec
 
 
 # endregion

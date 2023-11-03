@@ -42,3 +42,13 @@ def test_remote_network_id_pass_if_base64_with_globalid_content():
         host="foo",
         remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
     )
+
+
+def test_full_url():
+    settings = TwingateOperatorSettings(
+        api_key="foo",
+        network="foo",
+        host="foo",
+        remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+    )
+    assert settings.full_url

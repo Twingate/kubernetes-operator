@@ -150,7 +150,7 @@ class TestTwingateConnectorsAPI:
         assert tokens.access_token == "test-access-token"  # noqa: S105 # nosec
         assert tokens.refresh_token == "test-refresh-token"  # noqa: S105 # nosec
 
-    def test_resource_delete(self, test_url, api_client, mocked_responses):
+    def test_connector_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"connectorDelete": {"ok": True}}})
 
         mocked_responses.post(
@@ -165,3 +165,34 @@ class TestTwingateConnectorsAPI:
         )
         result = api_client.connector_delete("some-id")
         assert result is True
+
+    def test_connector_delete_with_invalid_id_returns_false(
+        self, test_url, api_client, mocked_responses
+    ):
+        failed_response = """
+                {
+                  "errors": [
+                    {
+                      "message": "{'id': ['Unable to parse global ID']}",
+                      "locations": [{"line": 2, "column": 3}],
+                      "path": ["connector"]
+                    }
+                  ],
+                  "data": {
+                    "connectorDelete": null
+                  }
+                }
+                """
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=failed_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "some-id"}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.connector_delete("some-id")
+        assert result is False

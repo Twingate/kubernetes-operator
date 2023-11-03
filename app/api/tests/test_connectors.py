@@ -53,7 +53,7 @@ class TestTwingateConnectorsAPI:
         }
         """
         mocked_responses.post(test_url, status=200, body=failed_response)
-        result = api_client.get_resource(connector.id)
+        result = api_client.get_connector(connector.id)
         assert result is None
 
     def test_connector_create(

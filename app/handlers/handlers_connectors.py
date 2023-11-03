@@ -90,9 +90,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     connector_id = crd.spec.id
 
     if not crd.spec.id:
-        connector = client.connector_create(
-            crd.spec.name, memo.twingate_settings.remote_network_id
-        )
+        connector = client.connector_create(crd.spec)
         connector_id = connector.id
         patch.spec["id"] = connector.id
         patch.spec["name"] = connector.name

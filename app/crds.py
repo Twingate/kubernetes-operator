@@ -259,6 +259,10 @@ class ConnectorSpec(BaseModel):
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}
 
+    remote_network_id: str = Field(
+        default_factory=lambda: get_settings().remote_network_id
+    )
+
     def get_image_tag_by_policy(self) -> str:
         if tag := get_latest(
             self.version_policy.version,

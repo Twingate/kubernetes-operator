@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 from app.api.protocol import TwingateClientProtocol
+from app.crds import ConnectorSpec
 
 
 class ConnectorTokens(BaseModel):
@@ -104,19 +105,24 @@ class TwingateConnectorsAPI:
             return None
 
     def connector_create(
-        self: TwingateClientProtocol, name: str | None, remote_network_id: str
+        self: TwingateClientProtocol, connector: ConnectorSpec
     ) -> Connector | None:
         result = self.execute_mutation(
             "connectorCreate",
             MUT_CREATE_CONNECTOR,
-            variable_values={"name": name, "remoteNetworkId": remote_network_id},
+            variable_values={
+                "name": connector.name,
+                "remoteNetworkId": connector.remote_network_id,
+            },
         )
 
         if bool(result["ok"]):
             connector = result["entity"]
             return Connector(**connector)
 
-        logging.error("Failed to create connector %s: %s", name, result["error"])
+        logging.error(
+            "Failed to create connector %s: %s", connector.name, result["error"]
+        )
         return None
 
     def connector_generate_tokens(

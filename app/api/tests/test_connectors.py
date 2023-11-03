@@ -1,7 +1,10 @@
 import orjson as json
+import pytest
 import responses
 
+from app.api.client import GraphQLMutationError
 from app.api.client_connectors import Connector, ConnectorTokens
+from app.crds import ConnectorSpec
 
 
 class TestConnectorModel:
@@ -57,6 +60,7 @@ class TestTwingateConnectorsAPI:
         self, test_url, api_client, connector_factory, mocked_responses
     ):
         connector = connector_factory()
+        connector_spec = ConnectorSpec(**connector.dict(exclude=["id"]))
 
         success_response = json.dumps(
             {
@@ -74,13 +78,46 @@ class TestTwingateConnectorsAPI:
             body=success_response,
             match=[
                 responses.matchers.json_params_matcher(
-                    {"variables": {"name": connector.name, "remoteNetworkId": "test"}},
+                    {
+                        "variables": connector_spec.model_dump(
+                            include=["name", "remote_network_id"], by_alias=True
+                        )
+                    },
                     strict_match=False,
                 )
             ],
         )
-        result = api_client.connector_create(connector.name, "test")
+        result = api_client.connector_create(connector_spec)
         assert result == connector
+
+    def test_connector_create_failure(
+        self, test_url, api_client, connector_factory, mocked_responses
+    ):
+        connector = connector_factory()
+        connector_spec = ConnectorSpec(**connector.dict(exclude=["id"]))
+        success_response = json.dumps(
+            {"data": {"connectorCreate": {"ok": False, "error": "some error"}}}
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": connector_spec.model_dump(
+                            include=["name", "remote_network_id"], by_alias=True
+                        )
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+        with pytest.raises(
+            GraphQLMutationError, match="connectorCreate mutation failed."
+        ):
+            api_client.connector_create(connector_spec)
 
     def test_resource_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"connectorDelete": {"ok": True}}})

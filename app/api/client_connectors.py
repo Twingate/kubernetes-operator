@@ -116,8 +116,7 @@ class TwingateConnectorsAPI:
             },
         )
 
-        connector = result["entity"]
-        return Connector(**connector)
+        return Connector(**result["entity"])
 
     def connector_generate_tokens(
         self: TwingateClientProtocol, connector_id: str

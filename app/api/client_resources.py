@@ -223,7 +223,7 @@ class TwingateResourceAPIs:
 
     def resource_create(
         self: TwingateClientProtocol, resource: ResourceSpec
-    ) -> Resource | None:
+    ) -> Resource:
         result = self.execute_mutation(
             "resourceCreate",
             MUT_CREATE_RESOURCE,

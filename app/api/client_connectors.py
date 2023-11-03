@@ -106,7 +106,7 @@ class TwingateConnectorsAPI:
 
     def connector_create(
         self: TwingateClientProtocol, connector: ConnectorSpec
-    ) -> Connector | None:
+    ) -> Connector:
         result = self.execute_mutation(
             "connectorCreate",
             MUT_CREATE_CONNECTOR,
@@ -116,14 +116,8 @@ class TwingateConnectorsAPI:
             },
         )
 
-        if bool(result["ok"]):
-            connector = result["entity"]
-            return Connector(**connector)
-
-        logging.error(
-            "Failed to create connector %s: %s", connector.name, result["error"]
-        )
-        return None
+        connector = result["entity"]
+        return Connector(**connector)
 
     def connector_generate_tokens(
         self: TwingateClientProtocol, connector_id: str

@@ -270,5 +270,5 @@ class TwingateResourceAPIs:
             )
 
             return bool(result["ok"])
-        except AttributeError:
+        except TransportQueryError:
             return False

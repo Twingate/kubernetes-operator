@@ -121,23 +121,15 @@ class TwingateConnectorsAPI:
 
     def connector_generate_tokens(
         self: TwingateClientProtocol, connector_id: str
-    ) -> ConnectorTokens | None:
+    ) -> ConnectorTokens:
         result = self.execute_mutation(
             "connectorGenerateTokens",
             MUT_CONNECTOR_GENERATE_TOKENS,
             variable_values={"connectorId": connector_id},
         )
 
-        if bool(result["ok"]):
-            tokens = result["connectorTokens"]
-            return ConnectorTokens(**tokens)
-
-        logging.error(
-            "Failed to generate tokens for connector %s: %s",
-            connector_id,
-            result["error"],
-        )
-        return None
+        tokens = result["connectorTokens"]
+        return ConnectorTokens(**tokens)
 
     def connector_delete(self: TwingateClientProtocol, connector_id: str) -> bool:
         try:

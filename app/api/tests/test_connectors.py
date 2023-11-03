@@ -119,6 +119,37 @@ class TestTwingateConnectorsAPI:
         ):
             api_client.connector_create(connector_spec)
 
+    def test_connector_generate_tokens(self, test_url, api_client, mocked_responses):
+        connector_id = "test-connector-id"
+        success_response = json.dumps(
+            {
+                "data": {
+                    "connectorGenerateTokens": {
+                        "ok": True,
+                        "connectorTokens": {
+                            "accessToken": "test-access-token",
+                            "refreshToken": "test-refresh-token",
+                        },
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"connectorId": connector_id}}, strict_match=False
+                )
+            ],
+        )
+
+        tokens = api_client.connector_generate_tokens(connector_id)
+        assert tokens.access_token == "test-access-token"  # noqa: S105 # nosec
+        assert tokens.refresh_token == "test-refresh-token"  # noqa: S105 # nosec
+
     def test_resource_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"connectorDelete": {"ok": True}}})
 

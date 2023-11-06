@@ -27,7 +27,7 @@ fi
 # util to install a released minikube version into ${BIN_DIR}
 install_minikube_release() {
 	MINIKUBE_BINARY_URL="https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
-	wget -O "${MINIKUBE}" "${MINIKUBE_BINARY_URL}"
+	wget -nv -O "${MINIKUBE}" "${MINIKUBE_BINARY_URL}"
 	chmod +x "${MINIKUBE}"
 }
 

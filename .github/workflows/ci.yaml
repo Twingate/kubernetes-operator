@@ -64,9 +64,6 @@ jobs:
     - name: Typecheck
       run: make typecheck
 
-    - name: Lint Python Docs
-      run: make lint-pydocs
-
     - name: Lint Bandit
       run: make lint-bandit
 

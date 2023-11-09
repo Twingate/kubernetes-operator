@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class TwingateRety(Retry):
-    """Custom retry object that retries on 429 errors"""
+    """Custom retry object that retries on 429 errors."""
 
     # ruff: noqa: FBT002
     # (ignoring this here becuase this is not our function so

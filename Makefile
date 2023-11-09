@@ -50,10 +50,6 @@ lint-bandit:
 lint-dockerfile:
 	docker run --rm -i hadolint/hadolint < Dockerfile
 
-.PHONY: lint-pydocs
-lint-pydocs:
-	poetry run pydocstyle
-
 .PHONY: typecheck
 typecheck:
 	poetry run mypy --show-error-codes .

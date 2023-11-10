@@ -3,14 +3,14 @@ import pathlib
 
 import pytest
 
-from app.dockerhub import DockerhubVersionProvider
+from app.version_policy_providers.dockerhub import DockerhubVersionPolicyProvider
 
 
 @pytest.fixture()
 def dockerhub_connector_provider(mocked_responses):
-    provider = DockerhubVersionProvider()
+    provider = DockerhubVersionPolicyProvider()
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    file = pathlib.Path(dir_path, "./test_data/dockerhub_connector_tags_response.json")
+    file = pathlib.Path(dir_path, "../test_data/dockerhub_connector_tags_response.json")
     with open(file) as f:
         data = f.read()
 
@@ -21,9 +21,9 @@ def dockerhub_connector_provider(mocked_responses):
 
 @pytest.fixture()
 def dockerhub_operator_provider(mocked_responses):
-    provider = DockerhubVersionProvider()
+    provider = DockerhubVersionPolicyProvider()
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    file = pathlib.Path(dir_path, "./test_data/dockerhub_operator_tags_response.json")
+    file = pathlib.Path(dir_path, "../test_data/dockerhub_operator_tags_response.json")
     with open(file) as f:
         data = f.read()
 
@@ -58,6 +58,7 @@ def test_get_all_semver_tags_with_prereleases(dockerhub_operator_provider):
         for x in dockerhub_operator_provider.get_all_semver_tags(allow_prerelease=True)
     ]
     assert all_semver_tags == [
+        "0.1.3-dev.6817865879",
         "0.1.2-dev.6815191123",
         "0.1.2-dev.6804070815",
         "0.1.2-dev.6735993470",
@@ -88,7 +89,7 @@ def test_get_latest_with_valid_specifier_returns_latest(dockerhub_connector_prov
 
 
 def test_get_latest_with_invalid_specifier_returns_none():
-    assert DockerhubVersionProvider().get_latest("latest") is None
+    assert DockerhubVersionPolicyProvider().get_latest("latest") is None
 
 
 def test_get_latest_with_prerelease_returns_latest(dockerhub_operator_provider):

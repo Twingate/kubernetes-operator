@@ -1,19 +1,12 @@
-from abc import abstractmethod
 from collections.abc import Iterator
 
 import requests
 from semantic_version import NpmSpec, Version
 
-
-class BaseVersionProvider:
-    @abstractmethod
-    def get_latest(
-        self, specifier: str, *, allow_prerelease: bool = False
-    ) -> Version | None:
-        ...
+from app.version_policy_providers.base import VersionPolicyProvider
 
 
-class DockerhubVersionProvider:
+class DockerhubVersionPolicyProvider(VersionPolicyProvider):
     _DOCKER_HUB_API_BASE_URL = "https://hub.docker.com/v2"
 
     def __init__(self, repository: str = "twingate/connector"):

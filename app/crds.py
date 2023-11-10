@@ -18,8 +18,8 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 from semantic_version import NpmSpec
 
-from app.dockerhub import DockerhubVersionProvider
 from app.settings import get_settings
+from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
 OptionalK8sObject = K8sObject | None
@@ -264,7 +264,8 @@ class ConnectorSpec(BaseModel):
     )
 
     def get_image_tag_by_policy(self) -> str:
-        if tag := DockerhubVersionProvider().get_latest(
+        provider = get_provider("dockerhub")  # TODO
+        if tag := provider.get_latest(
             self.version_policy.version,
             allow_prerelease=self.version_policy.allow_prerelease,
         ):

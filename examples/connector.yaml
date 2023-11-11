@@ -3,9 +3,18 @@ kind: TwingateConnector
 metadata:
   name: my-connector
 spec:
-  versionPolicy:
+  # Can use `image` OR `imagePolicy`
+  # - `image` - is manual hardcoded image - you can point it to any repository and any tag you want and its fixed
+  # - `imagePolicy` - gets a schedule and a versionSpecifier and auto updates
+  image:
+    repository: twingate/connector
+    tag: latest
+  imagePolicy:
+    provider: "dockerhub" # dockerhub | google
     schedule: "* * * * *"
+    repository: twingate/connector
     version: "^1.0.0"
+
   containerExtra:
     resources:
       requests:

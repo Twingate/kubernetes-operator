@@ -23,6 +23,8 @@ spec:
                   message: "containerExtra is immutable once set"
                 - rule: (!has(oldSelf.podExtra) || self.podExtra == oldSelf.podExtra)
                   message: "podExtra is immutable once set"
+                - rule: has(self.image) || has(self.imagePolicy) || (!has(self.image) && !has(self.imagePolicy))
+                  message: "Can define either `image` or `imagePolicy`, not both."
               properties:
                 id:
                   type: string
@@ -30,19 +32,32 @@ spec:
                 name:
                   type: string
                   nullable: false
-                versionPolicy:
+                image:
+                  type: object
+                  properties:
+                    repository:
+                      type: string
+                      default: twingate/connector
+                    tag:
+                      type: string
+                      default: "1"
+                imagePolicy:
                     type: object
-                    nullable: true
+                    required: ["provider"]
                     properties:
-                        schedule:
-                          type: string
-                          nullable: false
-                        version:
-                          type: string
-                          nullable: false
-                        allow_prerelease:
-                          type: boolean
-                          default: false
+                      provider:
+                        type: string
+                        enum:
+                          - dockerhub
+                      schedule:
+                        type: string
+                        nullable: false
+                      version:
+                        type: string
+                        nullable: false
+                      allowPrerelease:
+                        type: boolean
+                        default: false
                 containerExtra:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true

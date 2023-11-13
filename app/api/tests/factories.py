@@ -2,7 +2,6 @@ import datetime
 from base64 import b64encode
 
 import factory
-import pytest
 
 from app.api.client_resources import (
     Resource,
@@ -59,8 +58,3 @@ class ResourceFactory(factory.Factory):
     is_browser_shortcut_enabled = False
     remote_network = factory.SubFactory(ResourceRemoteNetworkFactory)
     security_policy = factory.SubFactory(ResourceSecurityPolicyFactory)
-
-
-@pytest.fixture()
-def resource_factory():
-    return ResourceFactory

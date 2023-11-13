@@ -3,7 +3,6 @@ import time
 from unittest.mock import ANY
 
 import orjson as json
-import pytest
 from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
@@ -15,7 +14,6 @@ from tests_integration.utils import (
 )
 
 
-@pytest.mark.integration()
 def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -91,7 +89,6 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     # fmt: on
 
 
-@pytest.mark.integration()
 def test_resource_created_before_operator_runs(
     kopf_settings, kopf_runner_args, unique_resource_name
 ):
@@ -154,7 +151,6 @@ def test_resource_created_before_operator_runs(
     # fmt: on
 
 
-@pytest.mark.integration()
 def test_resource_access_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     assert "TWINGATE_TEST_PRINCIPAL_ID" in os.environ
     principal_id = os.environ["TWINGATE_TEST_PRINCIPAL_ID"]

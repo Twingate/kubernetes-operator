@@ -6,17 +6,17 @@ authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
+croniter = "^2.0.1"
 gql = {version = "~=3.4.1", extras = ["requests"]}
 kopf = "^1.36.2"
 kubernetes = "^28.1.0"
 orjson = "^3.9.10"
+pendulum = "^2.1.2"
 pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
-semantic-version = "^2.10.0"
-croniter = "^2.0.1"
-pendulum = "^2.1.2"
 python = "^3.11"
 requests = "^2.31.0"
+semantic-version = "^2.10.0"
 tenacity = "^8.2.3"
 
 [tool.poetry.group.dev]

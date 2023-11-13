@@ -210,11 +210,16 @@ class TwingateResourceAccessCRD(BaseK8sModel):
 # region TwingateConnector
 
 
-class ConnectorVersionPolicy(BaseModel):
+class ConnectorImagePolicyProvidersEnum(str, Enum):
+    dockerhub = "dockerhub"
+
+
+class ConnectorImagePolicy(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
     )
 
+    provider: ConnectorImagePolicyProvidersEnum = "dockerhub"
     schedule: str | None = "0 0 * * *"
     version: str = "^1.0.0"
     allow_prerelease: bool = False
@@ -246,6 +251,18 @@ class ConnectorVersionPolicy(BaseModel):
         return pendulum.instance(next_date).to_iso8601_string()
 
 
+class ConnectorImage(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    repository: str = "twingate/connector"
+    tag: str = "1"
+
+    def __str__(self):
+        return f"{self.repository}:{self.tag}"
+
+
 class ConnectorSpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
@@ -253,9 +270,8 @@ class ConnectorSpec(BaseModel):
 
     id: str | None = None
     name: str | None = None
-    version_policy: ConnectorVersionPolicy = Field(
-        default_factory=ConnectorVersionPolicy
-    )
+    image: ConnectorImage | None = None
+    image_policy: ConnectorImagePolicy | None = None
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}
 

@@ -1611,6 +1611,8 @@ files = [
 [package.dependencies]
 freezegun = ">0.3"
 pytest = ">=3.0.0"
+
+[[package]]
 name = "pytest-randomly"
 version = "3.15.0"
 description = "Pytest plugin to randomly order tests and control random.seed."
@@ -2277,4 +2279,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "5ef55d5fc6ae88c19c264b2e1b8e38b4fa6b399f2784a08ec58d0fcfe0d26a5f"
+content-hash = "de63f4296e42cf158a77e19bf98228432650df3ce9895c47554ea5d872b56247"

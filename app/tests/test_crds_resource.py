@@ -4,7 +4,7 @@ from app.crds import TwingateResourceCRD
 
 
 @pytest.fixture()
-def sample_resource_yaml():
+def sample_resource_object():
     return {
         "apiVersion": "twingate.com/v1",
         "kind": "TwingateResource",
@@ -88,8 +88,8 @@ def sample_resource_yaml():
     }
 
 
-def test_deserialization(sample_resource_yaml):
-    crd = TwingateResourceCRD(**sample_resource_yaml)
+def test_deserialization(sample_resource_object):
+    crd = TwingateResourceCRD(**sample_resource_object)
     assert crd.spec.id == "UmVzb3VyY2U6OTM3Mzkw"
     assert crd.spec.address == "my.default.cluster.local"
     assert crd.spec.name == "My K8S Resource"

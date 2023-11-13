@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import pendulum
 import pytest
-from freezegun import freeze_time
 
 from app.crds import TwingateConnectorCRD
 
@@ -85,14 +84,14 @@ def test_version_policy_get_next_date_iso8601_returns_none_if_no_schedule(
 
 
 def test_version_policy_get_next_date_iso8601_returns_right_date(
-    sample_connector_object,
+    sample_connector_object, freezer
 ):
     sample_connector_object["spec"] = {
         "version_policy": {"schedule": "* * * * *", "version": "^1.0.0"}
     }
     crd = TwingateConnectorCRD(**sample_connector_object)
 
-    with freeze_time():
+    with freezer.freeze_time():
         now = pendulum.now("UTC").start_of("minute")
         expected = now.add(minutes=1)
         result = crd.spec.version_policy.get_next_date_iso8601()
@@ -102,7 +101,7 @@ def test_version_policy_get_next_date_iso8601_returns_right_date(
         "version_policy": {"schedule": "0 0 * * 1", "version": "^1.0.0"}
     }
     crd = TwingateConnectorCRD(**sample_connector_object)
-    with freeze_time():
+    with freezer.freeze_time():
         now = pendulum.now("utc").start_of("day")
         expected = now.next(pendulum.MONDAY).start_of("day")
         result = crd.spec.version_policy.get_next_date_iso8601()

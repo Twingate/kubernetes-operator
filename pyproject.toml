@@ -6,6 +6,7 @@ authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
+python = "^3.11"
 croniter = "^2.0.1"
 gql = {version = "~=3.4.1", extras = ["requests"]}
 kopf = "^1.36.2"
@@ -14,7 +15,6 @@ orjson = "^3.9.10"
 pendulum = "^2.1.2"
 pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
-python = "^3.11"
 requests = "^2.31.0"
 semantic-version = "^2.10.0"
 tenacity = "^8.2.3"
@@ -28,13 +28,13 @@ bandit = "^1.7.5"
 black = "^23.11.0"
 coveralls = "^3.3.1"
 factory-boy = "^3.3.0"
-freezegun = "^1.2.2"
 isort = "^5.12.0"
 mypy = "^1.7.0"
 pre-commit = "^3.5.0"
 pytest = "^7.4.3"
 pytest-cov = "^4.1.0"
 pytest-factoryboy = "^2.6.0"
+pytest-freezegun = "^0.4.2"
 pytest-sugar = "^0.9.7"
 pyupgrade = "^3.15.0"
 responses = "^0.24.0"
@@ -102,7 +102,6 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 warn_untyped_fields = true
-
 
 exclude = [
     "/tests",

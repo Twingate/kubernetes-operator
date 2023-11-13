@@ -3,11 +3,14 @@ from base64 import b64encode
 
 import pytest
 import responses
+from pytest_factoryboy import register
 
 from app.api import TwingateAPIClient
 from app.settings import TwingateOperatorSettings
 
-from .factories import resource_factory  # noqa
+from .factories import ResourceFactory
+
+register(ResourceFactory)
 
 
 @pytest.fixture()

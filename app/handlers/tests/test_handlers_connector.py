@@ -14,6 +14,7 @@ from app.handlers.handlers_connectors import (
     twingate_connector_pod_deleted,
     twingate_connector_recreate_pod,
     twingate_connector_resume,
+    twingate_connector_version_policy_update,
 )
 
 
@@ -155,6 +156,18 @@ def test_twingate_connector_resume_with_image_policy_annotates(
     )
     run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
     assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
+
+
+def test_twingate_connector_version_policy_update(get_connector_and_crd):
+    connector, crd = get_connector_and_crd()
+
+    patch = MagicMock()
+    logger = MagicMock()
+
+    twingate_connector_version_policy_update(
+        crd.model_dump(by_alias=True), patch, logger
+    )
+    assert patch.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
 
 
 def test_twingate_connector_recreate_pod(get_connector_and_crd, kopf_handler_runner):

@@ -220,7 +220,7 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
 def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **_):
     logger.info("twingate_connector_pod_deleted: %s", body)
 
-    # Annotate the parent connector so it knows it needs to recreate the pod
+    # Annotate the parent connector so that it knows it needs to recreate the pod
     owner_refs = meta.get("ownerReferences", [])
     owner = next((o for o in owner_refs if o["kind"] == "TwingateConnector"), None)
     if not owner:

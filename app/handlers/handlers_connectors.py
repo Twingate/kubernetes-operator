@@ -142,7 +142,7 @@ def twingate_connector_version_policy_update(body, patch, logger, **_):
 def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
     settings = memo.twingate_settings
     crd = TwingateConnectorCRD(**body)
-    if not crd.spec.version_policy:
+    if not crd.spec.image_policy:
         patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: None}
         return
 
@@ -162,7 +162,7 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
         kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
         patch.meta["annotations"] = {
             ANNOTATION_LAST_VERSION_CHECK: now.isoformat(),
-            ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601(),
+            ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
         }
     except kubernetes.client.exceptions.ApiException:
         logger.exception("Failed to remove label from pod %s", meta.name)

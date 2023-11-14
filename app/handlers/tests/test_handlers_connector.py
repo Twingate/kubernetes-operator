@@ -2,13 +2,16 @@ from unittest.mock import ANY, MagicMock, patch
 
 import kubernetes
 import orjson as json
+import pendulum
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
 from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
+    ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
     get_connector_pod,
+    timer_check_image_version,
     twingate_connector_create,
     twingate_connector_delete,
     twingate_connector_pod_deleted,
@@ -27,7 +30,8 @@ def mock_connector_spec_get_image():
 
 @pytest.fixture()
 def get_connector_and_crd(connector_factory):
-    def get(*, spec_overrides=None, status=None, with_id=False):
+    def get(*, spec_overrides=None, status=None, with_id=False, annotations=None):
+        annotations = annotations or {}
         spec_overrides = spec_overrides or {}
 
         connector = connector_factory()
@@ -38,7 +42,12 @@ def get_connector_and_crd(connector_factory):
         crd = TwingateConnectorCRD(
             api_version="twingate.com/v1beta",
             kind="TwingateConnector",
-            metadata=dict(uid="123", name="test-connector", namespace="default"),
+            metadata=dict(
+                uid="123",
+                name=connector_spec.name,
+                namespace="default",
+                annotations=annotations,
+            ),
             spec=spec,
             status=status,
         )
@@ -71,7 +80,7 @@ def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
         ANY, owner=ANY, strict=True, forced=True
     )
     run.kopf_label_mock.assert_called_once_with(
-        ANY, {"twingate.com/connector": "test-connector"}
+        ANY, {"twingate.com/connector": crd.spec.name}
     )
 
     run.k8s_client_mock.create_namespaced_secret.assert_called_once()
@@ -87,7 +96,7 @@ def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
     assert call_kw["namespace"] == "default"
     assert call_kw["body"].spec["containers"][0] == {
         "env": ANY,
-        "envFrom": [{"secretRef": {"name": "test-connector", "optional": False}}],
+        "envFrom": [{"secretRef": {"name": crd.spec.name, "optional": False}}],
         "image": "twingate/connector:test",
         "imagePullPolicy": "Always",
         "name": "connector",
@@ -132,7 +141,7 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
     assert call_kw["namespace"] == "default"
     assert call_kw["body"].spec["containers"][0] == {
         "env": ANY,
-        "envFrom": [{"secretRef": {"name": "test-connector", "optional": False}}],
+        "envFrom": [{"secretRef": {"name": crd.spec.name, "optional": False}}],
         "image": "twingate/connector:test",
         "imagePullPolicy": "Always",
         "name": "connector",
@@ -158,16 +167,75 @@ def test_twingate_connector_resume_with_image_policy_annotates(
     assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
 
 
-def test_twingate_connector_version_policy_update(get_connector_and_crd):
-    connector, crd = get_connector_and_crd()
-
-    patch = MagicMock()
-    logger = MagicMock()
-
-    twingate_connector_version_policy_update(
-        crd.model_dump(by_alias=True), patch, logger
+def test_twingate_connector_version_policy_update(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image_policy=ConnectorImagePolicy())
     )
-    assert patch.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
+
+    run = kopf_handler_runner(
+        twingate_connector_version_policy_update, crd, MagicMock()
+    )
+
+    assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
+
+
+def test_timer_check_image_version_without_imagepolicy(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd()
+    run = kopf_handler_runner(timer_check_image_version, crd, MagicMock())
+    assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is None
+
+
+def test_timer_check_image_version_with_imagepolicy_updates_pod_if_check_due(
+    get_connector_and_crd, kopf_handler_runner, freezer
+):
+    full_url = "https://test.twingate.com"
+    now_iso = pendulum.now().to_iso8601_string()
+
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image_policy=ConnectorImagePolicy()),
+        annotations={ANNOTATION_NEXT_VERSION_CHECK: now_iso},
+    )
+    memo = MagicMock()
+    memo.twingate_settings.full_url = full_url
+
+    run = kopf_handler_runner(timer_check_image_version, crd, memo)
+
+    expected_pod = get_connector_pod(crd, full_url, "twingate/connector:test")
+
+    assert run.patch_mock.meta["annotations"][ANNOTATION_LAST_VERSION_CHECK] == now_iso
+    assert (
+        run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK]
+        == crd.spec.image_policy.get_next_date_iso8601()
+    )
+    run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
+        crd.spec.name, "default", body=expected_pod
+    )
+
+
+def test_timer_check_image_version_with_imagepolicy_do_nothing_if_check_not_due(
+    get_connector_and_crd, kopf_handler_runner, freezer
+):
+    full_url = "https://test.twingate.com"
+    now_iso = pendulum.now().to_iso8601_string()
+    now_minus_onem = pendulum.now().subtract(minutes=1)
+
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image_policy=ConnectorImagePolicy()),
+        annotations={ANNOTATION_NEXT_VERSION_CHECK: now_iso},
+    )
+    memo = MagicMock()
+    memo.twingate_settings.full_url = full_url
+
+    freezer.move_to(now_minus_onem)
+
+    run = kopf_handler_runner(timer_check_image_version, crd, memo)
+
+    run.k8s_client_mock.patch_namespaced_pod.assert_not_called()
+    assert run.patch_mock.meta == {}
 
 
 def test_twingate_connector_recreate_pod(get_connector_and_crd, kopf_handler_runner):
@@ -178,7 +246,7 @@ def test_twingate_connector_recreate_pod(get_connector_and_crd, kopf_handler_run
         ANY, owner=ANY, strict=True, forced=True
     )
     run.kopf_label_mock.assert_called_once_with(
-        ANY, {"twingate.com/connector": "test-connector"}
+        ANY, {"twingate.com/connector": crd.spec.name}
     )
     run.k8s_client_mock.create_namespaced_pod.assert_called_once()
 
@@ -194,7 +262,7 @@ def test_twingate_connector_delete_deletes_connector(
     run.logger_mock.exception.assert_not_called()
     run.memo_mock.twingate_client.connector_delete.assert_called_once()
     run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
-        "test-connector",
+        crd.spec.name,
         "default",
         body={"metadata": {"labels": {"twingate.com/connector": None}}},
     )
@@ -216,7 +284,7 @@ def test_twingate_connector_delete_ignores_k8s_api_errors(
     run.logger_mock.exception.assert_called_once()
     run.memo_mock.twingate_client.connector_delete.assert_called_once()
     run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
-        "test-connector",
+        crd.spec.name,
         "default",
         body={"metadata": {"labels": {"twingate.com/connector": None}}},
     )

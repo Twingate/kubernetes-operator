@@ -22,8 +22,20 @@ def k8s_client_mock():
 
 @pytest.fixture()
 def kopf_info_mock():
-    with patch("kopf.info") as kopf_info_mock:
-        yield kopf_info_mock
+    with patch("kopf.info") as m:
+        yield m
+
+
+@pytest.fixture()
+def kopf_adopt_mock():
+    with patch("kopf.adopt") as m:
+        yield m
+
+
+@pytest.fixture()
+def kopf_label_mock():
+    with patch("kopf.label") as m:
+        yield m
 
 
 HandlerRunnerResult = collections.namedtuple(
@@ -35,12 +47,19 @@ HandlerRunnerResult = collections.namedtuple(
         "patch_mock",
         "k8s_client_mock",
         "kopf_info_mock",
+        "kopf_adopt_mock",
+        "kopf_label_mock",
     ],
 )
 
 
 @pytest.fixture()
-def kopf_handler_runner(k8s_client_mock: MagicMock, kopf_info_mock: MagicMock):
+def kopf_handler_runner(
+    k8s_client_mock: MagicMock,
+    kopf_info_mock: MagicMock,
+    kopf_adopt_mock: MagicMock,
+    kopf_label_mock: MagicMock,
+):
     def run(
         handler_f: Callable, crd: Any, memo_mock: MagicMock, namespace="default"
     ) -> HandlerRunnerResult:
@@ -61,7 +80,14 @@ def kopf_handler_runner(k8s_client_mock: MagicMock, kopf_info_mock: MagicMock):
             patch=patch_mock,
         )
         return HandlerRunnerResult(
-            result, memo_mock, logger_mock, patch_mock, k8s_client_mock, kopf_info_mock
+            result,
+            memo_mock,
+            logger_mock,
+            patch_mock,
+            k8s_client_mock,
+            kopf_info_mock,
+            kopf_adopt_mock,
+            kopf_label_mock,
         )
 
     return run

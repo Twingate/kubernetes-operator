@@ -175,6 +175,12 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
     "twingateconnector", labels={"twingate.com/connector-pod-deleted": "true"}
 )
 def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
+    """Recreates the Connector's Pod.
+
+    When pod is deleted we can't recreate it right away because we want to
+    use the same name. So when it's deleted, `twingate_connector_pod_deleted` annotates
+    it's connector object so that we get heere and can recreate it.
+    """
     logger.info("twingate_connector_recreate_pod: %s.", body)
     settings = memo.twingate_settings
     crd = TwingateConnectorCRD(**body)

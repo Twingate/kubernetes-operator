@@ -13,7 +13,7 @@ ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
 
 
 def get_connector_pod(
-    crd: TwingateConnectorCRD, tenant_url: str, tag: str
+    crd: TwingateConnectorCRD, tenant_url: str, image: str
 ) -> kubernetes.client.V1Pod:
     spec = crd.spec
     name = crd.metadata.name
@@ -49,7 +49,7 @@ def get_connector_pod(
                         }
                     }
                 ],
-                "image": f"twingate/connector:{tag}",
+                "image": image,
                 "imagePullPolicy": "Always",
                 "name": "connector",
                 "securityContext": {
@@ -99,9 +99,9 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
     logger.info("connector: %s", connector)
     tokens = client.connector_generate_tokens(connector.id)
-    image_tag = crd.spec.get_image_tag_by_policy()
+    image = crd.spec.get_image()
 
-    pod = get_connector_pod(crd, settings.full_url, image_tag)
+    pod = get_connector_pod(crd, settings.full_url, image)
     secret = get_connector_secret(tokens.access_token, tokens.refresh_token)
     kopf.adopt([pod, secret], owner=body, strict=True, forced=True)
     kopf.label([pod, secret], {"twingate.com/connector": crd.metadata.name})
@@ -114,7 +114,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
         ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
     }
 
-    return success(twingate_id=connector_id, image_tag=image_tag)
+    return success(twingate_id=connector_id, image=image)
 
 
 @kopf.on.resume("twingateconnector")
@@ -156,8 +156,8 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
     logger.info("Checking connector %s for new image version", crd.metadata.name)
 
     try:
-        image_tag = crd.spec.get_image_tag_by_policy()
-        pod = get_connector_pod(crd, settings.full_url, image_tag)
+        image = crd.spec.get_image()
+        pod = get_connector_pod(crd, settings.full_url, image)
         kapi = kubernetes.client.CoreV1Api()
         kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
         patch.meta["annotations"] = {
@@ -178,9 +178,9 @@ def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
     logger.info("twingate_connector_recreate_pod: %s.", body)
     settings = memo.twingate_settings
     crd = TwingateConnectorCRD(**body)
-    image_tag = crd.spec.get_image_tag_by_policy()
+    image = crd.spec.get_image()
 
-    pod = get_connector_pod(crd, settings.full_url, image_tag)
+    pod = get_connector_pod(crd, settings.full_url, image)
     kopf.adopt(pod, owner=body, strict=True, forced=True)
     kopf.label(pod, {"twingate.com/connector": crd.metadata.name})
 

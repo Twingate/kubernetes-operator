@@ -129,7 +129,7 @@ def test_version_policy_get_next_date_iso8601_returns_right_date(
     assert result == expected.to_iso8601_string()
 
 
-def test_spec_get_image_tag_with_imagepolicy(sample_connector_object_imagepolicy):
+def test_spec_get_image_with_imagepolicy(sample_connector_object_imagepolicy):
     sample_connector_object_imagepolicy["spec"]["imagePolicy"]["version"] = "^1.0.0"
     crd = TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 
@@ -140,12 +140,7 @@ def test_spec_get_image_tag_with_imagepolicy(sample_connector_object_imagepolicy
         assert crd.spec.get_image() == "twingate/connector:1.0.1"
 
 
-def test_spec_get_image_tag_with_image(sample_connector_object_image):
-    crd = TwingateConnectorCRD(**sample_connector_object_image)
-    assert crd.spec.get_image() == "twingate/connector:1.60.0"
-
-
-def test_spec_get_image_tag_by_policy_raises_if_no_match(
+def test_spec_get_image_w_imagepolicy_raises_if_no_match(
     sample_connector_object_imagepolicy,
 ):
     sample_connector_object_imagepolicy["spec"]["imagePolicy"]["version"] = "^10.0.0"
@@ -156,3 +151,8 @@ def test_spec_get_image_tag_by_policy_raises_if_no_match(
         return_value=["1.0.0", "latest"],
     ), pytest.raises(ValueError, match="Could not find valid tag for"):
         crd.spec.get_image()
+
+
+def test_spec_get_image_with_image(sample_connector_object_image):
+    crd = TwingateConnectorCRD(**sample_connector_object_image)
+    assert crd.spec.get_image() == "twingate/connector:1.60.0"

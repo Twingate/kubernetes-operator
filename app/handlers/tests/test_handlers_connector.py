@@ -127,7 +127,7 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
     }
 
 
-def twingate_connector_resume_without_image_policy_doesnt_annotates(
+def test_twingate_connector_resume_without_image_policy_doesnt_annotates(
     get_connector_and_crd, kopf_handler_runner
 ):
     connector, crd = get_connector_and_crd()
@@ -135,7 +135,7 @@ def twingate_connector_resume_without_image_policy_doesnt_annotates(
     assert run.patch_mock.meta["annotations"]["ANNOTATION_NEXT_VERSION_CHECK"] is None
 
 
-def twingate_connector_resume_with_image_policy_annotates(
+def test_twingate_connector_resume_with_image_policy_annotates(
     get_connector_and_crd, kopf_handler_runner
 ):
     connector, crd = get_connector_and_crd(

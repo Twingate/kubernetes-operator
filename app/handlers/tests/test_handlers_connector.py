@@ -1,5 +1,6 @@
 from unittest.mock import ANY, MagicMock, patch
 
+import kubernetes
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
@@ -173,6 +174,30 @@ def test_twingate_connector_delete_deletes_connector(
         status={"twingate_connector_create": {"success": True}}, with_id=True
     )
     run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+
+    run.logger_mock.exception.assert_not_called()
+    run.memo_mock.twingate_client.connector_delete.assert_called_once()
+    run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
+        "test-connector",
+        "default",
+        body={"metadata": {"labels": {"twingate.com/connector": None}}},
+    )
+
+
+def test_twingate_connector_delete_ignores_k8s_api_errors(
+    get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+):
+    connector, crd = get_connector_and_crd(
+        status={"twingate_connector_create": {"success": True}}, with_id=True
+    )
+
+    k8s_client_mock.patch_namespaced_pod.side_effect = (
+        kubernetes.client.exceptions.ApiException()
+    )
+
+    run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+
+    run.logger_mock.exception.assert_called_once()
     run.memo_mock.twingate_client.connector_delete.assert_called_once()
     run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
         "test-connector",

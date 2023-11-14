@@ -35,12 +35,12 @@ def kopf_info_mock():
 HandlerRunnerResult = collections.namedtuple(
     "HandlerRunnerResult",
     [
+        "result",
         "memo_mock",
         "logger_mock",
         "patch_mock",
         "k8s_client_mock",
         "kopf_info_mock",
-        "result",
     ],
 )
 
@@ -63,7 +63,7 @@ def kopf_handler_runner(k8s_client_mock, kopf_info_mock):
             patch=patch_mock,
         )
         return HandlerRunnerResult(
-            memo_mock, logger_mock, patch_mock, k8s_client_mock, kopf_info_mock, result
+            result, memo_mock, logger_mock, patch_mock, k8s_client_mock, kopf_info_mock
         )
 
     return run
@@ -131,7 +131,7 @@ def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
     }
 
 
-def test_twingate_connector_create_w_imagepolicy_sets_check_annotation(
+def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
     get_connector_and_crd, kopf_handler_runner
 ):
     connector, crd = get_connector_and_crd(

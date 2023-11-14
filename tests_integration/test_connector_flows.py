@@ -32,6 +32,10 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         secret = kubectl_get("secret", connector_name)
         pod = kubectl_get("pod", connector_name)
 
+        while pod["status"]["phase"] == "Pending":
+            time.sleep(1)
+            pod = kubectl_get("pod", connector_name)
+
         # connector was properly provisioned
         expected_status = {"success": True, "image": ANY, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status

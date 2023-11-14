@@ -7,6 +7,7 @@ from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
     ANNOTATION_NEXT_VERSION_CHECK,
     twingate_connector_create,
+    twingate_connector_resume,
 )
 
 
@@ -122,3 +123,23 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
         "name": "connector",
         "securityContext": ANY,
     }
+
+
+def twingate_connector_resume_without_image_policy_doesnt_annotates(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd()
+    run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
+    assert run.patch_mock.meta["annotations"]["ANNOTATION_NEXT_VERSION_CHECK"] is None
+
+
+def twingate_connector_resume_with_image_policy_annotates(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image_policy=ConnectorImagePolicy())
+    )
+    run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
+    assert (
+        run.patch_mock.meta["annotations"]["ANNOTATION_NEXT_VERSION_CHECK"] is not None
+    )

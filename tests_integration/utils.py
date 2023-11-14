@@ -37,7 +37,13 @@ def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
     return kubectl("apply -f -", input=obj)
 
 
-def kubectl_delete(resource: str) -> subprocess.CompletedProcess:
+def kubectl_delete(
+    resource: str, *, force: bool = False
+) -> subprocess.CompletedProcess:
+    if force:
+        patch_str = '{"metadata":{"finalizers":null}}'
+        kubectl(f"kubectl patch {resource} -p '{patch_str}' --type=merge")
+
     return kubectl(f"delete {resource}")
 
 

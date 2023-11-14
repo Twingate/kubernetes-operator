@@ -32,6 +32,7 @@ spec:
                 name:
                   type: string
                   nullable: false
+                  maxLength: 30
                 image:
                   type: object
                   properties:
@@ -49,6 +50,9 @@ spec:
                         type: string
                         enum:
                           - dockerhub
+                      repository:
+                        type: string
+                        default: twingate/connector
                       schedule:
                         type: string
                         nullable: false

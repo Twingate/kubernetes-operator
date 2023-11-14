@@ -7,6 +7,7 @@ from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
     ANNOTATION_NEXT_VERSION_CHECK,
     twingate_connector_create,
+    twingate_connector_delete,
     twingate_connector_resume,
 )
 
@@ -20,12 +21,12 @@ def mock_connector_spec_get_image():
 
 @pytest.fixture()
 def get_connector_and_crd(connector_factory):
-    def get(*, spec_overrides=None):
+    def get(*, spec_overrides=None, status=None, with_id=False):
         spec_overrides = spec_overrides or {}
 
         connector = connector_factory()
         connector_spec = ConnectorSpec(
-            **spec_overrides, **connector.model_dump(exclude=["id"])
+            **spec_overrides, **connector.model_dump(exclude=[] if with_id else ["id"])
         )
         spec = connector_spec.model_dump(by_alias=True)
         crd = TwingateConnectorCRD(
@@ -33,6 +34,7 @@ def get_connector_and_crd(connector_factory):
             kind="TwingateConnector",
             metadata=dict(uid="123", name="test-connector", namespace="default"),
             spec=spec,
+            status=status,
         )
         return connector, crd
 
@@ -143,3 +145,26 @@ def twingate_connector_resume_with_image_policy_annotates(
     assert (
         run.patch_mock.meta["annotations"]["ANNOTATION_NEXT_VERSION_CHECK"] is not None
     )
+
+
+def test_twingate_connector_delete_deletes_connector(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd(
+        status={"twingate_connector_create": {"success": True}}, with_id=True
+    )
+    run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+    run.memo_mock.twingate_client.connector_delete.assert_called_once()
+    run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
+        "test-connector",
+        "default",
+        body={"metadata": {"labels": {"twingate.com/connector": None}}},
+    )
+
+
+def test_twingate_connector_delete_without_status_does_nothing(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd()
+    run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+    run.memo_mock.twingate_client.connector_delete.assert_not_called()

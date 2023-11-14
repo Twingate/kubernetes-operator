@@ -53,6 +53,8 @@ def kopf_handler_runner(k8s_client_mock: MagicMock, kopf_info_mock: MagicMock):
         result = handler_f(
             body=crd.model_dump(by_alias=True),
             spec=crd.spec.model_dump(by_alias=True),
+            meta=crd.metadata,
+            status=crd.status,
             memo=memo_mock,
             logger=logger_mock,
             namespace=namespace,

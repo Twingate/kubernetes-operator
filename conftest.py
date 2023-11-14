@@ -10,12 +10,14 @@ def pytest_collection_modifyitems(session, config, items):
             item.add_marker("integration")
 
 
+global_sequence = 0
+
+
 @pytest.fixture()
 def sequential_number():
-    value = 0
-    while True:
-        yield value
-        value += 1
+    global global_sequence
+    yield global_sequence
+    global_sequence += 1
 
 
 @pytest.fixture(scope="session")

@@ -220,6 +220,7 @@ class ConnectorImagePolicy(BaseModel):
     )
 
     provider: ConnectorImagePolicyProvidersEnum = "dockerhub"
+    repository: str = "twingate/connector"
     schedule: str | None = "0 0 * * *"
     version: str = "^1.0.0"
     allow_prerelease: bool = False
@@ -250,6 +251,17 @@ class ConnectorImagePolicy(BaseModel):
         next_date = croniter(self.schedule, pendulum.now("UTC")).get_next(datetime)
         return pendulum.instance(next_date).to_iso8601_string()
 
+    def get_image(self) -> str:
+        provider = get_provider(self.provider, repository=self.repository)
+        if tag := provider.get_latest(
+            self.version, allow_prerelease=self.allow_prerelease
+        ):
+            return f"{self.repository}:{tag}"
+
+        raise ValueError(
+            f"Could not find valid tag for '{self.version}' at '{self.repository}'"
+        )
+
 
 class ConnectorImage(BaseModel):
     model_config = ConfigDict(
@@ -279,17 +291,11 @@ class ConnectorSpec(BaseModel):
         default_factory=lambda: get_settings().remote_network_id
     )
 
-    def get_image_tag_by_policy(self) -> str:
-        provider = get_provider("dockerhub")  # TODO
-        if tag := provider.get_latest(
-            self.version_policy.version,
-            allow_prerelease=self.version_policy.allow_prerelease,
-        ):
-            return tag
+    def get_image(self) -> str:
+        if self.image:
+            return str(self.image)
 
-        raise ValueError(
-            f"Could not find valid tag for '{self.version_policy.version}'"
-        )
+        return self.image_policy.get_image()
 
 
 class TwingateConnectorCRD(BaseK8sModel):

@@ -219,7 +219,9 @@ class ConnectorImagePolicy(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
     )
 
-    provider: ConnectorImagePolicyProvidersEnum = "dockerhub"
+    provider: ConnectorImagePolicyProvidersEnum = (
+        ConnectorImagePolicyProvidersEnum.dockerhub
+    )
     repository: str = "twingate/connector"
     schedule: str | None = "0 0 * * *"
     version: str = "^1.0.0"
@@ -252,7 +254,7 @@ class ConnectorImagePolicy(BaseModel):
         return pendulum.instance(next_date).to_iso8601_string()
 
     def get_image(self) -> str:
-        provider = get_provider(self.provider, repository=self.repository)
+        provider = get_provider(self.provider.value, repository=self.repository)
         if tag := provider.get_latest(
             self.version, allow_prerelease=self.allow_prerelease
         ):
@@ -300,10 +302,14 @@ class ConnectorSpec(BaseModel):
         return self.model_copy(update=dict(image=ConnectorImage()))
 
     def get_image(self) -> str:
-        if self.image:
-            return str(self.image)
+        if image := self.image:
+            return str(image)
 
-        return self.image_policy.get_image()
+        if image_policy := self.image_policy:
+            return image_policy.get_image()
+
+        # Impossible to get here because of our model validator
+        raise ValueError("Invalid ConnectorSpec")
 
 
 class TwingateConnectorCRD(BaseK8sModel):

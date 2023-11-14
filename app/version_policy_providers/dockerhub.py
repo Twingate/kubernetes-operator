@@ -9,8 +9,8 @@ from app.version_policy_providers.base import VersionPolicyProvider
 class DockerhubVersionPolicyProvider(VersionPolicyProvider):
     _DOCKER_HUB_API_BASE_URL = "https://hub.docker.com/v2"
 
-    def __init__(self, repository: str = "twingate/connector"):
-        self.repository = repository
+    def __init__(self, repository: str | None):
+        self.repository = repository or "twingate/connector"
         self.tags_api_url = (
             f"{self._DOCKER_HUB_API_BASE_URL}/repositories/{self.repository}/tags"
         )

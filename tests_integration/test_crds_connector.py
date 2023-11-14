@@ -2,7 +2,6 @@ import subprocess
 from unittest.mock import ANY
 
 import pytest
-from faker import Faker
 
 from tests_integration.utils import (
     kubectl_apply,
@@ -10,16 +9,6 @@ from tests_integration.utils import (
     kubectl_delete,
     kubectl_get,
 )
-
-fake = Faker()
-
-
-@pytest.fixture()
-def sequential_number():
-    value = 0
-    while True:
-        yield value
-        value += 1
 
 
 @pytest.fixture()

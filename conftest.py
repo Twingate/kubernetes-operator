@@ -10,6 +10,14 @@ def pytest_collection_modifyitems(session, config, items):
             item.add_marker("integration")
 
 
+@pytest.fixture()
+def sequential_number():
+    value = 0
+    while True:
+        yield value
+        value += 1
+
+
 @pytest.fixture(scope="session")
 def is_ci():
     return os.environ.get("GITHUB_ACTIONS", False)

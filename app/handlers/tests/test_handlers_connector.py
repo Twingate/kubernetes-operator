@@ -1,14 +1,17 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import kubernetes
+import orjson as json
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
 from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
     ANNOTATION_NEXT_VERSION_CHECK,
+    get_connector_pod,
     twingate_connector_create,
     twingate_connector_delete,
+    twingate_connector_pod_deleted,
     twingate_connector_recreate_pod,
     twingate_connector_resume,
 )
@@ -212,3 +215,89 @@ def test_twingate_connector_delete_without_status_does_nothing(
     connector, crd = get_connector_and_crd()
     run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
     run.memo_mock.twingate_client.connector_delete.assert_not_called()
+
+
+def test_twingate_connector_pod_deleted_tags_owner(get_connector_and_crd):
+    connector, crd = get_connector_and_crd()
+    pod = get_connector_pod(crd, "http://test.twingate.com", "twingate/1")
+    pod.metadata = {
+        "ownerReferences": [
+            {
+                "apiVersion": "twingate.com/v1beta",
+                "kind": "TwingateConnector",
+                "name": crd.spec.name,
+            }
+        ]
+    }
+    body = json.dumps(pod.to_dict())
+
+    with patch(
+        "kubernetes.client.CustomObjectsApi.patch_namespaced_custom_object"
+    ) as patch_namespaced_custom_object_mock:
+        twingate_connector_pod_deleted(
+            body, pod.spec, pod.metadata, MagicMock(), "default", MagicMock()
+        )
+
+    patch_namespaced_custom_object_mock.assert_called_once_with(
+        "twingate.com",
+        "v1beta",
+        "default",
+        "twingateconnectors",
+        crd.spec.name,
+        {"metadata": {"labels": {"twingate.com/connector-pod-deleted": "true"}}},
+    )
+
+
+def test_twingate_connector_pod_deleted_does_nothing_if_owner_not_found(
+    get_connector_and_crd,
+):
+    connector, crd = get_connector_and_crd()
+    pod = get_connector_pod(crd, "http://test.twingate.com", "twingate/1")
+    pod.metadata = {"ownerReferences": []}
+    body = json.dumps(pod.to_dict())
+
+    with patch(
+        "kubernetes.client.CustomObjectsApi.patch_namespaced_custom_object"
+    ) as patch_namespaced_custom_object_mock:
+        twingate_connector_pod_deleted(
+            body, pod.spec, pod.metadata, MagicMock(), "default", MagicMock()
+        )
+
+    patch_namespaced_custom_object_mock.assert_not_called()
+
+
+def test_twingate_connector_pod_deleted_catches_k8s_api_exceptions(
+    get_connector_and_crd,
+):
+    connector, crd = get_connector_and_crd()
+    pod = get_connector_pod(crd, "http://test.twingate.com", "twingate/1")
+    pod.metadata = {
+        "ownerReferences": [
+            {
+                "apiVersion": "twingate.com/v1beta",
+                "kind": "TwingateConnector",
+                "name": crd.spec.name,
+            }
+        ]
+    }
+    body = json.dumps(pod.to_dict())
+
+    logger = MagicMock()
+
+    with patch(
+        "kubernetes.client.CustomObjectsApi.patch_namespaced_custom_object",
+        side_effect=kubernetes.client.exceptions.ApiException(),
+    ) as patch_namespaced_custom_object_mock:
+        twingate_connector_pod_deleted(
+            body, pod.spec, pod.metadata, logger, "default", MagicMock()
+        )
+
+    logger.exception.assert_called_once()
+    patch_namespaced_custom_object_mock.assert_called_once_with(
+        "twingate.com",
+        "v1beta",
+        "default",
+        "twingateconnectors",
+        crd.spec.name,
+        {"metadata": {"labels": {"twingate.com/connector-pod-deleted": "true"}}},
+    )

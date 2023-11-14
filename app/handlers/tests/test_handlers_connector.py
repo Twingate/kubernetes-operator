@@ -132,7 +132,7 @@ def test_twingate_connector_resume_without_image_policy_doesnt_annotates(
 ):
     connector, crd = get_connector_and_crd()
     run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
-    assert run.patch_mock.meta["annotations"]["ANNOTATION_NEXT_VERSION_CHECK"] is None
+    assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is None
 
 
 def test_twingate_connector_resume_with_image_policy_annotates(
@@ -142,9 +142,7 @@ def test_twingate_connector_resume_with_image_policy_annotates(
         spec_overrides=dict(image_policy=ConnectorImagePolicy())
     )
     run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
-    assert (
-        run.patch_mock.meta["annotations"]["ANNOTATION_NEXT_VERSION_CHECK"] is not None
-    )
+    assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
 
 
 def test_twingate_connector_delete_deletes_connector(

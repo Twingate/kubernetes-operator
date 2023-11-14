@@ -146,7 +146,7 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
         patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: None}
         return
 
-    now = pendulum.now()
+    now = pendulum.now("UTC").start_of("minute")
     next_check = pendulum.parse(
         body["metadata"]["annotations"][ANNOTATION_NEXT_VERSION_CHECK]
     )
@@ -161,7 +161,7 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
         kapi = kubernetes.client.CoreV1Api()
         kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
         patch.meta["annotations"] = {
-            ANNOTATION_LAST_VERSION_CHECK: now.isoformat(),
+            ANNOTATION_LAST_VERSION_CHECK: now.to_iso8601_string(),
             ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
         }
     except kubernetes.client.exceptions.ApiException:

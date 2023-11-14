@@ -193,7 +193,8 @@ def test_timer_check_image_version_with_imagepolicy_updates_pod_if_check_due(
     get_connector_and_crd, kopf_handler_runner, freezer
 ):
     full_url = "https://test.twingate.com"
-    now_iso = pendulum.now().to_iso8601_string()
+    now = pendulum.now("UTC").start_of("minute")
+    now_iso = now.to_iso8601_string()
 
     connector, crd = get_connector_and_crd(
         spec_overrides=dict(image_policy=ConnectorImagePolicy()),
@@ -220,8 +221,9 @@ def test_timer_check_image_version_with_imagepolicy_do_nothing_if_check_not_due(
     get_connector_and_crd, kopf_handler_runner, freezer
 ):
     full_url = "https://test.twingate.com"
-    now_iso = pendulum.now().to_iso8601_string()
-    now_minus_onem = pendulum.now().subtract(minutes=1)
+    now = pendulum.now("UTC").start_of("minute")
+    now_iso = now.to_iso8601_string()
+    now_minus_onem = now.subtract(minutes=1)
 
     connector, crd = get_connector_and_crd(
         spec_overrides=dict(image_policy=ConnectorImagePolicy()),

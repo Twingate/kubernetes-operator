@@ -32,24 +32,11 @@ def dockerhub_operator_provider(mocked_responses):
     return provider
 
 
-def test_get_all_semver_tags(dockerhub_connector_provider):
+def test_get_all_semver_tags(dockerhub_operator_provider):
     all_semver_tags = [
-        str(x) for x in dockerhub_connector_provider.get_all_semver_tags()
+        str(x) for x in dockerhub_operator_provider.get_all_semver_tags()
     ]
-    assert all_semver_tags == [
-        "1.60.0",
-        "1.59.0",
-        "1.58.0",
-        "1.57.0",
-        "1.56.0",
-        "1.55.0",
-        "1.54.0",
-        "1.53.0",
-        "1.52.0",
-        "1.51.0",
-        "1.50.0",
-        "1.49.0",
-    ]
+    assert all_semver_tags == ["0.1.2", "0.1.1", "0.1.0"]
 
 
 def test_get_all_semver_tags_with_prereleases(dockerhub_operator_provider):

@@ -1,8 +1,8 @@
-import random
 import subprocess
 from unittest.mock import ANY
 
 import pytest
+from faker import Faker
 
 from tests_integration.utils import (
     kubectl_apply,
@@ -11,16 +11,20 @@ from tests_integration.utils import (
     kubectl_get,
 )
 
-
-@pytest.fixture()
-def random_number():
-    # ruff: noqa: S311
-    return random.randint(0, 100000)  # nosec
+fake = Faker()
 
 
 @pytest.fixture()
-def unique_connector_name(random_number, ci_run_number):
-    return f"conn-{ci_run_number}-{random_number}"
+def sequential_number():
+    value = 0
+    while True:
+        yield value
+        value += 1
+
+
+@pytest.fixture()
+def unique_connector_name(sequential_number, ci_run_number):
+    return f"conn-{ci_run_number}-{sequential_number}"
 
 
 @pytest.mark.integration()

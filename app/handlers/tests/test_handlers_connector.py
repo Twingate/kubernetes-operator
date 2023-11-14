@@ -98,28 +98,28 @@ def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
     memo_mock.twingate_client.connector_generate_tokens.return_value = ConnectorTokens(
         access_token="at", refresh_token="rt"
     )
-    result = kopf_handler_runner(twingate_connector_create, crd, memo_mock)
+    run = kopf_handler_runner(twingate_connector_create, crd, memo_mock)
 
-    assert result.result == {
+    assert run.result == {
         "success": True,
         "twingate_id": connector.id,
         "image": "twingate/connector:test",
         "ts": ANY,
     }
 
-    assert result.patch_mock.spec == {"id": connector.id, "name": connector.name}
-    assert result.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is None
+    assert run.patch_mock.spec == {"id": connector.id, "name": connector.name}
+    assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is None
 
-    result.k8s_client_mock.create_namespaced_secret.assert_called_once()
-    call_kw = result.k8s_client_mock.create_namespaced_secret.call_args.kwargs
+    run.k8s_client_mock.create_namespaced_secret.assert_called_once()
+    call_kw = run.k8s_client_mock.create_namespaced_secret.call_args.kwargs
     assert call_kw["namespace"] == "default"
     assert call_kw["body"].data == {
         "TWINGATE_ACCESS_TOKEN": "YXQ=",
         "TWINGATE_REFRESH_TOKEN": "cnQ=",
     }
 
-    result.k8s_client_mock.create_namespaced_pod.assert_called_once()
-    call_kw = result.k8s_client_mock.create_namespaced_pod.call_args.kwargs
+    run.k8s_client_mock.create_namespaced_pod.assert_called_once()
+    call_kw = run.k8s_client_mock.create_namespaced_pod.call_args.kwargs
     assert call_kw["namespace"] == "default"
     assert call_kw["body"].spec["containers"][0] == {
         "env": ANY,
@@ -144,29 +144,27 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
         access_token="at", refresh_token="rt"
     )
 
-    result = kopf_handler_runner(twingate_connector_create, crd, memo_mock)
-    assert result.result == {
+    run = kopf_handler_runner(twingate_connector_create, crd, memo_mock)
+    assert run.result == {
         "success": True,
         "twingate_id": connector.id,
         "image": "twingate/connector:test",
         "ts": ANY,
     }
 
-    assert result.patch_mock.spec == {"id": connector.id, "name": connector.name}
-    assert (
-        result.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
-    )
+    assert run.patch_mock.spec == {"id": connector.id, "name": connector.name}
+    assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
 
-    result.k8s_client_mock.create_namespaced_secret.assert_called_once()
-    call_kw = result.k8s_client_mock.create_namespaced_secret.call_args.kwargs
+    run.k8s_client_mock.create_namespaced_secret.assert_called_once()
+    call_kw = run.k8s_client_mock.create_namespaced_secret.call_args.kwargs
     assert call_kw["namespace"] == "default"
     assert call_kw["body"].data == {
         "TWINGATE_ACCESS_TOKEN": "YXQ=",
         "TWINGATE_REFRESH_TOKEN": "cnQ=",
     }
 
-    result.k8s_client_mock.create_namespaced_pod.assert_called_once()
-    call_kw = result.k8s_client_mock.create_namespaced_pod.call_args.kwargs
+    run.k8s_client_mock.create_namespaced_pod.assert_called_once()
+    call_kw = run.k8s_client_mock.create_namespaced_pod.call_args.kwargs
     assert call_kw["namespace"] == "default"
     assert call_kw["body"].spec["containers"][0] == {
         "env": ANY,

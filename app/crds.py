@@ -309,7 +309,7 @@ class ConnectorSpec(BaseModel):
             return image_policy.get_image()
 
         # Impossible to get here because of our model validator
-        raise ValueError("Invalid ConnectorSpec")
+        raise ValueError("Invalid ConnectorSpec")  # pragma: no cover
 
 
 class TwingateConnectorCRD(BaseK8sModel):

@@ -14,7 +14,7 @@ from app.handlers.handlers_resource_access import (
 
 
 class TestResourceAccessCreateHandler:
-    def test_create_success(self, resource_factory):
+    def test_create_success(self, resource_factory, kopf_info_mock):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -37,7 +37,7 @@ class TestResourceAccessCreateHandler:
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
-        ), patch("kopf.info") as kopf_info_mock:
+        ):
             result = twingate_resource_access_create(
                 body="",
                 spec=resource_access_spec,

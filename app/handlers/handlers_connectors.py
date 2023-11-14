@@ -19,15 +19,15 @@ def get_connector_pod(
     name = crd.metadata.name
 
     env_labels_version_policy = []
-    if spec.version_policy:
+    if spec.image_policy:
         env_labels_version_policy = [
             {
                 "name": "TWINGATE_LABEL_VERSION_POLICY_SCHEDULE",
-                "value": spec.version_policy.schedule,
+                "value": spec.image_policy.schedule,
             },
             {
                 "name": "TWINGATE_LABEL_VERSION_POLICY_SPEC",
-                "value": spec.version_policy.version,
+                "value": spec.image_policy.version,
             },
         ]
 
@@ -85,7 +85,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
     client = memo.twingate_client
 
-    logger.info("Got connectorcreate request: %s", body)
+    logger.info("Got twingateconnector create request: %s", body)
     crd = TwingateConnectorCRD(**body)
     connector_id = crd.spec.id
 
@@ -110,9 +110,9 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
     kapi.create_namespaced_pod(namespace=namespace, body=pod)
 
-    patch.meta["annotations"] = {
-        ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
-    }
+    image_policy = crd.spec.image_policy
+    next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
+    patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
     return success(twingate_id=connector_id, image=image)
 
@@ -120,18 +120,18 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 @kopf.on.resume("twingateconnector")
 def twingate_connector_resume(body, patch, **_):
     crd = TwingateConnectorCRD(**body)
-    patch.meta["annotations"] = {
-        ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
-    }
+    image_policy = crd.spec.image_policy
+    next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
+    patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
 
-@kopf.on.field("twingateconnector", field="spec.versionPolicy")
+@kopf.on.field("twingateconnector", field="spec.imagePolicy")
 def twingate_connector_version_policy_update(body, patch, logger, **_):
     logger.info("twingate_connector_version_policy_update: %s", body)
     crd = TwingateConnectorCRD(**body)
-    patch.meta["annotations"] = {
-        ANNOTATION_NEXT_VERSION_CHECK: crd.spec.version_policy.get_next_date_iso8601()
-    }
+    image_policy = crd.spec.image_policy
+    next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
+    patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
 
 @kopf.on.timer(

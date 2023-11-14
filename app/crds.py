@@ -291,6 +291,14 @@ class ConnectorSpec(BaseModel):
         default_factory=lambda: get_settings().remote_network_id
     )
 
+    @model_validator(mode="after")
+    def validate_image_or_image_policy(self):
+        if self.image or self.image_policy:
+            return self
+
+        # Default to having `image`
+        return self.model_copy(update=dict(image=ConnectorImage()))
+
     def get_image(self) -> str:
         if self.image:
             return str(self.image)

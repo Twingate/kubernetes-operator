@@ -2,7 +2,6 @@
 from base64 import b64encode
 
 import pytest
-import responses
 from pytest_factoryboy import register
 
 from app.api import TwingateAPIClient

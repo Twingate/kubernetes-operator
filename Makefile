@@ -99,7 +99,12 @@ multiarch-image-build-push-prod:
 	@echo Building $(IMAGE_NAME) $(PROD_TAGS) and latest
 	docker buildx build -o type=image --platform=$(PLATFORMS) --pull $(PROD_TAGS) -t $(IMAGE_NAME):latest . -f Dockerfile  --target prod --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --push $(DOCKER_BUILDX_CACHE)
 
+.PHONY: gen-api-docs
+gen-api-docs:
+	go install fybrik.io/crdoc@latest
+	crdoc --resources deploy/twingate-operator/crds --output docs/api.md
 
 
+.PHONY: run
 run:
 	poetry run kopf run ./main.py -A --verbose --liveness=http://0.0.0.0:8080/healthz

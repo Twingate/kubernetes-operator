@@ -35,7 +35,7 @@ spec:
                   type: string
                   nullable: false
                   maxLength: 30
-                  description: Name of the Connector (optional, if not specified Twingate will give a random name)
+                  description: "Name of the Connector (optional, if not specified Twingate will give a random name)"
                 image:
                   type: object
                   description: "Image defines the image to use for the Connector."

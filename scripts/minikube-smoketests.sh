@@ -36,7 +36,7 @@ main() {
 	install_minikube_release
 
 	# create a cluster
-	"${MINIKUBE}" start --force
+	"${MINIKUBE}" start --force --extra-config=apiserver.authorization-mode=AlwaysAllow
 	"${MINIKUBE}" kubectl -- get pods -A
 
 	"${MINIKUBE}" kubectl -- apply -f ./deploy/twingate-operator/crds/ || true

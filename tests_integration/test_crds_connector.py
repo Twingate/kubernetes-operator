@@ -33,6 +33,27 @@ class TestConnectorCRD:
         assert result.returncode == 0
         kubectl_delete(f"tc/{unique_connector_name}")
 
+    def test_both_image_or_imagepolicy(self, unique_connector_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                spec:
+                    name: {unique_connector_name}
+                    image:
+                        tag: "latest"
+                    imagePolicy:
+                        provider: "dockerhub"
+                        schedule: "0 0 * * *"
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "Can define either `image` or `imagePolicy`, not both." in stderr
+
     def test_image(self, unique_connector_name):
         result = kubectl_create(
             f"""

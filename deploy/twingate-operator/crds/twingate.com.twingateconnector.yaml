@@ -25,7 +25,7 @@ spec:
                   message: "containerExtra is immutable once set"
                 - rule: (!has(oldSelf.podExtra) || self.podExtra == oldSelf.podExtra)
                   message: "podExtra is immutable once set"
-                - rule: has(self.image) || has(self.imagePolicy) || (!has(self.image) && !has(self.imagePolicy))
+                - rule: (has(self.image) && !has(self.imagePolicy)) || (!has(self.image) && has(self.imagePolicy)) || (!has(self.image) && !has(self.imagePolicy))
                   message: "Can define either `image` or `imagePolicy`, not both."
               properties:
                 id:

@@ -1,9 +1,10 @@
+import abc
 from abc import abstractmethod
 
 from semantic_version import Version
 
 
-class VersionPolicyProvider:
+class VersionPolicyProvider(abc.ABC):
     @abstractmethod
     def __init__(self, repository: str | None = None):
         ...

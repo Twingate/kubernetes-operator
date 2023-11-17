@@ -11,9 +11,11 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
+          description: "TwingateConnector represents a Connector in Twingate."
           properties:
             spec:
               type: object
+              description: TwingateConnectorSpec defines the desired state of TwingateConnector
               x-kubernetes-validations:
                 - rule: (!has(oldSelf.id) || self.id == oldSelf.id)
                   message: "id is immutable once set"
@@ -33,35 +35,45 @@ spec:
                   type: string
                   nullable: false
                   maxLength: 30
+                  description: Name of the Connector (optional, if not specified Twingate will give a random name)
                 image:
                   type: object
+                  description: "Image defines the image to use for the Connector."
                   properties:
                     repository:
                       type: string
                       default: twingate/connector
+                      description: "Repository to use for the Connector."
                     tag:
                       type: string
                       default: "1"
+                      description: "Tag to use for the Connector."
                 imagePolicy:
                     type: object
+                    description: "ImagePolicy defines the image to use for the Connector and a schedule to keep it up to date."
                     required: ["provider"]
                     properties:
                       provider:
                         type: string
+                        description: "Provider to use for checking for new versions."
                         enum:
                           - dockerhub
                       repository:
                         type: string
                         default: twingate/connector
+                        description: "Repository to check for new versions tags."
                       schedule:
                         type: string
                         nullable: false
+                        description: "Cron schedule to check for new versions."
                       version:
                         type: string
                         nullable: false
+                        description: "Semver version specifier (ex: '^1.0.0')."
                       allowPrerelease:
                         type: boolean
                         default: false
+                        description: "Allow pre-release versions."
                 containerExtra:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true

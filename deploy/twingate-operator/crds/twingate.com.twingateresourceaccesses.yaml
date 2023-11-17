@@ -11,9 +11,11 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
+          description: "TwingateResourceAccess represents a resource access policy in Twingate."
           properties:
             spec:
               type: object
+              description: "TwingateResourceAccessSpec defines the desired state of TwingateResourceAccess"
               x-kubernetes-validations:
                 - rule: self.principalId == oldSelf.principalId
                   message: "principalId is immutable"
@@ -22,6 +24,7 @@ spec:
                   type: string
                   nullable: False
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
+                  description: "principalId is the ID of the principal to provide access to the resource."
                 securityPolicyId:
                   type: string
                   nullable: True
@@ -29,18 +32,19 @@ spec:
                 resourceRef:
                   type: object
                   nullable: False
+                  description: "resourceRef specifies the TwingateResource reference to provide access to."
                   x-kubernetes-validations:
                     - rule: self == oldSelf
-                      message: "resourceRef is immutable"
+                      message: "resourceRef is immutable."
                   properties:
                     name:
                       type: string
                       nullable: false
-                      description: Name of the resource
+                      description: "Name of the resource."
                     namespace:
                       type: string
                       nullable: true
-                      description: Namespace of the resource
+                      description: "Namespace of the resource."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

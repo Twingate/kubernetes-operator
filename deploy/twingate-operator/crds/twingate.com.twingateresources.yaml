@@ -11,12 +11,15 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
+          description: "TwingateResource represents a resource in Twingate."
           properties:
             spec:
               type: object
+              description: "TwingateResourceSpec defines the desired state of TwingateResource"
               x-kubernetes-validations:
                 - rule: (self.isBrowserShortcutEnabled && !(self.address.contains('*') || self.address.contains('?'))) || (self.isBrowserShortcutEnabled == false)
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
+              required: ["name", "address"]
               properties:
                 id:
                   type: string
@@ -24,15 +27,19 @@ spec:
                 name:
                   type: string
                   nullable: false
+                  description: "Name of the resource."
                 address:
                   type: string
                   nullable: false
+                  description: "Address of the resource."
                 alias:
                   type: string
                   nullable: true
+                  description: "Alias of the resource."
                 isBrowserShortcutEnabled:
                   type: boolean
                   default: false
+                  description: "isBrowserShortcutEnabled specifies whether the resource will display a browser shortcut in the Twingate client."
                 securityPolicyId:
                   type: string
                   nullable: true
@@ -40,16 +47,20 @@ spec:
                 isVisible:
                   type: boolean
                   default: true
+                  description: "isVisible specifies whether the resource will display in the main resources list in the Twingate client."
                 protocols:
                   type: object
                   nullable: true
+                  description: "protocols specifies the resource's protocol policies."
                   properties:
                     allowIcmp:
                       type: boolean
                       nullable: true
+                      description: "allowIcmp specifies whether the resource will allow ICMP traffic."
                     tcp:
                       type: object
                       nullable: true
+                      description: "tcp specifies the resource's TCP protocol policy."
                       x-kubernetes-validations:
                         - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED" && size(self.ports) > 0)
                           message: "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
@@ -82,6 +93,7 @@ spec:
                     udp:
                       type: object
                       nullable: true
+                      description: "udp specifies the resource's UDP protocol policy."
                       x-kubernetes-validations:
                         - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED" && size(self.ports) > 0)
                           message: "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"

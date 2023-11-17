@@ -104,7 +104,6 @@ gen-api-docs:
 	go install fybrik.io/crdoc@latest
 	crdoc --resources deploy/twingate-operator/crds --output docs/api.md
 
-
 .PHONY: run
 run:
 	poetry run kopf run ./main.py -A --verbose --liveness=http://0.0.0.0:8080/healthz

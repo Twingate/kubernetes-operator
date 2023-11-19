@@ -223,7 +223,7 @@ class ConnectorImagePolicy(BaseModel):
         ConnectorImagePolicyProvidersEnum.dockerhub
     )
     repository: str = "twingate/connector"
-    schedule: str | None = "0 0 * * *"
+    schedule: str = "0 0 * * *"
     version: str = "^1.0.0"
     allow_prerelease: bool = False
 
@@ -246,10 +246,7 @@ class ConnectorImagePolicy(BaseModel):
                 raise ValueError("Invalid schedule value") from vex
         return v
 
-    def get_next_date_iso8601(self) -> str | None:
-        if not self.schedule:
-            return None
-
+    def get_next_date_iso8601(self) -> str:
         next_date = croniter(self.schedule, pendulum.now("UTC")).get_next(datetime)
         return pendulum.instance(next_date).to_iso8601_string()
 

@@ -101,14 +101,6 @@ def test_deserialization_fails_on_invalid_schedule(sample_connector_object_image
         TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 
 
-def test_version_policy_get_next_date_iso8601_returns_none_if_no_schedule(
-    sample_connector_object_imagepolicy,
-):
-    sample_connector_object_imagepolicy["spec"]["imagePolicy"]["schedule"] = None
-    crd = TwingateConnectorCRD(**sample_connector_object_imagepolicy)
-    assert crd.spec.image_policy.get_next_date_iso8601() is None
-
-
 def test_version_policy_get_next_date_iso8601_returns_right_date(
     sample_connector_object_imagepolicy, freezer
 ):

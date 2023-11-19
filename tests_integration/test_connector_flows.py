@@ -49,6 +49,16 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
+        # Check that if pod is deleted we recreate it
+        kubectl_delete(f"pod/{connector_name}")
+        time.sleep(10)
+        pod = kubectl_get("pod", connector_name)
+        assert pod["status"]["phase"] == "Running"
+        assert pod["metadata"]["annotations"]["twingate.com/kopf-managed"] == "yes"
+        assert pod["metadata"]["labels"]["twingate.com/connector"] == connector_name
+        assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
+        assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
+
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
 

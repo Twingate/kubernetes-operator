@@ -1,4 +1,5 @@
 import base64
+import time
 
 import kopf
 import kubernetes.client
@@ -180,7 +181,19 @@ def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
     When pod is deleted we can't recreate it right away because we want to
     use the same name. So when it's deleted, `twingate_connector_pod_deleted` annotates
     it's connector object so that we get to this handler and can recreate it.
+
+    NOTE: This handler will get called as soon as we add the label to the pod, which
+    is before the pod is actually deleted. So we need to wait for the pod to actually
+    get deleted before we can recreate it.
     """
+
+    def is_conflict_already_exists(apiex):
+        return (
+            apiex.status == 409
+            and apiex.reason == "Conflict"
+            and "AlreadyExists" in str(apiex)
+        )
+
     logger.info("twingate_connector_recreate_pod: %s.", body)
     settings = memo.twingate_settings
     crd = TwingateConnectorCRD(**body)
@@ -190,8 +203,26 @@ def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
     kopf.adopt(pod, owner=body, strict=True, forced=True)
     kopf.label(pod, {"twingate.com/connector": crd.metadata.name})
 
+    retry_count = 0
     kapi = kubernetes.client.CoreV1Api()
-    kapi.create_namespaced_pod(namespace=namespace, body=pod)
+    while True:
+        try:
+            kapi.create_namespaced_pod(namespace=namespace, body=pod)
+            break
+        except kubernetes.client.exceptions.ApiException as apiex:  # noqa: PERF203
+            if is_conflict_already_exists(apiex):
+                # Pod is not deleted yet...  retry
+                logger.info(
+                    "Pod %s not deleted yet. Retrying (%s)...",
+                    pod.metadata.name,
+                    retry_count,
+                )
+                retry_count += 1
+                if retry_count > 3:
+                    raise
+                time.sleep(2)
+            else:
+                raise
 
 
 @kopf.on.delete("twingateconnector")

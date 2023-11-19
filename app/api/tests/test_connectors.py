@@ -21,7 +21,7 @@ class TestConnectorTokens:
         assert c.refresh_token == "rt"  # noqa: S105 # nosec
 
 
-class TestTwingateConnectorsAPI:
+class TestTwingateConnectorAPI:
     def test_get_connector_with_valid_id_succeeds(
         self, test_url, api_client, connector_factory, mocked_responses
     ):

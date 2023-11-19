@@ -91,7 +91,7 @@ mutation DeleteResource($id: ID!) {
 )
 
 
-class TwingateConnectorsAPI:
+class TwingateConnectorAPI:
     def get_connector(
         self: TwingateClientProtocol, connector_id: str
     ) -> Connector | None:

@@ -223,19 +223,19 @@ class TestTwingateResourceAPIs:
         self, test_url, api_client, mocked_responses
     ):
         failed_response = """
+            {
+              "errors": [
                 {
-                  "errors": [
-                    {
-                      "message": "{'id': ['Unable to parse global ID']}",
-                      "locations": [{"line": 2, "column": 3}],
-                      "path": ["connector"]
-                    }
-                  ],
-                  "data": {
-                    "resourceDelete": null
-                  }
+                  "message": "{'id': ['Unable to parse global ID']}",
+                  "locations": [{"line": 2, "column": 3}],
+                  "path": ["connector"]
                 }
-                """
+              ],
+              "data": {
+                "resourceDelete": null
+              }
+            }
+        """
 
         mocked_responses.post(
             test_url,

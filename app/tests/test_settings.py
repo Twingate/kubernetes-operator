@@ -48,7 +48,7 @@ def test_full_url():
     settings = TwingateOperatorSettings(
         api_key="foo",
         network="foo",
-        host="foo",
+        host="testhost.com",
         remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
     )
-    assert settings.full_url
+    assert settings.full_url == "https://foo.testhost.com"

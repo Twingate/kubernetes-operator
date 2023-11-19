@@ -205,7 +205,7 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
         memo.twingate_client.connector_delete(connector_id)
 
     try:
-        # Remove label from pod so it's delete handler isn't triggered
+        # Remove label from pod so its delete handler isn't triggered
         kapi = kubernetes.client.CoreV1Api()
         kapi.patch_namespaced_pod(
             meta.name,

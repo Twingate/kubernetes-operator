@@ -1,4 +1,3 @@
-import base64
 import time
 
 import kopf
@@ -70,15 +69,22 @@ def get_connector_secret(
 ) -> kubernetes.client.V1Secret:
     return kubernetes.client.V1Secret(
         immutable=True,
-        data={
-            "TWINGATE_ACCESS_TOKEN": base64.b64encode(
-                access_token.encode("ascii")
-            ).decode(),
-            "TWINGATE_REFRESH_TOKEN": base64.b64encode(
-                refresh_token.encode("ascii")
-            ).decode(),
+        string_data={
+            "TWINGATE_ACCESS_TOKEN": access_token,
+            "TWINGATE_REFRESH_TOKEN": refresh_token,
         },
     )
+    # return kubernetes.client.V1Secret(
+    #     immutable=True,
+    #     data={
+    #         "TWINGATE_ACCESS_TOKEN": base64.b64encode(
+    #             access_token.encode("ascii")
+    #         ).decode(),
+    #         "TWINGATE_REFRESH_TOKEN": base64.b64encode(
+    #             refresh_token.encode("ascii")
+    #         ).decode(),
+    #     },
+    # )
 
 
 @kopf.on.create("twingateconnector")

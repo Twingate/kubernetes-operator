@@ -86,9 +86,9 @@ def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
     run.k8s_client_mock.create_namespaced_secret.assert_called_once()
     call_kw = run.k8s_client_mock.create_namespaced_secret.call_args.kwargs
     assert call_kw["namespace"] == "default"
-    assert call_kw["body"].data == {
-        "TWINGATE_ACCESS_TOKEN": "YXQ=",
-        "TWINGATE_REFRESH_TOKEN": "cnQ=",
+    assert call_kw["body"].string_data == {
+        "TWINGATE_ACCESS_TOKEN": "at",
+        "TWINGATE_REFRESH_TOKEN": "rt",
     }
 
     run.k8s_client_mock.create_namespaced_pod.assert_called_once()
@@ -131,9 +131,9 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
     run.k8s_client_mock.create_namespaced_secret.assert_called_once()
     call_kw = run.k8s_client_mock.create_namespaced_secret.call_args.kwargs
     assert call_kw["namespace"] == "default"
-    assert call_kw["body"].data == {
-        "TWINGATE_ACCESS_TOKEN": "YXQ=",
-        "TWINGATE_REFRESH_TOKEN": "cnQ=",
+    assert call_kw["body"].string_data == {
+        "TWINGATE_ACCESS_TOKEN": "at",
+        "TWINGATE_REFRESH_TOKEN": "rt",
     }
 
     run.k8s_client_mock.create_namespaced_pod.assert_called_once()

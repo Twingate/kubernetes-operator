@@ -13,7 +13,7 @@ ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
 
 
 def get_connector_pod(
-    crd: TwingateConnectorCRD, tenant_url: str, image: str
+    crd: TwingateConnectorCRD, tenant_url: str, image: str, log_level: int = 7
 ) -> kubernetes.client.V1Pod:
     spec = crd.spec
     name = crd.metadata.name
@@ -39,7 +39,7 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_DEPLOYED_BY", "value": "operator"},
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": tenant_url},
-                    {"name": "TWINGATE_LOG_LEVEL", "value": "7"},
+                    {"name": "TWINGATE_LOG_LEVEL", "value": str(log_level)},
                 ]+env_labels_version_policy,
                 "envFrom": [
                     {

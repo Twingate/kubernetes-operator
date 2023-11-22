@@ -1,34 +1,21 @@
-import os
-import pathlib
-
 import pytest
 
 from app.version_policy_providers.dockerhub import DockerhubVersionPolicyProvider
 
 
 @pytest.fixture()
-def dockerhub_connector_provider(mocked_responses):
+def dockerhub_connector_provider(shared_datadir, mocked_responses):
+    content = (shared_datadir / "dockerhub_connector_tags_response.json").read_text()
     provider = DockerhubVersionPolicyProvider()
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    file = pathlib.Path(dir_path, "../test_data/dockerhub_connector_tags_response.json")
-    with open(file) as f:
-        data = f.read()
-
-    mocked_responses.get(provider.tags_api_url, status=200, body=data)
-
+    mocked_responses.get(provider.tags_api_url, status=200, body=content)
     return provider
 
 
 @pytest.fixture()
-def dockerhub_operator_provider(mocked_responses):
+def dockerhub_operator_provider(shared_datadir, mocked_responses):
+    content = (shared_datadir / "dockerhub_operator_tags_response.json").read_text()
     provider = DockerhubVersionPolicyProvider()
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    file = pathlib.Path(dir_path, "../test_data/dockerhub_operator_tags_response.json")
-    with open(file) as f:
-        data = f.read()
-
-    mocked_responses.get(provider.tags_api_url, status=200, body=data)
-
+    mocked_responses.get(provider.tags_api_url, status=200, body=content)
     return provider
 
 

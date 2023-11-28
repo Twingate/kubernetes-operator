@@ -36,7 +36,7 @@ main() {
 	install_minikube_release
 
 	# create a cluster
-	"${MINIKUBE}" start --force --kubernetes-version=1.27.4
+	"${MINIKUBE}" start --force
 	"${MINIKUBE}" kubectl -- get pods -A
 
 	"${MINIKUBE}" kubectl -- apply -f ./deploy/twingate-operator/crds/ || true

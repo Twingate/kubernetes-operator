@@ -69,7 +69,7 @@ spec:
                       version:
                         type: string
                         nullable: false
-                        description: "Semver version specifier (ex: '^1.0.0')."
+                        description: "Semver version specifier (ex: '^1.0.0'). Uses NPM spec: https://github.com/npm/node-semver#ranges"
                       allowPrerelease:
                         type: boolean
                         default: false

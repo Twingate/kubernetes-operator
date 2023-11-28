@@ -1,20 +1,35 @@
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
-  name: my-connector
+  name: my-connector-fixed-image
 spec:
-  # Can use `image` OR `imagePolicy`
-  # - `image` - is manual hardcoded image - you can point it to any repository and any tag you want and its fixed
-  # - `imagePolicy` - gets a schedule and a versionSpecifier and auto updates
+  # Sets policy to use the image "twingate/connector:latest" and never update it.
   image:
     repository: twingate/connector
     tag: latest
+  containerExtra:
+    resources:
+      requests:
+        cpu: 314m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  podExtra: {}
+---
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: my-connector-auto-updating-image
+spec:
+  # Sets policy to check once a day at 00:00 (UTC) for a new version of the image based on
+  # the version specifier "^1.0.0". If a new version is found, it will be deployed.
+  # Version specifier uses NPM spec: https://github.com/npm/node-semver#ranges
   imagePolicy:
     provider: "dockerhub" # dockerhub | google
-    schedule: "* * * * *"
+    schedule: "0 0 * * *"
     repository: twingate/connector
     version: "^1.0.0"
-
   containerExtra:
     resources:
       requests:

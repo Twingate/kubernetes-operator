@@ -2,7 +2,6 @@ import re
 from collections.abc import Iterator
 
 from google.cloud import artifactregistry_v1
-from semantic_version import Version
 
 from app.version_policy_providers import VersionPolicyProvider
 
@@ -32,37 +31,8 @@ class DockerhubVersionPolicyProvider(VersionPolicyProvider):
         request = artifactregistry_v1.ListTagsRequest(parent=self.parent_name)
         response = client.list_tags(request)
 
-        tags = []
         for page in response.pages:
             for tag in page.tags:
-                # Tag name is something like 'projects/twingate-dev/locations/us/repositories/connector/packages/connector/tags/0'
+                # Tag name is something like '<self.parent_name>/tags/0'
                 tag_values = list(filter(None, tag.name.split("/")))
-                tags.append(tag_values[-1])
-
-        return tags
-
-    def get_all_semver_tags(
-        self, *, allow_prerelease: bool = False
-    ) -> Iterator[Version]:
-        for tag in self.get_all_tags():
-            try:
-                v = Version(tag)
-                if v.prerelease and not allow_prerelease:
-                    continue
-
-                yield v
-            except ValueError:
-                continue
-
-    def get_latest(
-        self, specifier: str, *, allow_prerelease: bool = False
-    ) -> Version | None:
-        try:
-            return max(
-                self.get_all_semver_tags_by_specifier(
-                    specifier, allow_prerelease=allow_prerelease
-                )
-            )
-        except ValueError:
-            # if `max` is called on an empty sequence
-            return None
+                yield tag_values[-1]

@@ -212,6 +212,7 @@ class TwingateResourceAccessCRD(BaseK8sModel):
 
 class ConnectorImagePolicyProvidersEnum(str, Enum):
     dockerhub = "dockerhub"
+    google = "google"
 
 
 class ConnectorImagePolicy(BaseModel):

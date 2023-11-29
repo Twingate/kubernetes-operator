@@ -10,12 +10,15 @@ from app.version_policy_providers import VersionPolicyProvider
 DOCKER_REPO_REGEX = r"^(?P<location>.*)-docker.pkg.dev\/(?P<project>[^\/]+)\/(?P<repo>[^\/]+)\/(?P<image>[^\/]+)"
 
 
-class DockerhubVersionPolicyProvider(VersionPolicyProvider):
+class GoogleVersionPolicyProvider(VersionPolicyProvider):
     DOCKER_REPO_REGEX = (
         r"^(?P<location>.*)-docker.pkg.dev\/(?P<project>[^\/]+)\/(?P<repo>[^\/]+)"
     )
 
-    def __init__(self, repository: str):
+    def __init__(self, repository: str | None = None):
+        if not repository:
+            raise ValueError("Must specify 'repository'")
+
         matches = re.match(DOCKER_REPO_REGEX, repository)
         if not matches:
             raise ValueError(f"Invalid image name: {repository}")

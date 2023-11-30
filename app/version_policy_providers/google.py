@@ -5,21 +5,15 @@ from google.cloud import artifactregistry_v1
 
 from app.version_policy_providers import VersionPolicyProvider
 
-# IMAGE = "us-docker.pkg.dev/twingate-dev/connector/connector"
-
-DOCKER_REPO_REGEX = r"^(?P<location>.*)-docker.pkg.dev\/(?P<project>[^\/]+)\/(?P<repo>[^\/]+)\/(?P<image>[^\/]+)"
-
 
 class GoogleVersionPolicyProvider(VersionPolicyProvider):
-    DOCKER_REPO_REGEX = (
-        r"^(?P<location>.*)-docker.pkg.dev\/(?P<project>[^\/]+)\/(?P<repo>[^\/]+)"
-    )
+    DOCKER_REPO_REGEX = r"^(?P<location>.*)-docker.pkg.dev\/(?P<project>[^\/]+)\/(?P<repo>[^\/]+)\/(?P<image>[^\/]+)"
 
     def __init__(self, repository: str | None = None):
         if not repository:
             raise ValueError("Must specify 'repository'")
 
-        matches = re.match(DOCKER_REPO_REGEX, repository)
+        matches = re.match(self.DOCKER_REPO_REGEX, repository)
         if not matches:
             raise ValueError(f"Invalid image name: {repository}")
 

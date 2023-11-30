@@ -1,3 +1,6 @@
+from collections import namedtuple
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from app.version_policy_providers import GoogleVersionPolicyProvider
@@ -25,3 +28,27 @@ def test_init_invalid_repository():
 def test_init_none_repository():
     with pytest.raises(ValueError, match="Must specify 'repository'"):
         GoogleVersionPolicyProvider(repository=None)
+
+
+def test_get_all_tags():
+    Tag = namedtuple("Tag", ["name"])
+    tag_mocks = [
+        Tag(
+            name=f"projects/proj/locations/us/repositories/d/packages/connector/tags/0.{i}.0"
+        )
+        for i in range(1, 6)
+    ]
+    list_tags_result = MagicMock(
+        pages=[MagicMock(tags=tag_mocks[0:3]), MagicMock(tags=tag_mocks[3:])]
+    )
+
+    expected_tags = [f"0.{i}.0" for i in range(1, 6)]
+
+    with patch(
+        "app.version_policy_providers.google.artifactregistry_v1.ArtifactRegistryClient.list_tags",
+        return_value=list_tags_result,
+    ):
+        provider = GoogleVersionPolicyProvider(
+            repository="us-docker.pkg.dev/proj/d/connector"
+        )
+        assert list(provider.get_all_tags()) == expected_tags

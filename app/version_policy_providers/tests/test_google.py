@@ -6,6 +6,12 @@ import pytest
 from app.version_policy_providers import GoogleVersionPolicyProvider
 
 
+@pytest.fixture(autouse=True, scope="module")
+def _mock_google_auth():
+    with patch("google.auth.default", return_value=(MagicMock(), "proj")):
+        yield
+
+
 def test_init_valid_repository():
     provider = GoogleVersionPolicyProvider(
         repository="us-docker.pkg.dev/proj/d/connector"

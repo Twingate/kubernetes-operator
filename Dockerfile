@@ -36,15 +36,14 @@ ENV POETRY_CACHE_DIR=$POETRY_HOME/.cache/pypoetry \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# hadolint ignore=DL3013
-RUN pip install -U --no-cache-dir pip
-
 RUN curl -sSL https://install.python-poetry.org | python -
 
 COPY poetry.lock pyproject.toml ./
 
 # Install Python dependencies
+# hadolint ignore=DL3013
 RUN python -m venv "$VIRTUAL_ENV" && \
+    pip install -U --no-cache-dir pip && \
     poetry install --only main --sync --no-root --compile -n -vvv
 
 COPY . .

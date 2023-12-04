@@ -36,7 +36,7 @@ ENV POETRY_CACHE_DIR=$POETRY_HOME/.cache/pypoetry \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# # hadolint ignore=DL3013
+# hadolint ignore=DL3013
 RUN pip install -U --no-cache-dir pip
 
 RUN curl -sSL https://install.python-poetry.org | python -

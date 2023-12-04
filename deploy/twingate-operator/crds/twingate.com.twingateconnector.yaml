@@ -58,6 +58,7 @@ spec:
                         description: "Provider to use for checking for new versions."
                         enum:
                           - dockerhub
+                          - google
                       repository:
                         type: string
                         default: twingate/connector

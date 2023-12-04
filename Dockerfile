@@ -41,7 +41,9 @@ RUN curl -sSL https://install.python-poetry.org | python -
 COPY poetry.lock pyproject.toml ./
 
 # Install Python dependencies
+# hadolint ignore=DL3013
 RUN python -m venv "$VIRTUAL_ENV" && \
+    pip install -U --no-cache-dir pip && \
     poetry install --only main --sync --no-root --compile -n -vvv
 
 COPY . .

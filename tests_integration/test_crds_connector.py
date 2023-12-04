@@ -68,6 +68,22 @@ class TestConnectorCRD:
         )
 
         assert result.returncode == 0
+
+        data = kubectl_get("tc", unique_connector_name)
+        assert data == {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateConnector",
+            "metadata": {
+                "creationTimestamp": ANY,
+                "generation": 1,
+                "name": unique_connector_name,
+                "namespace": "default",
+                "resourceVersion": ANY,
+                "uid": ANY,
+            },
+            "spec": {"logLevel": 4, "name": unique_connector_name},
+        }
+
         kubectl_delete(f"tc/{unique_connector_name}")
 
     def test_loglevel_too_high(self, unique_connector_name):
@@ -139,6 +155,7 @@ class TestConnectorCRD:
             },
             "spec": {
                 "image": {"repository": "twingate/connector", "tag": "latest"},
+                "logLevel": 3,
                 "name": unique_connector_name,
             },
         }
@@ -181,6 +198,7 @@ class TestConnectorCRD:
                     "allowPrerelease": False,
                 },
                 "name": unique_connector_name,
+                "logLevel": 3,
             },
         }
 

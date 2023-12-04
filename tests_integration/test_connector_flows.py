@@ -17,6 +17,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
             name: {connector_name}
         spec:
             name: {connector_name}
+            logLevel: 7
             imagePolicy:
                 provider: "dockerhub"
                 schedule: "* * * * *"
@@ -48,6 +49,10 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         assert pod["metadata"]["labels"]["twingate.com/connector"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
+
+        container = pod["spec"]["containers"][0]
+        container_env = {t["name"]: t["value"] for t in container["env"]}
+        assert container_env["TWINGATE_LOG_LEVEL"] == "7"
 
         # Check that if pod is deleted we recreate it
         kubectl_delete(f"pod/{connector_name}")

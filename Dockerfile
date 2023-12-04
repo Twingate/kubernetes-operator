@@ -42,6 +42,7 @@ COPY poetry.lock pyproject.toml ./
 
 # Install Python dependencies
 RUN python -m venv "$VIRTUAL_ENV" && \
+    pip install -U pip && \
     poetry install --only main --sync --no-root --compile -n -vvv
 
 COPY . .

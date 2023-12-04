@@ -54,6 +54,62 @@ class TestConnectorCRD:
         stderr = ex.value.stderr.decode()
         assert "Can define either `image` or `imagePolicy`, not both." in stderr
 
+    def test_loglevel(self, unique_connector_name):
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateConnector
+            metadata:
+                name: {unique_connector_name}
+            spec:
+                name: {unique_connector_name}
+                logLevel: 4
+            """
+        )
+
+        assert result.returncode == 0
+        kubectl_delete(f"tc/{unique_connector_name}")
+
+    def test_loglevel_too_high(self, unique_connector_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                spec:
+                    name: {unique_connector_name}
+                    logLevel: 8
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "spec.logLevel: Invalid value: 8: spec.logLevel in body should be less than or equal to 7"
+            in stderr
+        )
+
+    def test_loglevel_too_low(self, unique_connector_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                spec:
+                    name: {unique_connector_name}
+                    logLevel: -2
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert (
+            "spec.logLevel: Invalid value: -2: spec.logLevel in body should be greater than or equal to -1"
+            in stderr
+        )
+
     def test_image(self, unique_connector_name):
         result = kubectl_create(
             f"""

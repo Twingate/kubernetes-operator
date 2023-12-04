@@ -36,13 +36,13 @@ ENV POETRY_CACHE_DIR=$POETRY_HOME/.cache/pypoetry \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+RUN pip install -U pip
 RUN curl -sSL https://install.python-poetry.org | python -
 
 COPY poetry.lock pyproject.toml ./
 
 # Install Python dependencies
 RUN python -m venv "$VIRTUAL_ENV" && \
-    pip install -U pip && \
     poetry install --only main --sync --no-root --compile -n -vvv
 
 COPY . .

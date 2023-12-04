@@ -2,14 +2,14 @@
 from base64 import b64encode
 
 import pytest
-import responses
 from pytest_factoryboy import register
 
 from app.api import TwingateAPIClient
 from app.settings import TwingateOperatorSettings
 
-from .factories import ResourceFactory
+from .factories import ConnectorFactory, ResourceFactory
 
+register(ConnectorFactory)
 register(ResourceFactory)
 
 
@@ -31,9 +31,3 @@ def api_client(twingate_settings):
 @pytest.fixture()
 def test_url():
     return "https://slug.test.com/api/graphql/"
-
-
-@pytest.fixture()
-def mocked_responses():
-    with responses.RequestsMock() as rsps:
-        yield rsps

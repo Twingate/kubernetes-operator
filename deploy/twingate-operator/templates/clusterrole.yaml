@@ -19,7 +19,10 @@ rules:
     resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
     verbs: [create, patch]
 
-  # Application: read-only access for watching cluster-wide.
+  # Application
   - apiGroups: [twingate.com]
-    resources: [twingateresources, twingateresourceaccesses]
+    resources: [twingateresources, twingateresourceaccesses, twingateconnectors]
+    verbs: [list, watch, patch, get]
+  - apiGroups: ["*"]
+    resources: [pods, services, secrets]
     verbs: [list, watch, patch, get]

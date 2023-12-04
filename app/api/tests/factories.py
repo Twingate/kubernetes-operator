@@ -3,6 +3,7 @@ from base64 import b64encode
 
 import factory
 
+from app.api.client_connectors import Connector
 from app.api.client_resources import (
     Resource,
     ResourceAddress,
@@ -58,3 +59,11 @@ class ResourceFactory(factory.Factory):
     is_browser_shortcut_enabled = False
     remote_network = factory.SubFactory(ResourceRemoteNetworkFactory)
     security_policy = factory.SubFactory(ResourceSecurityPolicyFactory)
+
+
+class ConnectorFactory(factory.Factory):
+    class Meta:
+        model = Connector
+
+    id = factory.Sequence(lambda n: to_global_id("Connector", str(n)))
+    name = factory.Faker("slug")

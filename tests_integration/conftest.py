@@ -32,10 +32,3 @@ def kopf_settings():
 @pytest.fixture()
 def unique_resource_name(request):
     return request.node.name.replace("_", "-") + "-" + str(uuid.uuid4())
-
-
-def pytest_collection_modifyitems(session, config, items):
-    # mark all tests in `test_integration` as integration tests
-    for item in items:
-        if "tests_integration/" in str(item.fspath):
-            item.add_marker("integration")

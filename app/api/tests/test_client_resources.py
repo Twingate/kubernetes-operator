@@ -203,9 +203,7 @@ class TestTwingateResourceAPIs:
         result = api_client.resource_update(crd)
         assert result == resource
 
-    def test_resource_delete(
-        self, test_url, api_client, resource_factory, mocked_responses
-    ):
+    def test_resource_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"resourceDelete": {"ok": True}}})
 
         mocked_responses.post(
@@ -220,3 +218,34 @@ class TestTwingateResourceAPIs:
         )
         result = api_client.resource_delete("some-id")
         assert result is True
+
+    def test_resource_delete_with_invalid_id_returns_false(
+        self, test_url, api_client, mocked_responses
+    ):
+        failed_response = """
+            {
+              "errors": [
+                {
+                  "message": "{'id': ['Unable to parse global ID']}",
+                  "locations": [{"line": 2, "column": 3}],
+                  "path": ["connector"]
+                }
+              ],
+              "data": {
+                "resourceDelete": null
+              }
+            }
+        """
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=failed_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "some-id"}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.resource_delete("some-id")
+        assert result is False

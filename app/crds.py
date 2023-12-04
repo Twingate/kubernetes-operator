@@ -1,13 +1,25 @@
 import logging
 from collections.abc import MutableMapping
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import kubernetes.client
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+import pendulum
+from croniter import croniter
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 from pydantic.alias_generators import to_camel
+from semantic_version import NpmSpec
 
 from app.settings import get_settings
+from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
 OptionalK8sObject = K8sObject | None
@@ -191,6 +203,116 @@ class TwingateResourceAccessCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
 
     spec: ResourceAccessSpec
+
+
+# endregion
+
+# region TwingateConnector
+
+
+class ConnectorImagePolicyProvidersEnum(str, Enum):
+    dockerhub = "dockerhub"
+
+
+class ConnectorImagePolicy(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    provider: ConnectorImagePolicyProvidersEnum = (
+        ConnectorImagePolicyProvidersEnum.dockerhub
+    )
+    repository: str = "twingate/connector"
+    schedule: str = "0 0 * * *"
+    version: str = "^1.0.0"
+    allow_prerelease: bool = False
+
+    @field_validator("version")
+    @classmethod
+    def check_valid_version_specifier(cls, v: str, info: ValidationInfo) -> str:
+        try:
+            NpmSpec(v)
+        except ValueError as vex:
+            raise ValueError("Invalid version specifier") from vex
+        return v
+
+    @field_validator("schedule")
+    @classmethod
+    def check_valid_crontab(cls, v: str, info: ValidationInfo) -> str:
+        if v:
+            try:
+                croniter(v)
+            except ValueError as vex:
+                raise ValueError("Invalid schedule value") from vex
+        return v
+
+    def get_next_date_iso8601(self) -> str:
+        next_date = croniter(self.schedule, pendulum.now("UTC")).get_next(datetime)
+        return pendulum.instance(next_date).to_iso8601_string()
+
+    def get_image(self) -> str:
+        provider = get_provider(self.provider.value, repository=self.repository)
+        if tag := provider.get_latest(
+            self.version, allow_prerelease=self.allow_prerelease
+        ):
+            return f"{self.repository}:{tag}"
+
+        raise ValueError(
+            f"Could not find valid tag for '{self.version}' at '{self.repository}'"
+        )
+
+
+class ConnectorImage(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    repository: str = "twingate/connector"
+    tag: str = "1"
+
+    def __str__(self):
+        return f"{self.repository}:{self.tag}"
+
+
+class ConnectorSpec(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    id: str | None = None
+    name: str | None = None
+    image: ConnectorImage | None = None
+    image_policy: ConnectorImagePolicy | None = None
+    container_extra: dict[str, Any] = {}
+    pod_extra: dict[str, Any] = {}
+
+    remote_network_id: str = Field(
+        default_factory=lambda: get_settings().remote_network_id
+    )
+
+    @model_validator(mode="after")
+    def validate_image_or_image_policy(self):
+        if self.image or self.image_policy:
+            return self
+
+        # Default to having `image`
+        return self.model_copy(update=dict(image=ConnectorImage()))
+
+    def get_image(self) -> str:
+        if image := self.image:
+            return str(image)
+
+        if image_policy := self.image_policy:
+            return image_policy.get_image()
+
+        # Impossible to get here because of our model validator
+        raise ValueError("Invalid ConnectorSpec")  # pragma: no cover
+
+
+class TwingateConnectorCRD(BaseK8sModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    spec: ConnectorSpec
 
 
 # endregion

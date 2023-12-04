@@ -1,4 +1,4 @@
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock
 
 from app.crds import ResourceSpec
 from app.handlers.handlers_resource import (
@@ -10,7 +10,7 @@ from app.handlers.handlers_resource import (
 
 
 class TestResourceCreateHandler:
-    def test_create(self, resource_factory):
+    def test_create(self, resource_factory, kopf_info_mock):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
 
@@ -22,17 +22,16 @@ class TestResourceCreateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        with patch("kopf.info") as kopf_info_mock:
-            result = twingate_resource_create(
-                body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
-            )
-            assert result == {
-                "success": True,
-                "twingate_id": resource.id,
-                "created_at": ANY,
-                "updated_at": ANY,
-                "ts": ANY,
-            }
+        result = twingate_resource_create(
+            body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
+        )
+        assert result == {
+            "success": True,
+            "twingate_id": resource.id,
+            "created_at": ANY,
+            "updated_at": ANY,
+            "ts": ANY,
+        }
 
         logger_mock.info.assert_called_once_with("Got a create request: %s", spec)
         memo_mock.twingate_client.resource_create.assert_called_once_with(resource_spec)

@@ -9,8 +9,10 @@ from graphql import DocumentNode
 from requests.adapters import HTTPAdapter, Retry
 
 from app.api.client_connectors import TwingateConnectorAPI
+from app.api.client_groups import TwingateGroupsAPIs
 from app.api.client_resources import TwingateResourceAPIs
 from app.api.client_resources_access import TwingateResourceAccessAPIs
+from app.api.client_service_accounts import TwingateServiceAccountsAPIs
 from app.settings import TwingateOperatorSettings, get_version
 
 log = logging.getLogger(__name__)
@@ -72,7 +74,11 @@ class GraphQLMutationError(Exception):
 
 
 class TwingateAPIClient(
-    TwingateResourceAPIs, TwingateResourceAccessAPIs, TwingateConnectorAPI
+    TwingateConnectorAPI,
+    TwingateGroupsAPIs,
+    TwingateResourceAPIs,
+    TwingateResourceAccessAPIs,
+    TwingateServiceAccountsAPIs,
 ):
     def __init__(
         self,

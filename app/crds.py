@@ -282,6 +282,7 @@ class ConnectorSpec(BaseModel):
 
     id: str | None = None
     name: str | None = None
+    log_level: int = 3
     image: ConnectorImage | None = None
     image_policy: ConnectorImagePolicy | None = None
     container_extra: dict[str, Any] = {}

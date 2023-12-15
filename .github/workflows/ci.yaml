@@ -25,6 +25,17 @@ jobs:
         with:
           dockerfile: Dockerfile
 
+  helm-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.x
+      - name: Display Go version
+        run: go test -v ./...
+
   unit-tests:
     runs-on: ubuntu-latest
     name: Unit tests
@@ -138,7 +149,7 @@ jobs:
   release_dev:
     runs-on: ubuntu-latest
     name: Release dev
-    needs: [dockerfile-lint, unit-tests, e2e-tests, build]
+    needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4

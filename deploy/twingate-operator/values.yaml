@@ -4,6 +4,9 @@
 
 twingateOperator: {}
 #  apiKey: "<api key>"
+#  existingAPIKeySecret:
+#    name: my-secret
+#    key: TWINGATE_API_KEY
 #  network: "<network slug>"
 #  remoteNetworkId: "<remote network id>"
 #  logFormat: "plain|full|json"

@@ -44,11 +44,12 @@ spec:
           - "--verbose"
           - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format={{ $logFormat }}"
-        envFrom:
-          - secretRef:
-              name: {{ include "twingate-operator.fullname" . }}
-              optional: false
         env:
+          - name: TWINGATE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "twingate-operator.secretName" . }}
+                key: {{ include "twingate-operator.secretKey" . }}
           - name: TWINGATE_NETWORK
             value: {{ required "Network name required" .Values.twingateOperator.network }}
           - name: TWINGATE_HOST

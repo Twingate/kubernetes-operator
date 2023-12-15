@@ -60,23 +60,3 @@ Create the name of the service account to use
 {{- default "twingate-operator" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
-
-{{/*
-Get the Secret object name
-*/}}
-{{- define "twingate-operator.secretName" -}}
-{{- if .Values.twingateOperator.existingAPIKeySecret -}}
-{{- printf "%s" (tpl .Values.twingateOperator.existingAPIKeySecret.name $) -}}
-{{- else -}}
-{{- default (include "twingate-operator.fullname" .) -}}
-{{- end -}}
-
-{{/*
-Get the Secret object apikey key
-*/}}
-{{- define "twingate-operator.secretApiKey" -}}
-{{- if .Values.twingateOperator.existingAPIKeySecret -}}
-{{- printf "%s" (tpl .Values.twingateOperator.existingAPIKeySecret.key $) -}}
-{{- else -}}
-{{- printf "TWINGATE_API_KEY" -}}
-{{- end -}}

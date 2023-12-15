@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: 1.21.x
-      - name: Display Go version
+      - name: Run Helm Chart Golden Tests
         run: go test -v ./...
 
   unit-tests:

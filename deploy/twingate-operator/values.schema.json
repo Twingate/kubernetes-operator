@@ -59,7 +59,7 @@
                 "apiKey": { "type": "string" },
                 "existingAPIKeySecret": {
                     "type": "object",
-                    "title": "An existing secret with the API Key to be used by the operator. If this is specified, the apiKey field will be ignored.",
+                    "title": "An existing secret with the API Key to be used by the operator.",
                     "required": ["name", "key"],
                     "properties": {
                         "name": {

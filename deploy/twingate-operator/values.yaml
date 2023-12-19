@@ -2,6 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Required: you have to specify `network`, `remoteNetworkId` and either `apiKey` or `existingAPIKeySecret`
 twingateOperator: {}
 #  apiKey: "<api key>"
 #  existingAPIKeySecret:

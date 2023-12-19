@@ -47,9 +47,43 @@
             "type": "object",
             "default": {},
             "title": "The twingateOperator Schema",
-            "required": ["apiKey", "network", "remoteNetworkId"],
+            "oneOf": [
+                {
+                    "required": ["apiKey", "network", "remoteNetworkId"]
+                },
+                {
+                    "required": ["existingAPIKeySecret", "network", "remoteNetworkId"]
+                }
+            ],
             "properties": {
                 "apiKey": { "type": "string" },
+                "existingAPIKeySecret": {
+                    "type": "object",
+                    "title": "An existing secret with the API Key to be used by the operator.",
+                    "required": ["name", "key"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The name of the Secret object",
+                            "examples": [
+                                "twingate-operator"
+                            ]
+                        },
+                        "key": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The key for the API Key value in the Secret object",
+                            "examples": [
+                                "TWINGATE_API_KEY"
+                            ]
+                        }
+                    },
+                    "examples": [{
+                        "name": "twingate-operator",
+                        "key": "apiKey"
+                    }]
+                },
                 "network": { "type": "string" },
                 "remoteNetworkId": { "type": "string" },
                 "logFormat": {

@@ -15,7 +15,6 @@ class RemoteNetwork(BaseModel):
             fragment RemoteNetworkFields on RemoteNetwork {
                 id
                 name
-                location
             }
         """
 

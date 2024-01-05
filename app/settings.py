@@ -8,8 +8,6 @@ from typing import Annotated
 from pydantic.functional_validators import AfterValidator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.api import TwingateAPIClient
-
 
 def validate_graphql_global_id(value: str) -> str:
     value_decoded: str = ""
@@ -34,7 +32,7 @@ class TwingateOperatorSettings(BaseSettings):
     api_key: str
     network: str
     remote_network_id: GlobalID
-    remote_network_name: str
+    remote_network_name: str | None = None
     host: str = "twingate.com"
 
     @property
@@ -42,6 +40,8 @@ class TwingateOperatorSettings(BaseSettings):
         return f"https://{self.network}.{self.host}"
 
     def __init__(self, *args, **kwargs):
+        from app.api import TwingateAPIClient
+
         super().__init__(*args, **kwargs)
         if self.remote_network_name:
             # Get network id

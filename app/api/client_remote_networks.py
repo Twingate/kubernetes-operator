@@ -4,6 +4,8 @@ from gql import gql
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel
 
+from app.api.protocol import TwingateClientProtocol
+
 
 class RemoteNetwork(BaseModel):
     id: str
@@ -34,7 +36,9 @@ QUERY_GET_RN_BY_NAME = gql(
 
 
 class TwingateRemoteNetworksAPIs:
-    def get_remote_network_by_name(self, name: str) -> RemoteNetwork | None:
+    def get_remote_network_by_name(
+        self: TwingateClientProtocol, name: str
+    ) -> RemoteNetwork | None:
         try:
             result = self.execute_gql(
                 QUERY_GET_RN_BY_NAME, variable_values={"name": name}

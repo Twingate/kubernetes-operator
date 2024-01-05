@@ -26,6 +26,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+        time.sleep(10)
         kubectl_create(OBJ)
         time.sleep(10)
 

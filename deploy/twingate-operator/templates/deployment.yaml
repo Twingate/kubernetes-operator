@@ -54,8 +54,14 @@ spec:
             value: {{ required "Network name required" .Values.twingateOperator.network }}
           - name: TWINGATE_HOST
             value: {{ .Values.twingateOperator.host | default "twingate.com" }}
+          {{- if .Values.twingateOperator.remoteNetworkId }}
           - name: TWINGATE_REMOTE_NETWORK_ID
-            value: {{ required "Remote Network ID required" .Values.twingateOperator.remoteNetworkId }}
+            value: {{ .Values.twingateOperator.remoteNetworkId }}
+          {{- end }}
+          {{- if .Values.twingateOperator.remoteNetworkName }}
+          - name: TWINGATE_REMOTE_NETWORK_NAME
+            value: {{ .Values.twingateOperator.remoteNetworkName }}
+          {{- end }}
         livenessProbe:
           httpGet:
             path: /healthz

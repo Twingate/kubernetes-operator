@@ -46,21 +46,25 @@ func TestHelmRender(t *testing.T) {
     for _, f := range files {
         if !f.IsDir() && strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), ".golden.yaml") {
             // Render this values.yaml file
-            output := helm.RenderTemplate(t,
+            output, error := helm.RenderTemplateE(t,
                 &helm.Options{
                     ValuesFiles: []string{"test/golden/" + f.Name()},
                 },
                 "./twingate-operator",
                 "test",
-                nil,
+                []string{},
             )
 
             goldenFile := "test/golden/" + strings.TrimSuffix(f.Name(), filepath.Ext(".yaml")) + ".golden.yaml"
 
-            // Replace `cn.chart` helper value with a stable value for testing
-            regex := regexp.MustCompile(fmt.Sprintf("%s-%s", chartYaml.Name, chartYaml.Version))
-            bytes := regex.ReplaceAll([]byte(output), []byte(fmt.Sprintf("%s-major.minor.patch-test", chartYaml.Name)))
-            output = fmt.Sprintf("%s\n", string(bytes))
+            if error != nil {
+                output = fmt.Sprintf("%v\n", error)
+            } else {
+                // Replace `cn.chart` helper value with a stable value for testing
+                regex := regexp.MustCompile(fmt.Sprintf("%s-%s", chartYaml.Name, chartYaml.Version))
+                bytes := regex.ReplaceAll([]byte(output), []byte(fmt.Sprintf("%s-major.minor.patch-test", chartYaml.Name)))
+                output = fmt.Sprintf("%s\n", string(bytes))
+            }
 
             if *update {
                 err := os.WriteFile(goldenFile, []byte(output), 0644)

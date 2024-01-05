@@ -53,6 +53,12 @@
                 },
                 {
                     "required": ["existingAPIKeySecret", "network", "remoteNetworkId"]
+                },
+                {
+                    "required": ["apiKey", "network", "remoteNetworkName"]
+                },
+                {
+                    "required": ["existingAPIKeySecret", "network", "remoteNetworkName"]
                 }
             ],
             "properties": {

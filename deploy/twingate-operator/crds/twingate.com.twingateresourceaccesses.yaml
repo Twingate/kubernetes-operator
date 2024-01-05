@@ -19,12 +19,32 @@ spec:
               x-kubernetes-validations:
                 - rule: self.principalId == oldSelf.principalId
                   message: "principalId is immutable"
+              oneOf:
+                - properties:
+                  required: ["resourceRef", "principalId"]
+                - properties:
+                  required: ["resourceRef", "principalExternalRef"]
               properties:
                 principalId:
                   type: string
                   nullable: False
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
                   description: "principalId is the ID of the principal to provide access to the resource."
+                principalExternalRef:
+                  type: object
+                  nullable: False
+                  required: ["type", "matchName"]
+                  properties:
+                    type:
+                      type: string
+                      description: "Type of the external reference."
+                      enum:
+                        - group
+                        - serviceaccount
+                    matchName:
+                      type: string
+                      nullable: False
+                      description: "Name of the external reference to match."
                 securityPolicyId:
                   type: string
                   nullable: True

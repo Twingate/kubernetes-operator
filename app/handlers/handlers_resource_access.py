@@ -4,11 +4,30 @@ from typing import Any
 
 import kopf
 
-from app.api.client import GraphQLMutationError
+from app.api.client import GraphQLMutationError, TwingateAPIClient
 from app.crds import ResourceAccessSpec
 from app.handlers.base import fail, success
 
 K8sObject = MutableMapping[Any, Any]
+
+
+def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) -> str:
+    if principal_id := access_crd.principal_id:
+        return principal_id
+
+    principal_id = None
+    pref = access_crd.principal_external_ref
+    if pref.type == "group":
+        principal_id = client.get_group_id(pref.match_name)
+    elif pref.type == "serviceaccount":
+        principal_id = client.get_service_account_id(pref.match_name)
+    else:
+        raise ValueError(f"Unknown principal type: {pref.type}")
+
+    if not principal_id:
+        raise ValueError(f"Principal {pref.type} {pref.match_name} not found.")
+
+    return principal_id
 
 
 @kopf.on.create("twingateresourceaccess")
@@ -21,13 +40,14 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         kopf.warn(body, reason="ResourceNotFound", message=err)
         return {"success": False, "error": err}
 
-    spec = resource_crd.spec
-    if not spec.id:
+    if not resource_crd.spec.id:
         raise kopf.TemporaryError("Resource not yet created, retrying...", delay=15)
 
+    resource_id = resource_crd.spec.id
     try:
+        principal_id = get_principal_id(access_crd, memo.twingate_client)
         memo.twingate_client.resource_access_add(
-            spec.id, access_crd.principal_id, access_crd.security_policy_id
+            resource_id, principal_id, access_crd.security_policy_id
         )
         kopf.info(
             body,

@@ -47,18 +47,29 @@
             "type": "object",
             "default": {},
             "title": "The twingateOperator Schema",
-            "oneOf": [
+            "allOf": [
                 {
-                    "required": ["apiKey", "network", "remoteNetworkId"]
+                    "required": ["network"]
                 },
                 {
-                    "required": ["existingAPIKeySecret", "network", "remoteNetworkId"]
+                    "anyOf": [
+                        {
+                            "required": ["apiKey"]
+                        },
+                        {
+                            "required": ["existingAPIKeySecret"]
+                        }
+                    ]
                 },
                 {
-                    "required": ["apiKey", "network", "remoteNetworkName"]
-                },
-                {
-                    "required": ["existingAPIKeySecret", "network", "remoteNetworkName"]
+                    "anyOf": [
+                        {
+                            "required": ["remoteNetworkId"]
+                        },
+                        {
+                            "required": ["remoteNetworkName"]
+                        }
+                    ]
                 }
             ],
             "properties": {

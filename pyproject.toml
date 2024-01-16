@@ -11,7 +11,7 @@ croniter = "^2.0.1"
 google-cloud-artifact-registry = "^1.10.0"
 gql = {version = "~=3.5.0", extras = ["requests"]}
 kopf = "^1.36.2"
-kubernetes = "^28.1.0"
+kubernetes = "^29.0.0"
 orjson = "^3.9.10"
 pendulum = "^3.0.0"
 pydantic = "^2.5.3"
@@ -41,10 +41,10 @@ pytest-randomly = "^3.15.0"
 pytest-sugar = "^0.9.7"
 pyupgrade = "^3.15.0"
 responses = "^0.24.1"
-ruff = "^0.1.11"
+ruff = "^0.1.13"
 syrupy = "^4.6.0"
-types-croniter = "^2.0.0.0"
-types-requests = "^2.31.0.6"
+types-croniter = "^2.0.0.20240106"
+types-requests = "^2.31.0.20240106"
 [tool.poetry.group.build]
 optional = true
 

@@ -31,7 +31,7 @@ class TwingateOperatorSettings(BaseSettings):
 
     api_key: str
     network: str
-    remote_network_id: GlobalID
+    remote_network_id: GlobalID | None = None
     remote_network_name: str | None = None
     host: str = "twingate.com"
 

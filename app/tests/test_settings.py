@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 from pydantic import ValidationError
 
@@ -33,6 +35,16 @@ def test_remote_network_id_fails_if_invalid_globalid():
     assert errors[0]["loc"] == ("remote_network_id",)
     assert errors[0]["msg"] == "Value error, Invalid global id"
     assert errors[0]["type"] == "value_error"
+
+
+@patch("app.api.TwingateAPIClient.get_remote_network_by_name")
+def test_remote_network_name_gets_network_id(mock_get_remote_network_by_name):
+    mock_get_remote_network_by_name.return_value = MagicMock(id="bar", name="test")
+    settings = TwingateOperatorSettings(
+        api_key="foo", network="foo", host="foo", remote_network_name="foo"
+    )
+
+    assert settings.remote_network_id == "bar"
 
 
 def test_remote_network_id_pass_if_base64_with_globalid_content():

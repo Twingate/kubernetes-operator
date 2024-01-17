@@ -3,9 +3,10 @@ import logging
 import os
 import tomllib
 from base64 import b64decode
-from typing import Annotated
+from typing import Annotated, ClassVar
 
 from pydantic.functional_validators import AfterValidator
+from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,10 +29,11 @@ GlobalID = Annotated[str, AfterValidator(validate_graphql_global_id)]
 
 class TwingateOperatorSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="TWINGATE_")
+    NULL_RN_ID: ClassVar[str] = "ZmFrZTp2YWx1ZQo="  # temp value ("fake:value" encoded)
 
     api_key: str
     network: str
-    remote_network_id: GlobalID
+    remote_network_id: GlobalID = NULL_RN_ID
     remote_network_name: str | None = None
     host: str = "twingate.com"
 
@@ -42,14 +44,17 @@ class TwingateOperatorSettings(BaseSettings):
     def __init__(self, *args, **kwargs):
         from app.api import TwingateAPIClient
 
-        if remote_network_name := kwargs.get("remote_network_name"):
-            client = TwingateAPIClient(self)
-            rn = client.get_remote_network_by_name(remote_network_name)
-            if not rn:
-                raise ValueError(f"Remote network {remote_network_name} not found")
-            kwargs["remote_network_id"] = rn.id
-
         super().__init__(*args, **kwargs)
+
+        if self.remote_network_name:
+            client = TwingateAPIClient(self)
+            rn = client.get_remote_network_by_name(self.remote_network_name)
+            if not rn:
+                raise ValueError(f"Remote network {self.remote_network_name} not found")
+            self.remote_network_id = rn.id
+
+        if self.remote_network_id == self.NULL_RN_ID:
+            raise ValidationError("Remote network id is required")
 
 
 __settings: TwingateOperatorSettings | None = None

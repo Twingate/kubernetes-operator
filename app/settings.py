@@ -31,7 +31,7 @@ class TwingateOperatorSettings(BaseSettings):
 
     api_key: str
     network: str
-    remote_network_id: GlobalID | None = None
+    remote_network_id: GlobalID
     remote_network_name: str | None = None
     host: str = "twingate.com"
 
@@ -42,15 +42,14 @@ class TwingateOperatorSettings(BaseSettings):
     def __init__(self, *args, **kwargs):
         from app.api import TwingateAPIClient
 
-        super().__init__(*args, **kwargs)
-        if self.remote_network_name:
-            # Get network id
+        if remote_network_name := kwargs.get("remote_network_name"):
             client = TwingateAPIClient(self)
-            rn = client.get_remote_network_by_name(self.remote_network_name)
+            rn = client.get_remote_network_by_name(remote_network_name)
             if not rn:
-                raise ValueError(f"Remote network {self.remote_network_name} not found")
+                raise ValueError(f"Remote network {remote_network_name} not found")
+            kwargs["remote_network_id"] = rn.id
 
-            self.remote_network_id = rn.id
+        super().__init__(*args, **kwargs)
 
 
 __settings: TwingateOperatorSettings | None = None

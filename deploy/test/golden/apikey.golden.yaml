@@ -51,9 +51,10 @@ rules:
   - apiGroups: [twingate.com]
     resources: [twingateresources, twingateresourceaccesses, twingateconnectors]
     verbs: [list, watch, patch, get]
+
   - apiGroups: ["*"]
     resources: [pods, services, secrets]
-    verbs: [list, watch, patch, get]
+    verbs: [list, watch, patch, get, create, delete]
 ---
 # Source: twingate-operator/templates/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1

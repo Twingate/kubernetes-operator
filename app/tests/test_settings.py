@@ -6,6 +6,12 @@ from pydantic import ValidationError
 from app.settings import TwingateOperatorSettings
 
 
+@pytest.fixture()
+def mock_get_remote_network_by_name():
+    with patch("app.api.TwingateAPIClient.get_remote_network_by_name") as m:
+        yield m
+
+
 def test_remote_network_id_fails_if_invalid_base64():
     with pytest.raises(ValidationError) as e:
         TwingateOperatorSettings(
@@ -37,7 +43,6 @@ def test_remote_network_id_fails_if_invalid_globalid():
     assert errors[0]["type"] == "value_error"
 
 
-@patch("app.api.TwingateAPIClient.get_remote_network_by_name")
 def test_remote_network_name_gets_network_id(mock_get_remote_network_by_name):
     mock_get_remote_network_by_name.return_value = MagicMock(id="bar", name="test")
     settings = TwingateOperatorSettings(

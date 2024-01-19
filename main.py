@@ -4,7 +4,6 @@ from typing import Any
 import kopf
 from pydantic import ValidationError
 
-from app.api import TwingateAPIClient
 from app.handlers import *  # noqa: F403
 from app.settings import TwingateOperatorSettings
 
@@ -29,7 +28,7 @@ def startup(
     settings: kopf.OperatorSettings,
     logger: logging.Logger | logging.LoggerAdapter,
     memo: Any,
-    **kwargs
+    **kwargs,
 ):
     logger.info("Operator is starting up...")
 
@@ -39,7 +38,6 @@ def startup(
 
     try:
         memo.twingate_settings = TwingateOperatorSettings()
-        memo.twingate_client = TwingateAPIClient(memo.twingate_settings)
     except ValidationError:
         logger.exception("Failed to load settings.")
 

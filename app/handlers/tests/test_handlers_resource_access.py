@@ -13,8 +13,18 @@ from app.handlers.handlers_resource_access import (
 )
 
 
+@pytest.fixture()
+def mock_api_client():
+    api_client_instance = MagicMock()
+    with patch(
+        "app.handlers.handlers_resource_access.TwingateAPIClient"
+    ) as mock_api_client:
+        mock_api_client.return_value = api_client_instance
+        yield api_client_instance
+
+
 class TestResourceAccessCreateHandler:
-    def test_create_success(self, resource_factory, kopf_info_mock):
+    def test_create_success(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -23,9 +33,10 @@ class TestResourceAccessCreateHandler:
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
 
+        mock_api_client.resource_access_add.return_value = True
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.return_value = True
         patch_mock = MagicMock()
         patch_mock.metadata = {}
         patch_mock.metadata["ownerReferences"] = []
@@ -121,7 +132,7 @@ class TestResourceAccessCreateHandler:
                 patch=patch_mock,
             )
 
-    def test_create_graphql_error_returns_it(self, resource_factory):
+    def test_create_graphql_error_returns_it(self, resource_factory, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -130,11 +141,12 @@ class TestResourceAccessCreateHandler:
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
 
+        mock_api_client.resource_access_add.side_effect = GraphQLMutationError(
+            "resourceCreate", "some error"
+        )
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.side_effect = (
-            GraphQLMutationError("resourceCreate", "some error")
-        )
         patch_mock = MagicMock()
         patch_mock.metadata = {}
         patch_mock.metadata["ownerReferences"] = []

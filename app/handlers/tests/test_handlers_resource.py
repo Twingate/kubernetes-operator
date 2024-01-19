@@ -1,4 +1,6 @@
-from unittest.mock import ANY, MagicMock
+from unittest.mock import ANY, MagicMock, patch
+
+import pytest
 
 from app.crds import ResourceSpec
 from app.handlers.handlers_resource import (
@@ -9,8 +11,16 @@ from app.handlers.handlers_resource import (
 )
 
 
+@pytest.fixture()
+def mock_api_client():
+    api_client_instance = MagicMock()
+    with patch("app.handlers.handlers_resource.TwingateAPIClient") as mock_api_client:
+        mock_api_client.return_value = api_client_instance
+        yield api_client_instance
+
+
 class TestResourceCreateHandler:
-    def test_create(self, resource_factory, kopf_info_mock):
+    def test_create(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
 
@@ -18,9 +28,10 @@ class TestResourceCreateHandler:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_create.return_value = resource
         patch_mock = MagicMock()
         patch_mock.spec = {}
+
+        mock_api_client.resource_create.return_value = resource
 
         result = twingate_resource_create(
             body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
@@ -33,8 +44,8 @@ class TestResourceCreateHandler:
             "ts": ANY,
         }
 
+        mock_api_client.resource_create.assert_called_once_with(resource_spec)
         logger_mock.info.assert_called_once_with("Got a create request: %s", spec)
-        memo_mock.twingate_client.resource_create.assert_called_once_with(resource_spec)
         kopf_info_mock.assert_called_once_with(
             "", reason="Success", message=f"Created on Twingate as {resource.id}"
         )

@@ -169,7 +169,8 @@ prerelease = false
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = [
-    "Bumps*"
+    "chore: Bumps*",
+    "Co-authored-by:*"
 ]
 
 [tool.semantic_release.commit_parser_options]

@@ -4,6 +4,7 @@ import kopf
 import kubernetes.client
 import pendulum
 
+from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
 from app.handlers.base import success
 from app.settings import get_version
@@ -79,7 +80,7 @@ def get_connector_secret(
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
-    client = memo.twingate_client
+    client = TwingateAPIClient(settings)
 
     logger.info("Got twingateconnector create request: %s", body)
     crd = TwingateConnectorCRD(**body)
@@ -226,9 +227,11 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
     if not status:
         return
 
+    client = TwingateAPIClient(memo.twingate_settings)
+
     if connector_id := spec.get("id"):
         logger.info("Deleting connector %s", connector_id)
-        memo.twingate_client.connector_delete(connector_id)
+        client.connector_delete(connector_id)
 
     try:
         # Remove label from pod so its delete handler isn't triggered

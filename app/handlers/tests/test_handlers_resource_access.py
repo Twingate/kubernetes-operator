@@ -369,7 +369,9 @@ class TestResourceAccessSync:
 
         kopf_exception_mock.assert_called_once_with("", reason="Failure", message=ANY)
 
-    def test_sync_resource_not_found_should_warn(self, resource_factory):
+    def test_sync_resource_not_found_should_warn(
+        self, resource_factory, mock_api_client
+    ):
         resource = resource_factory()
         resource.to_spec()
 
@@ -380,7 +382,8 @@ class TestResourceAccessSync:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.get_resource.return_value = None
+
+        mock_api_client.get_resource.return_value = None
 
         expected_err = "Resource default/impossible not found"
 
@@ -401,7 +404,9 @@ class TestResourceAccessSync:
             "", reason="ResourceNotFound", message=expected_err
         )
 
-    def test_sync_resource_spec_missing_id_should_skip(self, resource_factory):
+    def test_sync_resource_spec_missing_id_should_skip(
+        self, resource_factory, mock_api_client
+    ):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
 
@@ -412,7 +417,8 @@ class TestResourceAccessSync:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.get_resource.return_value = resource
+
+        mock_api_client.get_resource.return_value = resource
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec

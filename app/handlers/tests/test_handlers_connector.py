@@ -301,11 +301,11 @@ def test_twingate_connector_delete_ignores_k8s_api_errors(
 
 
 def test_twingate_connector_delete_without_status_does_nothing(
-    get_connector_and_crd, kopf_handler_runner
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
 ):
     connector, crd = get_connector_and_crd()
-    run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
-    run.memo_mock.twingate_client.connector_delete.assert_not_called()
+    kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+    mock_api_client.connector_delete.assert_not_called()
 
 
 def test_twingate_connector_pod_deleted_tags_owner(get_connector_and_crd):

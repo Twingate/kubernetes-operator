@@ -68,15 +68,16 @@ class TestResourceAccessCreateHandler:
             }
         ]
 
-    def test_create_invalid_ref(self):
+    def test_create_invalid_ref(self, mock_api_client):
         resource_access_spec = {
             "resourceRef": {"name": "invalid"},
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
 
+        mock_api_client.resource_access_add.return_value = True
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.return_value = True
         patch_mock = MagicMock()
 
         with patch(
@@ -102,7 +103,7 @@ class TestResourceAccessCreateHandler:
                 message="Resource default/invalid not found",
             )
 
-    def test_create_resource_no_id(self, resource_factory):
+    def test_create_resource_no_id(self, resource_factory, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
 
@@ -111,9 +112,10 @@ class TestResourceAccessCreateHandler:
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
 
+        mock_api_client.resource_access_add.return_value = True
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.return_value = True
         patch_mock = MagicMock()
 
         resource_crd_mock = MagicMock()
@@ -175,7 +177,7 @@ class TestResourceAccessCreateHandler:
 
 
 class TestResourceAccessUpdateHandler:
-    def test_update_success(self, resource_factory):
+    def test_update_success(self, resource_factory, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -187,7 +189,8 @@ class TestResourceAccessUpdateHandler:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.return_value = True
+
+        mock_api_client.resource_access_add.return_value = True
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -206,7 +209,7 @@ class TestResourceAccessUpdateHandler:
             )
             assert result == {"success": True, "ts": ANY}
 
-    def test_update_fails_to_find_resource(self):
+    def test_update_fails_to_find_resource(self, mock_api_client):
         resource_access_spec = {
             "resourceRef": {"name": "doesnt-exist"},
             "principalId": "R3JvdXA6MTE1NzI2MA==",
@@ -215,7 +218,8 @@ class TestResourceAccessUpdateHandler:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.return_value = True
+
+        mock_api_client.resource_access_add.return_value = True
 
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
@@ -250,7 +254,7 @@ class TestResourceAccessUpdateHandler:
 
 
 class TestResourceAccessDelete:
-    def test_delete_success(self, resource_factory):
+    def test_delete_success(self, resource_factory, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -261,7 +265,8 @@ class TestResourceAccessDelete:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_remove.return_value = True
+
+        mock_api_client.resource_access_remove.return_value = True
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -275,7 +280,7 @@ class TestResourceAccessDelete:
                 resource_access_spec, {}, memo_mock, logger_mock
             )
 
-    def test_delete_resource_doesnt_exist_does_nothing(self):
+    def test_delete_resource_doesnt_exist_does_nothing(self, mock_api_client):
         resource_access_spec = {
             "resourceRef": {"name": "doesnt-exist"},
             "principalId": "R3JvdXA6MTE1NzI2MA==",
@@ -292,11 +297,11 @@ class TestResourceAccessDelete:
                 resource_access_spec, {}, memo_mock, logger_mock
             )
 
-        memo_mock.twingate_client.resource_access_remove.assert_not_called()
+        mock_api_client.resource_access_remove.assert_not_called()
 
 
 class TestResourceAccessSync:
-    def test_sync_success(self, resource_factory):
+    def test_sync_success(self, resource_factory, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -307,7 +312,8 @@ class TestResourceAccessSync:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.return_value = True
+
+        mock_api_client.resource_access_add.return_value = True
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -327,7 +333,7 @@ class TestResourceAccessSync:
 
             assert result == {"success": True, "ts": ANY}
 
-    def test_sync_api_fails(self, resource_factory):
+    def test_sync_api_fails(self, resource_factory, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
 
@@ -338,8 +344,9 @@ class TestResourceAccessSync:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_access_add.side_effect = (
-            GraphQLMutationError("resourceAccessAdd", "some error")
+
+        mock_api_client.resource_access_add.side_effect = GraphQLMutationError(
+            "resourceAccessAdd", "some error"
         )
 
         resource_crd_mock = MagicMock()

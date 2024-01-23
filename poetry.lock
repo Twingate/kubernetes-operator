@@ -1009,17 +1009,20 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "kopf"
-version = "1.36.2"
+version = "1.37.1"
 description = "Kubernetes Operator Pythonic Framework (Kopf)"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "kopf-1.36.2-py3-none-any.whl", hash = "sha256:bb5e63f9e2092d22abe28c0b43ababe36d216d8efa3411a36ffb40223dd55a44"},
-    {file = "kopf-1.36.2.tar.gz", hash = "sha256:801e84671145fd19d2a2fcbc4a934ae8f6cd3bca966fc437099f815f7ab11e84"},
+    {file = "kopf-1.37.1-py3-none-any.whl", hash = "sha256:dbeafe715987705d6fb44a49a26ca065b9e537a85c654efa94a520c6d16509d5"},
+    {file = "kopf-1.37.1.tar.gz", hash = "sha256:f38829cb702d788ab536ecd51f10d83175b971874af1d6c8178a864cf9af4ece"},
 ]
 
 [package.dependencies]
-aiohttp = "<4.0.0"
+aiohttp = [
+    {version = ">=3.9.0", markers = "python_version >= \"3.12\""},
+    {version = "*", markers = "python_version < \"3.12\""},
+]
 click = "*"
 iso8601 = "*"
 python-json-logger = "*"
@@ -1029,7 +1032,7 @@ typing-extensions = "*"
 [package.extras]
 dev = ["certbuilder", "certvalidator", "oscrypto", "pyngrok"]
 full-auth = ["kubernetes", "pykube-ng"]
-uvloop = ["uvloop"]
+uvloop = ["uvloop", "uvloop (>=0.18.0)"]
 
 [[package]]
 name = "kubernetes"
@@ -2570,4 +2573,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "4f8de08d5a9f4a6ea1bb792e8f2bba22c05308ed0bfe9388a9b6ca729ef76e6a"
+content-hash = "770cf54c2b3f94b8bfe9fd4876d5e89b872998f66ca43e6b046d61e10974bde3"

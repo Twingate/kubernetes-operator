@@ -54,7 +54,12 @@ def get_connector_pod(
                 "imagePullPolicy": "Always",
                 "name": "connector",
                 "securityContext": {
-                    "allowPrivilegeEscalation": False
+                    "allowPrivilegeEscalation": False,
+                    "capabilities": {
+                        "drop": ["ALL"],
+                    },
+                    "runAsNonRoot": True,
+                    "runAsUser": 65532,
                },
                 **spec.container_extra,
             }

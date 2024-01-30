@@ -130,9 +130,9 @@ class Resource(BaseModel):
             is_visible=self.is_visible,
             is_browser_shortcut_enabled=self.is_browser_shortcut_enabled,
             remote_network_id=self.remote_network.id,
-            security_policy_id=self.security_policy.id
-            if self.security_policy
-            else None,
+            security_policy_id=(
+                self.security_policy.id if self.security_policy else None
+            ),
             protocols=self.protocols,
         )
         data.update(overrides)

@@ -97,7 +97,8 @@ spec:
     spec:
       serviceAccountName: test-twingate-operator
       securityContext:
-        {}
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: twingate-operator
         securityContext:

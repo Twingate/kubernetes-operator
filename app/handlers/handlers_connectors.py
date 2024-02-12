@@ -144,7 +144,6 @@ def twingate_connector_image_update(body, meta, namespace, memo, logger, **_):
     image = crd.spec.get_image()
     if crd.spec.image:
         pod = get_connector_pod(crd, settings.full_url, image)
-        logger.info("Patching pod: %s", pod)
         kapi = kubernetes.client.CoreV1Api()
         result = kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
         logger.info("Patched pod: %s", result)

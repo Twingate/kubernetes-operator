@@ -50,3 +50,8 @@ def kubectl_delete(
 def kubectl_get(resource_type: str, resource_name: str) -> dict:
     result = kubectl(f"get {resource_type}/{resource_name} -o json")
     return json.loads(result.stdout)
+
+
+def kubectl_patch(resource: str, patch: dict) -> subprocess.CompletedProcess:
+    patch_str = json.dumps(patch).decode()
+    return kubectl(f"patch {resource} -p '{patch_str}' --type=merge")

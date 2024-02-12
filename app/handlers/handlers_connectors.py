@@ -137,9 +137,7 @@ def twingate_connector_version_policy_update(body, patch, logger, **_):
 
 
 @kopf.on.update("twingateconnector", field="spec.image")
-def twingate_connector_image_update(
-    body, meta, status, namespace, patch, memo, logger, **_
-):
+def twingate_connector_image_update(body, meta, namespace, memo, logger, **_):
     logger.info("twingate_connector_image_update: %s", body)
     settings = memo.twingate_settings
     crd = TwingateConnectorCRD(**body)

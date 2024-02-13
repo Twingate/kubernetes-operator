@@ -136,6 +136,21 @@ def twingate_connector_version_policy_update(body, patch, logger, **_):
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
 
+@kopf.on.update("twingateconnector", field="spec.image")
+def twingate_connector_image_update(body, meta, namespace, memo, logger, **_):
+    logger.info("twingate_connector_image_update: %s", body)
+    settings = memo.twingate_settings
+    crd = TwingateConnectorCRD(**body)
+    image = crd.spec.get_image()
+    if crd.spec.image:
+        pod = get_connector_pod(crd, settings.full_url, image)
+        kapi = kubernetes.client.CoreV1Api()
+        result = kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+        logger.info("Patched pod: %s", result)
+
+    return success(twingate_id=crd.spec.id, image=image)
+
+
 @kopf.on.timer(
     "twingateconnector",
     interval=60.0,

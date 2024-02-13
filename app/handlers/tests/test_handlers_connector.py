@@ -6,7 +6,12 @@ import pendulum
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
-from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
+from app.crds import (
+    ConnectorImage,
+    ConnectorImagePolicy,
+    ConnectorSpec,
+    TwingateConnectorCRD,
+)
 from app.handlers.handlers_connectors import (
     ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
@@ -14,6 +19,7 @@ from app.handlers.handlers_connectors import (
     timer_check_image_version,
     twingate_connector_create,
     twingate_connector_delete,
+    twingate_connector_image_update,
     twingate_connector_pod_deleted,
     twingate_connector_recreate_pod,
     twingate_connector_resume,
@@ -187,6 +193,24 @@ def test_twingate_connector_version_policy_update(
     )
 
     assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
+
+
+def test_twingate_connector_image_update(get_connector_and_crd, kopf_handler_runner):
+    full_url = "https://test.twingate.com"
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image=ConnectorImage(tag="test"))
+    )
+
+    memo = MagicMock()
+    memo.twingate_settings.full_url = full_url
+
+    run = kopf_handler_runner(twingate_connector_image_update, crd, memo)
+
+    expected_pod = get_connector_pod(crd, full_url, "twingate/connector:test")
+
+    run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
+        crd.spec.name, "default", body=expected_pod
+    )
 
 
 def test_timer_check_image_version_without_imagepolicy(

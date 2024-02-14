@@ -76,7 +76,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

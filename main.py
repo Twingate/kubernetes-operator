@@ -41,6 +41,9 @@ def startup(
     except ValidationError:
         logger.exception("Failed to load settings.")
 
+    # Disable health logging
+    logging.getLogger("aiohttp.access").setLevel(level=logging.WARNING)
+
 
 @kopf.on.cleanup()
 def shutdown(logger: logging.Logger | logging.LoggerAdapter, **_):

@@ -115,7 +115,7 @@ class Resource(BaseModel):
             and self.alias == crd.alias
             and self.is_visible == crd.is_visible
             and self.is_browser_shortcut_enabled == crd.is_browser_shortcut_enabled
-            and self.protocols == crd.protocols
+            and self.protocols.dict() == crd.protocols.dict()
             and self.remote_network.id == crd.remote_network_id
             and (self.security_policy and self.security_policy.id)
             == crd.security_policy_id
@@ -133,7 +133,7 @@ class Resource(BaseModel):
             security_policy_id=(
                 self.security_policy.id if self.security_policy else None
             ),
-            protocols=self.protocols,
+            protocols=self.protocols.model_dump() if self.protocols else None,
         )
         data.update(overrides)
         return ResourceSpec(**data)  # type: ignore

@@ -122,18 +122,20 @@ class Resource(BaseModel):
         )
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
-        data = dict(
-            id=self.id,
-            name=self.name,
-            address=self.address.value,
-            alias=self.alias,
-            is_visible=self.is_visible,
-            is_browser_shortcut_enabled=self.is_browser_shortcut_enabled,
-            remote_network_id=self.remote_network.id,
-            security_policy_id=(
-                self.security_policy.id if self.security_policy else None
-            ),
-            protocols=self.protocols.model_dump() if self.protocols else None,
+        data = self.dict(
+            include=[
+                "id",
+                "name",
+                "address",
+                "alias",
+                "is_visible",
+                "is_browser_shortcut_enabled",
+                "protocols",
+            ]
+        )
+        data["remote_network_id"] = self.remote_network.id
+        data["security_policy_id"] = (
+            self.security_policy.id if self.security_policy else None
         )
         data.update(overrides)
         return ResourceSpec(**data)  # type: ignore

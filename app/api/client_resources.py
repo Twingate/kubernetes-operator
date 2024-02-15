@@ -109,13 +109,16 @@ class Resource(BaseModel):
         """
 
     def is_matching_spec(self, crd: ResourceSpec) -> bool:
+        self_protocols = self.protocols.dict() if self.protocols else None
+        crd_protocols = crd.protocols.dict() if crd.protocols else None
+
         return (
             self.name == crd.name
             and self.address.value == crd.address
             and self.alias == crd.alias
             and self.is_visible == crd.is_visible
             and self.is_browser_shortcut_enabled == crd.is_browser_shortcut_enabled
-            and self.protocols.dict() == crd.protocols.dict()
+            and self_protocols == crd_protocols
             and self.remote_network.id == crd.remote_network_id
             and (self.security_policy and self.security_policy.id)
             == crd.security_policy_id

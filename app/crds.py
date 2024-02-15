@@ -84,7 +84,7 @@ class ResourceProtocol(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    policy: ProtocolPolicy
+    policy: ProtocolPolicy = ProtocolPolicy.ALLOW_ALL
     ports: list[ProtocoRange] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -104,12 +104,8 @@ class ResourceProtocols(BaseModel):
     )
 
     allow_icmp: bool | None = True
-    tcp: ResourceProtocol = Field(
-        default_factory=lambda: ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
-    )
-    udp: ResourceProtocol = Field(
-        default_factory=lambda: ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
-    )
+    tcp: ResourceProtocol = Field(default_factory=ResourceProtocol)
+    udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
 class ResourceSpec(BaseModel):

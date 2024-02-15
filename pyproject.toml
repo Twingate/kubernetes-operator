@@ -115,7 +115,7 @@ markers = [
     "integration",
 ]
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
     "D",
     "F", # Pyflakes
@@ -145,7 +145,7 @@ ignore = [
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "*/tests/*" = [
     "S101", # Use of `assert` detected
     "S106", # Possible hardcoded password assigned to argument

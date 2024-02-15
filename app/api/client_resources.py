@@ -40,8 +40,8 @@ class ResourceProtocol(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    policy: ProtocolPolicy
-    ports: list[ProtocoRange] | None = None
+    policy: ProtocolPolicy = ProtocolPolicy.ALLOW_ALL
+    ports: list[ProtocoRange] = Field(default_factory=list)
 
 
 class ResourceProtocols(BaseModel):
@@ -49,9 +49,9 @@ class ResourceProtocols(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    allow_icmp: bool | None = None
-    tcp: ResourceProtocol | None = None
-    udp: ResourceProtocol | None = None
+    allow_icmp: bool = True
+    tcp: ResourceProtocol = Field(default_factory=ResourceProtocol)
+    udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
 class Resource(BaseModel):
@@ -69,13 +69,7 @@ class Resource(BaseModel):
     security_policy: ResourceSecurityPolicy | None = Field(
         alias="securityPolicy", default=None
     )
-    protocols: ResourceProtocols = Field(
-        default_factory=lambda: ResourceProtocols(
-            allow_icmp=True,
-            tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
-            udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
-        )
-    )
+    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
 
     @staticmethod
     def get_graphql_fragment():

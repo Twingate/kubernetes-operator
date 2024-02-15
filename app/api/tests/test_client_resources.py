@@ -5,6 +5,7 @@ from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import Resource
+from app.crds import ResourceSpec
 
 
 @pytest.fixture()
@@ -66,6 +67,41 @@ class TestResourceModel:
         r1 = Resource(**r.model_dump())
         r1.alias = r.alias + "1"
         assert not r1.is_matching_spec(crd)
+
+    def test_is_matching_case_protocols(self):
+        resource = Resource(
+            **{  # noqa: PIE804
+                "id": "UmVzb3VyY2U6MTI3NTIxMw==",
+                "name": "My K8S Resource",
+                "createdAt": "2024-02-15T01:13:51.059028+00:00",
+                "updatedAt": "2024-02-15T01:20:24.242272+00:00",
+                "address": {"type": "DNS", "value": "my.default.cluster.local"},
+                "alias": "mine.local",
+                "isVisible": True,
+                "isBrowserShortcutEnabled": False,
+                "remoteNetwork": {"id": "UmVtb3RlTmV0d29yazo5Njc0OTU="},
+                "securityPolicy": None,
+                "protocols": {
+                    "allowIcmp": True,
+                    "tcp": {"policy": "ALLOW_ALL", "ports": []},
+                    "udp": {"policy": "ALLOW_ALL", "ports": []},
+                },
+            }
+        )
+
+        crd = ResourceSpec(
+            **{  # noqa: PIE804
+                "address": "my.default.cluster.local",
+                "alias": "mine.local",
+                "id": "UmVzb3VyY2U6MTI3NTIxMw==",
+                "isBrowserShortcutEnabled": False,
+                "isVisible": True,
+                "name": "My K8S Resource",
+                "remoteNetworkId": "UmVtb3RlTmV0d29yazo5Njc0OTU=",
+            }
+        )
+
+        assert resource.is_matching_spec(crd)
 
 
 class TestResourceFactory:

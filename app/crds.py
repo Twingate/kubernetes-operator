@@ -123,7 +123,7 @@ class ResourceSpec(BaseModel):
     security_policy_id: str | None = None
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
-    protocols: ResourceProtocols | None = ResourceProtocols(
+    protocols: ResourceProtocols = ResourceProtocols(
         allow_icmp=True,
         tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
         udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),

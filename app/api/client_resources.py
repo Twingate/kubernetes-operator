@@ -69,7 +69,11 @@ class Resource(BaseModel):
     security_policy: ResourceSecurityPolicy | None = Field(
         alias="securityPolicy", default=None
     )
-    protocols: ResourceProtocols | None = None
+    protocols: ResourceProtocols = ResourceProtocols(
+        allow_icmp=True,
+        tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+        udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+    )
 
     @staticmethod
     def get_graphql_fragment():
@@ -240,7 +244,7 @@ class TwingateResourceAPIs:
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols,
+                "protocols": resource.protocols.dict(by_alias=True),
             },
         )
 
@@ -261,7 +265,7 @@ class TwingateResourceAPIs:
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols,
+                "protocols": resource.protocols.dict(by_alias=True),
             },
         )
         return Resource(**result["entity"])

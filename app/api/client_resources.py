@@ -69,10 +69,12 @@ class Resource(BaseModel):
     security_policy: ResourceSecurityPolicy | None = Field(
         alias="securityPolicy", default=None
     )
-    protocols: ResourceProtocols = ResourceProtocols(
-        allow_icmp=True,
-        tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
-        udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+    protocols: ResourceProtocols = Field(
+        default_factory=lambda: ResourceProtocols(
+            allow_icmp=True,
+            tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+            udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+        )
     )
 
     @staticmethod

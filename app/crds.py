@@ -85,7 +85,7 @@ class ResourceProtocol(BaseModel):
     )
 
     policy: ProtocolPolicy
-    ports: list[ProtocoRange] = []
+    ports: list[ProtocoRange] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_policy_ports(self):
@@ -103,9 +103,13 @@ class ResourceProtocols(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    allow_icmp: bool | None = None
-    tcp: ResourceProtocol = ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
-    udp: ResourceProtocol = ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
+    allow_icmp: bool | None = True
+    tcp: ResourceProtocol = Field(
+        default_factory=lambda: ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
+    )
+    udp: ResourceProtocol = Field(
+        default_factory=lambda: ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
+    )
 
 
 class ResourceSpec(BaseModel):
@@ -123,11 +127,7 @@ class ResourceSpec(BaseModel):
     security_policy_id: str | None = None
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
-    protocols: ResourceProtocols = ResourceProtocols(
-        allow_icmp=True,
-        tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
-        udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
-    )
+    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address

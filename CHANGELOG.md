@@ -2,7 +2,30 @@
 
 
 
-## v0.3.0 (2024-01-30)
+## v0.4.0 (2024-02-15)
+
+### Chore
+
+* chore: Upgrade Poetry to 1.7.1 (#144) ([`fd18505`](https://github.com/Twingate/kubernetes-operator/commit/fd18505a98047a4e65b8bbc0eb24f0520f7d1462))
+
+* chore: Monitor and update github actions ([`98f48f9`](https://github.com/Twingate/kubernetes-operator/commit/98f48f9b6c5aa1aaa2a67edc8815775b2d527de3))
+
+### Feature
+
+* feat: Add podLabels (#129) ([`642af6a`](https://github.com/Twingate/kubernetes-operator/commit/642af6a1bb87f696ff07557ab78de63eefa40b82))
+
+* feat: Add support for priorityClassName (#128) ([`e2d233c`](https://github.com/Twingate/kubernetes-operator/commit/e2d233c86569ec38ce905f1d8e244fff94090b60))
+
+### Fix
+
+* fix: Fix resource `protocols` diffing and serialization (#146) ([`7c9407e`](https://github.com/Twingate/kubernetes-operator/commit/7c9407e52185129201cf79a7bf5d6551711a16f9))
+
+* fix: Disable healthcheck access logs (#135) ([`ad8eaba`](https://github.com/Twingate/kubernetes-operator/commit/ad8eabac03313d60959f9dc9ac48308a5114fa82))
+
+* fix: Added `twingate_connector_image_update` to handle `image` updates (#131) ([`25f2753`](https://github.com/Twingate/kubernetes-operator/commit/25f27537eb292b632163978a16c23b3053b0e637))
+
+
+## v0.3.0 (2024-01-31)
 
 ### Build
 

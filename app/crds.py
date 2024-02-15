@@ -123,7 +123,11 @@ class ResourceSpec(BaseModel):
     security_policy_id: str | None = None
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
-    protocols: ResourceProtocols | None = None
+    protocols: ResourceProtocols = ResourceProtocols(
+        allow_icmp=True,
+        tcp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+        udp=ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL, ports=[]),
+    )
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address

@@ -130,14 +130,14 @@ class Resource(BaseModel):
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data = self.dict(
-            include=[
+            include={
                 "id",
                 "name",
                 "alias",
                 "is_visible",
                 "is_browser_shortcut_enabled",
                 "protocols",
-            ]
+            }
         )
         data["address"] = self.address.value
         data["remote_network_id"] = self.remote_network.id
@@ -145,7 +145,7 @@ class Resource(BaseModel):
             self.security_policy.id if self.security_policy else None
         )
         data.update(overrides)
-        return ResourceSpec(**data)  # type: ignore
+        return ResourceSpec(**data)
 
 
 # fmt:off

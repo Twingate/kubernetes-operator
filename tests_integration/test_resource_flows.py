@@ -23,6 +23,17 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
         spec:
           name: My K8S Resource
           address: my.default.cluster.local
+          protocols:
+            allowIcmp: false
+            tcp:
+                policy: RESTRICTED
+                ports:
+                    - start: 80
+                      end: 80
+            udp:
+                policy: ALLOW_ALL
+                ports: []
+
     """
 
     OBJ_UPDATED = f"""
@@ -33,13 +44,21 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
             spec:
               name: My K8S Resource Renamed
               address: my.default.cluster.local
+              protocols:
+                allowIcmp: false
+                tcp:
+                    policy: ALLOW_ALL
+                    ports: []
+                udp:
+                    policy: ALLOW_ALL
+                    ports: []
+
         """
 
     # fmt: off
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         kubectl_create(OBJ)
         time.sleep(5)  # give it some time to react
-
         created_object = json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
 
         # Update the name

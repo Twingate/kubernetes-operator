@@ -126,13 +126,13 @@ class Resource(BaseModel):
             include=[
                 "id",
                 "name",
-                "address",
                 "alias",
                 "is_visible",
                 "is_browser_shortcut_enabled",
                 "protocols",
             ]
         )
+        data["address"] = self.address.value
         data["remote_network_id"] = self.remote_network.id
         data["security_policy_id"] = (
             self.security_policy.id if self.security_policy else None

@@ -85,7 +85,7 @@ class ResourceProtocol(BaseModel):
     )
 
     policy: ProtocolPolicy
-    ports: list[ProtocoRange] | None = None
+    ports: list[ProtocoRange] = []
 
     @model_validator(mode="after")
     def check_policy_ports(self):
@@ -104,8 +104,8 @@ class ResourceProtocols(BaseModel):
     )
 
     allow_icmp: bool | None = None
-    tcp: ResourceProtocol | None = None
-    udp: ResourceProtocol | None = None
+    tcp: ResourceProtocol = ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
+    udp: ResourceProtocol = ResourceProtocol(policy=ProtocolPolicy.ALLOW_ALL)
 
 
 class ResourceSpec(BaseModel):

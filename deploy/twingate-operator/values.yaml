@@ -34,10 +34,15 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# Additional annotations to set on the pod
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# Additional labels to set on the pod
+podLabels: {}
+
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
 
 securityContext:
    capabilities:
@@ -45,6 +50,7 @@ securityContext:
      - ALL
    readOnlyRootFilesystem: true
    runAsNonRoot: true
+   allowPrivilegeEscalation: false
    runAsUser: 1000
 
 resources: {}
@@ -64,3 +70,5 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+priorityClassName: ""

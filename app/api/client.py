@@ -19,7 +19,7 @@ from app.settings import TwingateOperatorSettings, get_version
 log = logging.getLogger(__name__)
 
 
-class TwingateRety(Retry):
+class TwingateRetry(Retry):
     """Custom retry object that retries on 429 errors."""
 
     # ruff: noqa: FBT002
@@ -55,7 +55,7 @@ class TwingateRequestsHTTPTransport(RequestsHTTPTransport):
         # If we specified some retries, we provide a predefined retry-logic
         if self.retries > 0:
             adapter = HTTPAdapter(
-                max_retries=TwingateRety(
+                max_retries=TwingateRetry(
                     total=self.retries,
                     backoff_factor=0.1,
                     status_forcelist=[500, 502, 503, 504],

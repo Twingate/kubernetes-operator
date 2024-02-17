@@ -49,6 +49,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         memo.twingate_client.resource_access_add(
             resource_id, principal_id, access_crd.security_policy_id
         )
+
         kopf.info(
             body,
             reason="Success",
@@ -83,7 +84,8 @@ def twingate_resource_access_update(new, diff, status, memo, logger, **kwargs):
     access_crd = ResourceAccessSpec(**new["spec"])
     if resource_crd := access_crd.get_resource():
         try:
-            memo.twingate_client.resource_access_add(
+            client = TwingateAPIClient(memo.twingate_settings)
+            client.resource_access_add(
                 resource_crd.spec.id,
                 access_crd.principal_id,
                 access_crd.security_policy_id,
@@ -101,9 +103,8 @@ def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource()
     if resource_id := resource_crd and resource_crd.spec.id:
-        memo.twingate_client.resource_access_remove(
-            resource_id, access_crd.principal_id
-        )
+        client = TwingateAPIClient(memo.twingate_settings)
+        client.resource_access_remove(resource_id, access_crd.principal_id)
 
 
 @kopf.timer(
@@ -125,7 +126,8 @@ def twingate_resource_access_sync(body, spec, status, memo, logger, **kwargs):
         return success(status="Skipped as resource not yet created")
 
     try:
-        memo.twingate_client.resource_access_add(
+        client = TwingateAPIClient(memo.twingate_settings)
+        client.resource_access_add(
             resource_crd.spec.id, access_crd.principal_id, access_crd.security_policy_id
         )
         return success()

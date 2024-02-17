@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.1.2"
+version = "0.4.0"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
@@ -8,13 +8,13 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 croniter = "^2.0.1"
-google-cloud-artifact-registry = "^1.10.0"
+google-cloud-artifact-registry = "^1.11.1"
 gql = {version = "~=3.5.0", extras = ["requests"]}
-kopf = "^1.36.2"
+kopf = "^1.37.1"
 kubernetes = "^29.0.0"
-orjson = "^3.9.10"
+orjson = "^3.9.14"
 pendulum = "^3.0.0"
-pydantic = "^2.5.3"
+pydantic = "^2.6.1"
 pydantic-settings = "^2.1.0"
 requests = "^2.31.0"
 semantic-version = "^2.10.0"
@@ -25,31 +25,31 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 autoflake = "^2.2.1"
-bandit = "^1.7.6"
-black = "^23.12.1"
+bandit = "^1.7.7"
+black = "^24.2.0"
 coveralls = "^3.3.1"
 factory-boy = "^3.3.0"
 isort = "^5.13.2"
 mypy = "^1.8.0"
-pre-commit = "^3.6.0"
-pytest = "^7.4.4"
+pre-commit = "^3.6.1"
+pytest = "^8.0.0"
 pytest-cov = "^4.1.0"
 pytest-datadir = "^1.5.0"
 pytest-factoryboy = "^2.6.0"
 pytest-freezegun = "^0.4.2"
 pytest-randomly = "^3.15.0"
-pytest-sugar = "^0.9.7"
+pytest-sugar = "^1.0.0"
 pyupgrade = "^3.15.0"
-responses = "^0.24.1"
-ruff = "^0.1.13"
-syrupy = "^4.6.0"
+responses = "^0.25.0"
+ruff = "^0.2.1"
+syrupy = "^4.6.1"
 types-croniter = "^2.0.0.20240106"
-types-requests = "^2.31.0.20240106"
+types-requests = "^2.31.0.20240125"
 [tool.poetry.group.build]
 optional = true
 
 [tool.poetry.group.build.dependencies]
-python-semantic-release = "^8.7.0"
+python-semantic-release = "^9.1.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -115,7 +115,7 @@ markers = [
     "integration",
 ]
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
     "D",
     "F", # Pyflakes
@@ -145,7 +145,7 @@ ignore = [
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "*/tests/*" = [
     "S101", # Use of `assert` detected
     "S106", # Possible hardcoded password assigned to argument
@@ -169,7 +169,8 @@ prerelease = false
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = [
-    "Bumps*"
+    "chore: Bumps*",
+    "Co-authored-by:*"
 ]
 
 [tool.semantic_release.commit_parser_options]

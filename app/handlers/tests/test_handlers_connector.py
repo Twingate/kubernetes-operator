@@ -6,7 +6,12 @@ import pendulum
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
-from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
+from app.crds import (
+    ConnectorImage,
+    ConnectorImagePolicy,
+    ConnectorSpec,
+    TwingateConnectorCRD,
+)
 from app.handlers.handlers_connectors import (
     ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
@@ -14,6 +19,7 @@ from app.handlers.handlers_connectors import (
     timer_check_image_version,
     twingate_connector_create,
     twingate_connector_delete,
+    twingate_connector_image_update,
     twingate_connector_pod_deleted,
     twingate_connector_recreate_pod,
     twingate_connector_resume,
@@ -26,6 +32,14 @@ def mock_connector_spec_get_image():
     with patch("app.crds.ConnectorSpec.get_image") as mock_get_image:
         mock_get_image.return_value = "twingate/connector:test"
         yield mock_get_image
+
+
+@pytest.fixture()
+def mock_api_client():
+    api_client_instance = MagicMock()
+    with patch("app.handlers.handlers_connectors.TwingateAPIClient") as mock_api_client:
+        mock_api_client.return_value = api_client_instance
+        yield api_client_instance
 
 
 @pytest.fixture()
@@ -56,15 +70,16 @@ def get_connector_and_crd(connector_factory):
     return get
 
 
-def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
+def test_twingate_connector_create(
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
+):
     connector, crd = get_connector_and_crd()
 
-    memo_mock = MagicMock()
-    memo_mock.twingate_client.connector_create.return_value = connector
-    memo_mock.twingate_client.connector_generate_tokens.return_value = ConnectorTokens(
+    mock_api_client.connector_create.return_value = connector
+    mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
         access_token="at", refresh_token="rt"  # nosec
     )
-    run = kopf_handler_runner(twingate_connector_create, crd, memo_mock)
+    run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
 
     assert run.result == {
         "success": True,
@@ -105,19 +120,18 @@ def test_twingate_connector_create(get_connector_and_crd, kopf_handler_runner):
 
 
 def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
-    get_connector_and_crd, kopf_handler_runner
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
 ):
     connector, crd = get_connector_and_crd(
         spec_overrides=dict(image_policy=ConnectorImagePolicy())
     )
 
-    memo_mock = MagicMock()
-    memo_mock.twingate_client.connector_create.return_value = connector
-    memo_mock.twingate_client.connector_generate_tokens.return_value = ConnectorTokens(
+    mock_api_client.connector_create.return_value = connector
+    mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
         access_token="at", refresh_token="rt"  # nosec
     )
 
-    run = kopf_handler_runner(twingate_connector_create, crd, memo_mock)
+    run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
     assert run.result == {
         "success": True,
         "twingate_id": connector.id,
@@ -179,6 +193,24 @@ def test_twingate_connector_version_policy_update(
     )
 
     assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
+
+
+def test_twingate_connector_image_update(get_connector_and_crd, kopf_handler_runner):
+    full_url = "https://test.twingate.com"
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image=ConnectorImage(tag="test"))
+    )
+
+    memo = MagicMock()
+    memo.twingate_settings.full_url = full_url
+
+    run = kopf_handler_runner(twingate_connector_image_update, crd, memo)
+
+    expected_pod = get_connector_pod(crd, full_url, "twingate/connector:test")
+
+    run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
+        crd.spec.name, "default", body=expected_pod
+    )
 
 
 def test_timer_check_image_version_without_imagepolicy(
@@ -254,7 +286,7 @@ def test_twingate_connector_recreate_pod(get_connector_and_crd, kopf_handler_run
 
 
 def test_twingate_connector_delete_deletes_connector(
-    get_connector_and_crd, kopf_handler_runner
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
 ):
     connector, crd = get_connector_and_crd(
         status={"twingate_connector_create": {"success": True}}, with_id=True
@@ -262,7 +294,7 @@ def test_twingate_connector_delete_deletes_connector(
     run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
 
     run.logger_mock.exception.assert_not_called()
-    run.memo_mock.twingate_client.connector_delete.assert_called_once()
+    mock_api_client.connector_delete.assert_called_once()
     run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
         crd.spec.name,
         "default",
@@ -271,7 +303,7 @@ def test_twingate_connector_delete_deletes_connector(
 
 
 def test_twingate_connector_delete_ignores_k8s_api_errors(
-    get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+    get_connector_and_crd, kopf_handler_runner, k8s_client_mock, mock_api_client
 ):
     connector, crd = get_connector_and_crd(
         status={"twingate_connector_create": {"success": True}}, with_id=True
@@ -284,7 +316,7 @@ def test_twingate_connector_delete_ignores_k8s_api_errors(
     run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
 
     run.logger_mock.exception.assert_called_once()
-    run.memo_mock.twingate_client.connector_delete.assert_called_once()
+    mock_api_client.connector_delete.assert_called_once()
     run.k8s_client_mock.patch_namespaced_pod.assert_called_once_with(
         crd.spec.name,
         "default",
@@ -293,11 +325,11 @@ def test_twingate_connector_delete_ignores_k8s_api_errors(
 
 
 def test_twingate_connector_delete_without_status_does_nothing(
-    get_connector_and_crd, kopf_handler_runner
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
 ):
     connector, crd = get_connector_and_crd()
-    run = kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
-    run.memo_mock.twingate_client.connector_delete.assert_not_called()
+    kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+    mock_api_client.connector_delete.assert_not_called()
 
 
 def test_twingate_connector_pod_deleted_tags_owner(get_connector_and_crd):

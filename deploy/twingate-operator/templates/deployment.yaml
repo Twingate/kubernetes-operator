@@ -21,6 +21,9 @@ spec:
       {{- end }}
       labels:
         {{- include "twingate-operator.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -29,6 +32,9 @@ spec:
       serviceAccountName: {{ include "twingate-operator.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:

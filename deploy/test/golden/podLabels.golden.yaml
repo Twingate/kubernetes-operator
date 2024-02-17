@@ -94,6 +94,7 @@ spec:
       labels:
         app.kubernetes.io/name: twingate-operator
         app.kubernetes.io/instance: test
+        foo: bar
     spec:
       serviceAccountName: test-twingate-operator
       securityContext:
@@ -130,8 +131,8 @@ spec:
             value: <network slug>
           - name: TWINGATE_HOST
             value: twingate.com
-          - name: TWINGATE_REMOTE_NETWORK_NAME
-            value: <remote network name>
+          - name: TWINGATE_REMOTE_NETWORK_ID
+            value: <remote network id>
         livenessProbe:
           httpGet:
             path: /healthz

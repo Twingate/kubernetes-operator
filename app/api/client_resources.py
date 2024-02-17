@@ -40,8 +40,8 @@ class ResourceProtocol(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    policy: ProtocolPolicy
-    ports: list[ProtocoRange] | None = None
+    policy: ProtocolPolicy = ProtocolPolicy.ALLOW_ALL
+    ports: list[ProtocoRange] = Field(default_factory=list)
 
 
 class ResourceProtocols(BaseModel):
@@ -49,9 +49,9 @@ class ResourceProtocols(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    allow_icmp: bool | None = None
-    tcp: ResourceProtocol | None = None
-    udp: ResourceProtocol | None = None
+    allow_icmp: bool = True
+    tcp: ResourceProtocol = Field(default_factory=ResourceProtocol)
+    udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
 class Resource(BaseModel):
@@ -69,7 +69,7 @@ class Resource(BaseModel):
     security_policy: ResourceSecurityPolicy | None = Field(
         alias="securityPolicy", default=None
     )
-    protocols: ResourceProtocols | None = None
+    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
 
     @staticmethod
     def get_graphql_fragment():
@@ -109,34 +109,39 @@ class Resource(BaseModel):
         """
 
     def is_matching_spec(self, crd: ResourceSpec) -> bool:
+        self_protocols = self.protocols.dict() if self.protocols else None
+        crd_protocols = crd.protocols.dict() if crd.protocols else None
+
         return (
             self.name == crd.name
             and self.address.value == crd.address
             and self.alias == crd.alias
             and self.is_visible == crd.is_visible
             and self.is_browser_shortcut_enabled == crd.is_browser_shortcut_enabled
-            and self.protocols == crd.protocols
+            and self_protocols == crd_protocols
             and self.remote_network.id == crd.remote_network_id
             and (self.security_policy and self.security_policy.id)
             == crd.security_policy_id
         )
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
-        data = dict(
-            id=self.id,
-            name=self.name,
-            address=self.address.value,
-            alias=self.alias,
-            is_visible=self.is_visible,
-            is_browser_shortcut_enabled=self.is_browser_shortcut_enabled,
-            remote_network_id=self.remote_network.id,
-            security_policy_id=self.security_policy.id
-            if self.security_policy
-            else None,
-            protocols=self.protocols,
+        data = self.dict(
+            include={
+                "id",
+                "name",
+                "alias",
+                "is_visible",
+                "is_browser_shortcut_enabled",
+                "protocols",
+            }
+        )
+        data["address"] = self.address.value
+        data["remote_network_id"] = self.remote_network.id
+        data["security_policy_id"] = (
+            self.security_policy.id if self.security_policy else None
         )
         data.update(overrides)
-        return ResourceSpec(**data)  # type: ignore
+        return ResourceSpec(**data)
 
 
 # fmt:off
@@ -235,7 +240,7 @@ class TwingateResourceAPIs:
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols,
+                "protocols": resource.protocols.dict(by_alias=True),
             },
         )
 
@@ -256,7 +261,7 @@ class TwingateResourceAPIs:
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols,
+                "protocols": resource.protocols.dict(by_alias=True),
             },
         )
         return Resource(**result["entity"])

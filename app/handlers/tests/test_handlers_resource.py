@@ -1,4 +1,6 @@
-from unittest.mock import ANY, MagicMock
+from unittest.mock import ANY, MagicMock, patch
+
+import pytest
 
 from app.crds import ResourceSpec
 from app.handlers.handlers_resource import (
@@ -9,8 +11,16 @@ from app.handlers.handlers_resource import (
 )
 
 
+@pytest.fixture()
+def mock_api_client():
+    api_client_instance = MagicMock()
+    with patch("app.handlers.handlers_resource.TwingateAPIClient") as mock_api_client:
+        mock_api_client.return_value = api_client_instance
+        yield api_client_instance
+
+
 class TestResourceCreateHandler:
-    def test_create(self, resource_factory, kopf_info_mock):
+    def test_create(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
 
@@ -18,9 +28,10 @@ class TestResourceCreateHandler:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_create.return_value = resource
         patch_mock = MagicMock()
         patch_mock.spec = {}
+
+        mock_api_client.resource_create.return_value = resource
 
         result = twingate_resource_create(
             body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
@@ -33,8 +44,8 @@ class TestResourceCreateHandler:
             "ts": ANY,
         }
 
+        mock_api_client.resource_create.assert_called_once_with(resource_spec)
         logger_mock.info.assert_called_once_with("Got a create request: %s", spec)
-        memo_mock.twingate_client.resource_create.assert_called_once_with(resource_spec)
         kopf_info_mock.assert_called_once_with(
             "", reason="Success", message=f"Created on Twingate as {resource.id}"
         )
@@ -42,7 +53,7 @@ class TestResourceCreateHandler:
 
 
 class TestResourceUpdateHandler:
-    def test_update(self):
+    def test_update(self, mock_api_client):
         rid = "UmVzb3VyY2U6OTMxODE3"
         old = {
             "spec": {
@@ -68,9 +79,10 @@ class TestResourceUpdateHandler:
         }
         new_resource_spec = ResourceSpec(**new["spec"])
 
+        mock_api_client.resource_update.return_value = MagicMock(id=rid)
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.resource_update.return_value = MagicMock(id=rid)
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
@@ -85,14 +97,12 @@ class TestResourceUpdateHandler:
             "ts": ANY,
         }
 
-        memo_mock.twingate_client.resource_update.assert_called_once_with(
-            new_resource_spec
-        )
+        mock_api_client.resource_update.assert_called_once_with(new_resource_spec)
         assert patch_mock.spec == {}
 
 
 class TestResourceDeleteHandler:
-    def test_delete(self):
+    def test_delete(self, mock_api_client):
         logger_mock = MagicMock()
         memo_mock = MagicMock()
 
@@ -109,9 +119,9 @@ class TestResourceDeleteHandler:
             logger_mock,
         )
 
-        memo_mock.twingate_client.resource_delete.assert_called_once_with("test-id")
+        mock_api_client.resource_delete.assert_called_once_with("test-id")
 
-    def test_delete_without_status_does_nothing(self):
+    def test_delete_without_status_does_nothing(self, mock_api_client):
         logger_mock = MagicMock()
         memo_mock = MagicMock()
 
@@ -119,9 +129,9 @@ class TestResourceDeleteHandler:
 
         twingate_resource_delete(spec, {}, memo_mock, logger_mock)
 
-        memo_mock.twingate_client.resource_delete.assert_not_called()
+        mock_api_client.resource_delete.assert_not_called()
 
-    def test_delete_without_twingate_id_does_nothing(self):
+    def test_delete_without_twingate_id_does_nothing(self, mock_api_client):
         logger_mock = MagicMock()
         memo_mock = MagicMock()
 
@@ -129,11 +139,13 @@ class TestResourceDeleteHandler:
 
         twingate_resource_delete(spec, {"foo": "bar"}, memo_mock, logger_mock)
 
-        memo_mock.twingate_client.resource_delete.assert_not_called()
+        mock_api_client.resource_delete.assert_not_called()
 
 
 class TestResourceSyncTimer:
-    def test_sync_when_resource_exists_and_doesnt_need_update(self, resource_factory):
+    def test_sync_when_resource_exists_and_doesnt_need_update(
+        self, resource_factory, mock_api_client
+    ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
         status = {
@@ -157,10 +169,12 @@ class TestResourceSyncTimer:
             patch_mock,
         )
 
-        memo_mock.twingate_client.resource_update.assert_not_called()
+        mock_api_client.resource_update.assert_not_called()
         assert patch_mock.spec == {}
 
-    def test_sync_when_resource_exists_and_requires_update(self, resource_factory):
+    def test_sync_when_resource_exists_and_requires_update(
+        self, resource_factory, mock_api_client
+    ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
         status = {
@@ -173,9 +187,10 @@ class TestResourceSyncTimer:
 
         mutated_resource = resource.model_copy(update={"name": "new-name"})
 
+        mock_api_client.get_resource.return_value = mutated_resource
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.get_resource.return_value = mutated_resource
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
@@ -187,10 +202,12 @@ class TestResourceSyncTimer:
             patch_mock,
         )
 
-        memo_mock.twingate_client.resource_update.assert_called_once_with(resource_spec)
+        mock_api_client.resource_update.assert_called_once_with(resource_spec)
         assert patch_mock.spec == {}
 
-    def test_sync_when_resource_doesnt_exists_recreate_it(self, resource_factory):
+    def test_sync_when_resource_doesnt_exists_recreate_it(
+        self, resource_factory, mock_api_client
+    ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
         resource_spec_without_id = resource_spec.model_copy(update={"id": None})
@@ -202,10 +219,11 @@ class TestResourceSyncTimer:
             }
         }
 
+        mock_api_client.get_resource.return_value = None
+        mock_api_client.resource_create.return_value = resource
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        memo_mock.twingate_client.get_resource.return_value = None
-        memo_mock.twingate_client.resource_create.return_value = resource
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
@@ -217,8 +235,8 @@ class TestResourceSyncTimer:
             patch_mock,
         )
 
-        memo_mock.twingate_client.resource_update.assert_not_called()
-        memo_mock.twingate_client.resource_create.assert_called_once_with(
+        mock_api_client.resource_update.assert_not_called()
+        mock_api_client.resource_create.assert_called_once_with(
             resource_spec_without_id
         )
 

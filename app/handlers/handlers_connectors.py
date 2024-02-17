@@ -4,6 +4,7 @@ import kopf
 import kubernetes.client
 import pendulum
 
+from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
 from app.handlers.base import success
 from app.settings import get_version
@@ -53,7 +54,12 @@ def get_connector_pod(
                 "imagePullPolicy": "Always",
                 "name": "connector",
                 "securityContext": {
-                    "allowPrivilegeEscalation": False
+                    "allowPrivilegeEscalation": False,
+                    "capabilities": {
+                        "drop": ["ALL"],
+                    },
+                    "runAsNonRoot": True,
+                    "runAsUser": 65532,
                },
                 **spec.container_extra,
             }
@@ -79,7 +85,7 @@ def get_connector_secret(
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
-    client = memo.twingate_client
+    client = TwingateAPIClient(settings)
 
     logger.info("Got twingateconnector create request: %s", body)
     crd = TwingateConnectorCRD(**body)
@@ -128,6 +134,21 @@ def twingate_connector_version_policy_update(body, patch, logger, **_):
     image_policy = crd.spec.image_policy
     next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
+
+
+@kopf.on.update("twingateconnector", field="spec.image")
+def twingate_connector_image_update(body, meta, namespace, memo, logger, **_):
+    logger.info("twingate_connector_image_update: %s", body)
+    settings = memo.twingate_settings
+    crd = TwingateConnectorCRD(**body)
+    image = crd.spec.get_image()
+    if crd.spec.image:
+        pod = get_connector_pod(crd, settings.full_url, image)
+        kapi = kubernetes.client.CoreV1Api()
+        result = kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+        logger.info("Patched pod: %s", result)
+
+    return success(twingate_id=crd.spec.id, image=image)
 
 
 @kopf.on.timer(
@@ -226,9 +247,11 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
     if not status:
         return
 
+    client = TwingateAPIClient(memo.twingate_settings)
+
     if connector_id := spec.get("id"):
         logger.info("Deleting connector %s", connector_id)
-        memo.twingate_client.connector_delete(connector_id)
+        client.connector_delete(connector_id)
 
     try:
         # Remove label from pod so its delete handler isn't triggered

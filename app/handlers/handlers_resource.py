@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import kopf
 
+from app.api import TwingateAPIClient
 from app.crds import ResourceSpec
 from app.handlers.base import success
 
@@ -10,7 +11,7 @@ from app.handlers.base import success
 def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
     logger.info("Got a create request: %s", spec)
     resource = ResourceSpec(**spec)
-    resource = memo.twingate_client.resource_create(resource)
+    resource = TwingateAPIClient(memo.twingate_settings).resource_create(resource)
     patch.spec["id"] = resource.id
     kopf.info(body, reason="Success", message=f"Created on Twingate as {resource.id}")
     return success(
@@ -26,7 +27,8 @@ def twingate_resource_update(old, new, diff, status, memo, logger, **kwargs):
     crd = ResourceSpec(**new["spec"])
     if crd.id:
         logger.info("Updating resource %s", crd.id)
-        resource = memo.twingate_client.resource_update(crd)
+        client = TwingateAPIClient(memo.twingate_settings)
+        resource = client.resource_update(crd)
         logger.info("Got resource %s", resource)
         return success(
             twingate_id=resource.id,
@@ -43,7 +45,8 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
 
     if resource_id := spec.get("id"):
         logger.info("Deleting resource %s", resource_id)
-        memo.twingate_client.resource_delete(resource_id)
+        client = TwingateAPIClient(memo.twingate_settings)
+        client.resource_delete(resource_id)
 
 
 @kopf.timer(
@@ -54,16 +57,17 @@ def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
 
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)
-        if resource := memo.twingate_client.get_resource(resource_id):
+        client = TwingateAPIClient(memo.twingate_settings)
+        if resource := client.get_resource(resource_id):
             logger.info("Got resource %s", resource)
             if not resource.is_matching_spec(crd):
                 logger.info("Resource %s is out of date, updating...", resource_id)
-                memo.twingate_client.resource_update(crd)
+                client.resource_update(crd)
         else:
             # Resource was deleted, recreate it
             logger.info("Resource %s was deleted, recreating...", resource_id)
             crd_withoput_id = crd.model_copy(update={"id": None})
-            resource = memo.twingate_client.resource_create(crd_withoput_id)
+            resource = client.resource_create(crd_withoput_id)
             patch.spec["id"] = resource.id
             return success(
                 twingate_id=resource.id,

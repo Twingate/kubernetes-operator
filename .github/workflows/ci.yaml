@@ -12,7 +12,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: 3.11
-  POETRY_VERSION: 1.6.1
+  POETRY_VERSION: 1.7.1
 
 jobs:
   dockerfile-lint:
@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go 1.21.x
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21.x
       - name: Run Helm Chart Golden Tests
@@ -41,7 +41,7 @@ jobs:
     name: Unit tests
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     - name: Install and configure Poetry
@@ -54,12 +54,12 @@ jobs:
 
     - name: Cache Dependencies
       id: cache-dev-deps
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: .venv
         key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.cache/pre-commit/
         key: pre-commit-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -90,7 +90,7 @@ jobs:
     name: Integration tests
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     - name: Install and configure Poetry
@@ -103,7 +103,7 @@ jobs:
 
     - name: Cache Dependencies
       id: cache-dev-deps
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: .venv
         key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
@@ -122,7 +122,7 @@ jobs:
     name: Image Build
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install and configure Poetry
@@ -134,7 +134,7 @@ jobs:
           installer-parallel: true
 
       - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -156,7 +156,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install and configure Poetry
@@ -180,7 +180,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

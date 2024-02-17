@@ -11,7 +11,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: 3.11
-  POETRY_VERSION: 1.6.1
+  POETRY_VERSION: 1.7.1
 
 jobs:
   create_release:
@@ -43,7 +43,7 @@ jobs:
           reverseOrder: true
 
       - name: Create Release
-        uses: ncipollo/release-action@v1.13.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           draft: true
@@ -58,7 +58,7 @@ jobs:
     needs: [create_release]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install and configure Poetry
@@ -76,7 +76,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

@@ -137,7 +137,6 @@ class TwingateConnectorAPI:
                 MUT_DELETE_CONNECTOR,
                 variable_values={"id": connector_id},
             )
-
             return bool(result["ok"])
         except TransportQueryError:
             return False

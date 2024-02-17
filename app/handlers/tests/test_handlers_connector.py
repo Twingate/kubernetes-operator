@@ -77,7 +77,8 @@ def test_twingate_connector_create(
 
     mock_api_client.connector_create.return_value = connector
     mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
-        access_token="at", refresh_token="rt"  # nosec
+        access_token="at",
+        refresh_token="rt",  # nosec
     )
     run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
 
@@ -128,7 +129,8 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
 
     mock_api_client.connector_create.return_value = connector
     mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
-        access_token="at", refresh_token="rt"  # nosec
+        access_token="at",
+        refresh_token="rt",  # nosec
     )
 
     run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())

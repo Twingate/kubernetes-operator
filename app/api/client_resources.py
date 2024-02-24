@@ -277,7 +277,7 @@ class TwingateResourceAPIs:
 
             return bool(result["ok"])
         except GraphQLMutationError as gql_err:
-            if "down not exist" in gql_err.error:
+            if "does not exist" in gql_err.error:
                 return True
 
             raise

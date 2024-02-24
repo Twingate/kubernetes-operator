@@ -26,7 +26,6 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 autoflake = "^2.3.0"
 bandit = "^1.7.7"
-black = "^24.2.0"
 coveralls = "^3.3.1"
 factory-boy = "^3.3.0"
 isort = "^5.13.2"
@@ -69,9 +68,6 @@ exclude = ["tests"]
 
 [tool.bandit.assert_used]
 skips = ['*_test.py', '*/test_*.py']
-
-[tool.black]
-skip-magic-trailing-comma = true
 
 [tool.isort]
 profile = "black"

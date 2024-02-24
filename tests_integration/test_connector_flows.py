@@ -143,3 +143,46 @@ def test_connector_flowes_image_change(kopf_settings, kopf_runner_args, ci_run_n
 
     assert runner.exception is None
     assert runner.exit_code == 0
+
+
+def test_pod_gone_while_operator_down(kopf_settings, kopf_runner_args, ci_run_number):
+    connector_name = f"test-connector-image-{ci_run_number}"
+    OBJ = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateConnector
+        metadata:
+            name: {connector_name}
+        spec:
+            name: {connector_name}
+            image:
+                tag: "1.63.0"
+    """
+
+    with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+        time.sleep(5)
+        kubectl_create(OBJ)
+        time.sleep(5)
+
+        connector = kubectl_get("tc", connector_name)
+        kubectl_get("secret", connector_name)
+        pod = kubectl_get("pod", connector_name)
+
+        while pod["status"]["phase"] == "Pending":
+            time.sleep(1)
+            pod = kubectl_get("pod", connector_name)
+
+        # connector was properly provisioned
+        expected_status = {"success": True, "image": ANY, "ts": ANY, "twingate_id": ANY}
+        assert connector["status"]["twingate_connector_create"] == expected_status
+
+    # Remove finalizer and delete pod while operator is out of service
+    kubectl_patch(f"pod/{connector_name}", {"metadata": {"finalizers": None}})
+    kubectl_delete(f"pod/{connector_name}")
+
+    # run operator again
+    with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+        time.sleep(5)
+
+        # pod was recreated
+        pod = kubectl_get("pod", connector_name)
+        assert pod["status"]["phase"] == "Running"

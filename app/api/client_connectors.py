@@ -5,6 +5,7 @@ from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
+from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import ConnectorSpec
 
@@ -138,5 +139,10 @@ class TwingateConnectorAPI:
                 variable_values={"id": connector_id},
             )
             return bool(result["ok"])
+        except GraphQLMutationError as gql_err:
+            if "does not exist" in gql_err.error:
+                return True
+
+            raise
         except TransportQueryError:
             return False

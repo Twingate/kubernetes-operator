@@ -196,3 +196,30 @@ class TestTwingateConnectorAPI:
         )
         result = api_client.connector_delete("some-id")
         assert result is False
+
+    def test_connector_delete_with_id_already_deleted_returns_true(
+        self, test_url, api_client, mocked_responses
+    ):
+        failed_response = json.dumps(
+            {
+                "data": {
+                    "connectorDelete": {
+                        "ok": False,
+                        "error": "Connector with id 'some-id' does not exist",
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=failed_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "some-id"}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.connector_delete("some-id")
+        assert result is True

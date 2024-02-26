@@ -15,6 +15,7 @@ from app.crds import (
 from app.handlers.handlers_connectors import (
     ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
+    LABEL_CONNECTOR_POD_DELETED,
     get_connector_pod,
     timer_check_image_version,
     twingate_connector_create,
@@ -77,7 +78,8 @@ def test_twingate_connector_create(
 
     mock_api_client.connector_create.return_value = connector
     mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
-        access_token="at", refresh_token="rt"  # nosec
+        access_token="at",
+        refresh_token="rt",  # nosec
     )
     run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
 
@@ -128,7 +130,8 @@ def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
 
     mock_api_client.connector_create.return_value = connector
     mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
-        access_token="at", refresh_token="rt"  # nosec
+        access_token="at",
+        refresh_token="rt",  # nosec
     )
 
     run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
@@ -169,6 +172,7 @@ def test_twingate_connector_resume_without_image_policy_doesnt_annotates(
     connector, crd = get_connector_and_crd()
     run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
     assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is None
+    assert "labels" not in run.patch_mock.meta
 
 
 def test_twingate_connector_resume_with_image_policy_annotates(
@@ -179,6 +183,18 @@ def test_twingate_connector_resume_with_image_policy_annotates(
     )
     run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
     assert run.patch_mock.meta["annotations"][ANNOTATION_NEXT_VERSION_CHECK] is not None
+    assert "labels" not in run.patch_mock.meta
+
+
+def test_twingate_connector_resume_with_pod_gone(
+    get_connector_and_crd, kopf_handler_runner
+):
+    connector, crd = get_connector_and_crd(
+        spec_overrides=dict(image_policy=ConnectorImagePolicy())
+    )
+    with patch("app.handlers.handlers_connectors.check_pod_exists", return_value=False):
+        run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
+        assert run.patch_mock.meta["labels"][LABEL_CONNECTOR_POD_DELETED] is not None
 
 
 def test_twingate_connector_version_policy_update(

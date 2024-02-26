@@ -14,6 +14,7 @@ from app.api.client_remote_networks import TwingateRemoteNetworksAPIs
 from app.api.client_resources import TwingateResourceAPIs
 from app.api.client_resources_access import TwingateResourceAccessAPIs
 from app.api.client_service_accounts import TwingateServiceAccountsAPIs
+from app.api.exceptions import GraphQLMutationError
 from app.settings import TwingateOperatorSettings, get_version
 
 log = logging.getLogger(__name__)
@@ -64,14 +65,6 @@ class TwingateRequestsHTTPTransport(RequestsHTTPTransport):
             )
             for prefix in "http://", "https://":
                 self.session.mount(prefix, adapter)
-
-
-class GraphQLMutationError(Exception):
-    def __init__(self, mutation_name: str, error: str):
-        self.mutation_name = mutation_name
-        self.error = error
-        self.message = f"{mutation_name} mutation failed."
-        super().__init__(self.message)
 
 
 class TwingateAPIClient(

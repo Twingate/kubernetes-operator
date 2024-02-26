@@ -37,6 +37,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: ruff-format
+        name: ruff-format
+        entry: poetry run ruff format
+        language: system
+        types: [ python ]
+        require_serial: true
+
       - id: pyupgrade
         name: pyupgrade
         entry: poetry run pyupgrade
@@ -54,13 +61,6 @@ repos:
       - id: isort
         name: isort
         entry: poetry run isort
-        language: system
-        types: [python]
-        require_serial: true
-
-      - id: black
-        name: black
-        entry: poetry run black
         language: system
         types: [python]
         require_serial: true

@@ -12,6 +12,8 @@ from app.settings import get_version
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
 
+LABEL_CONNECTOR_POD_DELETED = "twingate.com/connector-pod-deleted"
+
 
 def get_connector_pod(
     crd: TwingateConnectorCRD, tenant_url: str, image: str
@@ -82,6 +84,17 @@ def get_connector_secret(
     )
 
 
+def check_pod_exists(namespace: str, name: str) -> bool:
+    try:
+        kapi = kubernetes.client.CoreV1Api()
+        kapi.read_namespaced_pod(name=name, namespace=namespace)
+        return True
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            return False
+        raise
+
+
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
@@ -120,11 +133,15 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
 
 @kopf.on.resume("twingateconnector")
-def twingate_connector_resume(body, patch, **_):
+def twingate_connector_resume(body, patch, namespace, **_):
     crd = TwingateConnectorCRD(**body)
     image_policy = crd.spec.image_policy
     next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
+
+    # Check pod exists and if not, add LABEL_CONNECTOR_POD_DELETED label to trigger recreation
+    if not check_pod_exists(namespace, crd.metadata.name):
+        patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: "true"}
 
 
 @kopf.on.field("twingateconnector", field="spec.imagePolicy")
@@ -188,9 +205,7 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
 # region Delete related
 
 
-@kopf.on.update(
-    "twingateconnector", labels={"twingate.com/connector-pod-deleted": "true"}
-)
+@kopf.on.update("twingateconnector", labels={LABEL_CONNECTOR_POD_DELETED: "true"})
 def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
     """Recreates the Connector's Pod.
 
@@ -285,7 +300,7 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **
             namespace,
             "twingateconnectors",
             owner["name"],
-            {"metadata": {"labels": {"twingate.com/connector-pod-deleted": "true"}}},
+            {"metadata": {"labels": {LABEL_CONNECTOR_POD_DELETED: "true"}}},
         )
     except kubernetes.client.exceptions.ApiException:
         logger.exception("Failed to annotate connector %s", owner["name"])

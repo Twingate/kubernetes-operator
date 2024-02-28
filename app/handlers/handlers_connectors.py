@@ -143,7 +143,7 @@ def twingate_connector_resume(body, patch, namespace, logger, **_):
     pod_exists = True
     if not check_pod_exists(namespace, crd.metadata.name):
         logger.info(
-            "Pod is gone. Adding LABEL_CONNECTOR_POD_DELETED label to trigger recreation"
+            "Pod is gone. Adding LABEL_CONNECTOR_POD_DELETED label to trigger recreation."
         )
         patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: "true"}
         pod_exists = False

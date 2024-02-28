@@ -23,6 +23,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         spec:
             name: {connector_name}
             logLevel: 7
+            hasStatusNotificationsEnabled: false
             imagePolicy:
                 provider: "dockerhub"
                 schedule: "* * * * *"
@@ -93,6 +94,7 @@ def test_connector_flowes_image_change(kopf_settings, kopf_runner_args, ci_run_n
             name: {connector_name}
         spec:
             name: {connector_name}
+            hasStatusNotificationsEnabled: false
             image:
                 tag: "1.62.0"
     """
@@ -154,6 +156,7 @@ def test_pod_gone_while_operator_down(kopf_settings, kopf_runner_args, ci_run_nu
             name: {connector_name}
         spec:
             name: {connector_name}
+            hasStatusNotificationsEnabled: false
             image:
                 tag: "1.63.0"
     """

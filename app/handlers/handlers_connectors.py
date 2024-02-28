@@ -133,15 +133,25 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
 
 @kopf.on.resume("twingateconnector")
-def twingate_connector_resume(body, patch, namespace, **_):
+def twingate_connector_resume(body, patch, namespace, logger, **_):
     crd = TwingateConnectorCRD(**body)
     image_policy = crd.spec.image_policy
     next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
     # Check pod exists and if not, add LABEL_CONNECTOR_POD_DELETED label to trigger recreation
-    if not check_pod_exists(namespace, crd.metadata.name):
+    pod_exists = check_pod_exists(namespace, crd.metadata.name)
+    if not pod_exists:
+        logger.info(
+            "Pod is gone. Adding LABEL_CONNECTOR_POD_DELETED label to trigger recreation."
+        )
         patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: "true"}
+
+    return success(
+        twingate_id=crd.spec.id,
+        pod_exists=pod_exists,
+        next_version_check=next_version_check,
+    )
 
 
 @kopf.on.field("twingateconnector", field="spec.imagePolicy")

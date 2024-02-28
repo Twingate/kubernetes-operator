@@ -42,6 +42,10 @@ spec:
                   minimum: -1
                   maximum: 7
                   description: "Log level for the Connector (-1 to 7: -1 for no logs, 0 - least verbose, 7 - most verbose, default: 3)."
+                hasStatusNotificationsEnabled:
+                  type: boolean
+                  default: true
+                  description: "Enable status notifications for the Connector."
                 image:
                   type: object
                   description: "Image defines the image to use for the Connector."

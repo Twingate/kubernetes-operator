@@ -3,12 +3,7 @@ from unittest.mock import ANY
 
 import pytest
 
-from tests_integration.utils import (
-    kubectl_apply,
-    kubectl_create,
-    kubectl_delete,
-    kubectl_get,
-)
+from tests_integration.utils import kubectl_create, kubectl_delete, kubectl_get
 
 
 @pytest.fixture()
@@ -81,7 +76,11 @@ class TestConnectorCRD:
                 "resourceVersion": ANY,
                 "uid": ANY,
             },
-            "spec": {"logLevel": 4, "name": unique_connector_name},
+            "spec": {
+                "logLevel": 4,
+                "name": unique_connector_name,
+                "hasStatusNotificationsEnabled": True,
+            },
         }
 
         kubectl_delete(f"tc/{unique_connector_name}")
@@ -126,6 +125,42 @@ class TestConnectorCRD:
             in stderr
         )
 
+    def test_has_status_notifications_enabled(self, unique_connector_name):
+        result = kubectl_create(
+            f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                spec:
+                    name: {unique_connector_name}
+                    hasStatusNotificationsEnabled: false
+            """
+        )
+
+        assert result.returncode == 0
+
+        data = kubectl_get("tc", unique_connector_name)
+        assert data == {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateConnector",
+            "metadata": {
+                "creationTimestamp": ANY,
+                "generation": 1,
+                "name": unique_connector_name,
+                "namespace": "default",
+                "resourceVersion": ANY,
+                "uid": ANY,
+            },
+            "spec": {
+                "hasStatusNotificationsEnabled": False,
+                "logLevel": 3,
+                "name": unique_connector_name,
+            },
+        }
+
+        kubectl_delete(f"tc/{unique_connector_name}")
+
     def test_image(self, unique_connector_name):
         result = kubectl_create(
             f"""
@@ -156,6 +191,7 @@ class TestConnectorCRD:
             "spec": {
                 "image": {"repository": "twingate/connector", "tag": "latest"},
                 "logLevel": 3,
+                "hasStatusNotificationsEnabled": True,
                 "name": unique_connector_name,
             },
         }
@@ -199,6 +235,7 @@ class TestConnectorCRD:
                 },
                 "name": unique_connector_name,
                 "logLevel": 3,
+                "hasStatusNotificationsEnabled": True,
             },
         }
 
@@ -219,34 +256,3 @@ class TestConnectorCRD:
                         version: "^1.0.0"
                 """
             )
-
-    def test_name_is_immutable(self, unique_connector_name):
-        result = kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateConnector
-            metadata:
-                name: {unique_connector_name}
-            spec:
-                name: {unique_connector_name}
-            """
-        )
-
-        assert result.returncode == 0
-
-        with pytest.raises(subprocess.CalledProcessError) as ex:
-            kubectl_apply(
-                f"""
-                apiVersion: twingate.com/v1beta
-                kind: TwingateConnector
-                metadata:
-                    name: {unique_connector_name}
-                spec:
-                    name: {unique_connector_name}1
-            """
-            )
-
-        stderr = ex.value.stderr.decode()
-        assert "name is immutable once set" in stderr
-
-        kubectl_delete(f"tc/{unique_connector_name}")

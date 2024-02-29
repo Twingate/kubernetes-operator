@@ -24,6 +24,7 @@ from app.handlers.handlers_connectors import (
     twingate_connector_pod_deleted,
     twingate_connector_recreate_pod,
     twingate_connector_resume,
+    twingate_connector_update,
     twingate_connector_version_policy_update,
 )
 
@@ -195,6 +196,36 @@ def test_twingate_connector_resume_with_pod_gone(
     with patch("app.handlers.handlers_connectors.check_pod_exists", return_value=False):
         run = kopf_handler_runner(twingate_connector_resume, crd, MagicMock())
         assert run.patch_mock.meta["labels"][LABEL_CONNECTOR_POD_DELETED] is not None
+
+
+def test_twingate_connector_update(
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
+):
+    connector, crd = get_connector_and_crd(with_id=True)
+
+    mock_api_client.connector_update.return_value = connector
+
+    run = kopf_handler_runner(
+        twingate_connector_update, crd, MagicMock(), new={}, diff={}
+    )
+    assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
+
+
+def test_twingate_connector_update_without_id_does_nothing(
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
+):
+    connector, crd = get_connector_and_crd(with_id=False)
+
+    mock_api_client.connector_update.return_value = connector
+
+    run = kopf_handler_runner(
+        twingate_connector_update, crd, MagicMock(), new={}, diff={}
+    )
+    assert run.result == {
+        "reason": "Update called before Connector has an ID",
+        "success": False,
+        "ts": ANY,
+    }
 
 
 def test_twingate_connector_version_policy_update(

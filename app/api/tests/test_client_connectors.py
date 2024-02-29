@@ -119,6 +119,41 @@ class TestTwingateConnectorAPI:
         ):
             api_client.connector_create(connector_spec)
 
+    def test_connector_update(
+        self, test_url, api_client, connector_factory, mocked_responses
+    ):
+        connector = connector_factory()
+        connector_spec = ConnectorSpec(**connector.model_dump())
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "connectorUpdate": {
+                        "ok": True,
+                        "entity": connector.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": connector_spec.model_dump(
+                            include=["id", "name", "hasStatusNotificationsEnabled"],
+                            by_alias=True,
+                        )
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+        result = api_client.connector_update(connector_spec)
+        assert result == connector
+
     def test_connector_generate_tokens(self, test_url, api_client, mocked_responses):
         connector_id = "test-connector-id"
         success_response = json.dumps(

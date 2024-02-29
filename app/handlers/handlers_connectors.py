@@ -6,7 +6,7 @@ import pendulum
 
 from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
-from app.handlers.base import success
+from app.handlers.base import fail, success
 from app.settings import get_version
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
@@ -154,6 +154,26 @@ def twingate_connector_resume(body, patch, namespace, logger, **_):
     )
 
 
+@kopf.on.update("twingateconnector", field=["spec"])
+def twingate_connector_update(body, memo, logger, new, diff, status, **_):
+    logger.info(
+        "Got TwingateConnector update request: %s. Diff: %s. Status: %s.",
+        new,
+        diff,
+        status,
+    )
+
+    settings = memo.twingate_settings
+    client = TwingateAPIClient(settings)
+
+    crd = TwingateConnectorCRD(**body)
+    if not crd.spec.id:
+        return fail(reason="Update called before Connector has an ID")
+
+    updated_connector = client.connector_update(crd.spec)
+    return success(twingate_id=updated_connector.id)
+
+
 @kopf.on.field("twingateconnector", field="spec.imagePolicy")
 def twingate_connector_version_policy_update(body, patch, logger, **_):
     logger.info("twingate_connector_version_policy_update: %s", body)
@@ -163,7 +183,7 @@ def twingate_connector_version_policy_update(body, patch, logger, **_):
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
 
-@kopf.on.update("twingateconnector", field="spec.image")
+@kopf.on.field("twingateconnector", field="spec.image")
 def twingate_connector_image_update(body, meta, namespace, memo, logger, **_):
     logger.info("twingate_connector_image_update: %s", body)
     settings = memo.twingate_settings

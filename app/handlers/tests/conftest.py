@@ -61,7 +61,11 @@ def kopf_handler_runner(
     kopf_label_mock: MagicMock,
 ):
     def run(
-        handler_f: Callable, crd: Any, memo_mock: MagicMock, namespace="default"
+        handler_f: Callable,
+        crd: Any,
+        memo_mock: MagicMock,
+        namespace="default",
+        **kwargs,
     ) -> HandlerRunnerResult:
         logger_mock = MagicMock()
 
@@ -78,6 +82,7 @@ def kopf_handler_runner(
             logger=logger_mock,
             namespace=namespace,
             patch=patch_mock,
+            **kwargs,
         )
         return HandlerRunnerResult(
             result,

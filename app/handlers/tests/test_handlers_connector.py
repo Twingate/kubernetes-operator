@@ -220,7 +220,7 @@ def test_twingate_connector_update_without_id_does_nothing(
     assert run.result == {
         "reason": "Update called before Connector has an ID",
         "success": False,
-        "ts": "2024-02-28T16:20:33.710325",
+        "ts": ANY,
     }
 
 

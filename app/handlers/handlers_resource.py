@@ -31,6 +31,10 @@ def twingate_resource_update(spec, new, diff, status, memo, logger, **kwargs):
     )
 
     crd = ResourceSpec(**spec)
+
+    if len(diff) == 1 and diff[0][0] == "add" and diff[0][1] == ("id",):
+        return success(twingate_id=crd.id, message="No update required")
+
     if crd.id:
         logger.info("Updating resource %s", crd.id)
         client = TwingateAPIClient(memo.twingate_settings)

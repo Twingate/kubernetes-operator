@@ -70,8 +70,8 @@ mutation CreateConnector($name: String, $remoteNetworkId: ID!) {
 MUT_UPDATE_CONNECTOR = gql(
     _CONNECTOR_FRAGMENT
     + """
-mutation UpdateConnector($connectorId: ID!, $name: String!, $hasStatusNotificationsEnabled: Boolean!) {
-  connectorUpdate(id: $connectorId, name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled) {
+mutation UpdateConnector($id: ID!, $name: String!, $hasStatusNotificationsEnabled: Boolean!) {
+  connectorUpdate(id: $id, name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled) {
     ok
     error
     entity {

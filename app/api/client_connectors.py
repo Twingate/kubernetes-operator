@@ -99,7 +99,7 @@ mutation GenerateConnectorTokens($connectorId: ID!) {
 
 MUT_DELETE_CONNECTOR = gql(
     """
-mutation DeleteResource($id: ID!) {
+mutation DeleteConnector($id: ID!) {
     connectorDelete(id: $id) {
         ok
         error

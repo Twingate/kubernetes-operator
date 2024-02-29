@@ -46,7 +46,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         return fail(error=mex.error)
 
 
-@kopf.on.update("twingateresourceaccess")
+@kopf.on.update("twingateresourceaccess", field="spec")
 def twingate_resource_access_update(new, diff, status, memo, logger, **kwargs):
     logger.info(
         "Got TwingateResourceAccess update request: %s. Diff: %s. Status: %s.",

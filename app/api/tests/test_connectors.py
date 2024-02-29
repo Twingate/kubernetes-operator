@@ -60,7 +60,7 @@ class TestTwingateConnectorAPI:
         self, test_url, api_client, connector_factory, mocked_responses
     ):
         connector = connector_factory()
-        connector_spec = ConnectorSpec(**connector.dict(exclude=["id"]))
+        connector_spec = ConnectorSpec(**connector.model_dump(exclude=["id"]))
 
         success_response = json.dumps(
             {
@@ -94,7 +94,7 @@ class TestTwingateConnectorAPI:
         self, test_url, api_client, connector_factory, mocked_responses
     ):
         connector = connector_factory()
-        connector_spec = ConnectorSpec(**connector.dict(exclude=["id"]))
+        connector_spec = ConnectorSpec(**connector.model_dump(exclude=["id"]))
         success_response = json.dumps(
             {"data": {"connectorCreate": {"ok": False, "error": "some error"}}}
         )

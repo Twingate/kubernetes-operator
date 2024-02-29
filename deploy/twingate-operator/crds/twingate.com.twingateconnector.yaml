@@ -19,8 +19,6 @@ spec:
               x-kubernetes-validations:
                 - rule: (!has(oldSelf.id) || self.id == oldSelf.id)
                   message: "id is immutable once set"
-                - rule: (!has(oldSelf.name) || self.name == oldSelf.name)
-                  message: "name is immutable once set"
                 - rule: (!has(oldSelf.containerExtra) || self.containerExtra == oldSelf.containerExtra)
                   message: "containerExtra is immutable once set"
                 - rule: (!has(oldSelf.podExtra) || self.podExtra == oldSelf.podExtra)

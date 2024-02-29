@@ -21,8 +21,8 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
     )
 
 
-@kopf.on.update("twingateresource")
-def twingate_resource_update(old, new, diff, status, memo, logger, **kwargs):
+@kopf.on.update("twingateresource", field="spec")
+def twingate_resource_update(spec, new, diff, status, memo, logger, **kwargs):
     logger.info(
         "Got TwingateResource update request: %s. Diff: %s. Status: %s.",
         new,
@@ -30,7 +30,7 @@ def twingate_resource_update(old, new, diff, status, memo, logger, **kwargs):
         status,
     )
 
-    crd = ResourceSpec(**new["spec"])
+    crd = ResourceSpec(**spec)
     if crd.id:
         logger.info("Updating resource %s", crd.id)
         client = TwingateAPIClient(memo.twingate_settings)

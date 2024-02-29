@@ -55,21 +55,12 @@ class TestResourceCreateHandler:
 class TestResourceUpdateHandler:
     def test_update(self, mock_api_client):
         rid = "UmVzb3VyY2U6OTMxODE3"
-        old = {
-            "spec": {
-                "id": rid,
-                "address": "my.default.cluster.local",
-                "name": "My K8S Resource",
-            }
+        spec = new = {
+            "id": rid,
+            "address": "my.default.cluster.local",
+            "name": "new-name",
         }
-        new = {
-            "spec": {
-                "id": rid,
-                "address": "my.default.cluster.local",
-                "name": "new-name",
-            }
-        }
-        diff = (("change", ("spec", "name"), "My K8S Resource", "new-name"),)
+        diff = (("change", ("name"), "My K8S Resource", "new-name"),)
         status = {
             "twingate_resource_create": {
                 "twingate_id": rid,
@@ -77,7 +68,7 @@ class TestResourceUpdateHandler:
                 "updated_at": "2023-09-27T04:02:55.249035+00:00",
             }
         }
-        new_resource_spec = ResourceSpec(**new["spec"])
+        new_resource_spec = ResourceSpec(**new)
 
         mock_api_client.resource_update.return_value = MagicMock(id=rid)
 
@@ -87,7 +78,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            old, new, diff, status, memo_mock, logger_mock
+            spec, new, diff, status, memo_mock, logger_mock
         )
         assert result == {
             "success": True,

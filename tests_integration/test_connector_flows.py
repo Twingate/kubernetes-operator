@@ -32,9 +32,8 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-        time.sleep(10)
         kubectl_create(OBJ)
-        time.sleep(10)
+        time.sleep(5)
 
         connector = kubectl_get("tc", connector_name)
         secret = kubectl_get("secret", connector_name)
@@ -63,7 +62,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
 
         # Check that if pod is deleted we recreate it
         kubectl_delete(f"pod/{connector_name}")
-        time.sleep(10)
+        time.sleep(5)
         pod = kubectl_get("pod", connector_name)
         assert pod["status"]["phase"] == "Running"
         assert pod["metadata"]["annotations"]["twingate.com/kopf-managed"] == "yes"
@@ -72,7 +71,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
         kubectl_delete(f"tc/{connector_name}")
-        time.sleep(10)
+        time.sleep(5)
 
         # secret & pod are deleted
         with pytest.raises(CalledProcessError):
@@ -100,7 +99,6 @@ def test_connector_flowes_image_change(kopf_settings, kopf_runner_args, ci_run_n
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-        time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(5)
 
@@ -162,7 +160,6 @@ def test_pod_gone_while_operator_down(kopf_settings, kopf_runner_args, ci_run_nu
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
-        time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(5)
 
@@ -181,6 +178,7 @@ def test_pod_gone_while_operator_down(kopf_settings, kopf_runner_args, ci_run_nu
     # Remove finalizer and delete pod while operator is out of service
     kubectl_patch(f"pod/{connector_name}", {"metadata": {"finalizers": None}})
     kubectl_delete(f"pod/{connector_name}")
+    time.sleep(5)
 
     # run operator again
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
@@ -189,3 +187,7 @@ def test_pod_gone_while_operator_down(kopf_settings, kopf_runner_args, ci_run_nu
         # pod was recreated
         pod = kubectl_get("pod", connector_name)
         assert pod["status"]["phase"] == "Running"
+
+        # Test done, delete connector
+        kubectl_delete(f"tc/{connector_name}")
+        time.sleep(5)

@@ -154,9 +154,9 @@ def twingate_connector_resume(body, patch, namespace, logger, **_):
     )
 
 
-@kopf.on.update("twingateconnector")
-def twingate_connector_update(body, memo, logger, **_):
-    logger.info("twingate_connector_update: %s", body)
+@kopf.on.update("twingateconnector", field=["spec"])
+def twingate_connector_update(body, memo, logger, diff, **_):
+    logger.info("twingate_connector_update: %s (diff: %s)", body, diff)
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings)
 

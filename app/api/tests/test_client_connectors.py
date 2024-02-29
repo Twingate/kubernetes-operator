@@ -123,7 +123,7 @@ class TestTwingateConnectorAPI:
         self, test_url, api_client, connector_factory, mocked_responses
     ):
         connector = connector_factory()
-        connector_spec = ConnectorSpec(**connector.dict())
+        connector_spec = ConnectorSpec(**connector.model_dump())
 
         success_response = json.dumps(
             {

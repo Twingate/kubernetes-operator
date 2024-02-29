@@ -205,7 +205,9 @@ def test_twingate_connector_update(
 
     mock_api_client.connector_update.return_value = connector
 
-    run = kopf_handler_runner(twingate_connector_update, crd, MagicMock())
+    run = kopf_handler_runner(
+        twingate_connector_update, crd, MagicMock(), new={}, diff={}
+    )
     assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
 
 
@@ -216,7 +218,9 @@ def test_twingate_connector_update_without_id_does_nothing(
 
     mock_api_client.connector_update.return_value = connector
 
-    run = kopf_handler_runner(twingate_connector_update, crd, MagicMock())
+    run = kopf_handler_runner(
+        twingate_connector_update, crd, MagicMock(), new={}, diff={}
+    )
     assert run.result == {
         "reason": "Update called before Connector has an ID",
         "success": False,

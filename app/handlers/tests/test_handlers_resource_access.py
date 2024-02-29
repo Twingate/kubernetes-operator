@@ -201,7 +201,8 @@ class TestResourceAccessUpdateHandler:
             return_value=resource_crd_mock,
         ):
             result = twingate_resource_access_update(
-                new={"spec": resource_access_spec},
+                spec=resource_access_spec,
+                new=resource_access_spec,
                 diff={},
                 status=status,
                 memo=memo_mock,
@@ -226,7 +227,8 @@ class TestResourceAccessUpdateHandler:
             return_value=None,
         ):
             result = twingate_resource_access_update(
-                new={"spec": resource_access_spec},
+                spec=resource_access_spec,
+                new=resource_access_spec,
                 diff={},
                 status=status,
                 memo=memo_mock,
@@ -239,7 +241,7 @@ class TestResourceAccessUpdateHandler:
             }
 
     def test_update_resource_not_yet_created_should_raise_temp_error(self):
-        new = {"spec": {"principalId": "R3JvdXA6MTE1NzI2MA=="}}
+        new = {"principalId": "R3JvdXA6MTE1NzI2MA=="}
         diff = {}
         status = {}
         logger_mock = MagicMock()
@@ -247,7 +249,12 @@ class TestResourceAccessUpdateHandler:
 
         with pytest.raises(kopf.TemporaryError) as excinfo:
             twingate_resource_access_update(
-                new=new, diff=diff, status=status, memo=memo_mock, logger=logger_mock
+                spec=new,
+                new=new,
+                diff=diff,
+                status=status,
+                memo=memo_mock,
+                logger=logger_mock,
             )
 
         assert excinfo.value.args[0] == "Resource not yet created, retrying..."

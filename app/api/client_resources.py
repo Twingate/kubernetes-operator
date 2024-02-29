@@ -110,8 +110,8 @@ class Resource(BaseModel):
         """
 
     def is_matching_spec(self, crd: ResourceSpec) -> bool:
-        self_protocols = self.protocols.dict() if self.protocols else None
-        crd_protocols = crd.protocols.dict() if crd.protocols else None
+        self_protocols = self.protocols.model_dump() if self.protocols else None
+        crd_protocols = crd.protocols.model_dump() if crd.protocols else None
 
         return (
             self.name == crd.name
@@ -126,7 +126,7 @@ class Resource(BaseModel):
         )
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
-        data = self.dict(
+        data = self.model_dump(
             include={
                 "id",
                 "name",
@@ -241,7 +241,7 @@ class TwingateResourceAPIs:
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols.dict(by_alias=True),
+                "protocols": resource.protocols.model_dump(by_alias=True),
             },
         )
 
@@ -262,7 +262,7 @@ class TwingateResourceAPIs:
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols.dict(by_alias=True),
+                "protocols": resource.protocols.model_dump(by_alias=True),
             },
         )
         return Resource(**result["entity"])

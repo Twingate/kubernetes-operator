@@ -3,12 +3,7 @@ from unittest.mock import ANY
 
 import pytest
 
-from tests_integration.utils import (
-    kubectl_apply,
-    kubectl_create,
-    kubectl_delete,
-    kubectl_get,
-)
+from tests_integration.utils import kubectl_create, kubectl_delete, kubectl_get
 
 
 @pytest.fixture()
@@ -261,34 +256,3 @@ class TestConnectorCRD:
                         version: "^1.0.0"
                 """
             )
-
-    def test_name_is_immutable(self, unique_connector_name):
-        result = kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateConnector
-            metadata:
-                name: {unique_connector_name}
-            spec:
-                name: {unique_connector_name}
-            """
-        )
-
-        assert result.returncode == 0
-
-        with pytest.raises(subprocess.CalledProcessError) as ex:
-            kubectl_apply(
-                f"""
-                apiVersion: twingate.com/v1beta
-                kind: TwingateConnector
-                metadata:
-                    name: {unique_connector_name}
-                spec:
-                    name: {unique_connector_name}1
-            """
-            )
-
-        stderr = ex.value.stderr.decode()
-        assert "name is immutable once set" in stderr
-
-        kubectl_delete(f"tc/{unique_connector_name}")

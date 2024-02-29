@@ -32,6 +32,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+        time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(5)
 
@@ -99,6 +100,7 @@ def test_connector_flowes_image_change(kopf_settings, kopf_runner_args, ci_run_n
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+        time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(5)
 
@@ -160,6 +162,7 @@ def test_pod_gone_while_operator_down(kopf_settings, kopf_runner_args, ci_run_nu
     """
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+        time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(5)
 

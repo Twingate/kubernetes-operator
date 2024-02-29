@@ -55,8 +55,8 @@ QUERY_GET_CONNECTOR = gql(
 MUT_CREATE_CONNECTOR = gql(
     _CONNECTOR_FRAGMENT
     + """
-mutation CreateConnector($name: String, $remoteNetworkId: ID!) {
-  connectorCreate(name: $name, remoteNetworkId: $remoteNetworkId) {
+mutation CreateConnector($name: String, $hasStatusNotificationsEnabled: Boolean!, $remoteNetworkId: ID!) {
+  connectorCreate(name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled, remoteNetworkId: $remoteNetworkId) {
     ok
     error
     entity {

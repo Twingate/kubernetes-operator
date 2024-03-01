@@ -237,7 +237,7 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
 
 
 @kopf.on.update("twingateconnector", labels={LABEL_CONNECTOR_POD_DELETED: "true"})
-def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
+def twingate_connector_recreate_pod(body, namespace, memo, patch, logger, **_):
     """Recreates the Connector's Pod.
 
     When pod is deleted we can't recreate it right away because we want to
@@ -287,6 +287,8 @@ def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
                 time.sleep(2)
             else:
                 raise
+
+    patch.metadata["labels"] = {LABEL_CONNECTOR_POD_DELETED: None}
 
 
 @kopf.on.delete("twingateconnector")

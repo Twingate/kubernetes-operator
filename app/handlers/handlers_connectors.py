@@ -168,7 +168,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, **_):
 
     crd = TwingateConnectorCRD(**body)
     if not crd.spec.id:
-        return fail(reason="Update called before Connector has an ID")
+        return fail(error="Update called before Connector has an ID")
 
     updated_connector = client.connector_update(crd.spec)
     return success(twingate_id=updated_connector.id)

@@ -222,7 +222,7 @@ def test_twingate_connector_update_without_id_does_nothing(
         twingate_connector_update, crd, MagicMock(), new={}, diff={}
     )
     assert run.result == {
-        "reason": "Update called before Connector has an ID",
+        "error": "Update called before Connector has an ID",
         "success": False,
         "ts": ANY,
     }

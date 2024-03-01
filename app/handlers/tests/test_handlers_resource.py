@@ -55,21 +55,12 @@ class TestResourceCreateHandler:
 class TestResourceUpdateHandler:
     def test_update(self, mock_api_client):
         rid = "UmVzb3VyY2U6OTMxODE3"
-        old = {
-            "spec": {
-                "id": rid,
-                "address": "my.default.cluster.local",
-                "name": "My K8S Resource",
-            }
+        spec = new = {
+            "id": rid,
+            "address": "my.default.cluster.local",
+            "name": "new-name",
         }
-        new = {
-            "spec": {
-                "id": rid,
-                "address": "my.default.cluster.local",
-                "name": "new-name",
-            }
-        }
-        diff = (("change", ("spec", "name"), "My K8S Resource", "new-name"),)
+        diff = (("change", ("name"), "My K8S Resource", "new-name"),)
         status = {
             "twingate_resource_create": {
                 "twingate_id": rid,
@@ -77,7 +68,7 @@ class TestResourceUpdateHandler:
                 "updated_at": "2023-09-27T04:02:55.249035+00:00",
             }
         }
-        new_resource_spec = ResourceSpec(**new["spec"])
+        new_resource_spec = ResourceSpec(**new)
 
         mock_api_client.resource_update.return_value = MagicMock(id=rid)
 
@@ -86,9 +77,7 @@ class TestResourceUpdateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        result = twingate_resource_update(
-            old, new, diff, status, memo_mock, logger_mock
-        )
+        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
         assert result == {
             "success": True,
             "twingate_id": rid,
@@ -98,6 +87,63 @@ class TestResourceUpdateHandler:
         }
 
         mock_api_client.resource_update.assert_called_once_with(new_resource_spec)
+        assert patch_mock.spec == {}
+
+    def test_update_called_without_id_fails(self, mock_api_client):
+        spec = {
+            "address": "my.default.cluster.local",
+            "name": "new-name",
+        }
+        diff = []
+        status = {}
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
+        assert result == {
+            "success": False,
+            "error": "Resource ID is missing in the spec",
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_update.assert_not_called()
+        assert patch_mock.spec == {}
+
+    def test_update_caused_by_create_does_nothing(self, mock_api_client):
+        rid = "UmVzb3VyY2U6OTMxODE3"
+        spec = {
+            "id": rid,
+            "address": "my.default.cluster.local",
+            "name": "new-name",
+        }
+        diff = (("add", ("id",), None, rid),)
+        status = {
+            "twingate_resource_create": {
+                "twingate_id": rid,
+                "created_at": "2023-09-27T04:02:55.249011+00:00",
+                "updated_at": "2023-09-27T04:02:55.249035+00:00",
+            }
+        }
+
+        mock_api_client.resource_update.return_value = MagicMock(id=rid)
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
+        assert result == {
+            "success": True,
+            "twingate_id": rid,
+            "message": "No update required",
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_update.assert_not_called()
         assert patch_mock.spec == {}
 
 

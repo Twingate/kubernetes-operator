@@ -202,7 +202,6 @@ class TestResourceAccessUpdateHandler:
         ):
             result = twingate_resource_access_update(
                 spec=resource_access_spec,
-                new=resource_access_spec,
                 diff={},
                 status=status,
                 memo=memo_mock,
@@ -228,7 +227,6 @@ class TestResourceAccessUpdateHandler:
         ):
             result = twingate_resource_access_update(
                 spec=resource_access_spec,
-                new=resource_access_spec,
                 diff={},
                 status=status,
                 memo=memo_mock,
@@ -250,7 +248,6 @@ class TestResourceAccessUpdateHandler:
         with pytest.raises(kopf.TemporaryError) as excinfo:
             twingate_resource_access_update(
                 spec=new,
-                new=new,
                 diff=diff,
                 status=status,
                 memo=memo_mock,

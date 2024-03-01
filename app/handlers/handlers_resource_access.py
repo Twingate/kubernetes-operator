@@ -47,10 +47,10 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
 
 
 @kopf.on.update("twingateresourceaccess", field="spec")
-def twingate_resource_access_update(spec, new, diff, status, memo, logger, **kwargs):
+def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
     logger.info(
         "Got TwingateResourceAccess update request: %s. Diff: %s. Status: %s.",
-        new,
+        spec,
         diff,
         status,
     )

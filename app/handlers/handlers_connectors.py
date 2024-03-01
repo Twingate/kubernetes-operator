@@ -1,5 +1,3 @@
-import time
-
 import kopf
 import kubernetes.client
 import pendulum
@@ -85,15 +83,22 @@ def get_connector_secret(
     )
 
 
-def check_pod_exists(namespace: str, name: str) -> bool:
+def get_existing_pod(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+) -> kubernetes.client.V1Pod | None:
     try:
-        kapi = kubernetes.client.CoreV1Api()
-        kapi.read_namespaced_pod(name=name, namespace=namespace)
-        return True
+        kapi = kapi or kubernetes.client.CoreV1Api()
+        return kapi.read_namespaced_pod(name=name, namespace=namespace)
     except kubernetes.client.exceptions.ApiException as ex:
         if ex.status == 404:
-            return False
+            return None
         raise
+
+
+def check_pod_exists(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+) -> bool:
+    return bool(get_existing_pod(namespace, name, kapi=kapi))
 
 
 @kopf.on.create("twingateconnector")
@@ -265,27 +270,13 @@ def twingate_connector_recreate_pod(body, namespace, memo, patch, logger, **_):
     kopf.adopt(pod, owner=body, strict=True, forced=True)
     kopf.label(pod, {"twingate.com/connector": crd.metadata.name})
 
-    retry_count = 0
     kapi = kubernetes.client.CoreV1Api()
-    while True:
-        try:
-            kapi.create_namespaced_pod(namespace=namespace, body=pod)
-            break
-        except kubernetes.client.exceptions.ApiException as apiex:  # noqa: PERF203
-            if is_conflict_already_exists(apiex):
-                # Pod is not deleted yet...  retry
-                logger.info(
-                    "Pod %s not deleted yet. Retrying (%s)...",
-                    pod.metadata.name,
-                    retry_count,
-                )
-                retry_count += 1
-                if retry_count > 3:
-                    raise
-                time.sleep(2)
-            else:
-                raise
+    if check_pod_exists(namespace, crd.metadata.name, kapi=kapi):
+        raise kopf.TemporaryError(
+            f"Pod {crd.metadata.name} not deleted yet. Retrying (%s)...", delay=1
+        )
 
+    kapi.create_namespaced_pod(namespace=namespace, body=pod)
     patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: None}
 
 
@@ -337,6 +328,8 @@ def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **
         )
     except kubernetes.client.exceptions.ApiException:
         logger.exception("Failed to annotate connector %s", owner["name"])
+
+    return success(msg="deleted")
 
 
 # endregion

@@ -319,8 +319,13 @@ def test_timer_check_image_version_with_imagepolicy_do_nothing_if_check_not_due(
     assert run.patch_mock.meta == {}
 
 
-def test_twingate_connector_recreate_pod(get_connector_and_crd, kopf_handler_runner):
+def test_twingate_connector_recreate_pod(
+    k8s_client_mock, get_connector_and_crd, kopf_handler_runner
+):
     connector, crd = get_connector_and_crd()
+
+    k8s_client_mock.read_namespaced_pod.return_value = None
+
     run = kopf_handler_runner(twingate_connector_recreate_pod, crd, MagicMock())
 
     run.kopf_adopt_mock.assert_called_once_with(

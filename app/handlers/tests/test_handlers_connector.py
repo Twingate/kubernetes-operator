@@ -330,6 +330,7 @@ def test_twingate_connector_recreate_pod(get_connector_and_crd, kopf_handler_run
         ANY, {"twingate.com/connector": crd.spec.name}
     )
     run.k8s_client_mock.create_namespaced_pod.assert_called_once()
+    assert run.patch_mock.meta["labels"][LABEL_CONNECTOR_POD_DELETED] is None
 
 
 def test_twingate_connector_delete_deletes_connector(

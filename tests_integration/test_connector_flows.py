@@ -71,6 +71,10 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
+        # Check that LABEL_CONNECTOR_POD_DELETED label is gone
+        connector = kubectl_get("tc", connector_name)
+        assert not connector["metadata"].get("labels", {}).get("twingate.com/connector-pod-deleted")  # fmt: skip
+
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
 

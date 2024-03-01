@@ -12,6 +12,7 @@ from app.settings import get_version
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
 
+LABEL_CONNECTOR = "twingate.com/connector"
 LABEL_CONNECTOR_POD_DELETED = "twingate.com/connector-pod-deleted"
 
 
@@ -119,7 +120,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     pod = get_connector_pod(crd, settings.full_url, image)
     secret = get_connector_secret(tokens.access_token, tokens.refresh_token)
     kopf.adopt([pod, secret], owner=body, strict=True, forced=True)
-    kopf.label([pod, secret], {"twingate.com/connector": crd.metadata.name})
+    kopf.label([pod, secret], {LABEL_CONNECTOR: crd.metadata.name})
 
     kapi = kubernetes.client.CoreV1Api()
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
@@ -262,7 +263,9 @@ def twingate_connector_recreate_pod(body, namespace, memo, logger, **_):
 
     pod = get_connector_pod(crd, settings.full_url, image)
     kopf.adopt(pod, owner=body, strict=True, forced=True)
-    kopf.label(pod, {"twingate.com/connector": crd.metadata.name})
+    kopf.label(
+        pod, {LABEL_CONNECTOR: crd.metadata.name, LABEL_CONNECTOR_POD_DELETED: "false"}
+    )
 
     retry_count = 0
     kapi = kubernetes.client.CoreV1Api()
@@ -304,13 +307,13 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
         kapi.patch_namespaced_pod(
             meta.name,
             namespace,
-            body={"metadata": {"labels": {"twingate.com/connector": None}}},
+            body={"metadata": {"labels": {LABEL_CONNECTOR: None}}},
         )
     except kubernetes.client.exceptions.ApiException:
         logger.exception("Failed to remove label from pod %s", meta.name)
 
 
-@kopf.on.delete("", "v1", "pods", labels={"twingate.com/connector": kopf.PRESENT})
+@kopf.on.delete("", "v1", "pods", labels={LABEL_CONNECTOR: kopf.PRESENT})
 def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **_):
     logger.info("twingate_connector_pod_deleted: %s", body)
 

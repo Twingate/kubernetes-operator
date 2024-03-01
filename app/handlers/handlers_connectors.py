@@ -286,7 +286,7 @@ def twingate_connector_recreate_pod(body, namespace, memo, patch, logger, **_):
             else:
                 raise
 
-    patch.metadata["labels"] = {LABEL_CONNECTOR_POD_DELETED: None}
+    patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: None}
 
 
 @kopf.on.delete("twingateconnector")

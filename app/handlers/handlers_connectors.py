@@ -263,9 +263,7 @@ def twingate_connector_recreate_pod(body, namespace, memo, patch, logger, **_):
 
     pod = get_connector_pod(crd, settings.full_url, image)
     kopf.adopt(pod, owner=body, strict=True, forced=True)
-    kopf.label(
-        pod, {LABEL_CONNECTOR: crd.metadata.name, LABEL_CONNECTOR_POD_DELETED: "false"}
-    )
+    kopf.label(pod, {"twingate.com/connector": crd.metadata.name})
 
     retry_count = 0
     kapi = kubernetes.client.CoreV1Api()

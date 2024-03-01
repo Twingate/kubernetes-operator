@@ -77,9 +77,7 @@ class TestResourceUpdateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        result = twingate_resource_update(
-            spec, new, diff, status, memo_mock, logger_mock
-        )
+        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
         assert result == {
             "success": True,
             "twingate_id": rid,
@@ -93,12 +91,12 @@ class TestResourceUpdateHandler:
 
     def test_update_caused_by_create_does_nothing(self, mock_api_client):
         rid = "UmVzb3VyY2U6OTMxODE3"
-        spec = new = {
+        spec = {
             "id": rid,
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
-        diff = (("add", ("id",), rid),)
+        diff = (("add", ("id",), None, rid),)
         status = {
             "twingate_resource_create": {
                 "twingate_id": rid,
@@ -114,9 +112,7 @@ class TestResourceUpdateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        result = twingate_resource_update(
-            spec, new, diff, status, memo_mock, logger_mock
-        )
+        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
         assert result == {
             "success": True,
             "twingate_id": rid,

@@ -22,17 +22,18 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
 
 
 @kopf.on.update("twingateresource", field="spec")
-def twingate_resource_update(spec, new, diff, status, memo, logger, **kwargs):
+def twingate_resource_update(spec, diff, status, memo, logger, **kwargs):
     logger.info(
         "Got TwingateResource update request: %s. Diff: %s. Status: %s.",
-        new,
+        spec,
         diff,
         status,
     )
 
     crd = ResourceSpec(**spec)
 
-    if len(diff) == 1 and diff[0][0] == "add" and diff[0][1] == ("id",):
+    # Check if just "id" was added - means `create` just ran
+    if len(diff) == 1 and next(iter(diff), [])[:3] == ("add", ("id",), None):
         return success(twingate_id=crd.id, message="No update required")
 
     if crd.id:

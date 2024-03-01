@@ -46,11 +46,11 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         return fail(error=mex.error)
 
 
-@kopf.on.update("twingateresourceaccess")
-def twingate_resource_access_update(new, diff, status, memo, logger, **kwargs):
+@kopf.on.update("twingateresourceaccess", field="spec")
+def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
     logger.info(
         "Got TwingateResourceAccess update request: %s. Diff: %s. Status: %s.",
-        new,
+        spec,
         diff,
         status,
     )
@@ -61,7 +61,7 @@ def twingate_resource_access_update(new, diff, status, memo, logger, **kwargs):
 
     # Note that both principalId and resourceRef are immutable so only securityPolicyId could change
     # in this case we just need to call api_client.resource_access_add with the new value
-    access_crd = ResourceAccessSpec(**new["spec"])
+    access_crd = ResourceAccessSpec(**spec)
     if resource_crd := access_crd.get_resource():
         try:
             client = TwingateAPIClient(memo.twingate_settings)

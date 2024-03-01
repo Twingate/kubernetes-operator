@@ -89,6 +89,29 @@ class TestResourceUpdateHandler:
         mock_api_client.resource_update.assert_called_once_with(new_resource_spec)
         assert patch_mock.spec == {}
 
+    def test_update_called_without_id_fails(self, mock_api_client):
+        spec = {
+            "address": "my.default.cluster.local",
+            "name": "new-name",
+        }
+        diff = []
+        status = {}
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
+        assert result == {
+            "success": False,
+            "error": "Resource ID is missing in the spec",
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_update.assert_not_called()
+        assert patch_mock.spec == {}
+
     def test_update_caused_by_create_does_nothing(self, mock_api_client):
         rid = "UmVzb3VyY2U6OTMxODE3"
         spec = {

@@ -1,3 +1,5 @@
+import os
+
 import kopf
 import kubernetes.client
 import pendulum
@@ -9,9 +11,6 @@ from app.settings import get_version
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
-
-LABEL_CONNECTOR = "twingate.com/connector"
-LABEL_CONNECTOR_POD_DELETED = "twingate.com/connector-pod-deleted"
 
 
 def get_connector_pod(
@@ -120,44 +119,18 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
     logger.info("connector: %s", connector)
     tokens = client.connector_generate_tokens(connector.id)
-    image = crd.spec.get_image()
 
-    pod = get_connector_pod(crd, settings.full_url, image)
     secret = get_connector_secret(tokens.access_token, tokens.refresh_token)
-    kopf.adopt([pod, secret], owner=body, strict=True, forced=True)
-    kopf.label([pod, secret], {LABEL_CONNECTOR: crd.metadata.name})
+    kopf.adopt([secret], owner=body, strict=True, forced=True)
 
     kapi = kubernetes.client.CoreV1Api()
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
-    kapi.create_namespaced_pod(namespace=namespace, body=pod)
 
     image_policy = crd.spec.image_policy
     next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
 
-    return success(twingate_id=connector_id, image=image)
-
-
-@kopf.on.resume("twingateconnector")
-def twingate_connector_resume(body, patch, namespace, logger, **_):
-    crd = TwingateConnectorCRD(**body)
-    image_policy = crd.spec.image_policy
-    next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
-    patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
-
-    # Check pod exists and if not, add LABEL_CONNECTOR_POD_DELETED label to trigger recreation
-    pod_exists = check_pod_exists(namespace, crd.metadata.name)
-    if not pod_exists:
-        logger.info(
-            "Pod is gone. Adding LABEL_CONNECTOR_POD_DELETED label to trigger recreation."
-        )
-        patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: "true"}
-
-    return success(
-        twingate_id=crd.spec.id,
-        pod_exists=pod_exists,
-        next_version_check=next_version_check,
-    )
+    return success(twingate_id=connector_id)
 
 
 @kopf.on.update("twingateconnector", field=["spec"])
@@ -187,21 +160,6 @@ def twingate_connector_version_policy_update(body, patch, logger, **_):
     image_policy = crd.spec.image_policy
     next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
     patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
-
-
-@kopf.on.field("twingateconnector", field="spec.image")
-def twingate_connector_image_update(body, meta, namespace, memo, logger, **_):
-    logger.info("twingate_connector_image_update: %s", body)
-    settings = memo.twingate_settings
-    crd = TwingateConnectorCRD(**body)
-    image = crd.spec.get_image()
-    if crd.spec.image:
-        pod = get_connector_pod(crd, settings.full_url, image)
-        kapi = kubernetes.client.CoreV1Api()
-        result = kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
-        logger.info("Patched pod: %s", result)
-
-    return success(twingate_id=crd.spec.id, image=image)
 
 
 @kopf.on.timer(
@@ -238,48 +196,6 @@ def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
         logger.exception("Failed to remove label from pod %s", meta.name)
 
 
-# region Delete related
-
-
-@kopf.on.update("twingateconnector", labels={LABEL_CONNECTOR_POD_DELETED: "true"})
-def twingate_connector_recreate_pod(body, namespace, memo, patch, logger, **_):
-    """Recreates the Connector's Pod.
-
-    When pod is deleted we can't recreate it right away because we want to
-    use the same name. So when it's deleted, `twingate_connector_pod_deleted` annotates
-    it's connector object so that we get to this handler and can recreate it.
-
-    NOTE: This handler will get called as soon as we add the label to the pod, which
-    is before the pod is actually deleted. So we need to wait for the pod to actually
-    get deleted before we can recreate it.
-    """
-
-    def is_conflict_already_exists(apiex):
-        return (
-            apiex.status == 409
-            and apiex.reason == "Conflict"
-            and "AlreadyExists" in str(apiex)
-        )
-
-    logger.info("twingate_connector_recreate_pod: %s.", body)
-    settings = memo.twingate_settings
-    crd = TwingateConnectorCRD(**body)
-    image = crd.spec.get_image()
-
-    pod = get_connector_pod(crd, settings.full_url, image)
-    kopf.adopt(pod, owner=body, strict=True, forced=True)
-    kopf.label(pod, {"twingate.com/connector": crd.metadata.name})
-
-    kapi = kubernetes.client.CoreV1Api()
-    if check_pod_exists(namespace, crd.metadata.name, kapi=kapi):
-        raise kopf.TemporaryError(
-            f"Pod {crd.metadata.name} not deleted yet. Retrying (%s)...", delay=1
-        )
-
-    kapi.create_namespaced_pod(namespace=namespace, body=pod)
-    patch.meta["labels"] = {LABEL_CONNECTOR_POD_DELETED: None}
-
-
 @kopf.on.delete("twingateconnector")
 def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwargs):
     logger.info("Got a delete request: %s. Status: %s", spec, status)
@@ -292,44 +208,39 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
         logger.info("Deleting connector %s", connector_id)
         client.connector_delete(connector_id)
 
-    try:
-        # Remove label from pod so its delete handler isn't triggered
-        kapi = kubernetes.client.CoreV1Api()
-        kapi.patch_namespaced_pod(
-            meta.name,
-            namespace,
-            body={"metadata": {"labels": {LABEL_CONNECTOR: None}}},
-        )
-    except kubernetes.client.exceptions.ApiException:
-        logger.exception("Failed to remove label from pod %s", meta.name)
+
+CONNECTOR_RECONCILER_INTERVAL = int(
+    os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "5")
+)
+CONNECTOR_RECONCILER_INIT_DELAY = int(
+    os.environ.get("CONNECTOR_RECONCILER_INIT_DELAY", "5")
+)
 
 
-@kopf.on.delete("", "v1", "pods", labels={LABEL_CONNECTOR: kopf.PRESENT})
-def twingate_connector_pod_deleted(body, spec, meta, logger, namespace, memo, **_):
-    logger.info("twingate_connector_pod_deleted: %s", body)
-
-    # Annotate the parent connector so that it knows it needs to recreate the pod
-    owner_refs = meta.get("ownerReferences", [])
-    owner = next((o for o in owner_refs if o["kind"] == "TwingateConnector"), None)
-    if not owner:
+@kopf.timer(
+    "twingateconnector",
+    interval=CONNECTOR_RECONCILER_INTERVAL,
+    initial_delay=CONNECTOR_RECONCILER_INIT_DELAY,
+)
+def twingate_connector_pod_reconciler(body, meta, status, namespace, memo, logger, **_):
+    logger.info("twingate_connector_reconciler: %s", body)
+    if not status:
         return
 
-    owner_group, owner_version = owner["apiVersion"].split("/")
+    settings = memo.twingate_settings
 
-    try:
-        kapi = kubernetes.client.CustomObjectsApi()
-        kapi.patch_namespaced_custom_object(
-            owner_group,
-            owner_version,
-            namespace,
-            "twingateconnectors",
-            owner["name"],
-            {"metadata": {"labels": {LABEL_CONNECTOR_POD_DELETED: "true"}}},
-        )
-    except kubernetes.client.exceptions.ApiException:
-        logger.exception("Failed to annotate connector %s", owner["name"])
+    crd = TwingateConnectorCRD(**body)
+    pod = get_connector_pod(crd, settings.full_url, crd.spec.get_image())
+    kopf.adopt(pod, owner=body, strict=True, forced=True)
 
-    return success(msg="deleted")
+    kapi = kubernetes.client.CoreV1Api()
+    if check_pod_exists(namespace, crd.metadata.name, kapi=kapi):
+        # if pod exists make sure its up to date with spec definitions
+        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+        return success(pod_exists=True)
 
+    # check if create ran
+    if "twingate_connector_create" not in status:
+        raise kopf.TemporaryError("TwingateConnector not ready.", delay=5)
 
-# endregion
+    kapi.create_namespaced_pod(namespace=namespace, body=pod)

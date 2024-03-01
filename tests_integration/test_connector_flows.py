@@ -1,6 +1,7 @@
+import os
 import time
 from subprocess import CalledProcessError
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 
 import pytest
 from kopf.testing import KopfRunner
@@ -11,6 +12,15 @@ from tests_integration.utils import (
     kubectl_get,
     kubectl_patch,
 )
+
+
+@pytest.fixture(autouse=True)
+def _connector_reconciler():
+    with patch.dict(
+        os.environ,
+        {"CONNECTOR_RECONCILER_INTERVAL": "1", "CONNECTOR_RECONCILER_INIT_DELAY": "1"},
+    ):
+        yield
 
 
 def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
@@ -36,7 +46,6 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         kubectl_create(OBJ)
         time.sleep(5)
 
-        connector = kubectl_get("tc", connector_name)
         secret = kubectl_get("secret", connector_name)
         pod = kubectl_get("pod", connector_name)
 
@@ -44,16 +53,16 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
             time.sleep(1)
             pod = kubectl_get("pod", connector_name)
 
+        connector = kubectl_get("tc", connector_name)
+
         # connector was properly provisioned
-        expected_status = {"success": True, "image": ANY, "ts": ANY, "twingate_id": ANY}
+        expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
         assert connector["metadata"]["annotations"]["twingate.com/next-version-check"] is not None  # fmt: skip
         # Secret was properly created
         assert secret["data"] == {"TWINGATE_ACCESS_TOKEN": ANY, "TWINGATE_REFRESH_TOKEN": ANY}  # fmt: skip
         # pod was properly created
         assert pod["status"]["phase"] == "Running"
-        assert pod["metadata"]["annotations"]["twingate.com/kopf-managed"] == "yes"
-        assert pod["metadata"]["labels"]["twingate.com/connector"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
@@ -65,15 +74,10 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         kubectl_delete(f"pod/{connector_name}")
         time.sleep(5)
         pod = kubectl_get("pod", connector_name)
+
         assert pod["status"]["phase"] == "Running"
-        assert pod["metadata"]["annotations"]["twingate.com/kopf-managed"] == "yes"
-        assert pod["metadata"]["labels"]["twingate.com/connector"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
-
-        # Check that LABEL_CONNECTOR_POD_DELETED label is gone
-        connector = kubectl_get("tc", connector_name)
-        assert not connector["metadata"].get("labels", {}).get("twingate.com/connector-pod-deleted")  # fmt: skip
 
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
@@ -117,15 +121,13 @@ def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_nu
             pod = kubectl_get("pod", connector_name)
 
         # connector was properly provisioned
-        expected_status = {"success": True, "image": ANY, "ts": ANY, "twingate_id": ANY}
+        expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
 
         # Secret was properly created
         assert secret["data"] == {"TWINGATE_ACCESS_TOKEN": ANY, "TWINGATE_REFRESH_TOKEN": ANY}  # fmt: skip
         # pod was properly created
         assert pod["status"]["phase"] == "Running"
-        assert pod["metadata"]["annotations"]["twingate.com/kopf-managed"] == "yes"
-        assert pod["metadata"]["labels"]["twingate.com/connector"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
@@ -181,13 +183,10 @@ def test_connector_flows_pod_gone_while_operator_down(
             pod = kubectl_get("pod", connector_name)
 
         # connector was properly provisioned
-        expected_status = {"success": True, "image": ANY, "ts": ANY, "twingate_id": ANY}
+        expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
 
-    # Remove finalizer and delete pod while operator is out of service
-    kubectl_patch(f"pod/{connector_name}", {"metadata": {"finalizers": None}})
     kubectl_delete(f"pod/{connector_name}")
-    time.sleep(5)
 
     # run operator again
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:

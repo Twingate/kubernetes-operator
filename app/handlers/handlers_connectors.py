@@ -182,9 +182,7 @@ def twingate_connector_pod_reconciler(
     elif crd.spec.image_policy:
         now = pendulum.now("UTC").start_of("minute")
         next_check = pendulum.parse(
-            meta["annotations"].get(
-                ANNOTATION_NEXT_VERSION_CHECK, "0001-01-01 00:00:00"
-            )
+            meta.annotations.get(ANNOTATION_NEXT_VERSION_CHECK, "0001-01-01 00:00:00")
         )
 
         if now >= next_check:

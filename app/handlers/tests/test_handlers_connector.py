@@ -1,11 +1,14 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
+import pendulum
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
 from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
+    ANNOTATION_LAST_VERSION_CHECK,
+    ANNOTATION_NEXT_VERSION_CHECK,
     twingate_connector_create,
     twingate_connector_delete,
     twingate_connector_pod_reconciler,
@@ -200,3 +203,78 @@ class TestTwingateConnectorPodReconciler_Image:
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
+
+
+class TestTwingateConnectorPodReconciler_ImagePolicy:
+    @pytest.fixture()
+    def mock_get_image(self):
+        with patch("app.crds.ConnectorSpec.get_image") as mock_get_image:
+            mock_get_image.return_value = "twingate/connector:test"
+            yield mock_get_image
+
+    def test_no_annotation(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_client_mock,
+        mock_get_image,
+    ):
+        connector, crd = get_connector_and_crd(
+            spec_overrides=dict(image_policy=ConnectorImagePolicy()),
+            status={"twingate_connector_create": {"success": True}},
+            with_id=True,
+        )
+
+        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        assert run.result == {"success": True, "ts": ANY}
+        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
+        assert run.patch_mock.meta["annotations"] == {
+            ANNOTATION_LAST_VERSION_CHECK: ANY,
+            ANNOTATION_NEXT_VERSION_CHECK: ANY,
+        }
+        mock_get_image.assert_called_once()
+
+    def test_past_due_annotation(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_client_mock,
+        mock_get_image,
+    ):
+        connector, crd = get_connector_and_crd(
+            spec_overrides=dict(image_policy=ConnectorImagePolicy()),
+            status={"twingate_connector_create": {"success": True}},
+            annotations={ANNOTATION_NEXT_VERSION_CHECK: "2000-01-01T00:00:00Z"},
+            with_id=True,
+        )
+
+        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        assert run.result == {"success": True, "ts": ANY}
+        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
+        assert run.patch_mock.meta["annotations"] == {
+            ANNOTATION_LAST_VERSION_CHECK: ANY,
+            ANNOTATION_NEXT_VERSION_CHECK: ANY,
+        }
+        mock_get_image.assert_called_once()
+
+    def test_not_past_due_annotation(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_client_mock,
+        mock_get_image,
+        freezer,
+    ):
+        now = pendulum.now("UTC").start_of("minute")
+        connector, crd = get_connector_and_crd(
+            spec_overrides=dict(image_policy=ConnectorImagePolicy()),
+            status={"twingate_connector_create": {"success": True}},
+            annotations={ANNOTATION_NEXT_VERSION_CHECK: str(now.add(minutes=1))},
+            with_id=True,
+        )
+
+        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        assert run.result == {"success": True, "ts": ANY}
+        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
+        assert run.patch_mock.meta == {}
+        mock_get_image.assert_not_called()

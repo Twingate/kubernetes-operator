@@ -174,3 +174,29 @@ def test_twingate_connector_pod_reconciler_raises_if_ran_before_create(
     connector, crd = get_connector_and_crd()
     with pytest.raises(kopf.TemporaryError):
         kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+
+
+def test_twingate_connector_pod_reconciler_pod_doesnt_exist_creates_pod(
+    get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+):
+    connector, crd = get_connector_and_crd(
+        status={"twingate_connector_create": {"success": True}}, with_id=True
+    )
+
+    k8s_client_mock.read_namespaced_pod.return_value = None
+
+    run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+    assert run.result == {"success": True, "ts": ANY}
+    run.k8s_client_mock.create_namespaced_pod.assert_called_once()
+
+
+def test_twingate_connector_pod_reconciler_pod_exist_updates_pod(
+    get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+):
+    connector, crd = get_connector_and_crd(
+        status={"twingate_connector_create": {"success": True}}, with_id=True
+    )
+
+    run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+    assert run.result == {"success": True, "ts": ANY}
+    run.k8s_client_mock.patch_namespaced_pod.assert_called_once()

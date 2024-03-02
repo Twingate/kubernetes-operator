@@ -44,7 +44,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         time.sleep(5)
         kubectl_create(OBJ)
-        time.sleep(5)
+        time.sleep(10)
 
         secret = kubectl_get("secret", connector_name)
         pod = kubectl_get("pod", connector_name)
@@ -171,7 +171,7 @@ def test_connector_flows_pod_gone_while_operator_down(
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
         time.sleep(5)
         kubectl_create(OBJ)
-        time.sleep(5)
+        time.sleep(10)
 
         connector = kubectl_get("tc", connector_name)
         kubectl_get("secret", connector_name)
@@ -189,7 +189,7 @@ def test_connector_flows_pod_gone_while_operator_down(
 
     # run operator again
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
-        time.sleep(5)
+        time.sleep(10)
 
         # pod was recreated
         pod = kubectl_get("pod", connector_name)

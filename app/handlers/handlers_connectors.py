@@ -82,7 +82,7 @@ def get_connector_secret(
     )
 
 
-def get_existing_pod(
+def k8s_read_namespaced_pod(
     namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
 ) -> kubernetes.client.V1Pod | None:
     try:
@@ -92,12 +92,6 @@ def get_existing_pod(
         if ex.status == 404:
             return None
         raise
-
-
-def check_pod_exists(
-    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
-) -> bool:
-    return bool(get_existing_pod(namespace, name, kapi=kapi))
 
 
 @kopf.on.create("twingateconnector")
@@ -183,7 +177,7 @@ def twingate_connector_pod_reconciler(
 
     crd = TwingateConnectorCRD(**body)
     kapi = kubernetes.client.CoreV1Api()
-    k8s_pod = get_existing_pod(namespace, crd.metadata.name, kapi=kapi)
+    k8s_pod = k8s_read_namespaced_pod(namespace, crd.metadata.name, kapi=kapi)
     image = k8s_pod.spec.containers[0].image if k8s_pod else None
 
     if crd.spec.image or not k8s_pod:

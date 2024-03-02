@@ -170,7 +170,7 @@ def twingate_connector_pod_reconciler(
 ):
     logger.info("twingate_connector_reconciler: %s", body)
     if not (status and "twingate_connector_create" in status):
-        raise kopf.TemporaryError("TwingateConnector not ready.", delay=5)
+        raise kopf.TemporaryError("TwingateConnector not ready.", delay=1)
 
     crd = TwingateConnectorCRD(**body)
     kapi = kubernetes.client.CoreV1Api()

@@ -126,10 +126,6 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     kapi = kubernetes.client.CoreV1Api()
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
 
-    image_policy = crd.spec.image_policy
-    next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
-    patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
-
     return success(twingate_id=connector_id)
 
 
@@ -153,49 +149,6 @@ def twingate_connector_update(body, memo, logger, new, diff, status, **_):
     return success(twingate_id=updated_connector.id)
 
 
-@kopf.on.field("twingateconnector", field="spec.imagePolicy")
-def twingate_connector_version_policy_update(body, patch, logger, **_):
-    logger.info("twingate_connector_version_policy_update: %s", body)
-    crd = TwingateConnectorCRD(**body)
-    image_policy = crd.spec.image_policy
-    next_version_check = image_policy.get_next_date_iso8601() if image_policy else None
-    patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: next_version_check}
-
-
-@kopf.on.timer(
-    "twingateconnector",
-    interval=60.0,
-    annotations={ANNOTATION_NEXT_VERSION_CHECK: kopf.PRESENT},
-)
-def timer_check_image_version(body, meta, namespace, memo, logger, patch, **_):
-    settings = memo.twingate_settings
-    crd = TwingateConnectorCRD(**body)
-    if not crd.spec.image_policy:
-        patch.meta["annotations"] = {ANNOTATION_NEXT_VERSION_CHECK: None}
-        return
-
-    now = pendulum.now("UTC").start_of("minute")
-    next_check = pendulum.parse(
-        body["metadata"]["annotations"][ANNOTATION_NEXT_VERSION_CHECK]
-    )
-    if now < next_check:
-        return
-
-    logger.info("Checking connector %s for new image version", crd.metadata.name)
-
-    try:
-        image = crd.spec.get_image()
-        pod = get_connector_pod(crd, settings.full_url, image)
-        kapi = kubernetes.client.CoreV1Api()
-        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
-        patch.meta["annotations"] = {
-            ANNOTATION_LAST_VERSION_CHECK: now.to_iso8601_string(),
-            ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
-        }
-    except kubernetes.client.exceptions.ApiException:
-        logger.exception("Failed to remove label from pod %s", meta.name)
-
-
 @kopf.on.delete("twingateconnector")
 def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwargs):
     logger.info("Got a delete request: %s. Status: %s", spec, status)
@@ -209,12 +162,8 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
         client.connector_delete(connector_id)
 
 
-CONNECTOR_RECONCILER_INTERVAL = int(
-    os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "5")
-)
-CONNECTOR_RECONCILER_INIT_DELAY = int(
-    os.environ.get("CONNECTOR_RECONCILER_INIT_DELAY", "5")
-)
+CONNECTOR_RECONCILER_INTERVAL = int(os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "5"))  # fmt: skip
+CONNECTOR_RECONCILER_INIT_DELAY = int(os.environ.get("CONNECTOR_RECONCILER_INIT_DELAY", "5"))  # fmt: skip
 
 
 @kopf.timer(
@@ -222,25 +171,44 @@ CONNECTOR_RECONCILER_INIT_DELAY = int(
     interval=CONNECTOR_RECONCILER_INTERVAL,
     initial_delay=CONNECTOR_RECONCILER_INIT_DELAY,
 )
-def twingate_connector_pod_reconciler(body, meta, status, namespace, memo, logger, **_):
+def twingate_connector_pod_reconciler(
+    body, meta, status, namespace, patch, memo, logger, **_
+):
     logger.info("twingate_connector_reconciler: %s", body)
     if not status:
         return
 
-    settings = memo.twingate_settings
-
-    crd = TwingateConnectorCRD(**body)
-    pod = get_connector_pod(crd, settings.full_url, crd.spec.get_image())
-    kopf.adopt(pod, owner=body, strict=True, forced=True)
-
-    kapi = kubernetes.client.CoreV1Api()
-    if check_pod_exists(namespace, crd.metadata.name, kapi=kapi):
-        # if pod exists make sure its up to date with spec definitions
-        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
-        return success(pod_exists=True)
-
-    # check if create ran
     if "twingate_connector_create" not in status:
         raise kopf.TemporaryError("TwingateConnector not ready.", delay=5)
 
-    kapi.create_namespaced_pod(namespace=namespace, body=pod)
+    crd = TwingateConnectorCRD(**body)
+    kapi = kubernetes.client.CoreV1Api()
+    k8s_pod = get_existing_pod(namespace, crd.metadata.name, kapi=kapi)
+    image = k8s_pod.spec.containers[0].image if k8s_pod else None
+
+    if crd.spec.image or not k8s_pod:
+        image = crd.spec.get_image()
+    elif crd.spec.image_policy:
+        now = pendulum.now("UTC").start_of("minute")
+        next_check = pendulum.parse(
+            meta["annotations"].get(
+                ANNOTATION_NEXT_VERSION_CHECK, "0001-01-01 00:00:00"
+            )
+        )
+
+        if now >= next_check:
+            image = crd.spec.get_image()
+            patch.meta["annotations"] = {
+                ANNOTATION_LAST_VERSION_CHECK: now.to_iso8601_string(),
+                ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
+            }
+
+    pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
+    kopf.adopt(pod, owner=body, strict=True, forced=True)
+
+    if k8s_pod:
+        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+    else:
+        kapi.create_namespaced_pod(namespace, body=pod)
+
+    return success()

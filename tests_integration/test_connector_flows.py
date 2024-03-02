@@ -58,7 +58,6 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         # connector was properly provisioned
         expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
-        assert connector["metadata"]["annotations"]["twingate.com/next-version-check"] is not None  # fmt: skip
         # Secret was properly created
         assert secret["data"] == {"TWINGATE_ACCESS_TOKEN": ANY, "TWINGATE_REFRESH_TOKEN": ANY}  # fmt: skip
         # pod was properly created

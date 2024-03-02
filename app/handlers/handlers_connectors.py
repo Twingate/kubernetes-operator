@@ -169,10 +169,7 @@ def twingate_connector_pod_reconciler(
     body, meta, status, namespace, patch, memo, logger, **_
 ):
     logger.info("twingate_connector_reconciler: %s", body)
-    if not status:
-        return
-
-    if "twingate_connector_create" not in status:
+    if not (status and "twingate_connector_create" in status):
         raise kopf.TemporaryError("TwingateConnector not ready.", delay=5)
 
     crd = TwingateConnectorCRD(**body)

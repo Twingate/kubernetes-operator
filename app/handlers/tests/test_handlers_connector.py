@@ -1,5 +1,6 @@
 from unittest.mock import ANY, MagicMock, patch
 
+import kopf
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
@@ -7,6 +8,7 @@ from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
     twingate_connector_create,
     twingate_connector_delete,
+    twingate_connector_pod_reconciler,
     twingate_connector_update,
 )
 
@@ -164,3 +166,11 @@ def test_twingate_connector_delete_without_status_does_nothing(
     connector, crd = get_connector_and_crd()
     kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
     mock_api_client.connector_delete.assert_not_called()
+
+
+def test_twingate_connector_pod_reconciler_raises_if_ran_before_create(
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
+):
+    connector, crd = get_connector_and_crd()
+    with pytest.raises(kopf.TemporaryError):
+        kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())

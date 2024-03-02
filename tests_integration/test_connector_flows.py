@@ -71,7 +71,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
 
         # Check that if pod is deleted we recreate it
         kubectl_delete(f"pod/{connector_name}")
-        time.sleep(5)
+        time.sleep(10)
         pod = kubectl_get("pod", connector_name)
 
         assert pod["status"]["phase"] == "Running"

@@ -1,6 +1,7 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
+import kubernetes
 import pendulum
 import pytest
 
@@ -11,6 +12,7 @@ from app.handlers.handlers_connectors import (
     ANNOTATION_NEXT_VERSION_CHECK,
     ANNOTATION_POD_SPEC_VERSION,
     ANNOTATION_POD_SPEC_VERSION_VALUE,
+    k8s_read_namespaced_pod,
     twingate_connector_create,
     twingate_connector_delete,
     twingate_connector_pod_reconciler,
@@ -59,6 +61,13 @@ def get_connector_and_crd(connector_factory):
         return connector, crd
 
     return get
+
+
+def test_k8s_read_namespaced_pod_handles_404_returns_none(k8s_client_mock):
+    k8s_client_mock.read_namespaced_pod.side_effect = (
+        kubernetes.client.exceptions.ApiException(status=404)
+    )
+    assert k8s_read_namespaced_pod("default", "test") is None
 
 
 def test_twingate_connector_create(

@@ -253,6 +253,20 @@ class TestTwingateConnectorPodReconciler_Image:
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
 
+    def test_pod_not_running(
+        self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+    ):
+        connector, crd = get_connector_and_crd(
+            status={"twingate_connector_create": {"success": True}}, with_id=True
+        )
+
+        mock_pod = MagicMock()
+        mock_pod.status.phase = "Pending"
+        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+
+        with pytest.raises(kopf.TemporaryError):
+            kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+
     def test_no_old_pod_spec_is_deleted(
         self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
     ):

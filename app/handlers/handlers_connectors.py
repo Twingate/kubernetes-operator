@@ -3,6 +3,7 @@ import os
 import kopf
 import kubernetes.client
 import pendulum
+from kubernetes.client.models import V1ObjectMeta
 
 from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
@@ -11,6 +12,9 @@ from app.settings import get_version
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
+
+ANNOTATION_POD_SPEC_VERSION = "twingate.com/connector-podspec-version"
+ANNOTATION_POD_SPEC_VERSION_VALUE = "v1"
 
 
 def get_connector_pod(
@@ -66,8 +70,11 @@ def get_connector_pod(
         ],
         **spec.pod_extra,
     }
+
+    pod_meta = V1ObjectMeta(annotations={ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE})
+
     # fmt: on
-    return kubernetes.client.V1Pod(spec=pod_spec)
+    return kubernetes.client.V1Pod(spec=pod_spec, metadata=pod_meta)
 
 
 def get_connector_secret(
@@ -92,6 +99,16 @@ def k8s_read_namespaced_pod(
         if ex.status == 404:
             return None
         raise
+
+
+def k8s_force_delete_pod(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+):
+    kapi = kapi or kubernetes.client.CoreV1Api()
+    kapi.patch_namespaced_pod(name, namespace, body={"metadata": {"finalizers": []}})
+    kapi.delete_namespaced_pod(
+        name, namespace, body=kubernetes.client.V1DeleteOptions(grace_period_seconds=0)
+    )
 
 
 @kopf.on.create("twingateconnector")
@@ -124,7 +141,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
 
 @kopf.on.update("twingateconnector", field=["spec"])
-def twingate_connector_update(body, memo, logger, new, diff, status, **_):
+def twingate_connector_update(body, memo, logger, new, diff, status, namespace, **_):
     logger.info(
         "Got TwingateConnector update request: %s. Diff: %s. Status: %s.",
         new,
@@ -136,13 +153,17 @@ def twingate_connector_update(body, memo, logger, new, diff, status, **_):
     client = TwingateAPIClient(settings)
 
     crd = TwingateConnectorCRD(**body)
-    if len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id"), None):
-        return success(twingate_id=crd.id, message="No update required")
+    if len(diff) == 1 and diff[0][:3] == ("add", ("id"), None):
+        return success(twingate_id=crd.spec.id, message="No update required")
 
     if not crd.spec.id:
         return fail(error="Update called before Connector has an ID")
 
     updated_connector = client.connector_update(crd.spec)
+
+    kapi = kubernetes.client.CoreV1Api()
+    kapi.delete_namespaced_pod(crd.metadata.name, namespace)
+
     return success(twingate_id=updated_connector.id)
 
 
@@ -178,6 +199,19 @@ def twingate_connector_pod_reconciler(
     crd = TwingateConnectorCRD(**body)
     kapi = kubernetes.client.CoreV1Api()
     k8s_pod = k8s_read_namespaced_pod(namespace, crd.metadata.name, kapi=kapi)
+    if k8s_pod and k8s_pod.status.phase != "Running":
+        raise kopf.TemporaryError("Pod not running.", delay=1)
+
+    # Migrate old pods
+    pod_spec_version = (k8s_pod and k8s_pod.metadata.annotations or {}).get(
+        ANNOTATION_POD_SPEC_VERSION
+    )
+    if k8s_pod and pod_spec_version != ANNOTATION_POD_SPEC_VERSION_VALUE:
+        k8s_force_delete_pod(namespace, crd.metadata.name, kapi)
+        return success(
+            message=f"Pod spec version mismatch. Deleting pod {crd.metadata.name}."
+        )
+
     image = k8s_pod.spec.containers[0].image if k8s_pod else None
 
     if crd.spec.image or not k8s_pod:
@@ -195,12 +229,15 @@ def twingate_connector_pod_reconciler(
                 ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
             }
 
-    pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
-    kopf.adopt(pod, owner=body, strict=True, forced=True)
-
     if k8s_pod:
-        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+        # When pod exists, can only update the image or we get `Forbidden: pod updates may not change fields other than `spec.containers[*].image`
+        current_image = k8s_pod.spec.containers[0].image
+        if current_image != image:
+            k8s_pod.spec.containers[0].image = image
+            kapi.patch_namespaced_pod(meta.name, namespace, body=k8s_pod)
     else:
+        pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
+        kopf.adopt(pod, owner=body, strict=True, forced=True)
         kapi.create_namespaced_pod(namespace, body=pod)
 
     return success()

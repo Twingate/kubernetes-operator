@@ -154,7 +154,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
 
     crd = TwingateConnectorCRD(**body)
     if len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id"), None):
-        return success(twingate_id=crd.id, message="No update required")
+        return success(twingate_id=crd.spec.id, message="No update required")
 
     if not crd.spec.id:
         return fail(error="Update called before Connector has an ID")

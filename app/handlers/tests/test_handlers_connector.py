@@ -141,6 +141,28 @@ def test_twingate_connector_update(
     assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
 
 
+def test_twingate_connector_update_only_id_does_nothing(
+    get_connector_and_crd, kopf_handler_runner, mock_api_client
+):
+    connector, crd = get_connector_and_crd(with_id=False)
+
+    mock_api_client.connector_update.return_value = connector
+
+    run = kopf_handler_runner(
+        twingate_connector_update,
+        crd,
+        MagicMock(),
+        new={},
+        diff=(("add", ("spec", "id"), None, "123"),),
+    )
+    assert run.result == {
+        "success": True,
+        "message": "No update required",
+        "ts": ANY,
+        "twingate_id": crd.spec.id,
+    }
+
+
 def test_twingate_connector_update_without_id_does_nothing(
     get_connector_and_crd, kopf_handler_runner, mock_api_client
 ):

@@ -124,7 +124,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
 
 @kopf.on.update("twingateconnector", field=["spec"])
-def twingate_connector_update(body, memo, logger, new, diff, status, **_):
+def twingate_connector_update(body, memo, logger, new, diff, status, namespace, **_):
     logger.info(
         "Got TwingateConnector update request: %s. Diff: %s. Status: %s.",
         new,
@@ -143,6 +143,10 @@ def twingate_connector_update(body, memo, logger, new, diff, status, **_):
         return fail(error="Update called before Connector has an ID")
 
     updated_connector = client.connector_update(crd.spec)
+
+    kapi = kubernetes.client.CoreV1Api()
+    kapi.delete_namespaced_pod(crd.metadata.name, namespace)
+
     return success(twingate_id=updated_connector.id)
 
 
@@ -178,6 +182,9 @@ def twingate_connector_pod_reconciler(
     crd = TwingateConnectorCRD(**body)
     kapi = kubernetes.client.CoreV1Api()
     k8s_pod = k8s_read_namespaced_pod(namespace, crd.metadata.name, kapi=kapi)
+    if k8s_pod and k8s_pod.status.phase != "Running":
+        raise kopf.TemporaryError("Pod not running.", delay=1)
+
     image = k8s_pod.spec.containers[0].image if k8s_pod else None
 
     if crd.spec.image or not k8s_pod:
@@ -195,12 +202,16 @@ def twingate_connector_pod_reconciler(
                 ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
             }
 
-    pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
-    kopf.adopt(pod, owner=body, strict=True, forced=True)
-
     if k8s_pod:
-        kapi.patch_namespaced_pod(meta.name, namespace, body=pod)
+        # When pod exists, can only update the image or we get `Forbidden: pod updates may not change fields other than `spec.containers[*].image`
+        current_image = k8s_pod.spec.containers[0].image
+        if current_image != image:
+            k8s_pod.spec.containers[0].image = image
+            kapi.patch_namespaced_pod(meta.name, namespace, body=k8s_pod)
+
     else:
+        pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
+        kopf.adopt(pod, owner=body, strict=True, forced=True)
         kapi.create_namespaced_pod(namespace, body=pod)
 
     return success()

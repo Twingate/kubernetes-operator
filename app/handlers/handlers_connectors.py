@@ -208,7 +208,6 @@ def twingate_connector_pod_reconciler(
         if current_image != image:
             k8s_pod.spec.containers[0].image = image
             kapi.patch_namespaced_pod(meta.name, namespace, body=k8s_pod)
-
     else:
         pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
         kopf.adopt(pod, owner=body, strict=True, forced=True)

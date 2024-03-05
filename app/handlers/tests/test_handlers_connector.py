@@ -133,6 +133,9 @@ def test_twingate_connector_update(
     run = kopf_handler_runner(
         twingate_connector_update, crd, MagicMock(), new={}, diff={}
     )
+    run.k8s_client_mock.delete_namespaced_pod.assert_called_with(
+        crd.metadata.name, "default"
+    )
     assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
 
 
@@ -200,6 +203,10 @@ class TestTwingateConnectorPodReconciler_Image:
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
+        mock_pod = MagicMock()
+        mock_pod.status.phase = "Running"
+        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
@@ -225,6 +232,10 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
+        mock_pod = MagicMock()
+        mock_pod.status.phase = "Running"
+        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
@@ -247,6 +258,10 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             annotations={ANNOTATION_NEXT_VERSION_CHECK: "2000-01-01T00:00:00Z"},
             with_id=True,
         )
+
+        mock_pod = MagicMock()
+        mock_pod.status.phase = "Running"
+        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
@@ -273,8 +288,16 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
+        mock_container = MagicMock()
+        mock_container.image = "twingate/connector:latest"
+
+        mock_pod = MagicMock()
+        mock_pod.status.phase = "Running"
+        mock_pod.spec.containers = [mock_container]
+        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
-        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
         assert run.patch_mock.meta == {}
+        run.k8s_client_mock.patch_namespaced_pod.assert_not_called()
         mock_get_image.assert_not_called()

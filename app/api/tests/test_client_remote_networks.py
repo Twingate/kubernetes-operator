@@ -45,3 +45,20 @@ class TestTwingateResourceAPIs:
         )
         result = api_client.get_remote_network_by_name("My Cluster")
         assert result is None
+
+    def test_get_rn_with_transport_error_returns_none(
+        self, test_url, api_client, mock_resource_data, mocked_responses
+    ):
+        errors_response = json.dumps({"errors": [{"message": "Transport error"}]})
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=errors_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"name": "My Cluster"}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.get_remote_network_by_name("My Cluster")
+        assert result is None

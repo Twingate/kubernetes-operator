@@ -9,6 +9,8 @@ from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
 from app.handlers.handlers_connectors import (
     ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
+    ANNOTATION_POD_SPEC_VERSION,
+    ANNOTATION_POD_SPEC_VERSION_VALUE,
     twingate_connector_create,
     twingate_connector_delete,
     twingate_connector_pod_reconciler,
@@ -205,6 +207,7 @@ class TestTwingateConnectorPodReconciler_Image:
 
         mock_pod = MagicMock()
         mock_pod.status.phase = "Running"
+        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
         k8s_client_mock.read_namespaced_pod.return_value = mock_pod
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
@@ -234,6 +237,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
 
         mock_pod = MagicMock()
         mock_pod.status.phase = "Running"
+        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
         k8s_client_mock.read_namespaced_pod.return_value = mock_pod
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
@@ -261,6 +265,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
 
         mock_pod = MagicMock()
         mock_pod.status.phase = "Running"
+        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
         k8s_client_mock.read_namespaced_pod.return_value = mock_pod
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
@@ -293,6 +298,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
 
         mock_pod = MagicMock()
         mock_pod.status.phase = "Running"
+        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
         mock_pod.spec.containers = [mock_container]
         k8s_client_mock.read_namespaced_pod.return_value = mock_pod
 

@@ -3,6 +3,7 @@ import os
 import kopf
 import kubernetes.client
 import pendulum
+from kubernetes.client.models import V1ObjectMeta
 
 from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
@@ -11,6 +12,9 @@ from app.settings import get_version
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
+
+ANNOTATION_POD_SPEC_VERSION = "twingate.com/connector-podspec-version"
+ANNOTATION_POD_SPEC_VERSION_VALUE = "v1"
 
 
 def get_connector_pod(
@@ -66,8 +70,11 @@ def get_connector_pod(
         ],
         **spec.pod_extra,
     }
+
+    pod_meta = V1ObjectMeta(annotations={ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE})
+
     # fmt: on
-    return kubernetes.client.V1Pod(spec=pod_spec)
+    return kubernetes.client.V1Pod(spec=pod_spec, metadata=pod_meta)
 
 
 def get_connector_secret(
@@ -92,6 +99,16 @@ def k8s_read_namespaced_pod(
         if ex.status == 404:
             return None
         raise
+
+
+def k8s_force_delete_pod(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+):
+    kapi = kapi or kubernetes.client.CoreV1Api()
+    kapi.patch_namespaced_pod(name, namespace, body={"metadata": {"finalizers": []}})
+    kapi.delete_namespaced_pod(
+        name, namespace, body=kubernetes.client.V1DeleteOptions(grace_period_seconds=0)
+    )
 
 
 @kopf.on.create("twingateconnector")
@@ -184,6 +201,16 @@ def twingate_connector_pod_reconciler(
     k8s_pod = k8s_read_namespaced_pod(namespace, crd.metadata.name, kapi=kapi)
     if k8s_pod and k8s_pod.status.phase != "Running":
         raise kopf.TemporaryError("Pod not running.", delay=1)
+
+    # Migrate old pods
+    pod_spec_version = (k8s_pod and k8s_pod.metadata.annotations or {}).get(
+        ANNOTATION_POD_SPEC_VERSION
+    )
+    if k8s_pod and pod_spec_version != ANNOTATION_POD_SPEC_VERSION_VALUE:
+        k8s_force_delete_pod(namespace, crd.metadata.name, kapi)
+        return success(
+            message=f"Pod spec version mismatch. Deleting pod {crd.metadata.name}."
+        )
 
     image = k8s_pod.spec.containers[0].image if k8s_pod else None
 

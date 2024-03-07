@@ -7,6 +7,7 @@ import pytest
 from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
+    kubectl,
     kubectl_create,
     kubectl_delete,
     kubectl_get,
@@ -18,7 +19,10 @@ from tests_integration.utils import (
 def _connector_reconciler():
     with patch.dict(
         os.environ,
-        {"CONNECTOR_RECONCILER_INTERVAL": "1", "CONNECTOR_RECONCILER_INIT_DELAY": "1"},
+        {
+            "CONNECTOR_RECONCILER_INTERVAL": "1",
+            "CONNECTOR_RECONCILER_INIT_DELAY": "1",
+        },
     ):
         yield
 
@@ -193,6 +197,66 @@ def test_connector_flows_pod_gone_while_operator_down(
 
         # pod was recreated
         pod = kubectl_get("pod", connector_name)
+        assert pod["status"]["phase"] == "Running"
+
+        # Test done, delete connector
+        kubectl_delete(f"tc/{connector_name}")
+        time.sleep(5)
+
+
+def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
+    kopf_settings, kopf_runner_args, ci_run_number
+):
+    connector_name = f"test-connector-gone-{ci_run_number}"
+    OBJ = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateConnector
+        metadata:
+            name: {connector_name}
+        spec:
+            name: {connector_name}
+            hasStatusNotificationsEnabled: false
+            image:
+                tag: "1.63.0"
+    """
+
+    with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+        time.sleep(5)
+        kubectl_create(OBJ)
+        time.sleep(10)
+
+        connector = kubectl_get("tc", connector_name)
+        kubectl_get("secret", connector_name)
+        pod = kubectl_get("pod", connector_name)
+
+        while pod["status"]["phase"] == "Pending":
+            time.sleep(1)
+            pod = kubectl_get("pod", connector_name)
+
+        # connector was properly provisioned
+        expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
+        assert connector["status"]["twingate_connector_create"] == expected_status
+
+        # Patch pod to add finalizers and make operator think its old
+        kubectl_patch(
+            f"pod/{connector_name}",
+            {
+                "metadata": {
+                    "finalizers": ["twingate.com/finalizer"],
+                }
+            },
+        )
+        kubectl(
+            f"annotate pod/{connector_name} --overwrite twingate.com/connector-podspec-version=not_what_op_expects"
+        )
+
+        # wait for timer to run
+        time.sleep(5)
+
+        # check pod was recreated
+        pod = kubectl_get("pod", connector_name)
+        assert pod["metadata"]["annotations"]["twingate.com/connector-podspec-version"] == "v1"  # fmt: skip
+        # assert pod["status"]["phase"] in ["Running", "Pending"]
         assert pod["status"]["phase"] == "Running"
 
         # Test done, delete connector

@@ -105,7 +105,7 @@ def k8s_force_delete_pod(
     namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
 ):
     kapi = kapi or kubernetes.client.CoreV1Api()
-    kapi.patch_namespaced_pod(name, namespace, body={"metadata": {"finalizers": []}})
+    kapi.patch_namespaced_pod(name, namespace, body={"metadata": {"finalizers": None}})
     kapi.delete_namespaced_pod(
         name, namespace, body=kubernetes.client.V1DeleteOptions(grace_period_seconds=0)
     )

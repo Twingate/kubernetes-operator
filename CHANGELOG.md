@@ -2,7 +2,24 @@
 
 
 
-## v0.5.0 (2024-03-01)
+## v0.6.0 (2024-03-06)
+
+### Chore
+
+* chore: Upgrade Poetry to latest 1.8.2 (#183) ([`128de82`](https://github.com/Twingate/kubernetes-operator/commit/128de8227d303e47dbf127f64aaef9114439bee1))
+
+* chore: Upgrade Poetry to 1.8.1 (#181) ([`2f490f8`](https://github.com/Twingate/kubernetes-operator/commit/2f490f8e833bb32d50eabd8f5d5df198f174e812))
+
+### Feature
+
+* feat: Improved TwingateConnector reconciliation (#180) ([`e0a4f25`](https://github.com/Twingate/kubernetes-operator/commit/e0a4f25c14f706de4e6149e302d61e41d6515a68))
+
+### Fix
+
+* fix: Connector pod updates &#34;Forbidden&#34; error (#184) ([`8096e62`](https://github.com/Twingate/kubernetes-operator/commit/8096e62c89d238035653f9e57ded8ece028505f6))
+
+
+## v0.5.0 (2024-03-02)
 
 ### Chore
 

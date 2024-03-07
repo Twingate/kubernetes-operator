@@ -2,7 +2,18 @@
 
 
 
-## v0.6.0 (2024-03-06)
+## v0.6.1 (2024-03-07)
+
+### Chore
+
+* chore: Set poetry to package-mode = false (#188) ([`f91f57a`](https://github.com/Twingate/kubernetes-operator/commit/f91f57a17905d648041b0099dc5568700440a121))
+
+### Fix
+
+* fix: Fix k8s_force_delete_pod finalizers removal (#189) ([`5b2a8f3`](https://github.com/Twingate/kubernetes-operator/commit/5b2a8f396a7abbacf958c37406b2c4dd6dc6bd6a))
+
+
+## v0.6.0 (2024-03-07)
 
 ### Chore
 

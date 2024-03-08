@@ -251,7 +251,7 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
         )
 
         # wait for timer to run
-        time.sleep(5)
+        time.sleep(10)
 
         # check pod was recreated
         pod = kubectl_get("pod", connector_name)

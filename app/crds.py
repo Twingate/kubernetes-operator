@@ -63,7 +63,7 @@ class ProtocolPolicy(str, Enum):
     RESTRICTED = "RESTRICTED"
 
 
-class ProtocoRange(BaseModel):
+class ProtocolRange(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
@@ -85,7 +85,7 @@ class ResourceProtocol(BaseModel):
     )
 
     policy: ProtocolPolicy = ProtocolPolicy.ALLOW_ALL
-    ports: list[ProtocoRange] = Field(default_factory=list)
+    ports: list[ProtocolRange] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_policy_ports(self):

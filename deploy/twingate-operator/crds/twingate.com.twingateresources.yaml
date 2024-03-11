@@ -62,8 +62,8 @@ spec:
                       nullable: true
                       description: "tcp specifies the resource's TCP protocol policy."
                       x-kubernetes-validations:
-                        - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED" && size(self.ports) > 0)
-                          message: "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
+                        - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED")
+                          message: "Can't specify port ranges for ALLOW_ALL policy."
                       properties:
                          policy:
                            type: string
@@ -83,20 +83,20 @@ spec:
                                start:
                                  type: integer
                                  nullable: false
-                                 minimum: 0
+                                 minimum: 1
                                  maximum: 65535
                                end:
                                  type: integer
                                  nullable: false
-                                 minimum: 0
+                                 minimum: 1
                                  maximum: 65535
                     udp:
                       type: object
                       nullable: true
                       description: "udp specifies the resource's UDP protocol policy."
                       x-kubernetes-validations:
-                        - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED" && size(self.ports) > 0)
-                          message: "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
+                        - rule: (self.policy == "ALLOW_ALL" && size(self.ports) == 0) || (self.policy == "RESTRICTED")
+                          message: "Can't specify port ranges for ALLOW_ALL policy."
                       properties:
                          policy:
                            type: string
@@ -116,12 +116,12 @@ spec:
                                start:
                                  type: integer
                                  nullable: false
-                                 minimum: 0
+                                 minimum: 1
                                  maximum: 65535
                                end:
                                  type: integer
                                  nullable: false
-                                 minimum: 0
+                                 minimum: 1
                                  maximum: 65535
             status:
               type: object

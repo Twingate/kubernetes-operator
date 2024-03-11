@@ -83,7 +83,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
         kubectl_delete(f"tc/{connector_name}")
-        time.sleep(5)
+        time.sleep(10)
 
         # secret & pod are deleted
         with pytest.raises(CalledProcessError):

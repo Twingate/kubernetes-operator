@@ -255,6 +255,10 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
 
         # check pod was recreated
         pod = kubectl_get("pod", connector_name)
+        if pod["status"]["phase"] == "Pending":
+            time.sleep(5)
+            pod = kubectl_get("pod", connector_name)
+
         assert pod["metadata"]["annotations"]["twingate.com/connector-podspec-version"] == "v1"  # fmt: skip
         # assert pod["status"]["phase"] in ["Running", "Pending"]
         assert pod["status"]["phase"] == "Running"

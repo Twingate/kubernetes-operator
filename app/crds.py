@@ -92,9 +92,6 @@ class ResourceProtocol(BaseModel):
         if self.policy == ProtocolPolicy.ALLOW_ALL and self.ports:
             raise ValueError("ports can't be set if policy is ALLOW_ALL")
 
-        if self.policy == ProtocolPolicy.RESTRICTED and not self.ports:
-            raise ValueError("ports must be set if policy is RESTRICTED")
-
         return self
 
 

@@ -28,7 +28,7 @@ def _connector_reconciler():
 
 
 def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
-    connector_name = f"test-connector-{ci_run_number}"
+    connector_name = f"test-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector
@@ -97,7 +97,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
 
 
 def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_number):
-    connector_name = f"test-connector-image-{ci_run_number}"
+    connector_name = f"test-image-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector
@@ -159,7 +159,7 @@ def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_nu
 def test_connector_flows_pod_gone_while_operator_down(
     kopf_settings, kopf_runner_args, ci_run_number
 ):
-    connector_name = f"test-connector-gone-{ci_run_number}"
+    connector_name = f"test-gone-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector
@@ -207,7 +207,7 @@ def test_connector_flows_pod_gone_while_operator_down(
 def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
     kopf_settings, kopf_runner_args, ci_run_number
 ):
-    connector_name = f"test-connector-migration-{ci_run_number}"
+    connector_name = f"test-migration-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector

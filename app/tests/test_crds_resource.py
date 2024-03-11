@@ -126,18 +126,6 @@ def test_resourceprotocols_validation():
             },
         )
 
-    with pytest.raises(ValueError, match="ports must be set"):
-        TwingateResourceCRD(
-            apiVersion="twingate.com/v1",
-            kind="TwingateResource",
-            spec={
-                "address": "my.default.cluster.local",
-                "id": "UmVzb3VyY2U6OTM3Mzkw",
-                "name": "My K8S Resource",
-                "protocols": {"tcp": {"policy": "RESTRICTED"}},
-            },
-        )
-
 
 def test_resourceprotocol_ports_validation():
     with pytest.raises(ValueError, match="Input should be less than or equal to 65535"):
@@ -157,7 +145,7 @@ def test_resourceprotocol_ports_validation():
             },
         )
 
-    with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+    with pytest.raises(ValueError, match="Input should be greater than or equal to 1"):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",
             kind="TwingateResource",

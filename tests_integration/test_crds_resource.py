@@ -86,10 +86,7 @@ def test_protocols_tcp_allowall_cant_specify_ports(unique_resource_name):
         )
 
     stderr = ex.value.stderr.decode()
-    assert (
-        "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
-        in stderr
-    )
+    assert "Can't specify port ranges for ALLOW_ALL policy." in stderr
 
     result = kubectl_create(
         f"""
@@ -131,10 +128,7 @@ def test_protocols_udp_allowall_cant_specify_ports(unique_resource_name):
         )
 
     stderr = ex.value.stderr.decode()
-    assert (
-        "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
-        in stderr
-    )
+    assert "Can't specify port ranges for ALLOW_ALL policy." in stderr
 
     result = kubectl_create(
         f"""
@@ -155,28 +149,24 @@ def test_protocols_udp_allowall_cant_specify_ports(unique_resource_name):
     kubectl_delete(f"tgr/{unique_resource_name}")
 
 
-def test_protocols_tcp_restricted_must_specify_ports(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-                name: {unique_resource_name}
-            spec:
-                name: My K8S Resource
-                address: "foo.default.cluster.local"
-                protocols:
-                    tcp:
-                        policy: RESTRICTED
-        """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert (
-        "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
-        in stderr
+def test_protocols_tcp_restricted(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+            name: {unique_resource_name}
+        spec:
+            name: My K8S Resource
+            address: "foo.default.cluster.local"
+            protocols:
+                tcp:
+                    policy: RESTRICTED
+    """
     )
+
+    assert result.returncode == 0, result.value.stderr.decode()
+    kubectl_delete(f"tgr/{unique_resource_name}")
 
     result = kubectl_create(
         f"""
@@ -200,28 +190,24 @@ def test_protocols_tcp_restricted_must_specify_ports(unique_resource_name):
     kubectl_delete(f"tgr/{unique_resource_name}")
 
 
-def test_protocols_udp_restricted_must_specify_ports(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-                name: {unique_resource_name}
-            spec:
-                name: My K8S Resource
-                address: "foo.default.cluster.local"
-                protocols:
-                    udp:
-                        policy: RESTRICTED
-        """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert (
-        "Can't specify port ranges for ALLOW_ALL policy, and must specify port ranges for RESTRICTED policy"
-        in stderr
+def test_protocols_udp_restricted(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+            name: {unique_resource_name}
+        spec:
+            name: My K8S Resource
+            address: "foo.default.cluster.local"
+            protocols:
+                udp:
+                    policy: RESTRICTED
+    """
     )
+
+    assert result.returncode == 0, result.value.stderr.decode()
+    kubectl_delete(f"tgr/{unique_resource_name}")
 
     result = kubectl_create(
         f"""

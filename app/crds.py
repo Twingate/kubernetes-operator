@@ -68,8 +68,8 @@ class ProtocolRange(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    start: int = Field(ge=0, le=65535)
-    end: int = Field(ge=0, le=65535)
+    start: int = Field(ge=1, le=65535)
+    end: int = Field(ge=1, le=65535)
 
     @model_validator(mode="after")
     def check_ports(self):

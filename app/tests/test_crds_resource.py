@@ -157,7 +157,7 @@ def test_resourceprotocol_ports_validation():
             },
         )
 
-    with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+    with pytest.raises(ValueError, match="Input should be greater than or equal to 1"):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",
             kind="TwingateResource",

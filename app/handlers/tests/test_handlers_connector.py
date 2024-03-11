@@ -170,7 +170,7 @@ def test_twingate_connector_update_only_id_does_nothing(
         crd,
         MagicMock(),
         new={},
-        diff=(("add", ("id"), None, "123"),),
+        diff=(("add", ("id",), None, "123"),),
     )
     assert run.result == {
         "success": True,

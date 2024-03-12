@@ -14,7 +14,18 @@ from tests_integration.utils import (
 )
 
 
-def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
+@pytest.fixture(scope="session")
+def kopf_runner_kwargs(kopf_settings):
+    return {
+        "settings": kopf_settings,
+        "env": {
+            "CONNECTOR_RECONCILER_INTERVAL": "1",
+            "CONNECTOR_RECONCILER_INIT_DELAY": "1",
+        },
+    }
+
+
+def test_connector_flows(kopf_runner_args, kopf_runner_kwargs, ci_run_number):
     connector_name = f"test-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -32,7 +43,7 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
                 version: "^1.0.0"
     """
 
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
         time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(10)
@@ -83,7 +94,9 @@ def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):
     assert runner.exit_code == 0
 
 
-def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_number):
+def test_connector_flows_image_change(
+    kopf_runner_args, kopf_runner_kwargs, ci_run_number
+):
     connector_name = f"test-image-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -97,7 +110,7 @@ def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_nu
                 tag: "1.62.0"
     """
 
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
         time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(5)
@@ -144,7 +157,7 @@ def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_nu
 
 
 def test_connector_flows_pod_gone_while_operator_down(
-    kopf_settings, kopf_runner_args, ci_run_number
+    kopf_runner_args, kopf_runner_kwargs, ci_run_number
 ):
     connector_name = f"test-gone-{ci_run_number}"
     OBJ = f"""
@@ -159,7 +172,7 @@ def test_connector_flows_pod_gone_while_operator_down(
                 tag: "1.63.0"
     """
 
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
         time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(10)
@@ -176,10 +189,13 @@ def test_connector_flows_pod_gone_while_operator_down(
         expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
 
+    assert runner.exception is None
+    assert runner.exit_code == 0
+
     kubectl_delete(f"pod/{connector_name}")
 
     # run operator again
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
         time.sleep(10)
 
         # pod was recreated
@@ -190,9 +206,12 @@ def test_connector_flows_pod_gone_while_operator_down(
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
 
+    assert runner.exception is None
+    assert runner.exit_code == 0
+
 
 def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
-    kopf_settings, kopf_runner_args, ci_run_number
+    kopf_runner_args, kopf_runner_kwargs, ci_run_number
 ):
     connector_name = f"test-migration-{ci_run_number}"
     OBJ = f"""
@@ -207,7 +226,7 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
                 tag: "1.63.0"
     """
 
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as _runner:
+    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
         time.sleep(5)
         kubectl_create(OBJ)
         time.sleep(10)
@@ -253,3 +272,6 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
         # Test done, delete connector
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
+
+    assert runner.exception is None
+    assert runner.exit_code == 0

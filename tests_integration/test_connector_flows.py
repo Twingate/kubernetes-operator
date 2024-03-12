@@ -143,7 +143,7 @@ def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_nu
         assert pod["spec"]["containers"][0]["image"] == "twingate/connector:1.63.0"
 
         kubectl_delete(f"tc/{connector_name}")
-        time.sleep(5)
+        time.sleep(10)
 
         # secret & pod are deleted
         with pytest.raises(CalledProcessError):

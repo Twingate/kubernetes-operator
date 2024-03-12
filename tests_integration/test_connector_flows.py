@@ -1,4 +1,5 @@
 import time
+from contextlib import contextmanager
 from subprocess import CalledProcessError
 from unittest.mock import ANY
 
@@ -15,17 +16,27 @@ from tests_integration.utils import (
 
 
 @pytest.fixture(scope="session")
-def kopf_runner_kwargs(kopf_settings):
-    return {
-        "settings": kopf_settings,
-        "env": {
-            "CONNECTOR_RECONCILER_INTERVAL": "1",
-            "CONNECTOR_RECONCILER_INIT_DELAY": "1",
-        },
-    }
+def run_kopf(kopf_runner_args, kopf_settings):
+    @contextmanager
+    def inner():
+        with KopfRunner(
+            kopf_runner_args,
+            settings=kopf_settings,
+            env={
+                "CONNECTOR_RECONCILER_INTERVAL": "1",
+                "CONNECTOR_RECONCILER_INIT_DELAY": "1",
+            },
+        ) as runner:
+            time.sleep(5)
+            yield
+
+        assert runner.exception is None
+        assert runner.exit_code == 0
+
+    return inner
 
 
-def test_connector_flows(kopf_runner_args, kopf_runner_kwargs, ci_run_number):
+def test_connector_flows(run_kopf, ci_run_number):
     connector_name = f"test-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -43,8 +54,7 @@ def test_connector_flows(kopf_runner_args, kopf_runner_kwargs, ci_run_number):
                 version: "^1.0.0"
     """
 
-    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
-        time.sleep(5)
+    with run_kopf():
         kubectl_create(OBJ)
         time.sleep(10)
 
@@ -90,13 +100,8 @@ def test_connector_flows(kopf_runner_args, kopf_runner_kwargs, ci_run_number):
         with pytest.raises(CalledProcessError):
             kubectl_get("pod", connector_name)
 
-    assert runner.exception is None
-    assert runner.exit_code == 0
 
-
-def test_connector_flows_image_change(
-    kopf_runner_args, kopf_runner_kwargs, ci_run_number
-):
+def test_connector_flows_image_change(run_kopf, ci_run_number):
     connector_name = f"test-image-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -110,8 +115,7 @@ def test_connector_flows_image_change(
                 tag: "1.62.0"
     """
 
-    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
-        time.sleep(5)
+    with run_kopf():
         kubectl_create(OBJ)
         time.sleep(5)
 
@@ -152,13 +156,8 @@ def test_connector_flows_image_change(
         with pytest.raises(CalledProcessError):
             kubectl_get("pod", connector_name)
 
-    assert runner.exception is None
-    assert runner.exit_code == 0
 
-
-def test_connector_flows_pod_gone_while_operator_down(
-    kopf_runner_args, kopf_runner_kwargs, ci_run_number
-):
+def test_connector_flows_pod_gone_while_operator_down(run_kopf, ci_run_number):
     connector_name = f"test-gone-{ci_run_number}"
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -172,8 +171,7 @@ def test_connector_flows_pod_gone_while_operator_down(
                 tag: "1.63.0"
     """
 
-    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
-        time.sleep(5)
+    with run_kopf():
         kubectl_create(OBJ)
         time.sleep(10)
 
@@ -189,14 +187,11 @@ def test_connector_flows_pod_gone_while_operator_down(
         expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
 
-    assert runner.exception is None
-    assert runner.exit_code == 0
-
     kubectl_delete(f"pod/{connector_name}")
 
     # run operator again
-    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
-        time.sleep(10)
+    with run_kopf():
+        time.sleep(5)
 
         # pod was recreated
         pod = kubectl_get("pod", connector_name)
@@ -206,12 +201,9 @@ def test_connector_flows_pod_gone_while_operator_down(
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
 
-    assert runner.exception is None
-    assert runner.exit_code == 0
-
 
 def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
-    kopf_runner_args, kopf_runner_kwargs, ci_run_number
+    run_kopf, ci_run_number
 ):
     connector_name = f"test-migration-{ci_run_number}"
     OBJ = f"""
@@ -226,8 +218,7 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
                 tag: "1.63.0"
     """
 
-    with KopfRunner(kopf_runner_args, **kopf_runner_kwargs) as runner:
-        time.sleep(5)
+    with run_kopf():
         kubectl_create(OBJ)
         time.sleep(10)
 
@@ -272,6 +263,3 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
         # Test done, delete connector
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(5)
-
-    assert runner.exception is None
-    assert runner.exit_code == 0

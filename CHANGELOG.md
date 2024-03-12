@@ -2,7 +2,14 @@
 
 
 
-## v0.6.1 (2024-03-07)
+## v0.6.2 (2024-03-11)
+
+### Fix
+
+* fix: Resource restricted policy should allow empty ports (#193) ([`e9aec7d`](https://github.com/Twingate/kubernetes-operator/commit/e9aec7d9ee7be6944d4c69b8d9d73107d3a38df5))
+
+
+## v0.6.1 (2024-03-08)
 
 ### Chore
 

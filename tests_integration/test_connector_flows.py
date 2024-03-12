@@ -137,7 +137,7 @@ def test_connector_flows_image_change(kopf_settings, kopf_runner_args, ci_run_nu
         # Change image tag
         # kubectl patch tc/test-connector-image-local -p '{"spec": {"image": {"tag": "1.63.0"}}}' --type=merge
         kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.63.0"}}})
-        time.sleep(5)
+        time.sleep(10)
         pod = kubectl_get("pod", connector_name)
         assert pod["status"]["phase"] == "Running"
         assert pod["spec"]["containers"][0]["image"] == "twingate/connector:1.63.0"

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.6.1"
+version = "0.6.2"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"

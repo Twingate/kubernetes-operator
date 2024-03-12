@@ -1,7 +1,6 @@
-import os
 import time
 from subprocess import CalledProcessError
-from unittest.mock import ANY, patch
+from unittest.mock import ANY
 
 import pytest
 from kopf.testing import KopfRunner
@@ -13,18 +12,6 @@ from tests_integration.utils import (
     kubectl_get,
     kubectl_patch,
 )
-
-
-@pytest.fixture(autouse=True)
-def _connector_reconciler():
-    with patch.dict(
-        os.environ,
-        {
-            "CONNECTOR_RECONCILER_INTERVAL": "1",
-            "CONNECTOR_RECONCILER_INIT_DELAY": "1",
-        },
-    ):
-        yield
 
 
 def test_connector_flows(kopf_settings, kopf_runner_args, ci_run_number):

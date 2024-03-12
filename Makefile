@@ -64,7 +64,7 @@ test-cov:
 
 .PHONY: test-int
 test-int:
-	poetry run pytest  -m "integration" -s
+	poetry run pytest  -m "integration" -s -v
 
 .PHONY: report-to-coveralls
 report-to-coveralls:

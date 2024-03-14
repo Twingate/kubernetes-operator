@@ -47,8 +47,9 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
 
     resource_id = resource_crd.spec.id
     try:
-        principal_id = get_principal_id(access_crd, memo.twingate_client)
-        memo.twingate_client.resource_access_add(
+        client = TwingateAPIClient(memo.twingate_settings)
+        principal_id = get_principal_id(access_crd, client)
+        client.resource_access_add(
             resource_id, principal_id, access_crd.security_policy_id
         )
 

@@ -206,6 +206,8 @@ def test_resource_access_flows(kopf_settings, kopf_runner_args, unique_resource_
 
         kubectl(f"delete tgr/{unique_resource_name}")
 
+        time.sleep(5)  # give it some time to react
+
     # fmt: on
 
     # Ensure that the operator did not die on start, or during the operation.

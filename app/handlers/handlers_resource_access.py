@@ -15,19 +15,21 @@ def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) 
     if principal_id := access_crd.principal_id:
         return principal_id
 
-    principal_id = None
-    pref = access_crd.principal_external_ref
-    if pref.type == "group":
-        principal_id = client.get_group_id(pref.match_name)
-    elif pref.type == "serviceaccount":
-        principal_id = client.get_service_account_id(pref.match_name)
-    else:
-        raise ValueError(f"Unknown principal type: {pref.type}")
+    if pref := access_crd.principal_external_ref:
+        principal_id = None
+        if pref.type == "group":
+            principal_id = client.get_group_id(pref.match_name)
+        elif pref.type == "serviceaccount":
+            principal_id = client.get_service_account_id(pref.match_name)
+        else:
+            raise ValueError(f"Unknown principal type: {pref.type}")
 
-    if not principal_id:
-        raise ValueError(f"Principal {pref.type} {pref.match_name} not found.")
+        if not principal_id:
+            raise ValueError(f"Principal {pref.type} {pref.match_name} not found.")
 
-    return principal_id
+        return principal_id
+
+    raise ValueError("missing principal_id or principal_external_ref")
 
 
 @kopf.on.create("twingateresourceaccess")

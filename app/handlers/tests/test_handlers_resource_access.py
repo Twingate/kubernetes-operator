@@ -143,12 +143,11 @@ class TestResourceAccessCreateHandler:
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
 
-        mock_api_client.resource_access_add.side_effect = GraphQLMutationError(
-            "resourceCreate", "some error"
-        )
-
         logger_mock = MagicMock()
         memo_mock = MagicMock()
+        memo_mock.twingate_client.resource_access_add.side_effect = (
+            GraphQLMutationError("resourceCreate", "some error")
+        )
         patch_mock = MagicMock()
         patch_mock.metadata = {}
         patch_mock.metadata["ownerReferences"] = []

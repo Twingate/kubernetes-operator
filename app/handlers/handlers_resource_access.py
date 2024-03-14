@@ -55,7 +55,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         kopf.info(
             body,
             reason="Success",
-            message=f"Added access to {spec.id}<>{access_crd.principal_id}",
+            message=f"Added access to {resource_crd.spec.id}<>{access_crd.principal_id}",
         )
         patch.metadata["ownerReferences"] = [
             resource_crd.metadata.owner_reference_object

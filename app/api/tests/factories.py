@@ -67,3 +67,4 @@ class ConnectorFactory(factory.Factory):
 
     id = factory.Sequence(lambda n: to_global_id("Connector", str(n)))
     name = factory.Faker("slug")
+    has_status_notifications_enabled = False

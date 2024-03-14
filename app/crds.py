@@ -63,13 +63,13 @@ class ProtocolPolicy(str, Enum):
     RESTRICTED = "RESTRICTED"
 
 
-class ProtocoRange(BaseModel):
+class ProtocolRange(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    start: int = Field(ge=0, le=65535)
-    end: int = Field(ge=0, le=65535)
+    start: int = Field(ge=1, le=65535)
+    end: int = Field(ge=1, le=65535)
 
     @model_validator(mode="after")
     def check_ports(self):
@@ -85,15 +85,12 @@ class ResourceProtocol(BaseModel):
     )
 
     policy: ProtocolPolicy = ProtocolPolicy.ALLOW_ALL
-    ports: list[ProtocoRange] = Field(default_factory=list)
+    ports: list[ProtocolRange] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_policy_ports(self):
         if self.policy == ProtocolPolicy.ALLOW_ALL and self.ports:
             raise ValueError("ports can't be set if policy is ALLOW_ALL")
-
-        if self.policy == ProtocolPolicy.RESTRICTED and not self.ports:
-            raise ValueError("ports must be set if policy is RESTRICTED")
 
         return self
 
@@ -303,6 +300,7 @@ class ConnectorSpec(BaseModel):
     id: str | None = None
     name: str | None = None
     log_level: int = 3
+    has_status_notifications_enabled: bool = True
     image: ConnectorImage | None = None
     image_policy: ConnectorImagePolicy | None = None
     container_extra: dict[str, Any] = {}

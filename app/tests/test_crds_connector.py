@@ -94,9 +94,9 @@ def test_deserialization_imagepolicy_fails_on_invalid_version_specifier(
 
 
 def test_deserialization_fails_on_invalid_schedule(sample_connector_object_imagepolicy):
-    sample_connector_object_imagepolicy["spec"]["imagePolicy"][
-        "schedule"
-    ] = "100 2 * * *"
+    sample_connector_object_imagepolicy["spec"]["imagePolicy"]["schedule"] = (
+        "100 2 * * *"
+    )
     with pytest.raises(ValueError, match="Invalid schedule value"):
         TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 

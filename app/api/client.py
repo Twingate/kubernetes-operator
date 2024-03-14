@@ -113,6 +113,6 @@ class TwingateAPIClient(
         result = self.execute_gql(document, variable_values=variable_values)
         data = result[name]
         if not data["ok"]:
-            raise GraphQLMutationError(f"{name} mutation failed.", data.get("error"))
+            raise GraphQLMutationError(name, data.get("error"))
 
         return data

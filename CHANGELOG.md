@@ -2,7 +2,77 @@
 
 
 
-## v0.4.0 (2024-02-15)
+## v0.6.2 (2024-03-11)
+
+### Fix
+
+* fix: Resource restricted policy should allow empty ports (#193) ([`e9aec7d`](https://github.com/Twingate/kubernetes-operator/commit/e9aec7d9ee7be6944d4c69b8d9d73107d3a38df5))
+
+
+## v0.6.1 (2024-03-08)
+
+### Chore
+
+* chore: Set poetry to package-mode = false (#188) ([`f91f57a`](https://github.com/Twingate/kubernetes-operator/commit/f91f57a17905d648041b0099dc5568700440a121))
+
+### Fix
+
+* fix: Fix k8s_force_delete_pod finalizers removal (#189) ([`5b2a8f3`](https://github.com/Twingate/kubernetes-operator/commit/5b2a8f396a7abbacf958c37406b2c4dd6dc6bd6a))
+
+
+## v0.6.0 (2024-03-07)
+
+### Chore
+
+* chore: Upgrade Poetry to latest 1.8.2 (#183) ([`128de82`](https://github.com/Twingate/kubernetes-operator/commit/128de8227d303e47dbf127f64aaef9114439bee1))
+
+* chore: Upgrade Poetry to 1.8.1 (#181) ([`2f490f8`](https://github.com/Twingate/kubernetes-operator/commit/2f490f8e833bb32d50eabd8f5d5df198f174e812))
+
+### Feature
+
+* feat: Improved TwingateConnector reconciliation (#180) ([`e0a4f25`](https://github.com/Twingate/kubernetes-operator/commit/e0a4f25c14f706de4e6149e302d61e41d6515a68))
+
+### Fix
+
+* fix: Connector pod updates &#34;Forbidden&#34; error (#184) ([`8096e62`](https://github.com/Twingate/kubernetes-operator/commit/8096e62c89d238035653f9e57ded8ece028505f6))
+
+
+## v0.5.0 (2024-03-02)
+
+### Chore
+
+* chore: Pydantic deprecated .dict() for .model_dump() (#171) ([`065c146`](https://github.com/Twingate/kubernetes-operator/commit/065c14687389e0de66575709d5b05e6403f55e39))
+
+* chore: Switch from Black to Ruff Formatter (#148) ([`1b822ae`](https://github.com/Twingate/kubernetes-operator/commit/1b822ae23be0cc7ec0cc4b5dffccf52c332dd696))
+
+* chore: Stalebot is deprecated. Move to actions/stale@v9 (#147) ([`94dce35`](https://github.com/Twingate/kubernetes-operator/commit/94dce35289d97e1c2674c3530d7418fe870b55e1))
+
+### Feature
+
+* feat: Add `hasStatusNotificationsEnabled` to `TwingateConnector` (#170) ([`f03f851`](https://github.com/Twingate/kubernetes-operator/commit/f03f851bdc1b9cf7f59e618205a5c3ae3baf55f5))
+
+### Fix
+
+* fix: Improved `twingate_connector_recreate_pod` logic (#179) ([`fd3f533`](https://github.com/Twingate/kubernetes-operator/commit/fd3f533dfc2d4a67a8679dd2666c249f0869f500))
+
+* fix: LABEL_CONNECTOR_POD_DELETED isnt set to false after pod recreated (#177) ([`f3d6865`](https://github.com/Twingate/kubernetes-operator/commit/f3d686599e43a175c10d3a8032187d47e74e61dd))
+
+* fix: Reduce update scope for `twingate_resource_update` (#176) ([`c947fba`](https://github.com/Twingate/kubernetes-operator/commit/c947fba876047317f2921e0bbb52654fded66e38))
+
+* fix: Limit twingate_resource_access_update scope to spec (#175) ([`75ff3f0`](https://github.com/Twingate/kubernetes-operator/commit/75ff3f05a0159dff0d3f454141baf546cbc0eb1f))
+
+* fix: Add status and logs to `twingate_connector_resume` (#168) ([`13495f0`](https://github.com/Twingate/kubernetes-operator/commit/13495f0ade55b07728accde0080b34f6bbe84877))
+
+* fix: twingate connector doesnt handle pod deletion on resume (#162) ([`7fbc24b`](https://github.com/Twingate/kubernetes-operator/commit/7fbc24b0d41a5b47dc397851c10911aac94bb777))
+
+* fix: Deleting an item already deleted on Twingate Admin should not fail (#160) ([`3cd447f`](https://github.com/Twingate/kubernetes-operator/commit/3cd447f1caa07772b8d821c34d96de88c159724d))
+
+### Unknown
+
+* Upgrade local tooling for 3.11.8 ([`4cdaec0`](https://github.com/Twingate/kubernetes-operator/commit/4cdaec0658de1c7da7a6f490fed34a2bc3fd9156))
+
+
+## v0.4.0 (2024-02-16)
 
 ### Chore
 

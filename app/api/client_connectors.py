@@ -26,6 +26,7 @@ class Connector(BaseModel):
 
     id: str
     name: str
+    has_status_notifications_enabled: bool = True
 
     @staticmethod
     def get_graphql_fragment():
@@ -33,6 +34,7 @@ class Connector(BaseModel):
             fragment ConnectorFields on Connector {
                 id
                 name
+                hasStatusNotificationsEnabled
             }
         """
 
@@ -53,8 +55,23 @@ QUERY_GET_CONNECTOR = gql(
 MUT_CREATE_CONNECTOR = gql(
     _CONNECTOR_FRAGMENT
     + """
-mutation CreateConnector($name: String, $remoteNetworkId: ID!) {
-  connectorCreate(name: $name, remoteNetworkId: $remoteNetworkId) {
+mutation CreateConnector($name: String, $hasStatusNotificationsEnabled: Boolean!, $remoteNetworkId: ID!) {
+  connectorCreate(name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled, remoteNetworkId: $remoteNetworkId) {
+    ok
+    error
+    entity {
+      ...ConnectorFields
+    }
+  }
+}
+"""
+)
+
+MUT_UPDATE_CONNECTOR = gql(
+    _CONNECTOR_FRAGMENT
+    + """
+mutation UpdateConnector($id: ID!, $name: String!, $hasStatusNotificationsEnabled: Boolean!) {
+  connectorUpdate(id: $id, name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled) {
     ok
     error
     entity {
@@ -82,7 +99,7 @@ mutation GenerateConnectorTokens($connectorId: ID!) {
 
 MUT_DELETE_CONNECTOR = gql(
     """
-mutation DeleteResource($id: ID!) {
+mutation DeleteConnector($id: ID!) {
     connectorDelete(id: $id) {
         ok
         error
@@ -114,6 +131,22 @@ class TwingateConnectorAPI:
             variable_values={
                 "name": connector.name,
                 "remoteNetworkId": connector.remote_network_id,
+                "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
+            },
+        )
+
+        return Connector(**result["entity"])
+
+    def connector_update(
+        self: TwingateClientProtocol, connector: ConnectorSpec
+    ) -> Connector:
+        result = self.execute_mutation(
+            "connectorUpdate",
+            MUT_UPDATE_CONNECTOR,
+            variable_values={
+                "id": connector.id,
+                "name": connector.name,
+                "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
             },
         )
 

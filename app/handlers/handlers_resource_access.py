@@ -16,7 +16,6 @@ def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) 
         return principal_id
 
     if pref := access_crd.principal_external_ref:
-        principal_id = None
         if pref.type == "group":
             principal_id = client.get_group_id(pref.match_name)
         elif pref.type == "serviceaccount":

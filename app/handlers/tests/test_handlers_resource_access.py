@@ -6,6 +6,7 @@ import pytest
 from app.api.client import GraphQLMutationError
 from app.crds import K8sMetadata
 from app.handlers.handlers_resource_access import (
+    get_principal_id,
     twingate_resource_access_create,
     twingate_resource_access_delete,
     twingate_resource_access_sync,
@@ -21,6 +22,35 @@ def mock_api_client():
     ) as mock_api_client:
         mock_api_client.return_value = api_client_instance
         yield api_client_instance
+
+
+class TestGetPrincipalId:
+    def test_id_from_spec(self):
+        access_crd = MagicMock()
+        access_crd.principal_id = "R3JvdXA6MTE1NzI2MA=="
+        assert get_principal_id(access_crd, MagicMock()) == "R3JvdXA6MTE1NzI2MA=="
+
+    def test_from_external_ref_group(self, mock_api_client):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = MagicMock()
+        access_crd.principal_external_ref.type = "group"
+        access_crd.principal_external_ref.match_name = "group-name"
+
+        mock_api_client.get_group_id.return_value = "R3JvdXA6MTE1NzI2MA=="
+
+        assert get_principal_id(access_crd, mock_api_client) == "R3JvdXA6MTE1NzI2MA=="
+
+    def test_from_external_ref_sa(self, mock_api_client):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = MagicMock()
+        access_crd.principal_external_ref.type = "serviceaccount"
+        access_crd.principal_external_ref.match_name = "sa-name"
+
+        mock_api_client.get_service_account_id.return_value = "R3JvdXA6MTE1NzI2MA=="
+
+        assert get_principal_id(access_crd, mock_api_client) == "R3JvdXA6MTE1NzI2MA=="
 
 
 class TestResourceAccessCreateHandler:

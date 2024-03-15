@@ -52,6 +52,30 @@ class TestGetPrincipalId:
 
         assert get_principal_id(access_crd, mock_api_client) == "R3JvdXA6MTE1NzI2MA=="
 
+    def test_from_external_ref_returns_none(self, mock_api_client):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = MagicMock()
+        access_crd.principal_external_ref.type = "serviceaccount"
+        access_crd.principal_external_ref.match_name = "sa-name"
+
+        mock_api_client.get_service_account_id.return_value = None
+
+        with pytest.raises(
+            ValueError, match="Principal serviceaccount sa-name not found"
+        ):
+            get_principal_id(access_crd, mock_api_client)
+
+    def test_from_external_ref_invalid_type_returns_none(self, mock_api_client):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = MagicMock()
+        access_crd.principal_external_ref.type = "invalid"
+        access_crd.principal_external_ref.match_name = "sa-name"
+
+        with pytest.raises(ValueError, match="Unknown principal type: invalid"):
+            get_principal_id(access_crd, mock_api_client)
+
 
 class TestResourceAccessCreateHandler:
     def test_create_success(self, resource_factory, kopf_info_mock, mock_api_client):

@@ -30,6 +30,15 @@ class TestGetPrincipalId:
         access_crd.principal_id = "R3JvdXA6MTE1NzI2MA=="
         assert get_principal_id(access_crd, MagicMock()) == "R3JvdXA6MTE1NzI2MA=="
 
+    def test_id_invalid_spec(self):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = None
+        with pytest.raises(
+            ValueError, match="missing principal_id or principal_external_ref"
+        ):
+            get_principal_id(access_crd, MagicMock())
+
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
         access_crd.principal_id = None

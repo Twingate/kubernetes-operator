@@ -3,6 +3,7 @@ import time
 from unittest.mock import ANY
 
 import orjson as json
+import pytest
 from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
@@ -165,9 +166,58 @@ def test_resource_created_before_operator_runs(
     # fmt: on
 
 
-def test_resource_access_flows(kopf_settings, kopf_runner_args, unique_resource_name):
+ACCESS_OBJECTS = {
+    "OBJ_ACCESS_BY_PRINCIPAL_ID": """
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {resource_name}
+        spec:
+          resourceRef:
+            name: {resource_name}
+          principalId: {principal_id}
+    """,
+    "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP": """
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {resource_name}
+        spec:
+          resourceRef:
+            name: {resource_name}
+          principalExternalRef:
+            type: group
+            matchName: "{princiapl_name}"
+    """,
+    "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA": """
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {resource_name}
+        spec:
+          resourceRef:
+            name: {resource_name}
+          principalExternalRef:
+            type: serviceaccount
+            matchName: "{princiapl_name}"
+    """,
+}
+
+
+@pytest.mark.parametrize(
+    "access_object_yaml_tmpl_name",
+    [
+        "OBJ_ACCESS_BY_PRINCIPAL_ID",
+        "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP",
+        "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA",
+    ],
+)
+def test_resource_access_flows(
+    access_object_yaml_tmpl_name, kopf_settings, kopf_runner_args, unique_resource_name
+):
     assert "TWINGATE_TEST_PRINCIPAL_ID" in os.environ
     principal_id = os.environ["TWINGATE_TEST_PRINCIPAL_ID"]
+    princiapl_name = "test_resource_access_flows"
 
     RESOURCE_OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -179,24 +229,20 @@ def test_resource_access_flows(kopf_settings, kopf_runner_args, unique_resource_
           address: my.default.cluster.local
     """
 
-    OBJ = f"""
-        apiVersion: twingate.com/v1beta
-        kind: TwingateResourceAccess
-        metadata:
-          name: {unique_resource_name}
-        spec:
-          resourceRef:
-            name: {unique_resource_name}
-          principalId: {principal_id}
-    """
+    access_object_yaml_tmpl = ACCESS_OBJECTS[access_object_yaml_tmpl_name]
+    access_object_yaml = access_object_yaml_tmpl.format(
+        resource_name=unique_resource_name,
+        principal_id=principal_id,
+        princiapl_name=princiapl_name,
+    )
 
     # fmt: off
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         kubectl_create(RESOURCE_OBJ)
         time.sleep(5)  # give it some time to react
 
-        kubectl_create(OBJ)
-        time.sleep(5)  # give it some time to react
+        kubectl_create(access_object_yaml)
+        time.sleep(10)  # give it some time to react
 
         json.loads(kubectl(f"get tgra/{unique_resource_name} -o json").stdout)
 

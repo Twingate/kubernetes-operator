@@ -31,4 +31,4 @@ def kopf_settings():
 
 @pytest.fixture()
 def unique_resource_name(request):
-    return request.node.name.replace("_", "-") + "-" + str(uuid.uuid4())
+    return request.node.originalname.replace("_", "-") + "-" + str(uuid.uuid4())

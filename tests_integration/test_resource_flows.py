@@ -175,7 +175,7 @@ ACCESS_OBJECTS = {
         spec:
           resourceRef:
             name: {resource_name}
-          principalId: {principal_name}
+          principalId: {principal_id}
     """,
     "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP": """
         apiVersion: twingate.com/v1beta

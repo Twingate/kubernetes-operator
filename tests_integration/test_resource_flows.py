@@ -175,7 +175,7 @@ ACCESS_OBJECTS = {
         spec:
           resourceRef:
             name: {resource_name}
-          principalId: {principal_id}
+          principalId: {principal_name}
     """,
     "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP": """
         apiVersion: twingate.com/v1beta
@@ -187,7 +187,7 @@ ACCESS_OBJECTS = {
             name: {resource_name}
           principalExternalRef:
             type: group
-            matchName: "{princiapl_name}"
+            matchName: "{principal_name}"
     """,
     "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA": """
         apiVersion: twingate.com/v1beta
@@ -199,7 +199,7 @@ ACCESS_OBJECTS = {
             name: {resource_name}
           principalExternalRef:
             type: serviceaccount
-            matchName: "{princiapl_name}"
+            matchName: "{principal_name}"
     """,
 }
 
@@ -233,7 +233,7 @@ def test_resource_access_flows(
     access_object_yaml = access_object_yaml_tmpl.format(
         resource_name=unique_resource_name,
         principal_id=principal_id,
-        princiapl_name=princiapl_name,
+        principal_name=princiapl_name,
     )
 
     # fmt: off

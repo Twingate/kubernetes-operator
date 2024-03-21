@@ -21,7 +21,7 @@ QUERY_GET_SA_ID_BY_NAME = gql(
 )
 
 
-class TwingateServiceAccountsAPIs:
+class TwingateServiceAccountAPIs:
     def get_service_account_id(
         self: TwingateClientProtocol, service_account_name: str
     ) -> str | None:

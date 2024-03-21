@@ -13,7 +13,7 @@ from app.api.client_groups import TwingateGroupsAPIs
 from app.api.client_remote_networks import TwingateRemoteNetworksAPIs
 from app.api.client_resources import TwingateResourceAPIs
 from app.api.client_resources_access import TwingateResourceAccessAPIs
-from app.api.client_service_accounts import TwingateServiceAccountsAPIs
+from app.api.client_service_accounts import TwingateServiceAccountAPIs
 from app.api.exceptions import GraphQLMutationError
 from app.settings import TwingateOperatorSettings, get_version
 
@@ -72,7 +72,7 @@ class TwingateAPIClient(
     TwingateGroupsAPIs,
     TwingateResourceAPIs,
     TwingateResourceAccessAPIs,
-    TwingateServiceAccountsAPIs,
+    TwingateServiceAccountAPIs,
     TwingateRemoteNetworksAPIs,
 ):
     def __init__(

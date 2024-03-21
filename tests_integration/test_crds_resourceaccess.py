@@ -8,7 +8,7 @@ from tests_integration.utils import kubectl_create, kubectl_delete
 @pytest.fixture()
 def unique_access_name(sequential_number, ci_run_number):
     unique_name = f"acc-{ci_run_number}-{sequential_number}"
-    yield f"acc-{ci_run_number}-{sequential_number}"
+    yield unique_name
     kubectl_delete(f"tacc/{unique_name}")
 
 

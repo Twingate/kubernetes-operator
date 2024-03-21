@@ -15,16 +15,16 @@ def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) 
     if principal_id := access_crd.principal_id:
         return principal_id
 
-    if pref := access_crd.principal_external_ref:
-        if pref.type == "group":
-            principal_id = client.get_group_id(pref.match_name)
-        elif pref.type == "serviceaccount":
-            principal_id = client.get_service_account_id(pref.match_name)
+    if ref := access_crd.principal_external_ref:
+        if ref.type == "group":
+            principal_id = client.get_group_id(ref.match_name)
+        elif ref.type == "serviceaccount":
+            principal_id = client.get_service_account_id(ref.match_name)
         else:
-            raise ValueError(f"Unknown principal type: {pref.type}")
+            raise ValueError(f"Unknown principal type: {ref.type}")
 
         if not principal_id:
-            raise ValueError(f"Principal {pref.type} {pref.match_name} not found.")
+            raise ValueError(f"Principal {ref.type} {ref.match_name} not found.")
 
         return principal_id
 

@@ -3,7 +3,7 @@ module twingate-helm-charts
 go 1.22
 
 require (
-	github.com/gruntwork-io/terratest v0.46.12
+	github.com/gruntwork-io/terratest v0.46.13
 	gopkg.in/yaml.v2 v2.4.0
 )
 

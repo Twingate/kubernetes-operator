@@ -21,7 +21,7 @@ QUERY_GET_GROUP_ID_BY_NAME = gql(
 )
 
 
-class TwingateGroupsAPIs:
+class TwingateGroupAPIs:
     def get_group_id(self: TwingateClientProtocol, group_name: str) -> str | None:
         try:
             result = self.execute_gql(

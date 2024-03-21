@@ -9,7 +9,7 @@ from graphql import DocumentNode
 from requests.adapters import HTTPAdapter, Retry
 
 from app.api.client_connectors import TwingateConnectorAPI
-from app.api.client_groups import TwingateGroupsAPIs
+from app.api.client_groups import TwingateGroupAPIs
 from app.api.client_remote_networks import TwingateRemoteNetworksAPIs
 from app.api.client_resources import TwingateResourceAPIs
 from app.api.client_resources_access import TwingateResourceAccessAPIs
@@ -69,7 +69,7 @@ class TwingateRequestsHTTPTransport(RequestsHTTPTransport):
 
 class TwingateAPIClient(
     TwingateConnectorAPI,
-    TwingateGroupsAPIs,
+    TwingateGroupAPIs,
     TwingateResourceAPIs,
     TwingateResourceAccessAPIs,
     TwingateServiceAccountAPIs,

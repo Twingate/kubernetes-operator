@@ -35,7 +35,7 @@ class TestGetPrincipalId:
         access_crd.principal_id = None
         access_crd.principal_external_ref = None
         with pytest.raises(
-            ValueError, match="missing principal_id or principal_external_ref"
+            ValueError, match="Missing principal_id or principal_external_ref"
         ):
             get_principal_id(access_crd, MagicMock())
 

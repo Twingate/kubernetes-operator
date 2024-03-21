@@ -7,7 +7,7 @@ from app.api.protocol import TwingateClientProtocol
 
 QUERY_GET_SA_ID_BY_NAME = gql(
     """
-    query GetGroupByName($name: String!) {
+    query GetServiceAccountByName($name: String!) {
       serviceAccounts(filter: {name: {eq: $name}}) {
         edges {
           node {

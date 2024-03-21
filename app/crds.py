@@ -176,7 +176,7 @@ class ResourceAccessSpec(BaseModel):
         if self.principal_id or self.principal_external_ref:
             return self
 
-        raise ValueError("missing principal_id or principal_external_ref")
+        raise ValueError("Missing principal_id or principal_external_ref")
 
     @property
     def resource_ref_fullname(self) -> str:

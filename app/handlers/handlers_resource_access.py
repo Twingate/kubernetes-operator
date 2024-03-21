@@ -28,7 +28,7 @@ def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) 
 
         return principal_id
 
-    raise ValueError("missing principal_id or principal_external_ref")
+    raise ValueError("Missing principal_id or principal_external_ref")
 
 
 @kopf.on.create("twingateresourceaccess")

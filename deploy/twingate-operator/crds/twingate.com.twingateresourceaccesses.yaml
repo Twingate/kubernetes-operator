@@ -40,7 +40,7 @@ spec:
                       description: "Type of the external reference."
                       enum:
                         - group
-                        - serviceaccount
+                        - serviceAccount
                       x-kubernetes-validations:
                         - rule: self == oldSelf
                           message: "principalExternalRef.type is immutable"

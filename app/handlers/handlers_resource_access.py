@@ -5,7 +5,7 @@ from typing import Any
 import kopf
 
 from app.api.client import GraphQLMutationError, TwingateAPIClient
-from app.crds import ResourceAccessSpec
+from app.crds import PrincipalTypeEnum, ResourceAccessSpec
 from app.handlers.base import fail, success
 
 K8sObject = MutableMapping[Any, Any]
@@ -16,9 +16,9 @@ def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) 
         return principal_id
 
     if ref := access_crd.principal_external_ref:
-        if ref.type == "group":
+        if ref.type == PrincipalTypeEnum.Group:
             principal_id = client.get_group_id(ref.match_name)
-        elif ref.type == "serviceaccount":
+        elif ref.type == PrincipalTypeEnum.ServiceAccount:
             principal_id = client.get_service_account_id(ref.match_name)
         else:
             raise ValueError(f"Unknown principal type: {ref.type}")

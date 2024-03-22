@@ -148,7 +148,7 @@ class TwingateResourceCRD(BaseK8sModel):
 
 class PrincipalTypeEnum(str, Enum):
     Group = "group"
-    ServiceAccount = "serviceaccount"
+    ServiceAccount = "serviceAccount"
 
 
 class _ResourceRef(BaseModel):

@@ -124,3 +124,29 @@ def test_with_principalExternalRef_fails_for_missing_type_or_matchName():
 
     stderr = ex.value.stderr.decode()
     assert "spec.principalExternalRef.type" in stderr
+
+
+def test_both_principalId_and_principalExternalRef_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              principalExternalRef:
+                matchName: foo
+                type: group
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        "must validate one and only one schema (oneOf). Found 2 valid alternatives"
+        in stderr
+    )

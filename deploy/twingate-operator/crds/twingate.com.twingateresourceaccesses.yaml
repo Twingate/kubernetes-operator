@@ -47,7 +47,7 @@ spec:
                     name:
                       type: string
                       nullable: False
-                      description: "Name of the external reference to match."
+                      description: "Name of the external reference to match. (Note: name uniqueness is not enforce, if 2 entities match the same name, the first will be used)"
                       x-kubernetes-validations:
                         - rule: self == oldSelf
                           message: "principalExternalRef.name is immutable"

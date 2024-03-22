@@ -206,13 +206,13 @@ def test_deserialization_with_principal_external_ref():
             "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
         },
         "spec": {
-            "principalExternalRef": {"type": "group", "matchName": "My Group"},
+            "principalExternalRef": {"type": "group", "name": "My Group"},
             "resourceRef": {"name": "foo", "namespace": "default"},
         },
     }
     crd = TwingateResourceAccessCRD(**data)
     assert crd.spec.principal_external_ref.type == "group"
-    assert crd.spec.principal_external_ref.match_name == "My Group"
+    assert crd.spec.principal_external_ref.name == "My Group"
     assert crd.spec.resource_ref.name == "foo"
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"

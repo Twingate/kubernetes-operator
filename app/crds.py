@@ -160,7 +160,7 @@ class _PrincipalExternalRef(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
     type: PrincipalTypeEnum
-    match_name: str
+    name: str
 
 
 class ResourceAccessSpec(BaseModel):

@@ -33,7 +33,7 @@ spec:
                 principalExternalRef:
                   type: object
                   nullable: False
-                  required: ["type", "matchName"]
+                  required: ["type", "name"]
                   properties:
                     type:
                       type: string
@@ -44,13 +44,13 @@ spec:
                       x-kubernetes-validations:
                         - rule: self == oldSelf
                           message: "principalExternalRef.type is immutable"
-                    matchName:
+                    name:
                       type: string
                       nullable: False
                       description: "Name of the external reference to match."
                       x-kubernetes-validations:
                         - rule: self == oldSelf
-                          message: "principalExternalRef.matchName is immutable"
+                          message: "principalExternalRef.name is immutable"
                 securityPolicyId:
                   type: string
                   nullable: True

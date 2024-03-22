@@ -76,7 +76,7 @@ def test_with_principalExternalRef(unique_access_name):
         spec:
           principalExternalRef:
             type: group
-            matchName: my-group
+            name: my-group
           resourceRef:
             name: my-twingate-resource
             namespace: default
@@ -86,7 +86,7 @@ def test_with_principalExternalRef(unique_access_name):
     assert result.returncode == 0
 
 
-def test_with_principalExternalRef_fails_for_missing_type_or_matchName():
+def test_with_principalExternalRef_fails_for_missing_type_or_nameame():
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
             """
@@ -104,7 +104,7 @@ def test_with_principalExternalRef_fails_for_missing_type_or_matchName():
         )
 
     stderr = ex.value.stderr.decode()
-    assert "spec.principalExternalRef.matchName" in stderr
+    assert "spec.principalExternalRef.name" in stderr
 
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
@@ -115,7 +115,7 @@ def test_with_principalExternalRef_fails_for_missing_type_or_matchName():
               name: fail
             spec:
               principalExternalRef:
-                matchName: my-group
+                name: my-group
               resourceRef:
                 name: my-twingate-resource
                 namespace: default
@@ -137,7 +137,7 @@ def test_both_principalId_and_principalExternalRef_fails():
             spec:
               principalId: R3JvdXA6MTE1NzI2MA==
               principalExternalRef:
-                matchName: foo
+                name: foo
                 type: group
               resourceRef:
                 name: my-twingate-resource

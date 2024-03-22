@@ -198,7 +198,7 @@ ACCESS_OBJECTS = {
           resourceRef:
             name: {resource_name}
           principalExternalRef:
-            type: serviceaccount
+            type: serviceAccount
             name: "{principal_name}"
     """,
 }

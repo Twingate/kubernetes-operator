@@ -187,7 +187,7 @@ ACCESS_OBJECTS = {
             name: {resource_name}
           principalExternalRef:
             type: group
-            matchName: "{principal_name}"
+            name: "{principal_name}"
     """,
     "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA": """
         apiVersion: twingate.com/v1beta
@@ -199,7 +199,7 @@ ACCESS_OBJECTS = {
             name: {resource_name}
           principalExternalRef:
             type: serviceaccount
-            matchName: "{principal_name}"
+            name: "{principal_name}"
     """,
 }
 

@@ -56,6 +56,9 @@ spec:
                     type: object
                     description: "ImagePolicy defines the image to use for the Connector and a schedule to keep it up to date."
                     required: ["provider"]
+                    x-kubernetes-validations:
+                      - rule: self.provider != "google" || (self.provider == "google" && !has(self.repository))
+                        message: "Google provider requires specifying repository."
                     properties:
                       provider:
                         type: string

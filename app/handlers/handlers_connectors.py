@@ -74,8 +74,7 @@ def get_connector_pod(
         ],
         **spec.pod_extra,
     }
-    pod_annotations = spec.pod_annotations.copy()
-    pod_annotations.update({ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE})
+    pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}
 
     pod_meta = V1ObjectMeta(annotations=pod_annotations)
 

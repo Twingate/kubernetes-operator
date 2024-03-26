@@ -20,10 +20,11 @@ def sample_connector_object_image():
             "name": "My K8S Connector",
             "image": {"repository": "twingate/connector", "tag": "1.60.0"},
             "containerExtra": {
+                "env": [{"name": "MY_ENV_VAR", "value": "my_value"}],
                 "resources": {
                     "requests": {"cpu": "100m", "memory": "128Mi"},
                     "limits": {"cpu": "100m", "memory": "128Mi"},
-                }
+                },
             },
         },
     }
@@ -47,10 +48,11 @@ def sample_connector_object_imagepolicy():
                 "version": "0.1.x",
             },
             "containerExtra": {
+                "env": [{"name": "MY_ENV_VAR", "value": "my_value"}],
                 "resources": {
                     "requests": {"cpu": "100m", "memory": "128Mi"},
                     "limits": {"cpu": "100m", "memory": "128Mi"},
-                }
+                },
             },
         },
     }

@@ -36,6 +36,9 @@ def get_connector_pod(
             },
         ]
 
+    container_extra = spec.container_extra
+    extra_env = container_extra.pop("env", [])
+
     # fmt: off
     pod_spec = {
         "containers": [
@@ -45,7 +48,7 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": tenant_url},
                     {"name": "TWINGATE_LOG_LEVEL", "value": str(spec.log_level)},
-                ]+env_labels_version_policy,
+                ] + env_labels_version_policy + extra_env,
                 "envFrom": [
                     {
                         "secretRef": {
@@ -65,7 +68,7 @@ def get_connector_pod(
                     "runAsNonRoot": True,
                     "runAsUser": 65532,
                },
-                **spec.container_extra,
+                **container_extra,
             }
         ],
         **spec.pod_extra,

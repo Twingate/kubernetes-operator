@@ -90,6 +90,24 @@ def test_connector_flows(run_kopf, ci_run_number):
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
+        # Check TwingateConnector update updates the pod
+        kubectl_patch(
+            f"tc/{connector_name}",
+            {
+                "spec": {
+                    "containerExtra": {"env": [{"name": "FOO", "value": "bar"}]},
+                    "podExtra": {"restartPolicy": "OnFailure"},
+                }
+            },
+        )
+        time.sleep(10)
+        pod = kubectl_get("pod", connector_name)
+
+        assert pod["status"]["phase"] == "Running"
+        assert pod["spec"]["restartPolicy"] == "OnFailure"
+        assert pod["spec"]["containers"][0]["env"][-1]["name"] == "FOO"
+        assert pod["spec"]["containers"][0]["env"][-1]["value"] == "bar"
+
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(10)
 

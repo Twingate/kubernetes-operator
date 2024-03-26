@@ -2,6 +2,21 @@
 
 
 
+## v0.6.3 (2024-03-25)
+
+### Chore
+
+* chore: Upgrade Go to 1.22.0 and setup dependabot (#205) ([`6f53ebf`](https://github.com/Twingate/kubernetes-operator/commit/6f53ebf45a52a76b6fb35b8d190a51bf827e6c2d))
+
+* chore: Temporary disable poetry package-mode until dependabot upgrades ([`7b4c207`](https://github.com/Twingate/kubernetes-operator/commit/7b4c20730574983b2e08fddc71a0ca6105e3bb9c))
+
+* chore: Integration test for old pod migration (#190) ([`2dff2b3`](https://github.com/Twingate/kubernetes-operator/commit/2dff2b36c960bddaa3e448a94ed68415a8ef4cb9))
+
+### Fix
+
+* fix: Allow env to be defined in containerExtra (#222) ([`14f5ef5`](https://github.com/Twingate/kubernetes-operator/commit/14f5ef5fd14cfee09cd4669ac8b20cb250ee550d))
+
+
 ## v0.6.2 (2024-03-11)
 
 ### Fix
@@ -9,7 +24,7 @@
 * fix: Resource restricted policy should allow empty ports (#193) ([`e9aec7d`](https://github.com/Twingate/kubernetes-operator/commit/e9aec7d9ee7be6944d4c69b8d9d73107d3a38df5))
 
 
-## v0.6.1 (2024-03-08)
+## v0.6.1 (2024-03-07)
 
 ### Chore
 
@@ -20,7 +35,7 @@
 * fix: Fix k8s_force_delete_pod finalizers removal (#189) ([`5b2a8f3`](https://github.com/Twingate/kubernetes-operator/commit/5b2a8f396a7abbacf958c37406b2c4dd6dc6bd6a))
 
 
-## v0.6.0 (2024-03-07)
+## v0.6.0 (2024-03-06)
 
 ### Chore
 
@@ -37,7 +52,7 @@
 * fix: Connector pod updates &#34;Forbidden&#34; error (#184) ([`8096e62`](https://github.com/Twingate/kubernetes-operator/commit/8096e62c89d238035653f9e57ded8ece028505f6))
 
 
-## v0.5.0 (2024-03-02)
+## v0.5.0 (2024-03-01)
 
 ### Chore
 
@@ -72,7 +87,7 @@
 * Upgrade local tooling for 3.11.8 ([`4cdaec0`](https://github.com/Twingate/kubernetes-operator/commit/4cdaec0658de1c7da7a6f490fed34a2bc3fd9156))
 
 
-## v0.4.0 (2024-02-16)
+## v0.4.0 (2024-02-15)
 
 ### Chore
 
@@ -95,7 +110,7 @@
 * fix: Added `twingate_connector_image_update` to handle `image` updates (#131) ([`25f2753`](https://github.com/Twingate/kubernetes-operator/commit/25f27537eb292b632163978a16c23b3053b0e637))
 
 
-## v0.3.0 (2024-01-31)
+## v0.3.0 (2024-01-30)
 
 ### Build
 
@@ -108,7 +123,7 @@
 * feat: Add seccompProfile by default (#104) ([`e3ef8d6`](https://github.com/Twingate/kubernetes-operator/commit/e3ef8d6ad9350ccdf95dcf3eb022ed73e845c530))
 
 
-## v0.2.0 (2024-01-19)
+## v0.2.0 (2024-01-18)
 
 ### Build
 
@@ -193,7 +208,7 @@ Co-authored-by: Eran Kampf &lt;205185+ekampf@users.noreply.github.com&gt; ([`b9a
 Co-authored-by: Eran Kampf &lt;eran@ekampf.com&gt; ([`8aa5621`](https://github.com/Twingate/kubernetes-operator/commit/8aa5621aa02f1efc0fef1dc49fb1624b3309ee4f))
 
 
-## v0.1.1 (2023-10-31)
+## v0.1.1 (2023-10-30)
 
 ### Fix
 
@@ -202,7 +217,7 @@ Co-authored-by: Eran Kampf &lt;eran@ekampf.com&gt; ([`8aa5621`](https://github.c
 Co-authored-by: semantic-release &lt;semantic-release&gt; ([`86b6557`](https://github.com/Twingate/kubernetes-operator/commit/86b6557107ea927ec0244ba91ccacb680aab9751))
 
 
-## v0.1.0 (2023-10-31)
+## v0.1.0 (2023-10-30)
 
 ### Build
 
@@ -231,7 +246,7 @@ Co-authored-by: semantic-release &lt;semantic-release&gt; ([`86b6557`](https://g
 * fix: Dev release tags (#13) ([`28ad640`](https://github.com/Twingate/kubernetes-operator/commit/28ad6407a388c35b2cc521f1a43497f9a244fb9c))
 
 
-## v0.0.1 (2023-10-21)
+## v0.0.1 (2023-10-20)
 
 ### Unknown
 

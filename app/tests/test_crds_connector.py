@@ -20,10 +20,11 @@ def sample_connector_object_image():
             "name": "My K8S Connector",
             "image": {"repository": "twingate/connector", "tag": "1.60.0"},
             "containerExtra": {
+                "env": [{"name": "MY_ENV_VAR", "value": "my_value"}],
                 "resources": {
                     "requests": {"cpu": "100m", "memory": "128Mi"},
                     "limits": {"cpu": "100m", "memory": "128Mi"},
-                }
+                },
             },
         },
     }
@@ -47,10 +48,11 @@ def sample_connector_object_imagepolicy():
                 "version": "0.1.x",
             },
             "containerExtra": {
+                "env": [{"name": "MY_ENV_VAR", "value": "my_value"}],
                 "resources": {
                     "requests": {"cpu": "100m", "memory": "128Mi"},
                     "limits": {"cpu": "100m", "memory": "128Mi"},
-                }
+                },
             },
         },
     }
@@ -63,10 +65,11 @@ def test_deserialization_image(sample_connector_object_image):
     assert crd.spec.image.repository == "twingate/connector"
     assert crd.spec.image.tag == "1.60.0"
     assert crd.spec.container_extra == {
+        "env": [{"name": "MY_ENV_VAR", "value": "my_value"}],
         "resources": {
             "limits": {"cpu": "100m", "memory": "128Mi"},
             "requests": {"cpu": "100m", "memory": "128Mi"},
-        }
+        },
     }
 
 
@@ -78,10 +81,11 @@ def test_deserialization_imagepolicy(sample_connector_object_imagepolicy):
     assert crd.spec.image_policy.schedule == "0 2 * * *"
     assert crd.spec.image_policy.version == "0.1.x"
     assert crd.spec.container_extra == {
+        "env": [{"name": "MY_ENV_VAR", "value": "my_value"}],
         "resources": {
             "limits": {"cpu": "100m", "memory": "128Mi"},
             "requests": {"cpu": "100m", "memory": "128Mi"},
-        }
+        },
     }
 
 

@@ -16,6 +16,8 @@ spec:
         cpu: 500m
         memory: 128Mi
   podExtra: {}
+  podAnnotations:
+    some/annotation: "some-value"
 ---
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
@@ -39,3 +41,5 @@ spec:
         cpu: 500m
         memory: 128Mi
   podExtra: {}
+  podAnnotations:
+    some/annotation: "some-value"

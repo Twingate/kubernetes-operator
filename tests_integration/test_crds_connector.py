@@ -256,3 +256,23 @@ class TestConnectorCRD:
                         version: "^1.0.0"
                 """
             )
+
+    def test_google_provider_requires_repository(self, unique_connector_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                spec:
+                    name: {unique_connector_name}
+                    logLevel: 3
+                    imagePolicy:
+                        provider: "google"
+                        version: "^1.0.0"
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "Google provider requires specifying repository." in stderr

@@ -5,10 +5,30 @@ from typing import Any
 import kopf
 
 from app.api.client import GraphQLMutationError, TwingateAPIClient
-from app.crds import ResourceAccessSpec
+from app.crds import PrincipalTypeEnum, ResourceAccessSpec
 from app.handlers.base import fail, success
 
 K8sObject = MutableMapping[Any, Any]
+
+
+def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) -> str:
+    if principal_id := access_crd.principal_id:
+        return principal_id
+
+    if ref := access_crd.principal_external_ref:
+        if ref.type == PrincipalTypeEnum.Group:
+            principal_id = client.get_group_id(ref.name)
+        elif ref.type == PrincipalTypeEnum.ServiceAccount:
+            principal_id = client.get_service_account_id(ref.name)
+        else:
+            raise ValueError(f"Unknown principal type: {ref.type}")
+
+        if not principal_id:
+            raise ValueError(f"Principal {ref.type} {ref.name} not found.")
+
+        return principal_id
+
+    raise ValueError("Missing principal_id or principal_external_ref")
 
 
 @kopf.on.create("twingateresourceaccess")
@@ -21,19 +41,21 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         kopf.warn(body, reason="ResourceNotFound", message=err)
         return {"success": False, "error": err}
 
-    spec = resource_crd.spec
-    if not spec.id:
+    if not resource_crd.spec.id:
         raise kopf.TemporaryError("Resource not yet created, retrying...", delay=15)
 
+    resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings)
+        principal_id = get_principal_id(access_crd, client)
         client.resource_access_add(
-            spec.id, access_crd.principal_id, access_crd.security_policy_id
+            resource_id, principal_id, access_crd.security_policy_id
         )
+
         kopf.info(
             body,
             reason="Success",
-            message=f"Added access to {spec.id}<>{access_crd.principal_id}",
+            message=f"Added access to {resource_crd.spec.id}<>{principal_id}",
         )
         patch.metadata["ownerReferences"] = [
             resource_crd.metadata.owner_reference_object
@@ -65,9 +87,10 @@ def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
     if resource_crd := access_crd.get_resource():
         try:
             client = TwingateAPIClient(memo.twingate_settings)
+            principal_id = get_principal_id(access_crd, client)
             client.resource_access_add(
                 resource_crd.spec.id,
-                access_crd.principal_id,
+                principal_id,
                 access_crd.security_policy_id,
             )
             return success()
@@ -84,7 +107,8 @@ def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     resource_crd = access_crd.get_resource()
     if resource_id := resource_crd and resource_crd.spec.id:
         client = TwingateAPIClient(memo.twingate_settings)
-        client.resource_access_remove(resource_id, access_crd.principal_id)
+        principal_id = get_principal_id(access_crd, client)
+        client.resource_access_remove(resource_id, principal_id)
 
 
 @kopf.timer(
@@ -107,8 +131,9 @@ def twingate_resource_access_sync(body, spec, status, memo, logger, **kwargs):
 
     try:
         client = TwingateAPIClient(memo.twingate_settings)
+        principal_id = get_principal_id(access_crd, client)
         client.resource_access_add(
-            resource_crd.spec.id, access_crd.principal_id, access_crd.security_policy_id
+            resource_crd.spec.id, principal_id, access_crd.security_policy_id
         )
         return success()
     except GraphQLMutationError as mex:

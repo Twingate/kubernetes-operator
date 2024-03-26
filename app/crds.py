@@ -146,17 +146,37 @@ class TwingateResourceCRD(BaseK8sModel):
 # region TwingateResourceAccessCRD
 
 
+class PrincipalTypeEnum(str, Enum):
+    Group = "group"
+    ServiceAccount = "serviceAccount"
+
+
 class _ResourceRef(BaseModel):
     name: str
     namespace: str = Field(default="default")
 
 
-class ResourceAccessSpec(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+class _PrincipalExternalRef(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
-    resource_ref: _ResourceRef = Field(alias="resourceRef")
-    principal_id: str = Field(alias="principalId")
-    security_policy_id: str | None = Field(alias="securityPolicyId", default=None)
+    type: PrincipalTypeEnum
+    name: str
+
+
+class ResourceAccessSpec(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
+
+    resource_ref: _ResourceRef
+    principal_id: str | None = None
+    principal_external_ref: _PrincipalExternalRef | None = None
+    security_policy_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_princiapl_id_or_principal_external_ref(self):
+        if self.principal_id or self.principal_external_ref:
+            return self
+
+        raise ValueError("Missing principal_id or principal_external_ref")
 
     @property
     def resource_ref_fullname(self) -> str:

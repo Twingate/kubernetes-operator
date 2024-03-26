@@ -9,9 +9,11 @@ from graphql import DocumentNode
 from requests.adapters import HTTPAdapter, Retry
 
 from app.api.client_connectors import TwingateConnectorAPI
+from app.api.client_groups import TwingateGroupAPIs
 from app.api.client_remote_networks import TwingateRemoteNetworksAPIs
 from app.api.client_resources import TwingateResourceAPIs
 from app.api.client_resources_access import TwingateResourceAccessAPIs
+from app.api.client_service_accounts import TwingateServiceAccountAPIs
 from app.api.exceptions import GraphQLMutationError
 from app.settings import TwingateOperatorSettings, get_version
 
@@ -66,9 +68,11 @@ class TwingateRequestsHTTPTransport(RequestsHTTPTransport):
 
 
 class TwingateAPIClient(
+    TwingateConnectorAPI,
+    TwingateGroupAPIs,
     TwingateResourceAPIs,
     TwingateResourceAccessAPIs,
-    TwingateConnectorAPI,
+    TwingateServiceAccountAPIs,
     TwingateRemoteNetworksAPIs,
 ):
     def __init__(

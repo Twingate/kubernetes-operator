@@ -90,7 +90,7 @@ def test_connector_flows(run_kopf, ci_run_number):
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
         assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
-        # Check TwingateConnector update updates the pod
+        # Check patching TwingateConnector updates the pod
         kubectl_patch(
             f"tc/{connector_name}",
             {

@@ -74,8 +74,9 @@ def get_connector_pod(
         ],
         **spec.pod_extra,
     }
+    pod_annotations = spec.pod_annotations.copy().update({ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE})
 
-    pod_meta = V1ObjectMeta(annotations={ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE})
+    pod_meta = V1ObjectMeta(annotations=pod_annotations)
 
     # fmt: on
     return kubernetes.client.V1Pod(spec=pod_spec, metadata=pod_meta)

@@ -97,6 +97,7 @@ def test_connector_flows(run_kopf, ci_run_number):
                 "spec": {
                     "containerExtra": {"env": [{"name": "FOO", "value": "bar"}]},
                     "podExtra": {"restartPolicy": "OnFailure"},
+                    "podAnnotations": {"some/annotation": "some-value"},
                 }
             },
         )
@@ -107,6 +108,7 @@ def test_connector_flows(run_kopf, ci_run_number):
         assert pod["spec"]["restartPolicy"] == "OnFailure"
         assert pod["spec"]["containers"][0]["env"][-1]["name"] == "FOO"
         assert pod["spec"]["containers"][0]["env"][-1]["value"] == "bar"
+        assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"
 
         kubectl_delete(f"tc/{connector_name}")
         time.sleep(10)

@@ -38,6 +38,7 @@ def get_connector_pod(
 
     container_extra = spec.container_extra
     extra_env = container_extra.pop("env", [])
+    extra_env_from = container_extra.pop("envFrom", [])
 
     # fmt: off
     pod_spec = {
@@ -56,7 +57,7 @@ def get_connector_pod(
                             "optional": False
                         }
                     }
-                ],
+                ] + extra_env_from,
                 "image": image,
                 "imagePullPolicy": "Always",
                 "name": "connector",

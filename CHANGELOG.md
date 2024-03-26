@@ -2,6 +2,21 @@
 
 
 
+## v0.7.0 (2024-03-26)
+
+### Feature
+
+* feat: TwingateConnector - allow defining extra pod annotations with `podAnnotations` (#225) ([`7b44838`](https://github.com/Twingate/kubernetes-operator/commit/7b44838f8ade8cfcabe79669d32e83a0c31ab9ca))
+
+* feat: twingateresourceaccess - allow specifying principal by name (#62) ([`0b1e69b`](https://github.com/Twingate/kubernetes-operator/commit/0b1e69b14fb2006ff0e30af5d23567b5e718d4f9))
+
+* feat: Make TwingateConnector&#39;s containerExtra and podExtra mutable (#223) ([`e7d8425`](https://github.com/Twingate/kubernetes-operator/commit/e7d84255a64bfd77e5a9f7749471a03cebaeccf6))
+
+### Fix
+
+* fix: Add validation for TwingateConnector when provider is “google” (#224) ([`68e188e`](https://github.com/Twingate/kubernetes-operator/commit/68e188ed769822640160a92148a05b0dfbdd41b6))
+
+
 ## v0.6.3 (2024-03-25)
 
 ### Chore

@@ -127,7 +127,25 @@ select = [
     "PT", # flake8-pytest-style
     "PIE", # flake8-pie
     "RSE", # flake8-raise
+    "YTT", # flake8-2020
+    "BLE", # flake8-blind-except
+    "FBT", # flake8-boolean-trap
+    "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    "ISC", # flake8-implicit-str-concat,
+    "ICN", # flake8-import-conventions
+    "LOG", # flake8-logging
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SLF", # flake8-self
+    "SLOT", # flake8-slots
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "ERA", # eradicate
+    "FLY", # flynt
+    "RUF", # Ruff-specific rules
 ]
+
 ignore = [
     "E501", # line-too-long
 

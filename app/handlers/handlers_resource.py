@@ -86,3 +86,5 @@ def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
                 created_at=resource.created_at.isoformat(),
                 updated_at=resource.updated_at.isoformat(),
             )
+
+    return None

@@ -136,6 +136,7 @@ select = [
     "ICN", # flake8-import-conventions
     "LOG", # flake8-logging
     "RSE", # flake8-raise
+    "RET", # flake8-return
 ]
 ignore = [
     "E501", # line-too-long

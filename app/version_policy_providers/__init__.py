@@ -8,7 +8,8 @@ def get_provider(
 ) -> VersionPolicyProvider:
     if provider_name == "dockerhub":
         return DockerhubVersionPolicyProvider(repository)
-    elif provider_name == "google":
+
+    if provider_name == "google":
         return GoogleVersionPolicyProvider(repository)
 
     raise ValueError(f"Invalid provider_name: {provider_name}")

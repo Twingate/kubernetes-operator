@@ -306,6 +306,7 @@ class ConnectorSpec(BaseModel):
     container_extra: dict[str, Any] = {}
     pod_extra: dict[str, Any] = {}
     pod_annotations: dict[str, Any] = {}
+    sidecar_containers: list[dict[str, Any]] = []
 
     remote_network_id: str = Field(
         default_factory=lambda: get_settings().remote_network_id

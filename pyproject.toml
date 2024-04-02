@@ -140,7 +140,10 @@ select = [
     "SLF", # flake8-self
     "SLOT", # flake8-slots
     "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "ERA", # eradicate
 ]
+
 ignore = [
     "E501", # line-too-long
 

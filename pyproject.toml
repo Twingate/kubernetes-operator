@@ -142,6 +142,8 @@ select = [
     "SIM", # flake8-simplify
     "TID", # flake8-tidy-imports
     "ERA", # eradicate
+    "FLY", # flynt
+    "RUF", # Ruff-specific rules
 ]
 
 ignore = [

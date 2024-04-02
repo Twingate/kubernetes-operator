@@ -1,4 +1,3 @@
-# noqa: F403,F403
 from base64 import b64encode
 
 import pytest

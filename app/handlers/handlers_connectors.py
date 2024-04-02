@@ -49,15 +49,10 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": tenant_url},
                     {"name": "TWINGATE_LOG_LEVEL", "value": str(spec.log_level)},
-                ] + env_labels_version_policy + extra_env,
-                "envFrom": [
-                    {
-                        "secretRef": {
-                            "name": name,
-                            "optional": False
-                        }
-                    }
-                ] + extra_env_from,
+                    *env_labels_version_policy,
+                    *extra_env
+                ],
+                "envFrom": [{"secretRef": {"name": name, "optional": False}}, *extra_env_from],
                 "image": image,
                 "imagePullPolicy": "Always",
                 "name": "connector",

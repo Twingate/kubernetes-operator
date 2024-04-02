@@ -65,7 +65,8 @@ def get_connector_pod(
                     "runAsUser": 65532,
                },
                 **container_extra,
-            }
+            },
+            *spec.sidecar_containers,
         ],
         **spec.pod_extra,
     }

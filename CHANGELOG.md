@@ -2,6 +2,17 @@
 
 
 
+## v0.8.0 (2024-04-03)
+
+### Chore
+
+* chore: Add more Ruff linters (#233) ([`7f918be`](https://github.com/Twingate/kubernetes-operator/commit/7f918be0983adad30747bad5c53a561dbf6b25fe))
+
+### Feature
+
+* feat: Add TwingateConnector sidecarContainers prop (#234) ([`835da7c`](https://github.com/Twingate/kubernetes-operator/commit/835da7cc3848c8040096d41938f5d36926ad1618))
+
+
 ## v0.7.0 (2024-03-26)
 
 ### Feature

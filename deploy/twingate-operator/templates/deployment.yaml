@@ -47,7 +47,7 @@ spec:
           - ./main.py
           - "-A"
           - "--standalone"
-          - "--verbose"
+          - "--{{- .Values.twingateOperator.logVerbosity | default "verbose" -}}"
           - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format={{ $logFormat }}"
         env:

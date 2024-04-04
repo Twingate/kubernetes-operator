@@ -111,6 +111,15 @@
                         "plain",
                         "full"
                     ]
+                },
+                "logVerbosity": {
+                    "type": "string",
+                    "default": "full",
+                    "enum": [
+                        "quiet",
+                        "verbose",
+                        "debug"
+                    ]
                 }
             },
             "examples": [{

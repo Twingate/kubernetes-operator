@@ -114,7 +114,6 @@
                 },
                 "logVerbosity": {
                     "type": "string",
-                    "default": "full",
                     "enum": [
                         "quiet",
                         "verbose",

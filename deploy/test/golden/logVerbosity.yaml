@@ -1,0 +1,5 @@
+twingateOperator:
+  apiKey: "<api key>"
+  network: "<network slug>"
+  remoteNetworkId: "<remote network id>"
+  logVerbosity: "verbose"

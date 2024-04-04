@@ -14,6 +14,7 @@ twingateOperator: {}
 #  remoteNetworkId: "<remote network id>"
 #  remoteNetworkName: "<remote network name>"
 #  logFormat: "plain|full|json"
+#  logVerbosity: "quiet|verbose|debug"
 
 
 image:

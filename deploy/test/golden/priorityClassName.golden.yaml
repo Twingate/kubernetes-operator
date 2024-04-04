@@ -118,7 +118,6 @@ spec:
           - ./main.py
           - "-A"
           - "--standalone"
-          - "--verbose"
           - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format=full"
         env:

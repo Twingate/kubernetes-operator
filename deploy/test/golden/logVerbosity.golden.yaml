@@ -11,6 +11,20 @@ metadata:
     app.kubernetes.io/instance: test
     app.kubernetes.io/managed-by: Helm
 ---
+# Source: twingate-operator/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-twingate-operator
+  namespace: default
+  labels:
+    helm.sh/chart: twingate-operator-major.minor.patch-test
+    app.kubernetes.io/name: twingate-operator
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/managed-by: Helm
+data:
+  TWINGATE_API_KEY: PGFwaSBrZXk+
+---
 # Source: twingate-operator/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -105,12 +119,13 @@ spec:
           - "--standalone"
           - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format=full"
+          - "--verbose"
         env:
           - name: TWINGATE_API_KEY
             valueFrom:
               secretKeyRef:
-                name: my-secret
-                key: MY_TWINGATE_API_KEY
+                name: test-twingate-operator
+                key: TWINGATE_API_KEY
           - name: TWINGATE_NETWORK
             value: <network slug>
           - name: TWINGATE_HOST

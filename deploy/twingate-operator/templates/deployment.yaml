@@ -47,9 +47,11 @@ spec:
           - ./main.py
           - "-A"
           - "--standalone"
-          - "--{{- .Values.twingateOperator.logVerbosity | default "verbose" -}}"
           - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format={{ $logFormat }}"
+          {{- if .Values.twingateOperator.logVerbosity }}
+          - {{ quote .Values.twingateOperator.logVerbosity }}
+          {{- end }}
         env:
           - name: TWINGATE_API_KEY
             valueFrom:

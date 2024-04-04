@@ -78,6 +78,7 @@ class TestConnectorCRD:
             },
             "spec": {
                 "logLevel": 4,
+                "logAnalytics": True,
                 "name": unique_connector_name,
                 "hasStatusNotificationsEnabled": True,
             },
@@ -155,6 +156,7 @@ class TestConnectorCRD:
             "spec": {
                 "hasStatusNotificationsEnabled": False,
                 "logLevel": 3,
+                "logAnalytics": True,
                 "name": unique_connector_name,
             },
         }
@@ -191,6 +193,7 @@ class TestConnectorCRD:
             "spec": {
                 "image": {"repository": "twingate/connector", "tag": "latest"},
                 "logLevel": 3,
+                "logAnalytics": True,
                 "hasStatusNotificationsEnabled": True,
                 "name": unique_connector_name,
             },
@@ -235,6 +238,7 @@ class TestConnectorCRD:
                 },
                 "name": unique_connector_name,
                 "logLevel": 3,
+                "logAnalytics": True,
                 "hasStatusNotificationsEnabled": True,
             },
         }

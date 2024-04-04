@@ -23,9 +23,9 @@ def get_connector_pod(
     spec = crd.spec
     name = crd.metadata.name
 
-    env_labels_version_policy = []
+    connector_env_vars = []
     if spec.image_policy:
-        env_labels_version_policy = [
+        connector_env_vars = [
             {
                 "name": "TWINGATE_LABEL_VERSION_POLICY_SCHEDULE",
                 "value": spec.image_policy.schedule,
@@ -35,6 +35,14 @@ def get_connector_pod(
                 "value": spec.image_policy.version,
             },
         ]
+
+    if spec.log_analytics:
+        connector_env_vars.append(
+            {
+                "name": "TWINGATE_LOG_ANALYTICS",
+                "value": "v2",
+            }
+        )
 
     container_extra = spec.container_extra
     extra_env = container_extra.pop("env", [])
@@ -49,7 +57,7 @@ def get_connector_pod(
                     {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
                     {"name": "TWINGATE_URL", "value": tenant_url},
                     {"name": "TWINGATE_LOG_LEVEL", "value": str(spec.log_level)},
-                    *env_labels_version_policy,
+                    *connector_env_vars,
                     *extra_env
                 ],
                 "envFrom": [{"secretRef": {"name": name, "optional": False}}, *extra_env_from],

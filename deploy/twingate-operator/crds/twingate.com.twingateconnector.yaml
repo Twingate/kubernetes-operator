@@ -36,6 +36,10 @@ spec:
                   minimum: -1
                   maximum: 7
                   description: "Log level for the Connector (-1 to 7: -1 for no logs, 0 - least verbose, 7 - most verbose, default: 3)."
+                logAnalytics:
+                  type: boolean
+                  default: true
+                  description: "Enabling real-time connection logs."
                 hasStatusNotificationsEnabled:
                   type: boolean
                   default: true

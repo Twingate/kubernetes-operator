@@ -2,4 +2,4 @@ apiVersion: v2
 name: twingate-operator
 description: A Helm chart for installing twingate-operator
 type: application
-version: 0.1.6
+version: 0.1.7

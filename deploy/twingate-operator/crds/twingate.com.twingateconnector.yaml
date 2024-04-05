@@ -39,7 +39,7 @@ spec:
                 logAnalytics:
                   type: boolean
                   default: true
-                  description: "Enabling real-time connection logs."
+                  description: "Enable real-time connection logs."
                 hasStatusNotificationsEnabled:
                   type: boolean
                   default: true

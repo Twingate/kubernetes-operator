@@ -36,7 +36,7 @@ def get_connector_pod(
             },
         ]
 
-    if spec.log_realtime_connections:
+    if spec.log_analytics:
         connector_env_vars.append(
             {
                 "name": "TWINGATE_LOG_ANALYTICS",

@@ -300,7 +300,7 @@ class ConnectorSpec(BaseModel):
     id: str | None = None
     name: str | None = None
     log_level: int = 3
-    log_realtime_connections: bool = True
+    log_analytics: bool = True
     has_status_notifications_enabled: bool = True
     image: ConnectorImage | None = None
     image_policy: ConnectorImagePolicy | None = None

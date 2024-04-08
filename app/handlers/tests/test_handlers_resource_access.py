@@ -9,8 +9,6 @@ from app.handlers.handlers_resource_access import (
     get_principal_id,
     twingate_resource_access_create,
     twingate_resource_access_delete,
-    twingate_resource_access_sync,
-    twingate_resource_access_update,
 )
 
 
@@ -137,6 +135,7 @@ class TestResourceAccessCreateHandler:
                 memo=memo_mock,
                 logger=logger_mock,
                 patch=patch_mock,
+                status={},
             )
             assert result == {
                 "success": True,
@@ -178,6 +177,7 @@ class TestResourceAccessCreateHandler:
                     memo=memo_mock,
                     logger=logger_mock,
                     patch=patch_mock,
+                    status={},
                 )
                 assert result == {
                     "success": False,
@@ -219,6 +219,7 @@ class TestResourceAccessCreateHandler:
                 memo=memo_mock,
                 logger=logger_mock,
                 patch=patch_mock,
+                status={},
             )
 
     def test_create_graphql_error_returns_it(self, resource_factory, mock_api_client):
@@ -254,6 +255,7 @@ class TestResourceAccessCreateHandler:
                 memo=memo_mock,
                 logger=logger_mock,
                 patch=patch_mock,
+                status={},
             )
             assert result == {"success": False, "error": "some error", "ts": ANY}
 
@@ -261,121 +263,6 @@ class TestResourceAccessCreateHandler:
             "", reason="Failure", message="resourceCreate failed: some error"
         )
         assert patch_mock.metadata["ownerReferences"] == []
-
-
-class TestResourceAccessUpdateHandler:
-    def test_update_success(self, resource_factory, mock_api_client):
-        resource = resource_factory()
-        resource_spec = resource.to_spec()
-
-        resource_access_spec = {
-            "resourceRef": {"name": resource_spec.name},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-        status = {"twingate_resource_access_create": {"success": True}}
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        mock_api_client.resource_access_add.return_value = True
-
-        resource_crd_mock = MagicMock()
-        resource_crd_mock.spec = resource_spec
-        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ):
-            result = twingate_resource_access_update(
-                spec=resource_access_spec,
-                diff={},
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-            assert result == {"success": True, "ts": ANY}
-
-    def test_update_fails_on_api_error(self, resource_factory, mock_api_client):
-        resource = resource_factory()
-        resource_spec = resource.to_spec()
-
-        resource_access_spec = {
-            "resourceRef": {"name": resource_spec.name},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-        status = {"twingate_resource_access_create": {"success": True}}
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        resource_crd_mock = MagicMock()
-        resource_crd_mock.spec = resource_spec
-        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
-
-        mock_api_client.resource_access_add.side_effect = GraphQLMutationError(
-            "resourceAccessAdd", "some error"
-        )
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ):
-            result = twingate_resource_access_update(
-                spec=resource_access_spec,
-                diff={},
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-            assert result == {"success": False, "ts": ANY, "error": "some error"}
-
-    def test_update_fails_to_find_resource(self, mock_api_client):
-        resource_access_spec = {
-            "resourceRef": {"name": "doesnt-exist"},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-        status = {"twingate_resource_access_create": {"success": True}}
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        mock_api_client.resource_access_add.return_value = True
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=None,
-        ):
-            result = twingate_resource_access_update(
-                spec=resource_access_spec,
-                diff={},
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-            assert result == {
-                "success": False,
-                "error": "Resource default/doesnt-exist not found",
-                "ts": ANY,
-            }
-
-    def test_update_resource_not_yet_created_should_raise_temp_error(self):
-        new = {"principalId": "R3JvdXA6MTE1NzI2MA=="}
-        diff = {}
-        status = {}
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        with pytest.raises(kopf.TemporaryError) as excinfo:
-            twingate_resource_access_update(
-                spec=new,
-                diff=diff,
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-
-        assert excinfo.value.args[0] == "Resource not yet created, retrying..."
 
 
 class TestResourceAccessDelete:
@@ -464,215 +351,3 @@ class TestResourceAccessDelete:
             )
 
         mock_api_client.resource_access_remove.assert_not_called()
-
-
-class TestResourceAccessSync:
-    def test_sync_success(self, resource_factory, mock_api_client):
-        resource = resource_factory()
-        resource_spec = resource.to_spec()
-
-        resource_access_spec = {
-            "resourceRef": {"name": resource_spec.name},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        mock_api_client.resource_access_add.return_value = True
-
-        resource_crd_mock = MagicMock()
-        resource_crd_mock.spec = resource_spec
-        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
-
-        status = {
-            "twingate_resource_access_create": {
-                "success": True,
-                "principal_id": resource_access_spec["principalId"],
-            }
-        }
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ):
-            result = twingate_resource_access_sync(
-                body="",
-                spec=resource_access_spec,
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-
-            assert result == {
-                "success": True,
-                "ts": ANY,
-                "principal_id": resource_access_spec["principalId"],
-                "resource_id": resource.id,
-            }
-
-    def test_sync_api_fails(self, resource_factory, mock_api_client):
-        resource = resource_factory()
-        resource_spec = resource.to_spec()
-
-        resource_access_spec = {
-            "resourceRef": {"name": resource_spec.name},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        mock_api_client.resource_access_add.side_effect = GraphQLMutationError(
-            "resourceAccessAdd", "some error"
-        )
-
-        resource_crd_mock = MagicMock()
-        resource_crd_mock.spec = resource_spec
-        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
-
-        status = {
-            "twingate_resource_access_create": {
-                "success": True,
-                "principal_id": resource_access_spec["principalId"],
-            }
-        }
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ), patch("kopf.exception") as kopf_exception_mock:
-            result = twingate_resource_access_sync(
-                body="",
-                spec=resource_access_spec,
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-
-            assert result == {"success": False, "error": "some error", "ts": ANY}
-
-        kopf_exception_mock.assert_called_once_with("", reason="Failure", message=ANY)
-
-    def test_sync_resource_not_found_should_warn(
-        self, resource_factory, mock_api_client
-    ):
-        resource = resource_factory()
-        resource.to_spec()
-
-        resource_access_spec = {
-            "resourceRef": {"name": "impossible"},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        mock_api_client.get_resource.return_value = None
-
-        expected_err = "Resource default/impossible not found"
-
-        status = {
-            "twingate_resource_access_create": {
-                "success": True,
-                "principal_id": resource_access_spec["principalId"],
-            }
-        }
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=None,
-        ), patch("kopf.warn") as kopf_warn_mock:
-            result = twingate_resource_access_sync(
-                body="",
-                spec=resource_access_spec,
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-            assert result == {"success": False, "error": expected_err, "ts": ANY}
-
-        kopf_warn_mock.assert_called_once_with(
-            "", reason="ResourceNotFound", message=expected_err
-        )
-
-    def test_sync_resource_spec_missing_id_should_skip(
-        self, resource_factory, mock_api_client
-    ):
-        resource = resource_factory()
-        resource_spec = resource.to_spec(id=None)
-
-        resource_access_spec = {
-            "resourceRef": {"name": resource_spec.name},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        mock_api_client.get_resource.return_value = resource
-
-        resource_crd_mock = MagicMock()
-        resource_crd_mock.spec = resource_spec
-        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
-
-        status = {
-            "twingate_resource_access_create": {
-                "success": True,
-                "principal_id": resource_access_spec["principalId"],
-            }
-        }
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ):
-            result = twingate_resource_access_sync(
-                body="",
-                spec=resource_access_spec,
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-
-            assert result == {
-                "success": True,
-                "status": "Skipped as resource not yet created",
-                "ts": ANY,
-            }
-
-    def test_sync_skips_if_create_handler_didnt_run(self, resource_factory):
-        resource = resource_factory()
-        resource_spec = resource.to_spec()
-
-        resource_access_spec = {
-            "resourceRef": {"name": resource_spec.name},
-            "principalId": "R3JvdXA6MTE1NzI2MA==",
-        }
-
-        logger_mock = MagicMock()
-        memo_mock = MagicMock()
-
-        resource_crd_mock = MagicMock()
-        resource_crd_mock.spec = resource_spec
-        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
-
-        status = {}
-
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ):
-            result = twingate_resource_access_sync(
-                body="",
-                spec=resource_access_spec,
-                status=status,
-                memo=memo_mock,
-                logger=logger_mock,
-            )
-
-            assert result == {
-                "success": True,
-                "ts": ANY,
-                "status": "Skipped as creation didn't run yet.",
-            }

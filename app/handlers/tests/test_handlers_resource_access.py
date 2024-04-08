@@ -410,6 +410,13 @@ class TestResourceAccessSync:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
+        status = {
+            "twingate_resource_access_create": {
+                "ok": True,
+                "principal_id": resource_access_spec["principalId"],
+            }
+        }
+
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
@@ -417,7 +424,7 @@ class TestResourceAccessSync:
             result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
-                status={},
+                status=status,
                 memo=memo_mock,
                 logger=logger_mock,
             )
@@ -425,6 +432,8 @@ class TestResourceAccessSync:
             assert result == {
                 "success": True,
                 "ts": ANY,
+                "principal_id": resource_access_spec["principalId"],
+                "resource_id": resource.id,
             }
 
     def test_sync_api_fails(self, resource_factory, mock_api_client):
@@ -447,6 +456,13 @@ class TestResourceAccessSync:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
+        status = {
+            "twingate_resource_access_create": {
+                "ok": True,
+                "principal_id": resource_access_spec["principalId"],
+            }
+        }
+
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
@@ -454,7 +470,7 @@ class TestResourceAccessSync:
             result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
-                status={},
+                status=status,
                 memo=memo_mock,
                 logger=logger_mock,
             )
@@ -481,6 +497,13 @@ class TestResourceAccessSync:
 
         expected_err = "Resource default/impossible not found"
 
+        status = {
+            "twingate_resource_access_create": {
+                "ok": True,
+                "principal_id": resource_access_spec["principalId"],
+            }
+        }
+
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=None,
@@ -488,7 +511,7 @@ class TestResourceAccessSync:
             result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
-                status={},
+                status=status,
                 memo=memo_mock,
                 logger=logger_mock,
             )
@@ -518,6 +541,13 @@ class TestResourceAccessSync:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
+        status = {
+            "twingate_resource_access_create": {
+                "ok": True,
+                "principal_id": resource_access_spec["principalId"],
+            }
+        }
+
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
@@ -525,7 +555,7 @@ class TestResourceAccessSync:
             result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
-                status={},
+                status=status,
                 memo=memo_mock,
                 logger=logger_mock,
             )

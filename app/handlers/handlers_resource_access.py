@@ -51,14 +51,6 @@ def check_status_created(status: dict | None) -> dict | None:
     return None
 
 
-@kopf.on.create("twingateresourceaccess")
-@kopf.on.update("twingateresourceaccess", field="spec")
-@kopf.timer(
-    "twingateresourceaccess",
-    interval=timedelta(seconds=10).seconds,
-    initial_delay=60,
-    idle=60,
-)
 def twingate_resource_access_create(body, spec, memo, logger, patch, status, **kwargs):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
@@ -95,6 +87,16 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, status, **k
             body, reason="Failure", message=f"{mex.mutation_name} failed: {mex.error}"
         )
         return fail(error=mex.error)
+
+
+kopf.on.create("twingateresourceaccess")(twingate_resource_access_create)
+kopf.on.update("twingateresourceaccess", field="spec")(twingate_resource_access_create)
+kopf.timer(
+    "twingateresourceaccess",
+    interval=timedelta(seconds=10).seconds,
+    initial_delay=60,
+    idle=60,
+)(twingate_resource_access_create)
 
 
 @kopf.on.delete("twingateresourceaccess")

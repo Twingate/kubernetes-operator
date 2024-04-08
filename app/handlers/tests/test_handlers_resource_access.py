@@ -98,7 +98,7 @@ class TestGetPrincipalId:
 
         expected = "success"
         principal_id = get_principal_id(
-            access_crd, {"principal_id": "success"}, mock_api_client
+            access_crd, {"principal_id": expected}, mock_api_client
         )
         assert principal_id == expected
 

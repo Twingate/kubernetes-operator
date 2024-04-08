@@ -272,7 +272,7 @@ class TestResourceAccessUpdateHandler:
             "resourceRef": {"name": resource_spec.name},
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
-        status = {"twingate_resource_access_create": {"ok": True}}
+        status = {"twingate_resource_access_create": {"success": True}}
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
@@ -301,7 +301,7 @@ class TestResourceAccessUpdateHandler:
             "resourceRef": {"name": "doesnt-exist"},
             "principalId": "R3JvdXA6MTE1NzI2MA==",
         }
-        status = {"twingate_resource_access_create": {"ok": True}}
+        status = {"twingate_resource_access_create": {"success": True}}
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
@@ -412,7 +412,7 @@ class TestResourceAccessSync:
 
         status = {
             "twingate_resource_access_create": {
-                "ok": True,
+                "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }
         }
@@ -458,7 +458,7 @@ class TestResourceAccessSync:
 
         status = {
             "twingate_resource_access_create": {
-                "ok": True,
+                "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }
         }
@@ -499,7 +499,7 @@ class TestResourceAccessSync:
 
         status = {
             "twingate_resource_access_create": {
-                "ok": True,
+                "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }
         }
@@ -543,7 +543,7 @@ class TestResourceAccessSync:
 
         status = {
             "twingate_resource_access_create": {
-                "ok": True,
+                "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }
         }

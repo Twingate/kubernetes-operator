@@ -13,7 +13,7 @@ K8sObject = MutableMapping[Any, Any]
 
 def get_principal_id(
     access_crd: ResourceAccessSpec,
-    twingate_resource_access_create: dict | None,
+    create_status: dict | None,
     client: TwingateAPIClient,
 ) -> str:
     if principal_id := access_crd.principal_id:
@@ -22,8 +22,8 @@ def get_principal_id(
     if ref := access_crd.principal_external_ref:
         # Once `twingate_resource_access_create` ran and we have the principal_id
         # we dont use it and do not re-query the API
-        if twingate_resource_access_create:
-            return twingate_resource_access_create["principal_id"]
+        if create_status:
+            return create_status["principal_id"]
 
         if ref.type == PrincipalTypeEnum.Group:
             principal_id = client.get_group_id(ref.name)
@@ -42,10 +42,9 @@ def get_principal_id(
 
 def check_status_created(status: dict | None) -> dict | None:
     if (
-        twingate_resource_access_create := status
-        and status.get("twingate_resource_access_create", {})
-    ) and twingate_resource_access_create["ok"]:
-        return twingate_resource_access_create
+        create_status := status and status.get("twingate_resource_access_create", {})
+    ) and create_status["success"]:
+        return create_status
 
     return None
 
@@ -130,8 +129,8 @@ def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     resource_crd = access_crd.get_resource()
     if resource_id := resource_crd and resource_crd.spec.id:
         client = TwingateAPIClient(memo.twingate_settings)
-        principal_id = get_principal_id(access_crd, client)
-        client.resource_access_remove(resource_id, creation_status, principal_id)
+        principal_id = get_principal_id(access_crd, creation_status, client)
+        client.resource_access_remove(resource_id, principal_id)
 
 
 @kopf.timer(

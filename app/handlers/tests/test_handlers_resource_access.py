@@ -311,13 +311,19 @@ class TestResourceAccessDelete:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
+        status = {
+            "twingate_resource_access_create": {
+                "success": True,
+                "principal_id": resource_access_spec["principalId"],
+            }
+        }
 
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=None,
         ):
             twingate_resource_access_delete(
-                resource_access_spec, {}, memo_mock, logger_mock
+                resource_access_spec, status, memo_mock, logger_mock
             )
 
         mock_api_client.resource_access_remove.assert_not_called()

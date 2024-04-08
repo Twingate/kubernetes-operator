@@ -89,6 +89,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, status, **k
         return fail(error=mex.error)
 
 
+# can't use decorator syntax because typecheck would fail (update has some extra params that we're not using)
 kopf.on.create("twingateresourceaccess")(twingate_resource_access_create)
 kopf.on.update("twingateresourceaccess", field="spec")(twingate_resource_access_create)
 kopf.timer(

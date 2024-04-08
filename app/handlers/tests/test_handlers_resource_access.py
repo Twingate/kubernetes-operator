@@ -363,13 +363,24 @@ class TestResourceAccessDelete:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
+        status = {
+            "twingate_resource_access_create": {
+                "success": True,
+                "principal_id": resource_access_spec["principalId"],
+            }
+        }
+
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
         ):
             twingate_resource_access_delete(
-                resource_access_spec, {}, memo_mock, logger_mock
+                resource_access_spec, status, memo_mock, logger_mock
             )
+
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            resource.id, resource_access_spec["principalId"]
+        )
 
     def test_delete_resource_doesnt_exist_does_nothing(self, mock_api_client):
         resource_access_spec = {
@@ -383,6 +394,36 @@ class TestResourceAccessDelete:
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=None,
+        ):
+            twingate_resource_access_delete(
+                resource_access_spec, {}, memo_mock, logger_mock
+            )
+
+        mock_api_client.resource_access_remove.assert_not_called()
+
+    def test_delete_success_without_calling_api_if_create_handler_never_ran(
+        self, resource_factory, mock_api_client
+    ):
+        resource = resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+        }
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+
+        mock_api_client.resource_access_remove.return_value = True
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
         ):
             twingate_resource_access_delete(
                 resource_access_spec, {}, memo_mock, logger_mock
@@ -564,4 +605,40 @@ class TestResourceAccessSync:
                 "success": True,
                 "status": "Skipped as resource not yet created",
                 "ts": ANY,
+            }
+
+    def test_sync_skips_if_create_handler_didnt_run(self, resource_factory):
+        resource = resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+        }
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        status = {}
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            result = twingate_resource_access_sync(
+                body="",
+                spec=resource_access_spec,
+                status=status,
+                memo=memo_mock,
+                logger=logger_mock,
+            )
+
+            assert result == {
+                "success": True,
+                "ts": ANY,
+                "status": "Skipped as creation didn't run yet.",
             }

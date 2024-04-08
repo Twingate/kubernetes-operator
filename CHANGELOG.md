@@ -2,6 +2,15 @@
 
 
 
+## v0.9.0 (2024-04-08)
+
+### Feature
+
+* feat: Added TwingateConnector `logAnalytics` flag (#237) ([`a98acc3`](https://github.com/Twingate/kubernetes-operator/commit/a98acc3f96e7a03d3298e3d94c959ef991f1d821))
+
+* feat: Add ability to customize kopf logging level (#236) ([`1fc2eaf`](https://github.com/Twingate/kubernetes-operator/commit/1fc2eaf5a27cea842ed2dd45bbff726178bbc058))
+
+
 ## v0.8.0 (2024-04-03)
 
 ### Chore

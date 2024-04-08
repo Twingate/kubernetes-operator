@@ -66,7 +66,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings)
-        principal_id = get_principal_id(access_crd, client)
+        principal_id = get_principal_id(access_crd, None, client)
         client.resource_access_add(
             resource_id, principal_id, access_crd.security_policy_id
         )
@@ -95,8 +95,8 @@ def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
         diff,
         status,
     )
-
-    if not check_status_created(status):
+    creation_status = check_status_created(status)
+    if not creation_status:
         # Object didn't go through create yet?   wait...
         raise kopf.TemporaryError("Resource not yet created, retrying...", delay=15)
 
@@ -106,7 +106,7 @@ def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
     if resource_crd := access_crd.get_resource():
         try:
             client = TwingateAPIClient(memo.twingate_settings)
-            principal_id = get_principal_id(access_crd, client)
+            principal_id = get_principal_id(access_crd, creation_status, client)
             client.resource_access_add(
                 resource_crd.spec.id,
                 principal_id,
@@ -122,12 +122,16 @@ def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
 @kopf.on.delete("twingateresourceaccess")
 def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     logger.info("Got a TwingateResourceAccess delete request: %s", spec)
+    creation_status = check_status_created(status)
+    if not creation_status:
+        return
+
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource()
     if resource_id := resource_crd and resource_crd.spec.id:
         client = TwingateAPIClient(memo.twingate_settings)
         principal_id = get_principal_id(access_crd, client)
-        client.resource_access_remove(resource_id, principal_id)
+        client.resource_access_remove(resource_id, creation_status, principal_id)
 
 
 @kopf.timer(

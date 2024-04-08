@@ -296,6 +296,40 @@ class TestResourceAccessUpdateHandler:
             )
             assert result == {"success": True, "ts": ANY}
 
+    def test_update_fails_on_api_error(self, resource_factory, mock_api_client):
+        resource = resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+        }
+        status = {"twingate_resource_access_create": {"success": True}}
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        mock_api_client.resource_access_add.side_effect = GraphQLMutationError(
+            "resourceAccessAdd", "some error"
+        )
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            result = twingate_resource_access_update(
+                spec=resource_access_spec,
+                diff={},
+                status=status,
+                memo=memo_mock,
+                logger=logger_mock,
+            )
+            assert result == {"success": False, "ts": ANY, "error": "some error"}
+
     def test_update_fails_to_find_resource(self, mock_api_client):
         resource_access_spec = {
             "resourceRef": {"name": "doesnt-exist"},

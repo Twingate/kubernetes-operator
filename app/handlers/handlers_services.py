@@ -18,15 +18,13 @@ def k8s_get_twingate_resource(
         raise
 
 
-@kopf.on.resume("services", annotations={"twingate.com/expose": "true"})
-@kopf.on.create("service", annotations={"twingate.com/expose": "true"})
-@kopf.on.update("service", annotations={"twingate.com/expose": "true"})
-def twingate_service_create(body, spec, namespace, meta, logger, **_):
-    logger.info("twingate_service_create: %s", spec)
-    service_name = body.meta.name
+def service_to_twingate_resource(service_body, namespace) -> dict:
+    meta = service_body.metadata
+    spec = service_body.spec
+    service_name = service_body.meta.name
     resource_object_name = f"{service_name}-resource"
 
-    resource_subobject = {
+    result = {
         "apiVersion": "twingate.com/v1beta",
         "kind": "TwingateResource",
         "metadata": {
@@ -37,10 +35,9 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
             "address": f"{service_name}.{namespace}.svc.cluster.local",
         },
     }
-    kopf.adopt(resource_subobject)
 
     if alias := meta.annotations.get("twingate.com/expose-alias"):
-        resource_subobject["spec"]["alias"] = alias
+        result["spec"]["alias"] = alias
 
     if service_ports := spec.get("ports", []):
         protocols = {
@@ -54,7 +51,21 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
             elif port_obj["protocol"] == "UDP":
                 protocols["udp"]["ports"].append({"start": port, "end": port})
 
-        resource_subobject["spec"]["protocols"] = protocols
+        result["spec"]["protocols"] = protocols
+
+    return result
+
+
+@kopf.on.resume("services", annotations={"twingate.com/expose": "true"})
+@kopf.on.create("service", annotations={"twingate.com/expose": "true"})
+@kopf.on.update("service", annotations={"twingate.com/expose": "true"})
+def twingate_service_create(body, spec, namespace, meta, logger, **_):
+    logger.info("twingate_service_create: %s", spec)
+    service_name = body.meta.name
+    resource_object_name = f"{service_name}-resource"
+
+    resource_subobject = service_to_twingate_resource(body, namespace)
+    kopf.adopt(resource_subobject)
 
     kapi = kubernetes.client.CustomObjectsApi()
     existing_resource_object = k8s_get_twingate_resource(

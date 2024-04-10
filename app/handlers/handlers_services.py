@@ -36,8 +36,9 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
         },
     }
 
-    if alias := meta.annotations.get("twingate.com/expose-alias"):
-        result["spec"]["alias"] = alias
+    for key in ["alias", "isBrowserShortcutEnabled", "securityPolicyId", "isVisible"]:
+        if value := meta.annotations.get(f"twingate.com/expose-{key}"):
+            result["spec"][key] = value
 
     if service_ports := spec.get("ports", []):
         protocols: dict = {

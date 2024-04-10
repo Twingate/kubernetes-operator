@@ -64,6 +64,7 @@ def test_service_to_twingate_resource_with_alias():
             "address": "my-service.default.svc.cluster.local",
             "alias": "myapp.internal",
             "protocols": {
+                "allowIcmp": False,
                 "tcp": {
                     "policy": "RESTRICTED",
                     "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
@@ -92,6 +93,7 @@ def test_service_to_twingate_resource_without_alias():
             "name": "my-service-resource",
             "address": "my-service.default.svc.cluster.local",
             "protocols": {
+                "allowIcmp": False,
                 "tcp": {
                     "policy": "RESTRICTED",
                     "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],

@@ -41,6 +41,7 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
 
     if service_ports := spec.get("ports", []):
         protocols: dict = {
+            "allowIcmp": False,
             "tcp": {"policy": "RESTRICTED", "ports": []},
             "udp": {"policy": "RESTRICTED", "ports": []},
         }

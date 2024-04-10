@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import kopf
 import pytest
-import yaml
+import yaml  # type: ignore
 
 from app.handlers.handlers_services import (
     service_to_twingate_resource,

@@ -24,7 +24,7 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
     service_name = service_body.meta.name
     resource_object_name = f"{service_name}-resource"
 
-    result = {
+    result: dict = {
         "apiVersion": "twingate.com/v1beta",
         "kind": "TwingateResource",
         "metadata": {
@@ -40,7 +40,7 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
         result["spec"]["alias"] = alias
 
     if service_ports := spec.get("ports", []):
-        protocols = {
+        protocols: dict = {
             "tcp": {"policy": "RESTRICTED", "ports": []},
             "udp": {"policy": "RESTRICTED", "ports": []},
         }

@@ -7,8 +7,8 @@ from app.api.client import GraphQLMutationError
 from app.crds import K8sMetadata
 from app.handlers.handlers_resource_access import (
     get_principal_id,
-    twingate_resource_access_create,
     twingate_resource_access_delete,
+    twingate_resource_access_sync,
 )
 
 
@@ -129,7 +129,7 @@ class TestResourceAccessCreateHandler:
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
         ):
-            result = twingate_resource_access_create(
+            result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
                 memo=memo_mock,
@@ -171,7 +171,7 @@ class TestResourceAccessCreateHandler:
             return_value=None,
         ):
             with patch("kopf.warn") as kopf_warn_mock:
-                result = twingate_resource_access_create(
+                result = twingate_resource_access_sync(
                     body="",
                     spec=resource_access_spec,
                     memo=memo_mock,
@@ -213,7 +213,7 @@ class TestResourceAccessCreateHandler:
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
         ), pytest.raises(kopf.TemporaryError):
-            twingate_resource_access_create(
+            twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
                 memo=memo_mock,
@@ -249,7 +249,7 @@ class TestResourceAccessCreateHandler:
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
             return_value=resource_crd_mock,
         ), patch("kopf.exception") as kopf_exception_mock:
-            result = twingate_resource_access_create(
+            result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
                 memo=memo_mock,
@@ -285,7 +285,7 @@ class TestResourceAccessDelete:
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
         status = {
-            "twingate_resource_access_create": {
+            "twingate_resource_access_sync": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }
@@ -312,7 +312,7 @@ class TestResourceAccessDelete:
         logger_mock = MagicMock()
         memo_mock = MagicMock()
         status = {
-            "twingate_resource_access_create": {
+            "twingate_resource_access_sync": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }

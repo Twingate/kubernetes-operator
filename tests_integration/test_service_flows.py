@@ -51,8 +51,9 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
             "id": ANY,
             "isBrowserShortcutEnabled": False,
             "isVisible": True,
-            "name": "my-service-local-resource",
+            "name": f"{service_name}-resource",
             "protocols": {
+                "allowIcmp": False,
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
@@ -83,8 +84,9 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
             "id": ANY,
             "isBrowserShortcutEnabled": False,
             "isVisible": True,
-            "name": "my-service-local-resource",
+            "name": f"{service_name}-resource",
             "protocols": {
+                "allowIcmp": False,
                 "tcp": {
                     "policy": "RESTRICTED",
                     "ports": [{"end": 80, "start": 80}, {"end": 443, "start": 443}],

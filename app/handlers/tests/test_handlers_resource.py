@@ -80,6 +80,10 @@ class TestResourceCreateHandler:
         mock_api_client.resource_update.assert_called_once_with(resource_spec)
         mock_api_client.resource_create.assert_not_called()
 
+        kopf_info_mock.assert_called_once_with(
+            "", reason="Success", message=f"Imported {resource.id}"
+        )
+
 
 class TestResourceUpdateHandler:
     def test_update(self, mock_api_client):

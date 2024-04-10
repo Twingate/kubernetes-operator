@@ -16,6 +16,7 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
     # Support importing existing resources - if `id` already exist we assume it's already created
     if resource.id:
         resource = client.resource_update(resource)
+        kopf.info(body, reason="Success", message=f"Imported {resource.id}")
         return success(
             twingate_id=resource.id,
             created_at=resource.created_at.isoformat(),

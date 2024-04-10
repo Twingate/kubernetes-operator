@@ -11,7 +11,20 @@ from app.handlers.base import fail, success
 def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
     logger.info("Got a create request: %s", spec)
     resource = ResourceSpec(**spec)
-    resource = TwingateAPIClient(memo.twingate_settings).resource_create(resource)
+    client = TwingateAPIClient(memo.twingate_settings)
+
+    # Support importing existing resources - if `id` already exist we assume it's already created
+    if resource.id:
+        resource = client.resource_update(resource)
+        kopf.info(body, reason="Success", message=f"Imported {resource.id}")
+        return success(
+            twingate_id=resource.id,
+            created_at=resource.created_at.isoformat(),
+            updated_at=resource.updated_at.isoformat(),
+            message="Resource id already present - assuming an import of an existing resource.",
+        )
+
+    resource = client.resource_create(resource)
     patch.spec["id"] = resource.id
     kopf.info(body, reason="Success", message=f"Created on Twingate as {resource.id}")
     return success(

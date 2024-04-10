@@ -44,12 +44,47 @@ class TestResourceCreateHandler:
             "ts": ANY,
         }
 
+        mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(resource_spec)
         logger_mock.info.assert_called_once_with("Got a create request: %s", spec)
         kopf_info_mock.assert_called_once_with(
             "", reason="Success", message=f"Created on Twingate as {resource.id}"
         )
         assert patch_mock.spec == {"id": resource.id}
+
+    def test_when_id_is_specified_update_instead_of_create(
+        self, resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource = resource_factory(id="pre-existing-id")
+        resource_spec = resource.to_spec()
+
+        spec = resource_spec.model_dump(by_alias=True)
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        mock_api_client.resource_update.return_value = resource
+
+        result = twingate_resource_create(
+            body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
+        )
+        assert result == {
+            "success": True,
+            "twingate_id": resource.id,
+            "created_at": ANY,
+            "updated_at": ANY,
+            "message": ANY,
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_update.assert_called_once_with(resource_spec)
+        mock_api_client.resource_create.assert_not_called()
+
+        kopf_info_mock.assert_called_once_with(
+            "", reason="Success", message=f"Imported {resource.id}"
+        )
 
 
 class TestResourceUpdateHandler:

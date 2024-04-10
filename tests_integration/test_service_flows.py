@@ -46,7 +46,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
         tgr = kubectl_get("twingateresource", resource_name)
 
         assert tgr["spec"] == {
-            "address": "my-service-local.default.svc.cluster.local",
+            "address": f"{service_name}.default.svc.cluster.local",
             "alias": "myapp.internal",
             "id": ANY,
             "isBrowserShortcutEnabled": False,
@@ -78,7 +78,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
         time.sleep(2)
         tgr = kubectl_get("twingateresource", resource_name)
         assert tgr["spec"] == {
-            "address": "my-service-local.default.svc.cluster.local",
+            "address": f"{service_name}.default.svc.cluster.local",
             "alias": "myapp.internal",
             "id": ANY,
             "isBrowserShortcutEnabled": False,

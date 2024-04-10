@@ -71,6 +71,8 @@ class TestResourceCreateHandler:
         assert result == {
             "success": True,
             "twingate_id": resource.id,
+            "created_at": ANY,
+            "updated_at": ANY,
             "message": ANY,
             "ts": ANY,
         }

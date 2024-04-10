@@ -18,6 +18,8 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
         resource = client.resource_update(resource)
         return success(
             twingate_id=resource.id,
+            created_at=resource.created_at.isoformat(),
+            updated_at=resource.updated_at.isoformat(),
             message="Resource id already present - assuming an import of an existing resource.",
         )
 

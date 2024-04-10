@@ -13,8 +13,10 @@ from app.handlers.handlers_services import (
 
 # Ignore the fact we use _cogs here
 
-EXAMPLE_SERVICE_BODY = kopf._cogs.structs.bodies.Body(  # noqa: SLF001
-    yaml.safe_load("""
+
+@pytest.fixture()
+def example_service_body():
+    yaml_str = """
     apiVersion: v1
     kind: Service
     metadata:
@@ -38,8 +40,10 @@ EXAMPLE_SERVICE_BODY = kopf._cogs.structs.bodies.Body(  # noqa: SLF001
           port: 22
           targetPort: 9376
           name: ssh
-""")
-)
+    """
+    return kopf._cogs.structs.bodies.Body(  # noqa: SLF001
+        yaml.safe_load(yaml_str)
+    )
 
 
 @pytest.fixture()
@@ -50,8 +54,8 @@ def k8s_customobjects_client_mock():
         yield client_mock
 
 
-def test_service_to_twingate_resource_with_alias():
-    result = service_to_twingate_resource(EXAMPLE_SERVICE_BODY, "default")
+def test_service_to_twingate_resource_with_alias(example_service_body):
+    result = service_to_twingate_resource(example_service_body, "default")
 
     assert result == {
         "apiVersion": "twingate.com/v1beta",
@@ -78,8 +82,8 @@ def test_service_to_twingate_resource_with_alias():
     }
 
 
-def test_service_to_twingate_resource_without_alias():
-    body = EXAMPLE_SERVICE_BODY
+def test_service_to_twingate_resource_without_alias(example_service_body):
+    body = example_service_body
     del body.meta["annotations"]["twingate.com/expose-alias"]
     result = service_to_twingate_resource(body, "default")
 
@@ -127,8 +131,10 @@ def test_k8s_get_twingate_resource_reraises_non_404_exceptions(
 
 
 class TestTwingateServiceCreate:
-    def test_create_service(self, kopf_handler_runner, k8s_customobjects_client_mock):
-        service_body = EXAMPLE_SERVICE_BODY
+    def test_create_service(
+        self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
+    ):
+        service_body = example_service_body
 
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
 
@@ -149,8 +155,10 @@ class TestTwingateServiceCreate:
             service_to_twingate_resource(service_body, "default"),
         )
 
-    def test_update_service(self, kopf_handler_runner, k8s_customobjects_client_mock):
-        service_body = EXAMPLE_SERVICE_BODY
+    def test_update_service(
+        self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
+    ):
+        service_body = example_service_body
 
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
             "metadata": {"name": "my-service-resource"},

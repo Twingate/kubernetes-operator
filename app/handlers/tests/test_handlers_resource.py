@@ -52,7 +52,9 @@ class TestResourceCreateHandler:
         )
         assert patch_mock.spec == {"id": resource.id}
 
-    def test_resource_import(self, resource_factory, kopf_info_mock, mock_api_client):
+    def test_when_id_is_specified_update_instead_of_create(
+        self, resource_factory, kopf_info_mock, mock_api_client
+    ):
         resource = resource_factory(id="pre-existing-id")
         resource_spec = resource.to_spec()
 

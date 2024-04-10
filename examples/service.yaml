@@ -12,3 +12,8 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 9376
+      name: first
+    - protocol: UDP
+      port: 22
+      targetPort: 9376
+      name: second

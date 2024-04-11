@@ -54,61 +54,61 @@ def k8s_customobjects_client_mock():
         yield client_mock
 
 
-def test_service_to_twingate_resource_with_alias(example_service_body):
-    result = service_to_twingate_resource(example_service_body, "default")
+class TestServiceToTwingateResource:
+    def test_with_alias(example_service_body):
+        result = service_to_twingate_resource(example_service_body, "default")
 
-    assert result == {
-        "apiVersion": "twingate.com/v1beta",
-        "kind": "TwingateResource",
-        "metadata": {
-            "name": "my-service-resource",
-        },
-        "spec": {
-            "name": "my-service-resource",
-            "address": "my-service.default.svc.cluster.local",
-            "alias": "myapp.internal",
-            "protocols": {
-                "allowIcmp": False,
-                "tcp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
-                },
-                "udp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 22, "end": 22}],
+        assert result == {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateResource",
+            "metadata": {
+                "name": "my-service-resource",
+            },
+            "spec": {
+                "name": "my-service-resource",
+                "address": "my-service.default.svc.cluster.local",
+                "alias": "myapp.internal",
+                "protocols": {
+                    "allowIcmp": False,
+                    "tcp": {
+                        "policy": "RESTRICTED",
+                        "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
+                    },
+                    "udp": {
+                        "policy": "RESTRICTED",
+                        "ports": [{"start": 22, "end": 22}],
+                    },
                 },
             },
-        },
-    }
+        }
 
+    def test_without_alias(example_service_body):
+        body = example_service_body
+        del body.meta["annotations"]["twingate.com/expose-alias"]
+        result = service_to_twingate_resource(body, "default")
 
-def test_service_to_twingate_resource_without_alias(example_service_body):
-    body = example_service_body
-    del body.meta["annotations"]["twingate.com/expose-alias"]
-    result = service_to_twingate_resource(body, "default")
-
-    assert result == {
-        "apiVersion": "twingate.com/v1beta",
-        "kind": "TwingateResource",
-        "metadata": {
-            "name": "my-service-resource",
-        },
-        "spec": {
-            "name": "my-service-resource",
-            "address": "my-service.default.svc.cluster.local",
-            "protocols": {
-                "allowIcmp": False,
-                "tcp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
-                },
-                "udp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 22, "end": 22}],
+        assert result == {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateResource",
+            "metadata": {
+                "name": "my-service-resource",
+            },
+            "spec": {
+                "name": "my-service-resource",
+                "address": "my-service.default.svc.cluster.local",
+                "protocols": {
+                    "allowIcmp": False,
+                    "tcp": {
+                        "policy": "RESTRICTED",
+                        "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
+                    },
+                    "udp": {
+                        "policy": "RESTRICTED",
+                        "ports": [{"start": 22, "end": 22}],
+                    },
                 },
             },
-        },
-    }
+        }
 
 
 def test_k8s_get_twingate_resource_handles_404_returns_none(
@@ -131,18 +131,16 @@ def test_k8s_get_twingate_resource_reraises_non_404_exceptions(
 
 
 class TestTwingateServiceCreate:
-    def test_create_service(
+    def test_create_service_triggers_creation_of_twingate_resource(
         self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
     ):
-        service_body = example_service_body
-
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
 
         twingate_service_create(
-            service_body,
-            service_body.spec,
+            example_service_body,
+            example_service_body.spec,
             "default",
-            service_body.metadata,
+            example_service_body.metadata,
             MagicMock(),
         )
 
@@ -152,24 +150,22 @@ class TestTwingateServiceCreate:
             "v1beta",
             "default",
             "twingateresources",
-            service_to_twingate_resource(service_body, "default"),
+            service_to_twingate_resource(example_service_body, "default"),
         )
 
     def test_update_service(
         self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
     ):
-        service_body = example_service_body
-
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
             "metadata": {"name": "my-service-resource"},
             "spec": {"address": "my-service.default.svc.cluster.local"},
         }
 
         twingate_service_create(
-            service_body,
-            service_body.spec,
+            example_service_body,
+            example_service_body.spec,
             "default",
-            service_body.metadata,
+            example_service_body.metadata,
             MagicMock(),
         )
 
@@ -179,6 +175,6 @@ class TestTwingateServiceCreate:
             "default",
             "twingateresources",
             "my-service-resource",
-            service_to_twingate_resource(service_body, "default"),
+            service_to_twingate_resource(example_service_body, "default"),
         )
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()

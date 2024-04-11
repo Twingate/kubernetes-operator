@@ -1,7 +1,7 @@
 fail_fast: false
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files
       - id: check-ast
@@ -73,13 +73,13 @@ repos:
         require_serial: true
 
   - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.9.0
+    rev: v0.10.0
     hooks:
       - id: shellcheck
         files: ^\.envrc|.*\.sh$
 
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.7.0-1
+    rev: v3.8.0-1
     hooks:
       - id: shfmt-docker
         files: ^\.envrc|.*\.sh$

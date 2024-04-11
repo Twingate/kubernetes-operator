@@ -6,6 +6,7 @@ import pytest
 import yaml  # type: ignore
 
 from app.handlers.handlers_services import (
+    ALLOWED_EXTRA_ANNOTATION,
     k8s_get_twingate_resource,
     service_to_twingate_resource,
     twingate_service_create,
@@ -55,10 +56,9 @@ def k8s_customobjects_client_mock():
 
 
 class TestServiceToTwingateResource:
-    def test_with_alias(example_service_body):
-        result = service_to_twingate_resource(example_service_body, "default")
-
-        assert result == {
+    @pytest.mark.parametrize("annotation_name", ["", *ALLOWED_EXTRA_ANNOTATION])
+    def test_with_extra_annotation(self, example_service_body, annotation_name):
+        expected = {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResource",
             "metadata": {
@@ -82,33 +82,15 @@ class TestServiceToTwingateResource:
             },
         }
 
-    def test_without_alias(example_service_body):
-        body = example_service_body
-        del body.meta["annotations"]["twingate.com/expose-alias"]
-        result = service_to_twingate_resource(body, "default")
+        if annotation_name:
+            example_service_body.metadata["annotations"][
+                f"twingate.com/expose-{annotation_name}"
+            ] = f"{annotation_name} value"
 
-        assert result == {
-            "apiVersion": "twingate.com/v1beta",
-            "kind": "TwingateResource",
-            "metadata": {
-                "name": "my-service-resource",
-            },
-            "spec": {
-                "name": "my-service-resource",
-                "address": "my-service.default.svc.cluster.local",
-                "protocols": {
-                    "allowIcmp": False,
-                    "tcp": {
-                        "policy": "RESTRICTED",
-                        "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
-                    },
-                    "udp": {
-                        "policy": "RESTRICTED",
-                        "ports": [{"start": 22, "end": 22}],
-                    },
-                },
-            },
-        }
+            expected["spec"][annotation_name] = f"{annotation_name} value"
+
+        result = service_to_twingate_resource(example_service_body, "default")
+        assert result == expected
 
 
 def test_k8s_get_twingate_resource_handles_404_returns_none(

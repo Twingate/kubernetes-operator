@@ -63,17 +63,16 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
 @kopf.on.update("service", annotations={"twingate.com/expose": "true"})
 def twingate_service_create(body, spec, namespace, meta, logger, **_):
     logger.info("twingate_service_create: %s", spec)
-    service_name = body.meta.name
-    resource_object_name = f"{service_name}-resource"
 
     resource_subobject = service_to_twingate_resource(body, namespace)
     kopf.adopt(resource_subobject)
 
+    resource_object_name = resource_subobject["metadata"]["name"]
+
     kapi = kubernetes.client.CustomObjectsApi()
-    existing_resource_object = k8s_get_twingate_resource(
+    if existing_resource_object := k8s_get_twingate_resource(
         namespace, resource_object_name, kapi
-    )
-    if existing_resource_object:
+    ):
         logger.info("TwingateResource already exists: %s", existing_resource_object)
         kapi.patch_namespaced_custom_object(
             "twingate.com",

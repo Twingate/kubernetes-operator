@@ -6,7 +6,7 @@ import pytest
 import yaml  # type: ignore
 
 from app.handlers.handlers_services import (
-    ALLOWED_EXTRA_ANNOTATION,
+    ALLOWED_EXTRA_ANNOTATIONS,
     k8s_get_twingate_resource,
     service_to_twingate_resource,
     twingate_service_create,
@@ -56,7 +56,7 @@ def k8s_customobjects_client_mock():
 
 
 class TestServiceToTwingateResource:
-    @pytest.mark.parametrize("annotation_name", ["", *ALLOWED_EXTRA_ANNOTATION])
+    @pytest.mark.parametrize("annotation_name", ["", *ALLOWED_EXTRA_ANNOTATIONS])
     def test_with_extra_annotation(self, example_service_body, annotation_name):
         expected = {
             "apiVersion": "twingate.com/v1beta",

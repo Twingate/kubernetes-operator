@@ -18,7 +18,7 @@ def k8s_get_twingate_resource(
         raise
 
 
-ALLOWED_EXTRA_ANNOTATION = [
+ALLOWED_EXTRA_ANNOTATIONS = [
     "alias",
     "isBrowserShortcutEnabled",
     "securityPolicyId",
@@ -44,7 +44,7 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
         },
     }
 
-    for key in ALLOWED_EXTRA_ANNOTATION:
+    for key in ALLOWED_EXTRA_ANNOTATIONS:
         if value := meta.annotations.get(f"twingate.com/expose-{key}"):
             result["spec"][key] = value
 

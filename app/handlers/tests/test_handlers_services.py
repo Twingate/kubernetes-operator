@@ -153,7 +153,7 @@ class TestTwingateServiceCreate:
             service_to_twingate_resource(example_service_body, "default"),
         )
 
-    def test_update_service(
+    def test_update_service_propogates_changes_to_twingate_resource(
         self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
     ):
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {

@@ -93,23 +93,25 @@ class TestServiceToTwingateResource:
         assert result == expected
 
 
-def test_k8s_get_twingate_resource_handles_404_returns_none(
-    k8s_customobjects_client_mock,
-):
-    k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (
-        kubernetes.client.exceptions.ApiException(status=404)
-    )
-    assert k8s_get_twingate_resource("default", "test") is None
+class TestK8sGetTwingateResource:
+    def test_handles_404_returns_none(
+        self,
+        k8s_customobjects_client_mock,
+    ):
+        k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=404)
+        )
+        assert k8s_get_twingate_resource("default", "test") is None
 
-
-def test_k8s_get_twingate_resource_reraises_non_404_exceptions(
-    k8s_customobjects_client_mock,
-):
-    k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (
-        kubernetes.client.exceptions.ApiException(status=500)
-    )
-    with pytest.raises(kubernetes.client.exceptions.ApiException):
-        k8s_get_twingate_resource("default", "test")
+    def test_reraises_non_404_exceptions(
+        self,
+        k8s_customobjects_client_mock,
+    ):
+        k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=500)
+        )
+        with pytest.raises(kubernetes.client.exceptions.ApiException):
+            k8s_get_twingate_resource("default", "test")
 
 
 class TestTwingateServiceCreate:

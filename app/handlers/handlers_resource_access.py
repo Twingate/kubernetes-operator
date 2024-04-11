@@ -11,11 +11,22 @@ from app.handlers.base import fail, success
 K8sObject = MutableMapping[Any, Any]
 
 
-def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) -> str:
+def get_principal_id(
+    access_crd: ResourceAccessSpec,
+    create_status: dict | None,
+    client: TwingateAPIClient,
+) -> str:
     if principal_id := access_crd.principal_id:
         return principal_id
 
     if ref := access_crd.principal_external_ref:
+        # Once `twingate_resource_access_sync` ran and we have the principal_id
+        # we dont use it and do not re-query the API
+        if principal_id_already_fetched := create_status and create_status.get(
+            "principal_id"
+        ):
+            return principal_id_already_fetched
+
         if ref.type == PrincipalTypeEnum.Group:
             principal_id = client.get_group_id(ref.name)
         elif ref.type == PrincipalTypeEnum.ServiceAccount:
@@ -31,9 +42,20 @@ def get_principal_id(access_crd: ResourceAccessSpec, client: TwingateAPIClient) 
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
-@kopf.on.create("twingateresourceaccess")
-def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
+def check_status_created(status: dict | None) -> dict | None:
+    if (
+        create_status := status
+        and status.get(twingate_resource_access_sync.__name__, {})
+    ) and create_status["success"]:
+        return create_status
+
+    return None
+
+
+def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
+    creation_status = check_status_created(status)
+
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource()
     if not resource_crd:
@@ -47,7 +69,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings)
-        principal_id = get_principal_id(access_crd, client)
+        principal_id = get_principal_id(access_crd, creation_status, client)
         client.resource_access_add(
             resource_id, principal_id, access_crd.security_policy_id
         )
@@ -60,7 +82,7 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         patch.metadata["ownerReferences"] = [
             resource_crd.metadata.owner_reference_object
         ]
-        return success()
+        return success(principal_id=principal_id, resource_id=resource_id)
     except GraphQLMutationError as mex:
         kopf.exception(
             body, reason="Failure", message=f"{mex.mutation_name} failed: {mex.error}"
@@ -68,76 +90,27 @@ def twingate_resource_access_create(body, spec, memo, logger, patch, **kwargs):
         return fail(error=mex.error)
 
 
-@kopf.on.update("twingateresourceaccess", field="spec")
-def twingate_resource_access_update(spec, diff, status, memo, logger, **kwargs):
-    logger.info(
-        "Got TwingateResourceAccess update request: %s. Diff: %s. Status: %s.",
-        spec,
-        diff,
-        status,
-    )
-
-    if not status.get("twingate_resource_access_create", {}).get("ok"):
-        # Object didnt go through create yet?   wait...
-        raise kopf.TemporaryError("Resource not yet created, retrying...", delay=15)
-
-    # Note that both principalId and resourceRef are immutable so only securityPolicyId could change
-    # in this case we just need to call api_client.resource_access_add with the new value
-    access_crd = ResourceAccessSpec(**spec)
-    if resource_crd := access_crd.get_resource():
-        try:
-            client = TwingateAPIClient(memo.twingate_settings)
-            principal_id = get_principal_id(access_crd, client)
-            client.resource_access_add(
-                resource_crd.spec.id,
-                principal_id,
-                access_crd.security_policy_id,
-            )
-            return success()
-        except GraphQLMutationError as mex:
-            return fail(error=mex.error)
-
-    return fail(error=f"Resource {access_crd.resource_ref_fullname} not found")
+# can't use decorator syntax because typecheck would fail (update has some extra params that we're not using)
+kopf.on.create("twingateresourceaccess")(twingate_resource_access_sync)
+kopf.on.update("twingateresourceaccess", field="spec")(twingate_resource_access_sync)
+kopf.timer(
+    "twingateresourceaccess",
+    interval=timedelta(seconds=10).seconds,
+    initial_delay=60,
+    idle=60,
+)(twingate_resource_access_sync)
 
 
 @kopf.on.delete("twingateresourceaccess")
 def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     logger.info("Got a TwingateResourceAccess delete request: %s", spec)
+    creation_status = check_status_created(status)
+    if not creation_status:
+        return
+
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource()
     if resource_id := resource_crd and resource_crd.spec.id:
         client = TwingateAPIClient(memo.twingate_settings)
-        principal_id = get_principal_id(access_crd, client)
+        principal_id = get_principal_id(access_crd, creation_status, client)
         client.resource_access_remove(resource_id, principal_id)
-
-
-@kopf.timer(
-    "twingateresourceaccess",
-    interval=timedelta(hours=10).seconds,
-    initial_delay=60,
-    idle=60,
-)
-def twingate_resource_access_sync(body, spec, status, memo, logger, **kwargs):
-    access_crd = ResourceAccessSpec(**spec)
-    resource_crd = access_crd.get_resource()
-    if not resource_crd:
-        err = f"Resource {access_crd.resource_ref_fullname} not found"
-        logger.warning(err)
-        kopf.warn(body, reason="ResourceNotFound", message=err)
-        return fail(error=err)
-
-    if not resource_crd.spec.id:
-        return success(status="Skipped as resource not yet created")
-
-    try:
-        client = TwingateAPIClient(memo.twingate_settings)
-        principal_id = get_principal_id(access_crd, client)
-        client.resource_access_add(
-            resource_crd.spec.id, principal_id, access_crd.security_policy_id
-        )
-        return success()
-    except GraphQLMutationError as mex:
-        kopf.exception(
-            body, reason="Failure", message=f"{mex.mutation_name} failed: {mex.error}"
-        )
-        return fail(error=mex.error)

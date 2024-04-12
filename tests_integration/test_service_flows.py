@@ -22,8 +22,8 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
         metadata:
           name: {service_name}
           annotations:
-            twingate.com/expose: "true"
-            twingate.com/expose-alias: "myapp.internal"
+            twingate.com/resource: "true"
+            twingate.com/resource-alias: "myapp.internal"
         spec:
           selector:
             app.kubernetes.io/name: MyApp

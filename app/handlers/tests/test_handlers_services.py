@@ -23,8 +23,8 @@ def example_service_body():
     metadata:
       name: my-service
       annotations:
-        twingate.com/expose: "true"
-        twingate.com/expose-alias: "myapp.internal"
+        twingate.com/resource: "true"
+        twingate.com/resource-alias: "myapp.internal"
     spec:
       selector:
         app.kubernetes.io/name: MyApp
@@ -84,7 +84,7 @@ class TestServiceToTwingateResource:
 
         if annotation_name:
             example_service_body.metadata["annotations"][
-                f"twingate.com/expose-{annotation_name}"
+                f"twingate.com/resource-{annotation_name}"
             ] = f"{annotation_name} value"
 
             expected["spec"][annotation_name] = f"{annotation_name} value"

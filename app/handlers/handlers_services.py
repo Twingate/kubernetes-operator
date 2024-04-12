@@ -45,7 +45,7 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
     }
 
     for key in ALLOWED_EXTRA_ANNOTATIONS:
-        if value := meta.annotations.get(f"twingate.com/expose-{key}"):
+        if value := meta.annotations.get(f"twingate.com/resource-{key}"):
             result["spec"][key] = value
 
     if service_ports := spec.get("ports", []):
@@ -66,9 +66,9 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
     return result
 
 
-@kopf.on.resume("service", annotations={"twingate.com/expose": "true"})
-@kopf.on.create("service", annotations={"twingate.com/expose": "true"})
-@kopf.on.update("service", annotations={"twingate.com/expose": "true"})
+@kopf.on.resume("service", annotations={"twingate.com/resource": "true"})
+@kopf.on.create("service", annotations={"twingate.com/resource": "true"})
+@kopf.on.update("service", annotations={"twingate.com/resource": "true"})
 def twingate_service_create(body, spec, namespace, meta, logger, **_):
     logger.info("twingate_service_create: %s", spec)
 

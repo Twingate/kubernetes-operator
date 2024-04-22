@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    twingate.com/resource: "true"
+    twingate.com/resource-alias: "myapp.internal"
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+      name: first
+    - protocol: UDP
+      port: 22
+      targetPort: 9376
+      name: second

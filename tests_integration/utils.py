@@ -52,6 +52,8 @@ def kubectl_get(resource_type: str, resource_name: str) -> dict:
     return json.loads(result.stdout)
 
 
-def kubectl_patch(resource: str, patch: dict) -> subprocess.CompletedProcess:
+def kubectl_patch(
+    resource: str, patch: dict | list, merge_type: str = "merge"
+) -> subprocess.CompletedProcess:
     patch_str = json.dumps(patch).decode()
-    return kubectl(f"patch {resource} -p '{patch_str}' --type=merge")
+    return kubectl(f"patch {resource} -p '{patch_str}' --type={merge_type}")

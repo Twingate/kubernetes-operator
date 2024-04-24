@@ -2,6 +2,23 @@
 
 
 
+## v0.10.0 (2024-04-24)
+
+### Chore
+
+* chore: Fix issues stalebot ([`92554be`](https://github.com/Twingate/kubernetes-operator/commit/92554beacdecc94f5e7f0fbdff1bec8f36d96c2b))
+
+* chore: Pre-commit updates (#247) ([`aecf20f`](https://github.com/Twingate/kubernetes-operator/commit/aecf20f8f07d96c4c483c29620aa91b9b1581a64))
+
+### Feature
+
+* feat: Allow exposing Service objects with annotations (#244) ([`87a8bdc`](https://github.com/Twingate/kubernetes-operator/commit/87a8bdcc51be4b3b87f8e2502a24ae7749d9a5c3))
+
+* feat: Don’t query for principal external ref once we have the id (#243) ([`9d6cb8c`](https://github.com/Twingate/kubernetes-operator/commit/9d6cb8ce3eaec241ed1b660df790892b79625189))
+
+* feat: Ability to import existing twingate resources (#246) ([`d143995`](https://github.com/Twingate/kubernetes-operator/commit/d143995d46f1a381d0571dfb05df9843d919abcd))
+
+
 ## v0.9.0 (2024-04-08)
 
 ### Feature

@@ -212,6 +212,6 @@ jobs:
         env:
           REGISTRY: ghcr.io
         run: |
-          helm registry login -u twingate -p ${{ secrets.GITHUB_TOKEN }} $REGISTRY
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate

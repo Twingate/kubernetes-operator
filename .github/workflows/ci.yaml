@@ -214,4 +214,4 @@ jobs:
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
-          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/charts

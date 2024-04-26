@@ -15,179 +15,206 @@ env:
   POETRY_VERSION: 1.8.3
 
 jobs:
-  dockerfile-lint:
+  # dockerfile-lint:
+  #   runs-on: ubuntu-latest
+  #   name: Dockerfile lint
+  #   steps:
+  #     - run: echo "github ref is ${{ github.head_ref }} ${{ github.base_ref }}"
+  #     - uses: actions/checkout@v4
+  #     - uses: hadolint/hadolint-action@v3.1.0
+  #       with:
+  #         dockerfile: Dockerfile
+
+  # helm-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Go 1.22.x
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version: 1.22.x
+  #     - name: Run Helm Chart Golden Tests
+  #       run: go test -v ./...
+
+  # unit-tests:
+  #   runs-on: ubuntu-latest
+  #   name: Unit tests
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - uses: actions/setup-python@v5
+  #     with:
+  #       python-version: ${{ env.PYTHON_VERSION }}
+  #   - name: Install and configure Poetry
+  #     uses: snok/install-poetry@v1
+  #     with:
+  #       version: ${{ env.POETRY_VERSION }}
+  #       virtualenvs-create: true
+  #       virtualenvs-in-project: true
+  #       installer-parallel: true
+
+  #   - name: Cache Dependencies
+  #     id: cache-dev-deps
+  #     uses: actions/cache@v4
+  #     with:
+  #       path: .venv
+  #       key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+  #   - uses: actions/cache@v4
+  #     with:
+  #       path: ~/.cache/pre-commit/
+  #       key: pre-commit-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+  #   - run: make dev-deps
+  #   - run: make check-pre-commit skip=shellcheck,markdownlint,no-commit-to-branch
+
+  #   - name: Check the validity of pyproject.toml
+  #     run: poetry check
+
+  #   - name: Lint (ruff)
+  #     run: make lint
+
+  #   - name: Typecheck
+  #     run: make typecheck
+
+  #   - name: Lint Bandit
+  #     run: make lint-bandit
+
+  #   - run: make test-cov
+  #   - run: make report-to-coveralls
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+
+  # e2e-tests:
+  #   runs-on: ubuntu-latest
+  #   name: Integration tests
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - uses: actions/setup-python@v5
+  #     with:
+  #       python-version: ${{ env.PYTHON_VERSION }}
+  #   - name: Install and configure Poetry
+  #     uses: snok/install-poetry@v1
+  #     with:
+  #       version: ${{ env.POETRY_VERSION }}
+  #       virtualenvs-create: true
+  #       virtualenvs-in-project: true
+  #       installer-parallel: true
+
+  #   - name: Cache Dependencies
+  #     id: cache-dev-deps
+  #     uses: actions/cache@v4
+  #     with:
+  #       path: .venv
+  #       key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+  #   - run: make dev-deps
+  #   - run: ./scripts/minikube-smoketests.sh
+  #     env:
+  #       TWINGATE_API_KEY: ${{ secrets.TWINGATE_API_KEY }}
+  #       TWINGATE_HOST: ${{ secrets.TWINGATE_HOST }}
+  #       TWINGATE_NETWORK: ${{ secrets.TWINGATE_NETWORK }}
+  #       TWINGATE_REMOTE_NETWORK_ID: ${{ secrets.TWINGATE_REMOTE_NETWORK_ID }}
+  #       TWINGATE_TEST_PRINCIPAL_ID: ${{ secrets.TWINGATE_TEST_PRINCIPAL_ID }}
+
+  # build:
+  #   runs-on: ubuntu-latest
+  #   name: Image Build
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+  #     - name: Install and configure Poetry
+  #       uses: snok/install-poetry@v1
+  #       with:
+  #         version: ${{ env.POETRY_VERSION }}
+  #         virtualenvs-create: true
+  #         virtualenvs-in-project: true
+  #         installer-parallel: true
+
+  #     - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
+  #       uses: crazy-max/ghaction-github-runtime@v3
+
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - run: make multiarch-image-build-dev
+  #       env:
+  #         DOCKER_BUILDX_CACHE: --cache-to type=gha,mode=max --cache-from type=gha
+
+  # release_dev:
+  #   runs-on: ubuntu-latest
+  #   name: Release dev
+  #   needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+  #     - name: Install and configure Poetry
+  #       uses: snok/install-poetry@v1
+  #       with:
+  #         version: ${{ env.POETRY_VERSION }}
+  #         virtualenvs-create: true
+  #         virtualenvs-in-project: true
+  #         installer-parallel: true
+
+  #     - name: Set DEV release version
+  #       run: |
+  #         poetry install --with build -n
+  #         poetry version $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
+  #         poetry version -s
+
+  #     - name: Login to Docker Hub
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  #     - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
+  #       uses: crazy-max/ghaction-github-runtime@v3
+
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - run: make multiarch-image-build-push-dev
+  #       env:
+  #         DOCKER_BUILDX_CACHE: --cache-to type=gha,mode=max --cache-from type=gha
+
+  release_dev_helm:
     runs-on: ubuntu-latest
-    name: Dockerfile lint
-    steps:
-      - run: echo "github ref is ${{ github.head_ref }} ${{ github.base_ref }}"
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-
-  helm-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go 1.22.x
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.22.x
-      - name: Run Helm Chart Golden Tests
-        run: go test -v ./...
-
-  unit-tests:
-    runs-on: ubuntu-latest
-    name: Unit tests
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    - name: Install and configure Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: ${{ env.POETRY_VERSION }}
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
-
-    - name: Cache Dependencies
-      id: cache-dev-deps
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-    - uses: actions/cache@v4
-      with:
-        path: ~/.cache/pre-commit/
-        key: pre-commit-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
-
-    - run: make dev-deps
-    - run: make check-pre-commit skip=shellcheck,markdownlint,no-commit-to-branch
-
-    - name: Check the validity of pyproject.toml
-      run: poetry check
-
-    - name: Lint (ruff)
-      run: make lint
-
-    - name: Typecheck
-      run: make typecheck
-
-    - name: Lint Bandit
-      run: make lint-bandit
-
-    - run: make test-cov
-    - run: make report-to-coveralls
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-
-  e2e-tests:
-    runs-on: ubuntu-latest
-    name: Integration tests
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    - name: Install and configure Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: ${{ env.POETRY_VERSION }}
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
-
-    - name: Cache Dependencies
-      id: cache-dev-deps
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-    - run: make dev-deps
-    - run: ./scripts/minikube-smoketests.sh
-      env:
-        TWINGATE_API_KEY: ${{ secrets.TWINGATE_API_KEY }}
-        TWINGATE_HOST: ${{ secrets.TWINGATE_HOST }}
-        TWINGATE_NETWORK: ${{ secrets.TWINGATE_NETWORK }}
-        TWINGATE_REMOTE_NETWORK_ID: ${{ secrets.TWINGATE_REMOTE_NETWORK_ID }}
-        TWINGATE_TEST_PRINCIPAL_ID: ${{ secrets.TWINGATE_TEST_PRINCIPAL_ID }}
-
-  build:
-    runs-on: ubuntu-latest
-    name: Image Build
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: ${{ env.POETRY_VERSION }}
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-
-      - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
-        uses: crazy-max/ghaction-github-runtime@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - run: make multiarch-image-build-dev
-        env:
-          DOCKER_BUILDX_CACHE: --cache-to type=gha,mode=max --cache-from type=gha
-
-  release_dev:
-    runs-on: ubuntu-latest
-    name: Release dev
-    needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
-    if: github.ref == 'refs/heads/main'
+    name: Release dev helm
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - name: Install Helm
+        uses: azure/setup-helm@v3.5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@v1
+          version: v3.14.4
+
+      - uses: chrisdickinson/setup-yq@latest
+
+      - name: Push helm chart
+        uses: appany/helm-oci-chart-releaser@v0.4.1
         with:
-          version: ${{ env.POETRY_VERSION }}
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-
-      - name: Set DEV release version
-        run: |
-          poetry install --with build -n
-          poetry version $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
-          poetry version -s
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Expose GitHub Runtime (ACTION_* env vars required for docker caching)
-        uses: crazy-max/ghaction-github-runtime@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - run: make multiarch-image-build-push-dev
-        env:
-          DOCKER_BUILDX_CACHE: --cache-to type=gha,mode=max --cache-from type=gha
+          name: twingate-operator
+          repository: twingate
+          tag: $(yq r deploy/twingate-operator/Chart.yaml version)
+          app_version: $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
+          path: deploy/twingate-operator
+          registry: ghcr.io
+          registry_username: twingate
+          registry_password: ${{ secrets.GITHUB_TOKEN }}

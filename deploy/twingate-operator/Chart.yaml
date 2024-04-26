@@ -3,3 +3,6 @@ name: twingate-operator
 description: A Helm chart for installing twingate-operator
 type: application
 version: 0.1.9
+home: https://grafana.com
+sources:
+  - https://github.com/Twingate/kubernetes-operator

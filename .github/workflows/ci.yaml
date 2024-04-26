@@ -208,10 +208,18 @@ jobs:
           echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version)" >> $GITHUB_ENV
           echo "APP_VERSION=$(poetry run semantic-release version --print)-dev.${{ github.run_id }}" >> $GITHUB_ENV
 
-      - name: Helm Publish
+      - name: Helm Publish (Github)
         env:
           REGISTRY: ghcr.io
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/charts
+
+      - name: Helm Publish (Dockerhub)
+        env:
+          REGISTRY: dockerg.io
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | helm registry login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin $REGISTRY
+          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/twingate-operator-chart

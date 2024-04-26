@@ -200,21 +200,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Helm
-        uses: azure/setup-helm@v3.5
-        with:
-          version: v3.14.4
-
+      - uses: azure/setup-helm@v4.2.0
       - uses: chrisdickinson/setup-yq@latest
 
-      - name: Push helm chart
-        uses: appany/helm-oci-chart-releaser@v0.4.1
-        with:
-          name: twingate-operator
-          repository: twingate
-          tag: $(yq r deploy/twingate-operator/Chart.yaml version)
-          app_version: $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
-          path: deploy/twingate-operator
-          registry: ghcr.io
-          registry_username: twingate
-          registry_password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set env vars
+        run: |
+          echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version)" >> $GITHUB_ENV
+          echo "APP_VERSION=$(poetry run semantic-release version --print)-dev.${{ github.run_id }}" >> $GITHUB_ENV
+
+      - name: Helm Publish
+        env:
+          REGISTRY: ghcr.io
+        run: |
+          helm registry login -u twingate -p ${{ secrets.GITHUB_TOKEN }} $REGISTRY
+          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate

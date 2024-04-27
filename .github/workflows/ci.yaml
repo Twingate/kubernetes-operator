@@ -222,4 +222,5 @@ jobs:
         run: |
           echo ${{ secrets.DOCKERHUB_TOKEN }} | helm registry login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
-          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/twingate-operator-chart --debug
+          mv twingate-operator-$CHART_VERSION.tgz twingate-operator-chart-$CHART_VERSION.tgz
+          helm push twingate-operator-chart-$CHART_VERSION.tgz oci://$REGISTRY/twingate --debug

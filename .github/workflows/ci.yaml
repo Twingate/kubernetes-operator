@@ -224,7 +224,7 @@ jobs:
 
       - name: Helm Publish (Dockerhub)
         env:
-          REGISTRY: registry-1.docker.io
+          REGISTRY: registry-1.docker.io/twingate
         run: |
           echo ${{ secrets.DOCKERHUB_TOKEN }} | helm registry login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION

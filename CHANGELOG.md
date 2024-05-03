@@ -2,6 +2,21 @@
 
 
 
+## v0.10.1 (2024-05-03)
+
+### Chore
+
+* chore: Update Golang to 1.22.2 ([`49b9e1f`](https://github.com/Twingate/kubernetes-operator/commit/49b9e1faa591568040ac0f14e16a96f492f204fe))
+
+### Documentation
+
+* docs: Update README ([`6516435`](https://github.com/Twingate/kubernetes-operator/commit/65164351a4881d77f7d53b795f1779e22ab2fea4))
+
+### Fix
+
+* fix: using the operator with annotations have some problems (#270) ([`ace69fc`](https://github.com/Twingate/kubernetes-operator/commit/ace69fce217626108bf208cc3d69d8080ba9e75a))
+
+
 ## v0.10.0 (2024-04-24)
 
 ### Chore

@@ -86,7 +86,7 @@ class TestServiceToTwingateResource:
             },
         }
 
-        test_values = {
+        expected_annotation_values = {
             "alias": "myapp.internal",
             "isBrowserShortcutEnabled": True,
             "securityPolicyId": "12345",
@@ -97,9 +97,9 @@ class TestServiceToTwingateResource:
             name, _ = annotation_name_converter
             example_service_body.metadata["annotations"][
                 f"twingate.com/resource-{name}"
-            ] = str(test_values[name])
+            ] = str(expected_annotation_values[name])
 
-            expected["spec"][name] = test_values[name]
+            expected["spec"][name] = expected_annotation_values[name]
 
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected

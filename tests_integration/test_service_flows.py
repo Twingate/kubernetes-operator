@@ -24,6 +24,8 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
           annotations:
             twingate.com/resource: "true"
             twingate.com/resource-alias: "myapp.internal"
+            twingate.com/resource-isVisible: "true"
+            twingate.com/resource-isBrowserShortcutEnabled: "false"
         spec:
           selector:
             app.kubernetes.io/name: MyApp

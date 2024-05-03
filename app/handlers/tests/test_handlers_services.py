@@ -56,8 +56,12 @@ def k8s_customobjects_client_mock():
 
 
 class TestServiceToTwingateResource:
-    @pytest.mark.parametrize("annotation_name", ["", *ALLOWED_EXTRA_ANNOTATIONS])
-    def test_with_extra_annotation(self, example_service_body, annotation_name):
+    @pytest.mark.parametrize(
+        "annotation_name_converter", [None, *ALLOWED_EXTRA_ANNOTATIONS]
+    )
+    def test_with_extra_annotation(
+        self, example_service_body, annotation_name_converter
+    ):
         expected = {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResource",
@@ -82,12 +86,18 @@ class TestServiceToTwingateResource:
             },
         }
 
-        if annotation_name:
-            example_service_body.metadata["annotations"][
-                f"twingate.com/resource-{annotation_name}"
-            ] = f"{annotation_name} value"
+        test_values = {
+            "alias": "myapp.internal",
+            "isBrowserShortcutEnabled": True,
+            "securityPolicyId": "12345",
+            "isVisible": True,
+        }
 
-            expected["spec"][annotation_name] = f"{annotation_name} value"
+        if annotation_name_converter is not None:
+            aname, aconvert = annotation_name_converter
+            example_service_body.metadata["annotations"][
+                f"twingate.com/resource-{aname}"
+            ] = expected["spec"][aname] = test_values[aname]
 
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected

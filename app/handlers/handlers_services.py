@@ -2,9 +2,9 @@ from collections.abc import Callable
 
 import kopf
 import kubernetes
-from attr.converters import to_bool
 
 from app.handlers import success
+from app.utils import to_bool
 
 
 def k8s_get_twingate_resource(

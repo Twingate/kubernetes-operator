@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import kopf
 import kubernetes
 from attr.converters import to_bool
@@ -19,7 +21,7 @@ def k8s_get_twingate_resource(
         raise
 
 
-ALLOWED_EXTRA_ANNOTATIONS = [
+ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("alias", str),
     ("isBrowserShortcutEnabled", to_bool),
     ("securityPolicyId", str),

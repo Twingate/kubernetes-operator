@@ -94,10 +94,12 @@ class TestServiceToTwingateResource:
         }
 
         if annotation_name_converter is not None:
-            aname, aconvert = annotation_name_converter
+            name, _ = annotation_name_converter
             example_service_body.metadata["annotations"][
-                f"twingate.com/resource-{aname}"
-            ] = expected["spec"][aname] = test_values[aname]
+                f"twingate.com/resource-{name}"
+            ] = str(test_values[name])
+
+            expected["spec"][name] = test_values[name]
 
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected

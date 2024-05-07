@@ -23,6 +23,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
           name: {service_name}
           annotations:
             twingate.com/resource: "true"
+            twingate.com/resource-name: "My Service"
             twingate.com/resource-alias: "myapp.internal"
             twingate.com/resource-isVisible: "true"
             twingate.com/resource-isBrowserShortcutEnabled: "false"
@@ -53,7 +54,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
             "id": ANY,
             "isBrowserShortcutEnabled": False,
             "isVisible": True,
-            "name": f"{service_name}-resource",
+            "name": "My Service",
             "protocols": {
                 "allowIcmp": False,
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},

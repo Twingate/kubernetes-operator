@@ -22,6 +22,7 @@ def k8s_get_twingate_resource(
 
 
 ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
+    ("name", str),
     ("alias", str),
     ("isBrowserShortcutEnabled", to_bool),
     ("securityPolicyId", str),

@@ -87,6 +87,7 @@ class TestServiceToTwingateResource:
         }
 
         expected_annotation_values = {
+            "name": "my resource",
             "alias": "myapp.internal",
             "isBrowserShortcutEnabled": True,
             "securityPolicyId": "12345",

@@ -87,7 +87,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
             "id": ANY,
             "isBrowserShortcutEnabled": False,
             "isVisible": True,
-            "name": f"{service_name}-resource",
+            "name": "My Service",
             "protocols": {
                 "allowIcmp": False,
                 "tcp": {

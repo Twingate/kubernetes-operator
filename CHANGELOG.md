@@ -2,6 +2,13 @@
 
 
 
+## v0.11.0 (2024-05-07)
+
+### Feature
+
+* feat: Allow defining custom resource Name for annotated service resource (#279) ([`91d3263`](https://github.com/Twingate/kubernetes-operator/commit/91d3263e9de4a1da0e99ea939818e16244d00878))
+
+
 ## v0.10.1 (2024-05-03)
 
 ### Chore

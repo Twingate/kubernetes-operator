@@ -1,7 +1,10 @@
+from collections.abc import Callable
+
 import kopf
 import kubernetes
 
 from app.handlers import success
+from app.utils import to_bool
 
 
 def k8s_get_twingate_resource(
@@ -18,11 +21,12 @@ def k8s_get_twingate_resource(
         raise
 
 
-ALLOWED_EXTRA_ANNOTATIONS = [
-    "alias",
-    "isBrowserShortcutEnabled",
-    "securityPolicyId",
-    "isVisible",
+ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
+    ("name", str),
+    ("alias", str),
+    ("isBrowserShortcutEnabled", to_bool),
+    ("securityPolicyId", str),
+    ("isVisible", to_bool),
 ]
 
 
@@ -44,9 +48,9 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
         },
     }
 
-    for key in ALLOWED_EXTRA_ANNOTATIONS:
+    for key, convert_f in ALLOWED_EXTRA_ANNOTATIONS:
         if value := meta.annotations.get(f"twingate.com/resource-{key}"):
-            result["spec"][key] = value
+            result["spec"][key] = convert_f(value)
 
     if service_ports := spec.get("ports", []):
         protocols: dict = {

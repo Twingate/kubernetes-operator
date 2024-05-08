@@ -95,7 +95,7 @@ kopf.on.create("twingateresourceaccess")(twingate_resource_access_sync)
 kopf.on.update("twingateresourceaccess", field="spec")(twingate_resource_access_sync)
 kopf.timer(
     "twingateresourceaccess",
-    interval=timedelta(seconds=10).seconds,
+    interval=timedelta(hours=10).seconds,
     initial_delay=60,
     idle=60,
 )(twingate_resource_access_sync)

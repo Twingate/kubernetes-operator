@@ -2,6 +2,13 @@
 
 
 
+## v0.11.1 (2024-05-08)
+
+### Fix
+
+* fix: TwingateResourceAccess timer too frequent ([`c1645f4`](https://github.com/Twingate/kubernetes-operator/commit/c1645f4a9a5aa43e26ac7ecbe0a2f0a6d0743bc8))
+
+
 ## v0.11.0 (2024-05-07)
 
 ### Feature

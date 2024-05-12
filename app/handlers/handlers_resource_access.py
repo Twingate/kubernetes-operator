@@ -20,7 +20,7 @@ def get_principal_id(
         return principal_id
 
     if ref := access_crd.principal_external_ref:
-        # Once `twingate_resource_access_changed` ran and we have the principal_id
+        # Once `twingate_resource_access_change` ran and we have the principal_id
         # we dont use it and do not re-query the API
         if principal_id_already_fetched := create_status and create_status.get(
             "principal_id"
@@ -45,7 +45,7 @@ def get_principal_id(
 def check_status_created(status: dict | None) -> dict | None:
     if (
         create_status := status
-        and status.get(twingate_resource_access_changed.__name__, {})
+        and status.get(twingate_resource_access_change.__name__, {})
     ) and create_status["success"]:
         return create_status
 
@@ -54,7 +54,7 @@ def check_status_created(status: dict | None) -> dict | None:
 
 @kopf.on.create("twingateresourceaccess")
 @kopf.on.update("twingateresourceaccess", field="spec")
-def twingate_resource_access_changed(body, spec, memo, logger, patch, status, **kwargs):
+def twingate_resource_access_change(body, spec, memo, logger, patch, status, **kwargs):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
 
@@ -99,7 +99,7 @@ def twingate_resource_access_changed(body, spec, memo, logger, patch, status, **
     idle=60,
 )
 def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
-    return twingate_resource_access_changed(
+    return twingate_resource_access_change(
         body, spec, memo, logger, patch, status, **kwargs
     )
 

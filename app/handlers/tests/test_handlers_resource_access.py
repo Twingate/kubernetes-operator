@@ -285,7 +285,7 @@ class TestResourceAccessDelete:
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
         status = {
-            "twingate_resource_access_changed": {
+            "twingate_resource_access_change": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }

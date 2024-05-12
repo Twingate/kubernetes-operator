@@ -264,7 +264,7 @@ def test_resource_access_flows(
 
     # Create
     assert {
-        "message": "Handler 'twingate_resource_access_changed' succeeded.",
+        "message": "Handler 'twingate_resource_access_change' succeeded.",
         "timestamp": ANY,
         "object": {
             "apiVersion": "twingate.com/v1beta",

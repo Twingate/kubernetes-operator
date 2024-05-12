@@ -105,7 +105,7 @@ def twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs):
     idle=60,
 )
 def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
-    twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs)
+    return twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs)
 
 
 @kopf.on.delete("twingateresourceaccess")

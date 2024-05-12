@@ -54,7 +54,7 @@ def check_status_created(status: dict | None) -> dict | None:
 
 @kopf.on.create("twingateresourceaccess")
 @kopf.on.update("twingateresourceaccess", field="spec")
-def twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs):
+def twingate_resource_access_change(body, spec, memo, logger, patch, status, **kwargs):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
 
@@ -99,7 +99,9 @@ def twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs):
     idle=60,
 )
 def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
-    return twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs)
+    return twingate_resource_access_change(
+        body, spec, memo, logger, patch, status, **kwargs
+    )
 
 
 @kopf.on.delete("twingateresourceaccess")

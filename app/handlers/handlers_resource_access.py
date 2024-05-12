@@ -45,7 +45,7 @@ def get_principal_id(
 def check_status_created(status: dict | None) -> dict | None:
     if (
         create_status := status
-        and status.get(twingate_resource_access_sync.__name__, {})
+        and status.get(twingate_resource_access_changed.__name__, {})
     ) and create_status["success"]:
         return create_status
 

@@ -52,7 +52,15 @@ def check_status_created(status: dict | None) -> dict | None:
     return None
 
 
-def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
+@kopf.on.create("twingateresourceaccess")
+@kopf.on.update("twingateresourceaccess", field="spec")
+@kopf.timer(
+    "twingateresourceaccess",
+    interval=timedelta(hours=10).seconds,
+    initial_delay=60,
+    idle=60,
+)
+def twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
 
@@ -90,15 +98,14 @@ def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwa
         return fail(error=mex.error)
 
 
-# can't use decorator syntax because typecheck would fail (update has some extra params that we're not using)
-kopf.on.create("twingateresourceaccess")(twingate_resource_access_sync)
-kopf.on.update("twingateresourceaccess", field="spec")(twingate_resource_access_sync)
-kopf.timer(
+@kopf.timer(
     "twingateresourceaccess",
     interval=timedelta(hours=10).seconds,
     initial_delay=60,
     idle=60,
-)(twingate_resource_access_sync)
+)
+def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
+    twingate_resource_change(body, spec, memo, logger, patch, status, **kwargs)
 
 
 @kopf.on.delete("twingateresourceaccess")

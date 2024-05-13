@@ -52,20 +52,19 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
         if value := meta.annotations.get(f"twingate.com/resource-{key}"):
             result["spec"][key] = convert_f(value)
 
-    if service_ports := spec.get("ports", []):
-        protocols: dict = {
-            "allowIcmp": False,
-            "tcp": {"policy": "RESTRICTED", "ports": []},
-            "udp": {"policy": "RESTRICTED", "ports": []},
-        }
-        for port_obj in service_ports:
-            port = port_obj["port"]
-            if port_obj["protocol"] == "TCP":
-                protocols["tcp"]["ports"].append({"start": port, "end": port})
-            elif port_obj["protocol"] == "UDP":
-                protocols["udp"]["ports"].append({"start": port, "end": port})
+    protocols: dict = {
+        "allowIcmp": False,
+        "tcp": {"policy": "RESTRICTED", "ports": []},
+        "udp": {"policy": "RESTRICTED", "ports": []},
+    }
+    for port_obj in spec.get("ports", []):
+        port = port_obj["port"]
+        if port_obj["protocol"] == "TCP":
+            protocols["tcp"]["ports"].append({"start": port, "end": port})
+        elif port_obj["protocol"] == "UDP":
+            protocols["udp"]["ports"].append({"start": port, "end": port})
 
-        result["spec"]["protocols"] = protocols
+    result["spec"]["protocols"] = protocols
 
     return result
 

@@ -103,7 +103,7 @@ class TestGetPrincipalId:
         assert principal_id == expected
 
 
-class TestResourceAccessCreateHandler:
+class TestResourceAccessChangeHandler:
     def test_create_success(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()

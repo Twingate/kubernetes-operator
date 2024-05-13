@@ -103,7 +103,7 @@ class TestGetPrincipalId:
         assert principal_id == expected
 
 
-class TestResourceAccessCreateHandler:
+class TestResourceAccessChangeHandler:
     def test_create_success(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -312,7 +312,7 @@ class TestResourceAccessDelete:
         logger_mock = MagicMock()
         memo_mock = MagicMock()
         status = {
-            "twingate_resource_access_sync": {
+            "twingate_resource_access_change": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }

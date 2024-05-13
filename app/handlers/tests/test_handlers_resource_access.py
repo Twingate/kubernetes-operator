@@ -312,7 +312,7 @@ class TestResourceAccessDelete:
         logger_mock = MagicMock()
         memo_mock = MagicMock()
         status = {
-            "twingate_resource_access_sync": {
+            "twingate_resource_access_change": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }

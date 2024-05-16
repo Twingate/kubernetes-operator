@@ -119,7 +119,6 @@ class TestResourceAccessChangeHandler:
         memo_mock = MagicMock()
         patch_mock = MagicMock()
         patch_mock.metadata = {}
-        patch_mock.metadata["ownerReferences"] = []
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -145,14 +144,6 @@ class TestResourceAccessChangeHandler:
             }
 
         kopf_info_mock.assert_called_once_with("", reason="Success", message=ANY)
-        assert patch_mock.metadata["ownerReferences"] == [
-            {
-                "apiVersion": "twingate.com/v1",
-                "kind": "TwingateResource",
-                "name": "foo",
-                "uid": "uid",
-            }
-        ]
 
     def test_create_invalid_ref(self, mock_api_client):
         resource_access_spec = {

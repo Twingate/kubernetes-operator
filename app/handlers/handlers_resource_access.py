@@ -81,9 +81,6 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
             reason="Success",
             message=f"Added access to {resource_crd.spec.id}<>{principal_id}",
         )
-        patch.metadata["ownerReferences"] = [
-            resource_crd.metadata.owner_reference_object
-        ]
         return success(principal_id=principal_id, resource_id=resource_id)
     except GraphQLMutationError as mex:
         kopf.exception(

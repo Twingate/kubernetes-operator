@@ -103,7 +103,7 @@ class TestGetPrincipalId:
         assert principal_id == expected
 
 
-class TestResourceAccessCreateHandler:
+class TestResourceAccessChangeHandler:
     def test_create_success(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -119,7 +119,6 @@ class TestResourceAccessCreateHandler:
         memo_mock = MagicMock()
         patch_mock = MagicMock()
         patch_mock.metadata = {}
-        patch_mock.metadata["ownerReferences"] = []
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -145,14 +144,6 @@ class TestResourceAccessCreateHandler:
             }
 
         kopf_info_mock.assert_called_once_with("", reason="Success", message=ANY)
-        assert patch_mock.metadata["ownerReferences"] == [
-            {
-                "apiVersion": "twingate.com/v1",
-                "kind": "TwingateResource",
-                "name": "foo",
-                "uid": "uid",
-            }
-        ]
 
     def test_create_invalid_ref(self, mock_api_client):
         resource_access_spec = {
@@ -285,7 +276,7 @@ class TestResourceAccessDelete:
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
         status = {
-            "twingate_resource_access_sync": {
+            "twingate_resource_access_change": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }
@@ -312,7 +303,7 @@ class TestResourceAccessDelete:
         logger_mock = MagicMock()
         memo_mock = MagicMock()
         status = {
-            "twingate_resource_access_sync": {
+            "twingate_resource_access_change": {
                 "success": True,
                 "principal_id": resource_access_spec["principalId"],
             }

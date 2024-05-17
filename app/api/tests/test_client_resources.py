@@ -312,3 +312,32 @@ class TestTwingateResourceAPIs:
         )
         result = api_client.resource_delete("some-id")
         assert result is True
+
+    def test_resource_delete_raises_if_unknown_error(
+        self, test_url, api_client, mocked_responses
+    ):
+        failed_response = json.dumps(
+            {
+                "data": {
+                    "resourceDelete": {
+                        "ok": False,
+                        "error": "Something unknown happened...",
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=failed_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "some-id"}}, strict_match=False
+                )
+            ],
+        )
+        with pytest.raises(
+            GraphQLMutationError, match="resourceDelete mutation failed."
+        ):
+            api_client.resource_delete("some-id")

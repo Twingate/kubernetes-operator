@@ -20,7 +20,7 @@ def get_principal_id(
         return principal_id
 
     if ref := access_crd.principal_external_ref:
-        # Once `twingate_resource_access_sync` ran and we have the principal_id
+        # Once `twingate_resource_access_change` ran and we have the principal_id
         # we dont use it and do not re-query the API
         if principal_id_already_fetched := create_status and create_status.get(
             "principal_id"
@@ -45,14 +45,16 @@ def get_principal_id(
 def check_status_created(status: dict | None) -> dict | None:
     if (
         create_status := status
-        and status.get(twingate_resource_access_sync.__name__, {})
+        and status.get(twingate_resource_access_change.__name__, {})
     ) and create_status["success"]:
         return create_status
 
     return None
 
 
-def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
+@kopf.on.create("twingateresourceaccess")
+@kopf.on.update("twingateresourceaccess", field="spec")
+def twingate_resource_access_change(body, spec, memo, logger, patch, status, **kwargs):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
 
@@ -79,9 +81,6 @@ def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwa
             reason="Success",
             message=f"Added access to {resource_crd.spec.id}<>{principal_id}",
         )
-        patch.metadata["ownerReferences"] = [
-            resource_crd.metadata.owner_reference_object
-        ]
         return success(principal_id=principal_id, resource_id=resource_id)
     except GraphQLMutationError as mex:
         kopf.exception(
@@ -90,15 +89,16 @@ def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwa
         return fail(error=mex.error)
 
 
-# can't use decorator syntax because typecheck would fail (update has some extra params that we're not using)
-kopf.on.create("twingateresourceaccess")(twingate_resource_access_sync)
-kopf.on.update("twingateresourceaccess", field="spec")(twingate_resource_access_sync)
-kopf.timer(
+@kopf.timer(
     "twingateresourceaccess",
     interval=timedelta(hours=10).seconds,
     initial_delay=60,
     idle=60,
-)(twingate_resource_access_sync)
+)
+def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
+    return twingate_resource_access_change(
+        body, spec, memo, logger, patch, status, **kwargs
+    )
 
 
 @kopf.on.delete("twingateresourceaccess")

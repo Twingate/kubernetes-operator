@@ -2,6 +2,13 @@
 
 
 
+## v0.11.2 (2024-05-12)
+
+### Fix
+
+* fix: TwingateResourceAccess only updating every 10h and not immediately (#283) ([`2809bb9`](https://github.com/Twingate/kubernetes-operator/commit/2809bb99417370d767077ed082848038abd03273))
+
+
 ## v0.11.1 (2024-05-08)
 
 ### Fix

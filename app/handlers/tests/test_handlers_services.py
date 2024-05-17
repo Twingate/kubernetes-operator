@@ -42,9 +42,7 @@ def example_service_body():
           targetPort: 9376
           name: ssh
     """
-    return kopf._cogs.structs.bodies.Body(  # noqa: SLF001
-        yaml.safe_load(yaml_str)
-    )
+    return kopf.Body(yaml.safe_load(yaml_str))
 
 
 @pytest.fixture()

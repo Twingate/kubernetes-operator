@@ -2,6 +2,17 @@
 
 
 
+## v0.11.3 (2024-05-20)
+
+### Chore
+
+* chore: Increase test coverage (#285) ([`28b69f5`](https://github.com/Twingate/kubernetes-operator/commit/28b69f52ce812c43721383397497ac4616f41faa))
+
+### Fix
+
+* fix: Remove TwingateResourceAccess ownerReference (#289) ([`acf0a72`](https://github.com/Twingate/kubernetes-operator/commit/acf0a721853fe5523b0f6f21da79230214325b55))
+
+
 ## v0.11.2 (2024-05-12)
 
 ### Fix

@@ -71,6 +71,9 @@ def get_connector_pod(
                     },
                     "runAsNonRoot": True,
                     "runAsUser": 65532,
+                    "seccompProfile": {
+                        "type": "RuntimeDefault"
+                    },
                },
                 **container_extra,
             },

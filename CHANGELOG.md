@@ -1,6 +1,14 @@
 # CHANGELOG
 
+## v0.11.4 (2024-06-24)
 
+### Chore
+
+* chore: More stable integration tests ([`be6da04`](https://github.com/Twingate/kubernetes-operator/commit/be6da046b5b101e9640211e2008227f2c47a268d))
+
+### Fix
+
+* fix: Allow connectors to run under Restricted pod-security policy (#329) ([`14302df`](https://github.com/Twingate/kubernetes-operator/commit/14302df61105d8ce4d4423d03626008c1df7e8b1))
 
 ## v0.11.3 (2024-05-20)
 
@@ -12,13 +20,11 @@
 
 * fix: Remove TwingateResourceAccess ownerReference (#289) ([`acf0a72`](https://github.com/Twingate/kubernetes-operator/commit/acf0a721853fe5523b0f6f21da79230214325b55))
 
-
 ## v0.11.2 (2024-05-12)
 
 ### Fix
 
 * fix: TwingateResourceAccess only updating every 10h and not immediately (#283) ([`2809bb9`](https://github.com/Twingate/kubernetes-operator/commit/2809bb99417370d767077ed082848038abd03273))
-
 
 ## v0.11.1 (2024-05-08)
 
@@ -26,13 +32,11 @@
 
 * fix: TwingateResourceAccess timer too frequent ([`c1645f4`](https://github.com/Twingate/kubernetes-operator/commit/c1645f4a9a5aa43e26ac7ecbe0a2f0a6d0743bc8))
 
-
 ## v0.11.0 (2024-05-07)
 
 ### Feature
 
 * feat: Allow defining custom resource Name for annotated service resource (#279) ([`91d3263`](https://github.com/Twingate/kubernetes-operator/commit/91d3263e9de4a1da0e99ea939818e16244d00878))
-
 
 ## v0.10.1 (2024-05-03)
 
@@ -47,7 +51,6 @@
 ### Fix
 
 * fix: using the operator with annotations have some problems (#270) ([`ace69fc`](https://github.com/Twingate/kubernetes-operator/commit/ace69fce217626108bf208cc3d69d8080ba9e75a))
-
 
 ## v0.10.0 (2024-04-24)
 
@@ -65,7 +68,6 @@
 
 * feat: Ability to import existing twingate resources (#246) ([`d143995`](https://github.com/Twingate/kubernetes-operator/commit/d143995d46f1a381d0571dfb05df9843d919abcd))
 
-
 ## v0.9.0 (2024-04-08)
 
 ### Feature
@@ -73,7 +75,6 @@
 * feat: Added TwingateConnector `logAnalytics` flag (#237) ([`a98acc3`](https://github.com/Twingate/kubernetes-operator/commit/a98acc3f96e7a03d3298e3d94c959ef991f1d821))
 
 * feat: Add ability to customize kopf logging level (#236) ([`1fc2eaf`](https://github.com/Twingate/kubernetes-operator/commit/1fc2eaf5a27cea842ed2dd45bbff726178bbc058))
-
 
 ## v0.8.0 (2024-04-03)
 
@@ -84,7 +85,6 @@
 ### Feature
 
 * feat: Add TwingateConnector sidecarContainers prop (#234) ([`835da7c`](https://github.com/Twingate/kubernetes-operator/commit/835da7cc3848c8040096d41938f5d36926ad1618))
-
 
 ## v0.7.0 (2024-03-26)
 
@@ -100,7 +100,6 @@
 
 * fix: Add validation for TwingateConnector when provider is “google” (#224) ([`68e188e`](https://github.com/Twingate/kubernetes-operator/commit/68e188ed769822640160a92148a05b0dfbdd41b6))
 
-
 ## v0.6.3 (2024-03-25)
 
 ### Chore
@@ -115,13 +114,11 @@
 
 * fix: Allow env to be defined in containerExtra (#222) ([`14f5ef5`](https://github.com/Twingate/kubernetes-operator/commit/14f5ef5fd14cfee09cd4669ac8b20cb250ee550d))
 
-
 ## v0.6.2 (2024-03-11)
 
 ### Fix
 
 * fix: Resource restricted policy should allow empty ports (#193) ([`e9aec7d`](https://github.com/Twingate/kubernetes-operator/commit/e9aec7d9ee7be6944d4c69b8d9d73107d3a38df5))
-
 
 ## v0.6.1 (2024-03-07)
 
@@ -132,7 +129,6 @@
 ### Fix
 
 * fix: Fix k8s_force_delete_pod finalizers removal (#189) ([`5b2a8f3`](https://github.com/Twingate/kubernetes-operator/commit/5b2a8f396a7abbacf958c37406b2c4dd6dc6bd6a))
-
 
 ## v0.6.0 (2024-03-06)
 
@@ -149,7 +145,6 @@
 ### Fix
 
 * fix: Connector pod updates &#34;Forbidden&#34; error (#184) ([`8096e62`](https://github.com/Twingate/kubernetes-operator/commit/8096e62c89d238035653f9e57ded8ece028505f6))
-
 
 ## v0.5.0 (2024-03-01)
 
@@ -185,7 +180,6 @@
 
 * Upgrade local tooling for 3.11.8 ([`4cdaec0`](https://github.com/Twingate/kubernetes-operator/commit/4cdaec0658de1c7da7a6f490fed34a2bc3fd9156))
 
-
 ## v0.4.0 (2024-02-15)
 
 ### Chore
@@ -208,7 +202,6 @@
 
 * fix: Added `twingate_connector_image_update` to handle `image` updates (#131) ([`25f2753`](https://github.com/Twingate/kubernetes-operator/commit/25f27537eb292b632163978a16c23b3053b0e637))
 
-
 ## v0.3.0 (2024-01-30)
 
 ### Build
@@ -220,7 +213,6 @@
 * feat: Add relevant security context to run as non root (#103) ([`c1cdfb7`](https://github.com/Twingate/kubernetes-operator/commit/c1cdfb7c664aff1f15ea274e8f12a7c945811b33))
 
 * feat: Add seccompProfile by default (#104) ([`e3ef8d6`](https://github.com/Twingate/kubernetes-operator/commit/e3ef8d6ad9350ccdf95dcf3eb022ed73e845c530))
-
 
 ## v0.2.0 (2024-01-18)
 
@@ -289,7 +281,6 @@ Co-authored-by: Eran Kampf &lt;205185+ekampf@users.noreply.github.com&gt; ([`b9a
 
 * Allow manually triggering CI ([`955228b`](https://github.com/Twingate/kubernetes-operator/commit/955228bd9352b0de8040b55f9552cdde81bb4de0))
 
-
 ## v0.1.2 (2023-11-01)
 
 ### Documentation
@@ -306,7 +297,6 @@ Co-authored-by: Eran Kampf &lt;205185+ekampf@users.noreply.github.com&gt; ([`b9a
 
 Co-authored-by: Eran Kampf &lt;eran@ekampf.com&gt; ([`8aa5621`](https://github.com/Twingate/kubernetes-operator/commit/8aa5621aa02f1efc0fef1dc49fb1624b3309ee4f))
 
-
 ## v0.1.1 (2023-10-30)
 
 ### Fix
@@ -314,7 +304,6 @@ Co-authored-by: Eran Kampf &lt;eran@ekampf.com&gt; ([`8aa5621`](https://github.c
 * fix: ResourceAccessSpec.get_resource_ref_object fetching wrong version (#20)
 
 Co-authored-by: semantic-release &lt;semantic-release&gt; ([`86b6557`](https://github.com/Twingate/kubernetes-operator/commit/86b6557107ea927ec0244ba91ccacb680aab9751))
-
 
 ## v0.1.0 (2023-10-30)
 
@@ -343,7 +332,6 @@ Co-authored-by: semantic-release &lt;semantic-release&gt; ([`86b6557`](https://g
 * fix: Fix helm chart + add log formatting  (#19) ([`9fb6675`](https://github.com/Twingate/kubernetes-operator/commit/9fb66755ecc6018d20e63988a305b1cbd0fb07b6))
 
 * fix: Dev release tags (#13) ([`28ad640`](https://github.com/Twingate/kubernetes-operator/commit/28ad6407a388c35b2cc521f1a43497f9a244fb9c))
-
 
 ## v0.0.1 (2023-10-20)
 

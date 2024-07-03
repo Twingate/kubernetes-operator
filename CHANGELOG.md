@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.11.5 (2024-07-03)
+
+### Unknown
+
+* Removes &#39;nullable: false&#39; from CRD definitions (as its the default) (#344) ([`ee6b183`](https://github.com/Twingate/kubernetes-operator/commit/ee6b183215d11fff72aaa22c8766c1f8bbc1cbf5))
+
 ## v0.11.4 (2024-06-24)
 
 ### Chore

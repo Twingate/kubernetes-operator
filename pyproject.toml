@@ -19,7 +19,7 @@ pydantic = "^2.8.2"
 pydantic-settings = "^2.3.4"
 requests = "^2.32.3"
 semantic-version = "^2.10.0"
-tenacity = "^8.4.2"
+tenacity = "^8.5.0"
 
 [tool.poetry.group.dev]
 optional = true

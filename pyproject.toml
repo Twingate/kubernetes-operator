@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 croniter = "^2.0.5"
-google-cloud-artifact-registry = "^1.11.3"
+google-cloud-artifact-registry = "^1.11.4"
 gql = {version = "~=3.5.0", extras = ["requests"]}
 kopf = "^1.37.2"
 kubernetes = "^30.1.0"

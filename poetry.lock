@@ -707,13 +707,13 @@ requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
 
 [[package]]
 name = "google-cloud-artifact-registry"
-version = "1.11.3"
+version = "1.11.4"
 description = "Google Cloud Artifact Registry API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-artifact-registry-1.11.3.tar.gz", hash = "sha256:c2c49e15bb591d65dea22c82da55148c5134f71919baef8eb4d35be1d1cb20cd"},
-    {file = "google_cloud_artifact_registry-1.11.3-py2.py3-none-any.whl", hash = "sha256:8337161ecb918e389dfa3858ec133572c21eabd564404c3c5a7125af1e85c3a9"},
+    {file = "google-cloud-artifact-registry-1.11.4.tar.gz", hash = "sha256:45fd640be5d215c89731e6762e3764a90d0061067471d3764ef71c1af3978249"},
+    {file = "google_cloud_artifact_registry-1.11.4-py2.py3-none-any.whl", hash = "sha256:ca95d7662b3f26b0e6dcb3efb95a171e102a3c7637b2cdb22996a410957b9349"},
 ]
 
 [package.dependencies]
@@ -721,7 +721,7 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "googleapis-common-protos"
@@ -2537,4 +2537,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "99a89bdfff388dde927b363d53405f0e069b24f681a99d4c79d4e906cc1fe2c1"
+content-hash = "b1d43a291d85c08205c32b9ee25000e447047070a55c936606ee0ce61abec257"

@@ -27,7 +27,6 @@ spec:
                   nullable: true
                 name:
                   type: string
-                  nullable: false
                   maxLength: 30
                   description: "Name of the Connector (optional, if not specified Twingate will give a random name)"
                 logLevel:
@@ -76,11 +75,9 @@ spec:
                         description: "Repository to check for new versions tags."
                       schedule:
                         type: string
-                        nullable: false
                         description: "Cron schedule to check for new versions."
                       version:
                         type: string
-                        nullable: false
                         description: "Semver version specifier (ex: '^1.0.0'). Uses NPM spec: https://github.com/npm/node-semver#ranges"
                       allowPrerelease:
                         type: boolean

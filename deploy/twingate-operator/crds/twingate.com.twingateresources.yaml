@@ -26,11 +26,9 @@ spec:
                   nullable: true
                 name:
                   type: string
-                  nullable: false
                   description: "Name of the resource."
                 address:
                   type: string
-                  nullable: false
                   description: "Address of the resource."
                 alias:
                   type: string
@@ -82,12 +80,10 @@ spec:
                              properties:
                                start:
                                  type: integer
-                                 nullable: false
                                  minimum: 1
                                  maximum: 65535
                                end:
                                  type: integer
-                                 nullable: false
                                  minimum: 1
                                  maximum: 65535
                     udp:
@@ -115,12 +111,10 @@ spec:
                              properties:
                                start:
                                  type: integer
-                                 nullable: false
                                  minimum: 1
                                  maximum: 65535
                                end:
                                  type: integer
-                                 nullable: false
                                  minimum: 1
                                  maximum: 65535
             status:

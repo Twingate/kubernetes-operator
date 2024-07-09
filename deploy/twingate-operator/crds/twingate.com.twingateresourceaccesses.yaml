@@ -24,7 +24,6 @@ spec:
               properties:
                 principalId:
                   type: string
-                  nullable: False
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
                   description: "principalId is the ID of the principal to provide access to the resource."
                   x-kubernetes-validations:
@@ -32,7 +31,6 @@ spec:
                       message: "principalId is immutable"
                 principalExternalRef:
                   type: object
-                  nullable: False
                   required: ["type", "name"]
                   properties:
                     type:
@@ -46,7 +44,6 @@ spec:
                           message: "principalExternalRef.type is immutable"
                     name:
                       type: string
-                      nullable: False
                       description: "Name of the external reference to match. (Note: name uniqueness is not enforce, if 2 entities match the same name, the first will be used)"
                       x-kubernetes-validations:
                         - rule: self == oldSelf
@@ -57,7 +54,6 @@ spec:
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
                 resourceRef:
                   type: object
-                  nullable: False
                   description: "resourceRef specifies the TwingateResource reference to provide access to."
                   x-kubernetes-validations:
                     - rule: self == oldSelf
@@ -65,7 +61,6 @@ spec:
                   properties:
                     name:
                       type: string
-                      nullable: false
                       description: "Name of the resource."
                     namespace:
                       type: string

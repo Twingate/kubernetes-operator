@@ -69,6 +69,21 @@ jobs:
           echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version) | awk 'BEGIN{FS=OFS="."} {$3=1} 1" >> $GITHUB_ENV
           echo "APP_VERSION=$(echo ${GITHUB_REF_NAME:1}) >> $GITHUB_ENV
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Helm Publish (Dockerhub)
+        env:
+          REGISTRY: registry-1.docker.io
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
+          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/kubernetes-operator-chart
+
+
       - name: Helm Publish (Github)
         env:
           REGISTRY: ghcr.io

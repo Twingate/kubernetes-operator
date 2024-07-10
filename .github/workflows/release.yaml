@@ -68,7 +68,7 @@ jobs:
 
       - name: Set env vars
         run: |
-          echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version) | awk 'BEGIN{FS=OFS="."} {$3=1} 1" >> $GITHUB_ENV
+          echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version)" >> $GITHUB_ENV
           echo "APP_VERSION=$(echo ${GITHUB_REF_NAME:1}) >> $GITHUB_ENV
 
       - name: Login to Docker Hub

@@ -69,6 +69,7 @@ jobs:
       - uses: chrisdickinson/setup-yq@latest
 
       - name: Set env vars
+#           TODO: We need to make CHART_VERSION identical to APP_VERSION but without the semver extra stuff on dev branches
         run: |
           echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version)" >> $GITHUB_ENV
           echo "APP_VERSION=$(echo ${GITHUB_REF_NAME:1})" >> $GITHUB_ENV
@@ -94,7 +95,7 @@ jobs:
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
-          helm push twingate-operator-chart-$CHART_VERSION.tgz oci://$REGISTRY/twingate/charts
+          helm push kubernetes-operator-chart-$CHART_VERSION.tgz oci://$REGISTRY/twingate/charts
 
 #  release_prod:
 #    name: Release PROD

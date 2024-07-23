@@ -2,7 +2,22 @@ import subprocess
 
 import pytest
 
-from tests_integration.utils import kubectl_create
+from tests_integration.utils import kubectl_create, kubectl_delete
+
+
+def test_success(unique_resource_name):
+    result = kubectl_create(f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateGroup
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My K8S Group
+          members: ["foo@bar.com"]
+    """)
+
+    assert result.returncode == 0
+    kubectl_delete(f"tgg/{unique_resource_name}")
 
 
 def test_name_required(unique_resource_name):

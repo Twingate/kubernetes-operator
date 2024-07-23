@@ -30,6 +30,7 @@ spec:
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
                 members:
                     type: array
+                    x-kubernetes-list-type: set
                     default: []
                     items:
                         type: string

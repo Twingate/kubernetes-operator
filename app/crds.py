@@ -12,6 +12,7 @@ from pydantic import (
     ConfigDict,
     Field,
     ValidationInfo,
+    conset,
     field_validator,
     model_validator,
 )
@@ -336,6 +337,28 @@ class TwingateConnectorCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
 
     spec: ConnectorSpec
+
+
+# endregion
+
+# region TwingateGroup
+
+
+class GroupSpec(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+    )
+
+    id: str | None = None
+    name: str | None = None
+    security_policy_id: str | None = None
+    members: set[str] = conset(str)
+
+
+class TwingateGroupCRD(BaseK8sModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    spec: GroupSpec
 
 
 # endregion

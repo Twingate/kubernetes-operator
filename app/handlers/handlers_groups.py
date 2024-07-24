@@ -5,6 +5,7 @@ import kopf
 from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
 from app.crds import GroupStatusUserID, TwingateGroupCRD
+from app.handlers import fail, success
 
 
 @kopf.on.resume("twingategroup")
@@ -25,7 +26,7 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             and diff[0][1] == ("spec", "id")
             and diff[0][2] is None
         ):
-            return {"message": "Group reconciled"}
+            return success()
 
     crd = TwingateGroupCRD(**body)
     user_ids = crd.status.user_ids if crd.status else []
@@ -51,6 +52,7 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             logger.error("Failed to update group: %s", gqlerr)
             if "does not exist" in gqlerr.message:
                 patch.spec["id"] = None
+            return fail(error=gqlerr.message)
     else:
         logger.info(
             "Creating group with name='%s', securityPolicyId='%s', userIds='%s'",
@@ -61,14 +63,14 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
         group_id = client.group_create(crd.spec, user_ids=[u.id for u in user_ids])
         patch.spec["id"] = group_id
 
-    return {"message": "Group reconciled"}
+    return success()
 
 
 @kopf.timer(
     "twingategroup", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
 )
 def twingate_group_reconciler(body, spec, logger, memo, patch, **_):
-    twingate_group_create_update(body, spec, logger, memo, patch)
+    return twingate_group_create_update(body, spec, logger, memo, patch)
 
 
 @kopf.on.delete("twingategroup")

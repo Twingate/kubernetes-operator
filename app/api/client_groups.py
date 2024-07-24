@@ -3,6 +3,7 @@ import logging
 from gql import gql
 from gql.transport.exceptions import TransportQueryError
 
+from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import GroupSpec
 
@@ -49,6 +50,35 @@ MUT_GROUP_CREATE = gql(
 """
 )
 
+MUT_GROUP_UPDATE = gql(
+    _GROUP_FRAGMENT
+    + """
+    mutation UpdateGroup($id: ID!, $name: String!, $securityPolicyId: ID, $userIds: [ID]) {
+        groupUpdate(
+            id: $id,
+            name: $name
+            securityPolicyId: $securityPolicyId
+            userIds: $userIds
+        ) {
+            ok
+            error
+            entity {
+                ...GroupFields
+            }
+        }
+    }
+    """
+)
+
+MUT_DELETE_GROUP = gql("""
+mutation DeleteGroup($id: ID!) {
+    groupDelete(id: $id) {
+        ok
+        error
+    }
+}
+""")
+
 
 class TwingateGroupAPIs:
     def get_group_id(self: TwingateClientProtocol, group_name: str) -> str | None:
@@ -61,20 +91,54 @@ class TwingateGroupAPIs:
             logging.exception("Failed to get resource")
             return None
 
-    def group_create(self: TwingateClientProtocol, group: GroupSpec):
-        member_emails = [v for v in group.members if "@" in v]
-        member_ids = [v for v in group.members if "@" not in v]
-
-        member_emails_ids = self.__get_user_ids(member_emails)
-        member_ids.extend(member_emails_ids)
-
+    def group_create(
+        self: TwingateClientProtocol,
+        group: GroupSpec,
+        user_ids: list[str] | None = None,
+    ) -> str:
+        user_ids = user_ids or []
         result = self.execute_mutation(
             "groupCreate",
             MUT_GROUP_CREATE,
             variable_values={
                 "name": group.name,
                 "securityPolicyId": group.security_policy_id,
-                "userIds": member_ids,
+                "userIds": user_ids,
             },
         )
-        return result["entity"]
+        return result["entity"]["id"]
+
+    def group_update(
+        self: TwingateClientProtocol,
+        group: GroupSpec,
+        user_ids: list[str] | None = None,
+    ) -> str:
+        user_ids = user_ids or []
+        result = self.execute_mutation(
+            "groupUpdate",
+            MUT_GROUP_UPDATE,
+            variable_values={
+                "id": group.id,
+                "name": group.name,
+                "securityPolicyId": group.security_policy_id,
+                "userIds": user_ids,
+            },
+        )
+        return result["entity"]["id"]
+
+    def group_delete(self: TwingateClientProtocol, group_id: str):
+        try:
+            result = self.execute_mutation(
+                "groupDelete",
+                MUT_DELETE_GROUP,
+                variable_values={"id": group_id},
+            )
+
+            return bool(result["ok"])
+        except GraphQLMutationError as gql_err:
+            if "does not exist" in gql_err.error:
+                return True
+
+            raise
+        except TransportQueryError:
+            return False

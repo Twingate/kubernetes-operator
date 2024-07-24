@@ -26,11 +26,34 @@ def twingate_group_reconciler(body, spec, namespace, meta, logger, memo, patch, 
         patch.status["user_ids"] = [ui.model_dump() for ui in user_ids]
         patch.status["user_ids_hash"] = crd.spec.members_hash
 
-    logger.info(
-        "call groupCreate mutation with name='%s', securityPolicyId='%s', userIds='%s'",
-        crd.spec.name,
-        crd.spec.security_policy_id,
-        [u.id for u in user_ids],
-    )
+    if crd.spec.id:
+        logger.info(
+            "Updating group with name='%s', securityPolicyId='%s', userIds='%s'"
+        )
+        client.group_update(crd.spec, user_ids=[u.id for u in user_ids])
+
+        # TODO: Group might have been deleted - remove id and fail to retry the handler
+
+    else:
+        logger.info(
+            "Creating group with name='%s', securityPolicyId='%s', userIds='%s'",
+            crd.spec.name,
+            crd.spec.security_policy_id,
+            [u.id for u in user_ids],
+        )
+        group_id = client.group_create(crd.spec, user_ids=[u.id for u in user_ids])
+        patch.spec["id"] = group_id
 
     return {"message": "Group reconciled"}
+
+
+@kopf.on.delete("twingategroup")
+def twingate_group_delete(spec, status, memo, logger, **kwargs):
+    logger.info("Got a delete request: %s. Status: %s", spec, status)
+    if not status:
+        return
+
+    if group_id := spec.get("id"):
+        logger.info("Deleting group %s", group_id)
+        client = TwingateAPIClient(memo.twingate_settings)
+        client.group_delete(group_id)

@@ -14,8 +14,6 @@ from pydantic import (
     ConfigDict,
     Field,
     ValidationInfo,
-    conlist,
-    conset,
     field_validator,
     model_validator,
 )
@@ -355,7 +353,7 @@ class GroupSpec(BaseModel):
     id: str | None = None
     name: str | None = None
     security_policy_id: str | None = None
-    members: set[str] = conset(str)
+    members: set[str] = set()
 
     @cached_property
     def members_hash(self) -> str:
@@ -364,11 +362,11 @@ class GroupSpec(BaseModel):
 
     @cached_property
     def members_email(self) -> set[str]:
-        return [v for v in self.members if "@" in v]
+        return {v for v in self.members if "@" in v}
 
     @cached_property
     def members_ids(self) -> set[str]:
-        return [v for v in self.members if "@" not in v]
+        return {v for v in self.members if "@" not in v}
 
 
 class GroupStatusUserID(BaseModel):
@@ -385,7 +383,7 @@ class GroupStatus(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
     )
 
-    user_ids: list[GroupStatusUserID] = conlist(GroupStatusUserID)
+    user_ids: list[GroupStatusUserID] = []
     user_ids_hash: str | None = None
 
 
@@ -393,7 +391,7 @@ class TwingateGroupCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
 
     spec: GroupSpec
-    status: GroupStatus | None = None
+    status: GroupStatus | None = None  # type: ignore[assignment]
 
     @property
     def is_user_ids_cache_valid(self) -> bool:

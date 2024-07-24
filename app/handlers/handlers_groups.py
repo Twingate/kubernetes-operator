@@ -51,9 +51,6 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             logger.error("Failed to update group: %s", gqlerr)
             if "does not exist" in gqlerr.message:
                 patch.spec["id"] = None
-
-        # TODO: Group might have been deleted - remove id and fail to retry the handler
-
     else:
         logger.info(
             "Creating group with name='%s', securityPolicyId='%s', userIds='%s'",

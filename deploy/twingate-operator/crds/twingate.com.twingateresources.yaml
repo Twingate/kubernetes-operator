@@ -137,9 +137,9 @@ spec:
           type: string
           description: "Alias of the resource."
           jsonPath: .spec.alias
-        - jsonPath: .metadata.creationTimestamp
-          name: Age
+        - name: Age
           type: date
+          jsonPath: .metadata.creationTimestamp
   scope: Namespaced
   names:
     plural: twingateresources

@@ -110,9 +110,9 @@ spec:
           type: string
           description: "Name of the connector."
           jsonPath: .spec.name
-        - jsonPath: .metadata.creationTimestamp
-          name: Age
+        - name: Age
           type: date
+          jsonPath: .metadata.creationTimestamp
   scope: Namespaced
   names:
     plural: twingateconnectors

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import kopf
 
 from app.api import TwingateAPIClient
@@ -8,9 +10,7 @@ from app.crds import GroupStatusUserID, TwingateGroupCRD
 @kopf.on.resume("twingategroup")
 @kopf.on.create("twingategroup")
 @kopf.on.update("twingategroup")
-def twingate_group_reconciler(
-    body, spec, namespace, meta, logger, memo, patch, **kwargs
-):
+def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
     logger.info("twingate_group_reconciler: %s", spec)
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings)
@@ -65,6 +65,13 @@ def twingate_group_reconciler(
         patch.spec["id"] = group_id
 
     return {"message": "Group reconciled"}
+
+
+@kopf.timer(
+    "twingategroup", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
+)
+def twingate_group_reconciler(body, spec, logger, memo, patch, **_):
+    twingate_group_create_update(body, spec, logger, memo, patch)
 
 
 @kopf.on.delete("twingategroup")

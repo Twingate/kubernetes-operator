@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-croniter = "^3.0.1"
+croniter = "^3.0.3"
 google-cloud-artifact-registry = "^1.11.4"
 gql = {version = "~=3.5.0", extras = ["requests"]}
 kopf = "^1.37.2"

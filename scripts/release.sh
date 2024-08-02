@@ -15,6 +15,6 @@ fi
 
 echo "🧠 Running semantic-release..."
 if ! semantic-release --strict version --no-vcs-release; then
-	echo "🚀 Pushing relase commit and tag to GitHub... "
+	echo "🚀 Pushing release commit and tag to GitHub... "
 	git push --no-verify
 fi

@@ -3,7 +3,7 @@ import pytest
 from app.crds import TwingateGroupCRD
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_group_object():
     return {
         "apiVersion": "twingate.com/v1beta",

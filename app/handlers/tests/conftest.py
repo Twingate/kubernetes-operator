@@ -12,7 +12,7 @@ register(ResourceFactory)
 register(ConnectorFactory)
 
 
-@pytest.fixture()
+@pytest.fixture
 def k8s_client_mock():
     client_mock = MagicMock()
     with patch("kubernetes.client.CoreV1Api") as k8sclient_mock:
@@ -20,19 +20,19 @@ def k8s_client_mock():
         yield client_mock
 
 
-@pytest.fixture()
+@pytest.fixture
 def kopf_info_mock():
     with patch("kopf.info") as m:
         yield m
 
 
-@pytest.fixture()
+@pytest.fixture
 def kopf_adopt_mock():
     with patch("kopf.adopt") as m:
         yield m
 
 
-@pytest.fixture()
+@pytest.fixture
 def kopf_label_mock():
     with patch("kopf.label") as m:
         yield m
@@ -53,7 +53,7 @@ HandlerRunnerResult = collections.namedtuple(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def kopf_handler_runner(
     k8s_client_mock: MagicMock,
     kopf_info_mock: MagicMock,

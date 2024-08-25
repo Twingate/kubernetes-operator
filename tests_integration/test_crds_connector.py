@@ -6,12 +6,12 @@ import pytest
 from tests_integration.utils import kubectl_create, kubectl_delete, kubectl_get
 
 
-@pytest.fixture()
+@pytest.fixture
 def unique_connector_name(sequential_number, ci_run_number):
     return f"conn-{ci_run_number}-{sequential_number}"
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 class TestConnectorCRD:
     def test_no_image_or_imagepolicy(self, unique_connector_name):
         result = kubectl_create(

@@ -8,7 +8,7 @@ from app.api.client_resources import Resource
 from app.crds import ResourceSpec
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_resource_data():
     return {
         "id": "1",

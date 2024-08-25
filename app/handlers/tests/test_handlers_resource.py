@@ -11,7 +11,7 @@ from app.handlers.handlers_resource import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_api_client():
     api_client_instance = MagicMock()
     with patch("app.handlers.handlers_resource.TwingateAPIClient") as mock_api_client:

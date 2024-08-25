@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.settings import TwingateOperatorSettings
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_get_remote_network_by_name():
     with patch("app.api.TwingateAPIClient.get_remote_network_by_name") as m:
         yield m

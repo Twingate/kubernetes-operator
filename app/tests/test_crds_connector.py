@@ -6,7 +6,7 @@ import pytest
 from app.crds import TwingateConnectorCRD
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_connector_object_image():
     return {
         "apiVersion": "twingate.com/v1beta",
@@ -30,7 +30,7 @@ def sample_connector_object_image():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_connector_object_imagepolicy():
     return {
         "apiVersion": "twingate.com/v1beta",

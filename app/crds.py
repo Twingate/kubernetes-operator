@@ -358,7 +358,7 @@ class GroupSpec(BaseModel):
     @cached_property
     def members_hash(self) -> str:
         members_str = ",".join(sorted(self.members))
-        return hashlib.md5(members_str.encode()).hexdigest()  # noqa: S324
+        return hashlib.md5(members_str.encode()).hexdigest()  # noqa: S324 # nosec
 
     @cached_property
     def members_email(self) -> set[str]:

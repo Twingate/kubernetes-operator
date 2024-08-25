@@ -3,7 +3,7 @@ import pytest
 from app.crds import TwingateResourceCRD
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_resource_object():
     return {
         "apiVersion": "twingate.com/v1",

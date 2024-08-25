@@ -6,7 +6,7 @@ import pytest
 from app.crds import TwingateResourceAccessCRD, TwingateResourceCRD
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_get_namespaced_custom_object():
     with patch(
         "kubernetes.client.CustomObjectsApi.get_namespaced_custom_object"
@@ -14,7 +14,7 @@ def mock_get_namespaced_custom_object():
         yield mock
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_resource_object():
     return {
         "apiVersion": "twingate.com/v1",
@@ -99,7 +99,7 @@ def sample_resource_object():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_resourceaccess_object():
     return {
         "apiVersion": "twingate.com/v1",

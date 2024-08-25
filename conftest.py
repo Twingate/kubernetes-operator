@@ -13,7 +13,7 @@ def pytest_collection_modifyitems(session, config, items):
 global_sequence = 0
 
 
-@pytest.fixture()
+@pytest.fixture
 def sequential_number():
     global global_sequence
     yield global_sequence

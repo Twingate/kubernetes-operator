@@ -12,7 +12,7 @@ register(ConnectorFactory)
 register(ResourceFactory)
 
 
-@pytest.fixture()
+@pytest.fixture
 def twingate_settings():
     return TwingateOperatorSettings(
         network="slug",
@@ -22,11 +22,11 @@ def twingate_settings():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def api_client(twingate_settings):
     return TwingateAPIClient(twingate_settings)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_url():
     return "https://slug.test.com/api/graphql/"

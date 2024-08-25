@@ -15,7 +15,7 @@ from app.handlers.handlers_services import (
 # Ignore the fact we use _cogs here
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_service_body():
     yaml_str = """
     apiVersion: v1
@@ -45,7 +45,7 @@ def example_service_body():
     return kopf.Body(yaml.safe_load(yaml_str))
 
 
-@pytest.fixture()
+@pytest.fixture
 def k8s_customobjects_client_mock():
     client_mock = MagicMock()
     with patch("kubernetes.client.CustomObjectsApi") as k8sclient_mock:

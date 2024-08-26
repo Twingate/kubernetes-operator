@@ -27,7 +27,7 @@ def mock_connector_spec_get_image():
         yield mock_get_image
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_api_client():
     api_client_instance = MagicMock()
     with patch("app.handlers.handlers_connectors.TwingateAPIClient") as mock_api_client:
@@ -35,7 +35,7 @@ def mock_api_client():
         yield api_client_instance
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_connector_and_crd(connector_factory):
     def get(*, spec_overrides=None, status=None, with_id=False, annotations=None):
         annotations = annotations or {}
@@ -304,7 +304,7 @@ class TestTwingateConnectorPodReconciler_Image:
 
 
 class TestTwingateConnectorPodReconciler_ImagePolicy:
-    @pytest.fixture()
+    @pytest.fixture
     def mock_get_image(self):
         with patch("app.crds.ConnectorSpec.get_image") as mock_get_image:
             mock_get_image.return_value = "twingate/connector:test"

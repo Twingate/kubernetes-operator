@@ -3,7 +3,7 @@ import pytest
 import responses
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_resource_data():
     return {"id": "1", "name": "My Cluster"}
 

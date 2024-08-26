@@ -12,7 +12,7 @@ from app.handlers.handlers_resource_access import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_api_client():
     api_client_instance = MagicMock()
     with patch(

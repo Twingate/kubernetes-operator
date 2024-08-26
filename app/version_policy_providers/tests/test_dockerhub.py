@@ -3,7 +3,7 @@ import pytest
 from app.version_policy_providers.dockerhub import DockerhubVersionPolicyProvider
 
 
-@pytest.fixture()
+@pytest.fixture
 def dockerhub_connector_provider(shared_datadir, mocked_responses):
     content = (shared_datadir / "dockerhub_connector_tags_response.json").read_text()
     provider = DockerhubVersionPolicyProvider()
@@ -11,7 +11,7 @@ def dockerhub_connector_provider(shared_datadir, mocked_responses):
     return provider
 
 
-@pytest.fixture()
+@pytest.fixture
 def dockerhub_operator_provider(shared_datadir, mocked_responses):
     content = (shared_datadir / "dockerhub_operator_tags_response.json").read_text()
     provider = DockerhubVersionPolicyProvider()

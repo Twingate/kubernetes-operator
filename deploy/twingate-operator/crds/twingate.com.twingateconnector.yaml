@@ -101,6 +101,18 @@ spec:
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: ID
+          type: string
+          description: "The ID of the connector."
+          jsonPath: .spec.id
+        - name: Display Name
+          type: string
+          description: "Name of the connector."
+          jsonPath: .spec.name
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
   scope: Namespaced
   names:
     plural: twingateconnectors

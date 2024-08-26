@@ -18,15 +18,18 @@ class TestTwingateUserAPIs:
             }
         )
 
+        test_emails = ["test@example.com"]
+
         mocked_responses.post(
             test_url,
             status=200,
             body=success_response,
             match=[
                 responses.matchers.json_params_matcher(
-                    {"variables": {"emails": ["test@example.com"]}}, strict_match=False
+                    {"variables": {"emails": test_emails, "after": None}},
+                    strict_match=False,
                 )
             ],
         )
-        result = api_client.get_group_id("test")
-        assert result == "test-id"
+        result = api_client.get_ids_for_emails(test_emails)
+        assert result[test_emails[0]] == "test-id"

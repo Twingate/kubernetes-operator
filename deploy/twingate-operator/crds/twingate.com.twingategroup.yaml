@@ -24,17 +24,6 @@ spec:
                 name:
                   type: string
                   description: "Name of the group."
-                securityPolicyId:
-                  type: string
-                  nullable: true
-                  pattern: "^[-A-Za-z0-9+/]*={0,3}$"
-                members:
-                    type: array
-                    x-kubernetes-list-type: set
-                    default: []
-                    items:
-                        type: string
-                    description: "Members of the group (either email address or id)."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

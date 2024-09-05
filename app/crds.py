@@ -1,9 +1,7 @@
-import hashlib
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum
-from functools import cached_property
 from typing import Any
 
 import kubernetes.client
@@ -352,51 +350,12 @@ class GroupSpec(BaseModel):
 
     id: str | None = None
     name: str | None = None
-    security_policy_id: str | None = None
-    members: set[str] = set()
-
-    @cached_property
-    def members_hash(self) -> str:
-        members_str = ",".join(sorted(self.members))
-        return hashlib.md5(members_str.encode()).hexdigest()  # noqa: S324 # nosec
-
-    @cached_property
-    def members_email(self) -> set[str]:
-        return {v for v in self.members if "@" in v}
-
-    @cached_property
-    def members_ids(self) -> set[str]:
-        return {v for v in self.members if "@" not in v}
-
-
-class GroupStatusUserID(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
-    )
-
-    id: str
-    email: str | None = None
-
-
-class GroupStatus(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
-    )
-
-    user_ids: list[GroupStatusUserID] = []
-    user_ids_hash: str | None = None
 
 
 class TwingateGroupCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
 
     spec: GroupSpec
-    status: GroupStatus | None = None  # type: ignore[assignment]
-
-    @property
-    def is_user_ids_cache_valid(self) -> bool:
-        cache_hash = self.status.user_ids_hash if self.status else None
-        return bool(cache_hash and cache_hash == self.spec.members_hash)
 
 
 # endregion

@@ -4,7 +4,7 @@ import kopf
 
 from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
-from app.crds import GroupStatusUserID, TwingateGroupCRD
+from app.crds import TwingateGroupCRD
 from app.handlers import fail, success
 
 
@@ -29,25 +29,10 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             return success()
 
     crd = TwingateGroupCRD(**body)
-    user_ids = crd.status.user_ids if crd.status else []
-    if not crd.is_user_ids_cache_valid:
-        logger.info("User IDs cache is invalid, fetching from Twingate")
-        kopf.info(body, reason="User IDs cache is invalid, fetching from Twingate")
-
-        email_to_id = client.get_ids_for_emails(crd.spec.members_email)
-        user_ids = [
-            GroupStatusUserID(id=id, email=email) for email, id in email_to_id.items()
-        ]
-        user_ids.extend([GroupStatusUserID(id=uid) for uid in crd.spec.members_ids])
-        patch.status["user_ids"] = [ui.model_dump() for ui in user_ids]
-        patch.status["user_ids_hash"] = crd.spec.members_hash
-
     if crd.spec.id:
-        logger.info(
-            "Updating group with name='%s', securityPolicyId='%s', userIds='%s'"
-        )
+        logger.info("Updating group with name='%s'", crd.spec.name)
         try:
-            client.group_update(crd.spec, user_ids=[u.id for u in user_ids])
+            client.group_update(crd.spec)
         except GraphQLMutationError as gqlerr:
             logger.error("Failed to update group: %s", gqlerr)
             if "does not exist" in gqlerr.message:
@@ -55,12 +40,10 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             return fail(error=gqlerr.message)
     else:
         logger.info(
-            "Creating group with name='%s', securityPolicyId='%s', userIds='%s'",
+            "Creating group with name='%s'",
             crd.spec.name,
-            crd.spec.security_policy_id,
-            [u.id for u in user_ids],
         )
-        group_id = client.group_create(crd.spec, user_ids=[u.id for u in user_ids])
+        group_id = client.group_create(crd.spec)
         patch.spec["id"] = group_id
 
     return success()

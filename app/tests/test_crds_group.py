@@ -15,8 +15,6 @@ def sample_group_object():
         },
         "spec": {
             "name": "My Group",
-            "securityPolicyId": "1234",
-            "members": ["foo@bar.com", "VXNlcjoxMjMK"],
         },
     }
 
@@ -26,11 +24,3 @@ def test_group_deserialization(sample_group_object):
 
     assert group.metadata.name == "my-group"
     assert group.spec.name == "My Group"
-    assert group.spec.security_policy_id == "1234"
-    assert group.spec.members == {"foo@bar.com", "VXNlcjoxMjMK"}
-
-
-def test_group_deserialization_with_invalid_members(sample_group_object):
-    sample_group_object["spec"]["members"] = ["foo@bar.com", 123]
-    with pytest.raises(ValueError, match="Input should be a valid string"):
-        TwingateGroupCRD(**sample_group_object)

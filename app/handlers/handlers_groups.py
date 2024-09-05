@@ -29,7 +29,8 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             return success()
 
     crd = TwingateGroupCRD(**body)
-    if crd.spec.id:
+    group_id = crd.spec.id
+    if group_id:
         logger.info("Updating group with name='%s'", crd.spec.name)
         try:
             client.group_update(crd.spec)
@@ -46,7 +47,9 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
         group_id = client.group_create(crd.spec)
         patch.spec["id"] = group_id
 
-    return success()
+    return success(
+        twingate_id=group_id,
+    )
 
 
 @kopf.timer(

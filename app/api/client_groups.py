@@ -31,7 +31,7 @@ QUERY_GET_GROUP_ID_BY_NAME = gql(
 """
 )
 
-MUT_GROUP_CREATE = gql(
+MUT_CREATE_GROUP = gql(
     _GROUP_FRAGMENT
     + """
     mutation CreateGroup($name: String!, $userIds: [ID]) {
@@ -49,7 +49,7 @@ MUT_GROUP_CREATE = gql(
 """
 )
 
-MUT_GROUP_UPDATE = gql(
+MUT_UPDATE_GROUP = gql(
     _GROUP_FRAGMENT
     + """
     mutation UpdateGroup($id: ID!, $name: String!, $userIds: [ID]) {
@@ -97,7 +97,7 @@ class TwingateGroupAPIs:
         user_ids = user_ids or []
         result = self.execute_mutation(
             "groupCreate",
-            MUT_GROUP_CREATE,
+            MUT_CREATE_GROUP,
             variable_values={
                 "name": group.name,
                 "userIds": user_ids,
@@ -113,7 +113,7 @@ class TwingateGroupAPIs:
         user_ids = user_ids or []
         result = self.execute_mutation(
             "groupUpdate",
-            MUT_GROUP_UPDATE,
+            MUT_UPDATE_GROUP,
             variable_values={
                 "id": group.id,
                 "name": group.name,

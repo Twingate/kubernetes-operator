@@ -349,7 +349,7 @@ class GroupSpec(BaseModel):
     )
 
     id: str | None = None
-    name: str | None = None
+    name: str
 
 
 class TwingateGroupCRD(BaseK8sModel):

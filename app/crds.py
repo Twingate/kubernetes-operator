@@ -345,7 +345,7 @@ class TwingateConnectorCRD(BaseK8sModel):
 
 class GroupSpec(BaseModel):
     model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel, extra="allow"
+        frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
     id: str | None = None

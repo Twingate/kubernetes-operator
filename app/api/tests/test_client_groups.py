@@ -76,7 +76,7 @@ class TestTwingateGroupsAPIs:
 
     def test_group_create_failure(self, test_url, api_client, mocked_responses):
         name = "my group name"
-        success_response = json.dumps(
+        failed_response = json.dumps(
             {
                 "data": {
                     "groupCreate": {
@@ -90,7 +90,7 @@ class TestTwingateGroupsAPIs:
         mocked_responses.post(
             test_url,
             status=200,
-            body=success_response,
+            body=failed_response,
             match=[
                 responses.matchers.json_params_matcher(
                     {"variables": {"name": name, "userIds": []}}, strict_match=False

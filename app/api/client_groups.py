@@ -131,10 +131,7 @@ class TwingateGroupAPIs:
             )
 
             return bool(result["ok"])
-        except GraphQLMutationError as gql_err:
-            if "does not exist" in gql_err.error:
-                return True
-
+        except GraphQLMutationError:
             raise
         except TransportQueryError:
             return False

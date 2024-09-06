@@ -18,15 +18,12 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
 
     if diff := kwargs.get("diff"):
         logger.info("Diff: %s", diff)
-        # If ID changed from `None to value we just created it no need to update
+        # If ID changed from `None` to value we just created it no need to update
         # diff is `(('add', ('spec', 'id'), None, 'R3JvdXA6MjAxNjc4OQ=='),)`
-        if (
-            len(diff) == 1
-            and diff[0][0] == "add"
-            and diff[0][1] == ("spec", "id")
-            and diff[0][2] is None
-        ):
+        # fmt: off
+        if len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id",), None):
             return success()
+        # fmt: on
 
     crd = TwingateGroupCRD(**body)
     group_id = crd.spec.id

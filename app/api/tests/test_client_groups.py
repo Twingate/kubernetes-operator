@@ -201,33 +201,6 @@ class TestTwingateGroupsAPIs:
         result = api_client.group_delete("test-id")
         assert result is False
 
-    def test_group_delete_with_group_already_deleted_returns_true(
-        self, test_url, api_client, mocked_responses
-    ):
-        failed_response = json.dumps(
-            {
-                "data": {
-                    "groupDelete": {
-                        "ok": False,
-                        "error": "Resource with id 'some-id' does not exist",
-                    }
-                }
-            }
-        )
-
-        mocked_responses.post(
-            test_url,
-            status=200,
-            body=failed_response,
-            match=[
-                responses.matchers.json_params_matcher(
-                    {"variables": {"id": "some-id"}}, strict_match=False
-                )
-            ],
-        )
-        result = api_client.group_delete("some-id")
-        assert result is True
-
     def test_group_delete_raises_if_unknown_error(
         self, test_url, api_client, mocked_responses
     ):

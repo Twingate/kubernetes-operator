@@ -339,3 +339,23 @@ class TwingateConnectorCRD(BaseK8sModel):
 
 
 # endregion
+
+# region TwingateGroup
+
+
+class GroupSpec(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    id: str | None = None
+    name: str
+
+
+class TwingateGroupCRD(BaseK8sModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    spec: GroupSpec
+
+
+# endregion

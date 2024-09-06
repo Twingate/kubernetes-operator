@@ -1,0 +1,6 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateGroup
+metadata:
+  name: example
+spec:
+  name: Example Group

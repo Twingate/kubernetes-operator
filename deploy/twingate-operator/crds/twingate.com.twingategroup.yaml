@@ -24,20 +24,28 @@ spec:
                 name:
                   type: string
                   description: "Name of the group."
-                securityPolicyId:
-                  type: string
-                  nullable: true
-                  pattern: "^[-A-Za-z0-9+/]*={0,3}$"
                 members:
                     type: array
                     x-kubernetes-list-type: set
                     default: []
                     items:
                         type: string
-                    description: "Members of the group (either email address or id)."
+                    description: "Members of the group (either email or user id)"
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: ID
+          type: string
+          description: "The ID of the group."
+          jsonPath: .spec.id
+        - name: Display Name
+          type: string
+          description: "Name of the group."
+          jsonPath: .spec.name
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
   scope: Namespaced
   names:
     plural: twingategroups

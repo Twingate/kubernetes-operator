@@ -351,8 +351,7 @@ class GroupSpec(BaseModel):
     )
 
     id: str | None = None
-    name: str | None = None
-    security_policy_id: str | None = None
+    name: str
     members: set[str] = set()
 
     @cached_property

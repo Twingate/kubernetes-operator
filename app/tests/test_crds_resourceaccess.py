@@ -161,6 +161,68 @@ def test_deserialization(sample_resourceaccess_object):
     assert crd.spec.resource_ref_fullname == "default/foo"
 
 
+def test_deserialization_with_group_ref():
+    data = {
+        "apiVersion": "twingate.com/v1",
+        "kind": "TwingateResourceAccess",
+        "metadata": {
+            "creationTimestamp": "2023-09-29T19:30:39Z",
+            "finalizers": ["kopf.zalando.org/KopfFinalizerMarker"],
+            "generation": 1,
+            "managedFields": [
+                {
+                    "apiVersion": "twingate.com/v1",
+                    "fieldsType": "FieldsV1",
+                    "fieldsV1": {
+                        "f:metadata": {
+                            "f:finalizers": {
+                                ".": {},
+                                'v:"kopf.zalando.org/KopfFinalizerMarker"': {},
+                            }
+                        }
+                    },
+                    "manager": "kopf",
+                    "operation": "Update",
+                    "time": "2023-09-29T19:30:39Z",
+                },
+                {
+                    "apiVersion": "twingate.com/v1",
+                    "fieldsType": "FieldsV1",
+                    "fieldsV1": {
+                        "f:spec": {
+                            ".": {},
+                            "f:principalId": {},
+                            "f:resourceRef": {".": {}, "f:name": {}, "f:namespace": {}},
+                        }
+                    },
+                    "manager": "kubectl-create",
+                    "operation": "Update",
+                    "time": "2023-09-29T19:30:39Z",
+                },
+            ],
+            "name": "foo-access-to-bar",
+            "namespace": "default",
+            "resourceVersion": "612168",
+            "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+        },
+        "spec": {
+            "resourceRef": {"name": "foo", "namespace": "default"},
+            "groupRef": {
+                "name": "test-group",
+                "namespace": "myns",
+            },
+        },
+    }
+    crd = TwingateResourceAccessCRD(**data)
+    assert crd.spec.group_ref.namespace == "myns"
+    assert crd.spec.group_ref.name == "test-group"
+    assert crd.spec.resource_ref.name == "foo"
+    assert crd.spec.resource_ref.namespace == "default"
+    assert crd.metadata.name == "foo-access-to-bar"
+    assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
+    assert crd.spec.resource_ref_fullname == "default/foo"
+
+
 def test_deserialization_with_principal_external_ref():
     data = {
         "apiVersion": "twingate.com/v1",
@@ -220,6 +282,9 @@ def test_deserialization_with_principal_external_ref():
     assert crd.spec.resource_ref_fullname == "default/foo"
 
 
+# region get_resource
+
+
 def test_spec_get_resource_ref_object(
     mock_get_namespaced_custom_object, sample_resourceaccess_object
 ):
@@ -274,3 +339,6 @@ def test_spec_get_resource_failure_returns_none(
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
     response = crd.spec.get_resource()
     assert response is None
+
+
+# endregion

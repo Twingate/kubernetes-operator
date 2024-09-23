@@ -55,6 +55,11 @@ class BaseK8sModel(BaseModel):
     status: dict[str, Any] | None = None
 
 
+class _KubernetesObjectRef(BaseModel):
+    name: str
+    namespace: str = Field(default="default")
+
+
 # region TwingateResourceCRD
 
 
@@ -151,11 +156,6 @@ class PrincipalTypeEnum(str, Enum):
     ServiceAccount = "serviceAccount"
 
 
-class _ResourceRef(BaseModel):
-    name: str
-    namespace: str = Field(default="default")
-
-
 class _PrincipalExternalRef(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -166,17 +166,18 @@ class _PrincipalExternalRef(BaseModel):
 class ResourceAccessSpec(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
-    resource_ref: _ResourceRef
+    resource_ref: _KubernetesObjectRef
     principal_id: str | None = None
+    group_ref: _KubernetesObjectRef | None = None
     principal_external_ref: _PrincipalExternalRef | None = None
     security_policy_id: str | None = None
 
     @model_validator(mode="after")
-    def validate_princiapl_id_or_principal_external_ref(self):
-        if self.principal_id or self.principal_external_ref:
+    def validate_target_ref_exists(self):
+        if self.principal_id or self.group_ref or self.principal_external_ref:
             return self
 
-        raise ValueError("Missing principal_id or principal_external_ref")
+        raise ValueError("Missing principal_id, group_ref or principal_external_ref")
 
     @property
     def resource_ref_fullname(self) -> str:

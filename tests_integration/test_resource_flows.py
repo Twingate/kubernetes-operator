@@ -258,7 +258,13 @@ def test_resource_access_flows(
     )
 
     # fmt: off
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with KopfRunner(kopf_runner_args,
+                    settings=kopf_settings,
+                    env={
+                        "GROUP_RECONCILER_INTERVAL": "1",
+                        "GROUP_RECONCILER_INIT_DELAY": "1",
+                    },
+    ) as runner:
         kubectl_create(RESOURCE_OBJ)
         kubectl_create(GROUP_OBJ)
         time.sleep(5)  # give it some time to react

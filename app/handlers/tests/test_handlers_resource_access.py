@@ -32,6 +32,7 @@ class TestGetPrincipalId:
         access_crd = MagicMock()
         access_crd.principal_id = None
         access_crd.principal_external_ref = None
+        access_crd.get_group_ref_object.return_value = None
         with pytest.raises(
             ValueError, match="Missing principal_id or principal_external_ref"
         ):
@@ -40,6 +41,7 @@ class TestGetPrincipalId:
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
         access_crd.principal_id = None
+        access_crd.get_group_ref_object.return_value = None
         access_crd.principal_external_ref = MagicMock()
         access_crd.principal_external_ref.type = "group"
         access_crd.principal_external_ref.name = "group-name"
@@ -54,6 +56,7 @@ class TestGetPrincipalId:
     def test_from_external_ref_sa(self, mock_api_client):
         access_crd = MagicMock()
         access_crd.principal_id = None
+        access_crd.get_group_ref_object.return_value = None
         access_crd.principal_external_ref = MagicMock()
         access_crd.principal_external_ref.type = "serviceAccount"
         access_crd.principal_external_ref.name = "sa-name"
@@ -68,6 +71,7 @@ class TestGetPrincipalId:
     def test_from_external_ref_returns_none(self, mock_api_client):
         access_crd = MagicMock()
         access_crd.principal_id = None
+        access_crd.get_group_ref_object.return_value = None
         access_crd.principal_external_ref = MagicMock()
         access_crd.principal_external_ref.type = "serviceAccount"
         access_crd.principal_external_ref.name = "sa-name"
@@ -82,6 +86,7 @@ class TestGetPrincipalId:
     def test_from_external_ref_invalid_type_returns_none(self, mock_api_client):
         access_crd = MagicMock()
         access_crd.principal_id = None
+        access_crd.get_group_ref_object.return_value = None
         access_crd.principal_external_ref = MagicMock()
         access_crd.principal_external_ref.type = "invalid"
         access_crd.principal_external_ref.name = "sa-name"
@@ -92,6 +97,7 @@ class TestGetPrincipalId:
     def test_from_external_ref_uses_created_status_principal_id(self):
         access_crd = MagicMock()
         access_crd.principal_id = None
+        access_crd.get_group_ref_object.return_value = None
         access_crd.principal_external_ref = MagicMock()
         access_crd.principal_external_ref.type = "invalid"
         access_crd.principal_external_ref.name = "sa-name"

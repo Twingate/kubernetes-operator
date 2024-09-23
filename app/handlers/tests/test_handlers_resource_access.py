@@ -38,6 +38,21 @@ class TestGetPrincipalId:
         ):
             get_principal_id(access_crd, None, MagicMock())
 
+    def test_id_from_group_ref_object(self):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = None
+        access_crd.get_group_ref_object.return_value = {"spec": {"id": "group-id"}}
+        assert get_principal_id(access_crd, None, MagicMock()) == "group-id"
+
+    def test_id_from_group_ref_object_not_ready_raises_temoraryerror(self):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.principal_external_ref = None
+        access_crd.get_group_ref_object.return_value = {"spec": {"id": None}}
+        with pytest.raises(kopf.TemporaryError):
+            assert get_principal_id(access_crd, None, MagicMock()) == "group-id"
+
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
         access_crd.principal_id = None

@@ -183,27 +183,55 @@ class ResourceAccessSpec(BaseModel):
     def resource_ref_fullname(self) -> str:
         return f"{self.resource_ref.namespace}/{self.resource_ref.name}"
 
-    def get_resource_ref_object(self) -> OptionalK8sObject:
+    @property
+    def group_ref_fullname(self) -> str | None:
+        return (
+            f"{self.group_ref.namespace}/{self.group_ref.name}"
+            if self.group_ref
+            else None
+        )
+
+    def _get_ref_object(
+        self, plural_type: str, namespace: str, name: str
+    ) -> OptionalK8sObject:
+        log_prefix = (
+            f"ResourceAccessCRD._get_ref_object({plural_type}, {namespace}, {name}):"
+        )
         try:
             kapi = kubernetes.client.CustomObjectsApi()
             response = kapi.get_namespaced_custom_object(
                 "twingate.com",
                 "v1beta",
-                self.resource_ref.namespace,
-                "twingateresources",
-                self.resource_ref.name,
+                namespace,
+                plural_type,
+                name,
             )
-            logging.info("ResourceAccessCRD.get_resource_ref_object got: %s", response)
+            logging.info(
+                "%s got %s",
+                log_prefix,
+                response,
+            )
             return response
         except kubernetes.client.exceptions.ApiException as api_ex:
             if api_ex.status == 404:
-                logging.warning(
-                    "ResourceAccessCRD.get_resource_ref_object: resource not found."
-                )
+                logging.warning("%s resource not found.", log_prefix)
             else:
-                logging.exception("ResourceAccessCRD.get_resource_ref_object failed")
+                logging.exception("%s failed", log_prefix)
 
             return None
+
+    def get_resource_ref_object(self) -> OptionalK8sObject:
+        return self._get_ref_object(
+            "twingateresources", self.resource_ref.namespace, self.resource_ref.name
+        )
+
+    def get_group_ref_object(self) -> OptionalK8sObject:
+        if not self.group_ref:
+            return None
+
+        return self._get_ref_object(
+            "twingategroups", self.group_ref.namespace, self.group_ref.name
+        )
 
     def get_resource(self) -> TwingateResourceCRD | None:
         resource_ref_object = self.get_resource_ref_object()

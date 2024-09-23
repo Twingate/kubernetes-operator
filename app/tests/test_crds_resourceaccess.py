@@ -100,6 +100,45 @@ def sample_resource_object():
 
 
 @pytest.fixture
+def sample_group_object():
+    return {
+        "apiVersion": "twingate.com/v1beta",
+        "kind": "TwingateGroup",
+        "metadata": {
+            "annotations": {
+                "kubectl.kubernetes.io/last-applied-configuration": '{"apiVersion":"twingate.com/v1beta","kind":"TwingateGroup","metadata":{"annotations":{},"name":"example","namespace":"default"},"spec":{"members":["eran@twingate.com"],"name":"Example Group"}}\n',
+                "twingate.com/kopf-managed": "yes",
+                "twingate.com/last-handled-configuration": '{"spec":{"id":"R3JvdXA6MjAxNjc5MA==","name":"Example Group"}}\n',
+            },
+            "creationTimestamp": "2024-07-24T22:51:32Z",
+            "finalizers": ["twingate.com/finalizer"],
+            "generation": 31,
+            "name": "example",
+            "namespace": "default",
+            "resourceVersion": "9848778",
+            "uid": "da2bd676-3e9e-4162-b203-bced1d27385e",
+        },
+        "spec": {"id": "R3JvdXA6MjAxNjc5MA==", "name": "Example Group"},
+        "status": {
+            "twingate": {"progress": {}},
+            "twingate_group_create_update": {
+                "success": True,
+                "ts": "2024-09-19T17:53:16.460069",
+                "twingate_id": "R3JvdXA6MjAxNjc5MA==",
+            },
+            "twingate_group_reconciler": {
+                "message": "Group reconciled",
+                "success": True,
+                "ts": "2024-09-19T17:54:16.494586",
+                "twingate_id": "R3JvdXA6MjAxNjc5MA==",
+            },
+            "user_ids": [{"email": "eran@twingate.com", "id": "VXNlcjoxMTYwMDA="}],
+            "user_ids_hash": "eaa47aed357c554764003095d6656f49",
+        },
+    }
+
+
+@pytest.fixture
 def sample_resourceaccess_object():
     return {
         "apiVersion": "twingate.com/v1",
@@ -339,6 +378,26 @@ def test_spec_get_resource_failure_returns_none(
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
     response = crd.spec.get_resource()
     assert response is None
+
+
+# endregion
+
+
+# region get_group_ref_object
+def test_spec_get_group_ref_object(
+    mock_get_namespaced_custom_object, sample_resourceaccess_object, sample_group_object
+):
+    resource_access_object = sample_resourceaccess_object
+    del sample_resourceaccess_object["spec"]["principalId"]
+    sample_resourceaccess_object["spec"]["groupRef"] = {
+        "name": sample_group_object["metadata"]["name"],
+        "namespace": sample_group_object["metadata"]["namespace"],
+    }
+
+    mock_get_namespaced_custom_object.return_value = sample_group_object
+    crd = TwingateResourceAccessCRD(**resource_access_object)
+    response = crd.spec.get_group_ref_object()
+    assert response == sample_group_object
 
 
 # endregion

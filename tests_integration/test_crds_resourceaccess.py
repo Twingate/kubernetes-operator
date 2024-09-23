@@ -66,6 +66,45 @@ def test_with_principalId(unique_access_name):
     assert result.returncode == 0
 
 
+def test_with_groupRef(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          groupRef:
+            name: my-group
+            namespace: myNS
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+    """
+    )
+
+    assert result.returncode == 0
+
+
+def test_with_groupRef_ns_is_optional(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          groupRef:
+            name: my-group
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+    """
+    )
+
+    assert result.returncode == 0
+
+
 def test_with_principalExternalRef(unique_access_name):
     result = kubectl_create(
         f"""
@@ -139,6 +178,32 @@ def test_both_principalId_and_principalExternalRef_fails():
               principalExternalRef:
                 name: foo
                 type: group
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        "must validate one and only one schema (oneOf). Found 2 valid alternatives"
+        in stderr
+    )
+
+
+def test_both_principalId_and_groupRef_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              groupRef:
+                name: foo
+                namespace: bar
               resourceRef:
                 name: my-twingate-resource
                 namespace: default

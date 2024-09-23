@@ -100,6 +100,45 @@ def sample_resource_object():
 
 
 @pytest.fixture
+def sample_group_object():
+    return {
+        "apiVersion": "twingate.com/v1beta",
+        "kind": "TwingateGroup",
+        "metadata": {
+            "annotations": {
+                "kubectl.kubernetes.io/last-applied-configuration": '{"apiVersion":"twingate.com/v1beta","kind":"TwingateGroup","metadata":{"annotations":{},"name":"example","namespace":"default"},"spec":{"members":["eran@twingate.com"],"name":"Example Group"}}\n',
+                "twingate.com/kopf-managed": "yes",
+                "twingate.com/last-handled-configuration": '{"spec":{"id":"R3JvdXA6MjAxNjc5MA==","name":"Example Group"}}\n',
+            },
+            "creationTimestamp": "2024-07-24T22:51:32Z",
+            "finalizers": ["twingate.com/finalizer"],
+            "generation": 31,
+            "name": "example",
+            "namespace": "default",
+            "resourceVersion": "9848778",
+            "uid": "da2bd676-3e9e-4162-b203-bced1d27385e",
+        },
+        "spec": {"id": "R3JvdXA6MjAxNjc5MA==", "name": "Example Group"},
+        "status": {
+            "twingate": {"progress": {}},
+            "twingate_group_create_update": {
+                "success": True,
+                "ts": "2024-09-19T17:53:16.460069",
+                "twingate_id": "R3JvdXA6MjAxNjc5MA==",
+            },
+            "twingate_group_reconciler": {
+                "message": "Group reconciled",
+                "success": True,
+                "ts": "2024-09-19T17:54:16.494586",
+                "twingate_id": "R3JvdXA6MjAxNjc5MA==",
+            },
+            "user_ids": [{"email": "eran@twingate.com", "id": "VXNlcjoxMTYwMDA="}],
+            "user_ids_hash": "eaa47aed357c554764003095d6656f49",
+        },
+    }
+
+
+@pytest.fixture
 def sample_resourceaccess_object():
     return {
         "apiVersion": "twingate.com/v1",
@@ -154,6 +193,68 @@ def sample_resourceaccess_object():
 def test_deserialization(sample_resourceaccess_object):
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
     assert crd.spec.principal_id == "R3JvdXA6MTE1NzI2MA=="
+    assert crd.spec.resource_ref.name == "foo"
+    assert crd.spec.resource_ref.namespace == "default"
+    assert crd.metadata.name == "foo-access-to-bar"
+    assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
+    assert crd.spec.resource_ref_fullname == "default/foo"
+
+
+def test_deserialization_with_group_ref():
+    data = {
+        "apiVersion": "twingate.com/v1",
+        "kind": "TwingateResourceAccess",
+        "metadata": {
+            "creationTimestamp": "2023-09-29T19:30:39Z",
+            "finalizers": ["kopf.zalando.org/KopfFinalizerMarker"],
+            "generation": 1,
+            "managedFields": [
+                {
+                    "apiVersion": "twingate.com/v1",
+                    "fieldsType": "FieldsV1",
+                    "fieldsV1": {
+                        "f:metadata": {
+                            "f:finalizers": {
+                                ".": {},
+                                'v:"kopf.zalando.org/KopfFinalizerMarker"': {},
+                            }
+                        }
+                    },
+                    "manager": "kopf",
+                    "operation": "Update",
+                    "time": "2023-09-29T19:30:39Z",
+                },
+                {
+                    "apiVersion": "twingate.com/v1",
+                    "fieldsType": "FieldsV1",
+                    "fieldsV1": {
+                        "f:spec": {
+                            ".": {},
+                            "f:principalId": {},
+                            "f:resourceRef": {".": {}, "f:name": {}, "f:namespace": {}},
+                        }
+                    },
+                    "manager": "kubectl-create",
+                    "operation": "Update",
+                    "time": "2023-09-29T19:30:39Z",
+                },
+            ],
+            "name": "foo-access-to-bar",
+            "namespace": "default",
+            "resourceVersion": "612168",
+            "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+        },
+        "spec": {
+            "resourceRef": {"name": "foo", "namespace": "default"},
+            "groupRef": {
+                "name": "test-group",
+                "namespace": "myns",
+            },
+        },
+    }
+    crd = TwingateResourceAccessCRD(**data)
+    assert crd.spec.group_ref.namespace == "myns"
+    assert crd.spec.group_ref.name == "test-group"
     assert crd.spec.resource_ref.name == "foo"
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
@@ -220,6 +321,9 @@ def test_deserialization_with_principal_external_ref():
     assert crd.spec.resource_ref_fullname == "default/foo"
 
 
+# region get_resource
+
+
 def test_spec_get_resource_ref_object(
     mock_get_namespaced_custom_object, sample_resourceaccess_object
 ):
@@ -274,3 +378,26 @@ def test_spec_get_resource_failure_returns_none(
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
     response = crd.spec.get_resource()
     assert response is None
+
+
+# endregion
+
+
+# region get_group_ref_object
+def test_spec_get_group_ref_object(
+    mock_get_namespaced_custom_object, sample_resourceaccess_object, sample_group_object
+):
+    resource_access_object = sample_resourceaccess_object
+    del sample_resourceaccess_object["spec"]["principalId"]
+    sample_resourceaccess_object["spec"]["groupRef"] = {
+        "name": sample_group_object["metadata"]["name"],
+        "namespace": sample_group_object["metadata"]["namespace"],
+    }
+
+    mock_get_namespaced_custom_object.return_value = sample_group_object
+    crd = TwingateResourceAccessCRD(**resource_access_object)
+    response = crd.spec.get_group_ref_object()
+    assert response == sample_group_object
+
+
+# endregion

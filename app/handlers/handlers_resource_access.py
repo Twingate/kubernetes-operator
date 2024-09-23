@@ -19,6 +19,15 @@ def get_principal_id(
     if principal_id := access_crd.principal_id:
         return principal_id
 
+    if group_ref_object := access_crd.get_group_ref_object():
+        group_spec = group_ref_object["spec"]
+        if group_id := group_spec.get("id"):
+            return group_id
+
+        raise kopf.TemporaryError(
+            "TwingateGroup object doesn't have an id yet. retrying...", delay=15
+        )
+
     if ref := access_crd.principal_external_ref:
         # Once `twingate_resource_access_change` ran and we have the principal_id
         # we dont use it and do not re-query the API

@@ -21,6 +21,8 @@ spec:
                   required: ["resourceRef", "principalId"]
                 - properties:
                   required: ["resourceRef", "principalExternalRef"]
+                - properties:
+                  required: ["resourceRef", "groupRef"]
               properties:
                 principalId:
                   type: string
@@ -29,6 +31,20 @@ spec:
                   x-kubernetes-validations:
                     - rule: self == oldSelf
                       message: "principalId is immutable"
+                groupRef:
+                  type: object
+                  description: "groupRef specifies the TwingateGroup kubernetes object reference to provide access to."
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: "groupRef is immutable."
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the TwingateGroup object."
+                    namespace:
+                      type: string
+                      default: default
+                      description: "Namespace of TwingateGroup object."
                 principalExternalRef:
                   type: object
                   required: ["type", "name"]

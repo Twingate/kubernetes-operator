@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 
 import kopf
@@ -49,8 +50,15 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
     )
 
 
+GROUP_RECONCILER_INTERVAL = int(os.environ.get("GROUP_RECONCILER_INTERVAL", timedelta(hours=10).seconds))  # fmt: skip
+GROUP_RECONCILER_INIT_DELAY = int(os.environ.get("GROUP_RECONCILER_INIT_DELAY", 60))  # fmt: skip
+
+
 @kopf.timer(
-    "twingategroup", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
+    "twingategroup",
+    interval=GROUP_RECONCILER_INTERVAL,
+    initial_delay=GROUP_RECONCILER_INIT_DELAY,
+    idle=60,
 )
 def twingate_group_reconciler(body, spec, logger, memo, patch, **_):
     return twingate_group_create_update(body, spec, logger, memo, patch)

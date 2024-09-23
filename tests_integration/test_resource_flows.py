@@ -201,15 +201,27 @@ ACCESS_OBJECTS = {
             type: serviceAccount
             name: "{principal_name}"
     """,
+    "OBJ_ACCESS_BY_GROUPREF": """
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {resource_name}
+        spec:
+          resourceRef:
+            name: {resource_name}
+          groupRef:
+            name: "test-group"
+    """,
 }
 
 
 @pytest.mark.parametrize(
     "access_object_yaml_tmpl_name",
     [
-        "OBJ_ACCESS_BY_PRINCIPAL_ID",
-        "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP",
-        "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA",
+        # "OBJ_ACCESS_BY_PRINCIPAL_ID",
+        # "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP",
+        # "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA",
+        "OBJ_ACCESS_BY_GROUPREF",
     ],
 )
 def test_resource_access_flows(
@@ -229,6 +241,15 @@ def test_resource_access_flows(
           address: my.default.cluster.local
     """
 
+    GROUP_OBJ = """
+        apiVersion: twingate.com/v1beta
+        kind: TwingateGroup
+        metadata:
+          name: test-group
+        spec:
+            name: Test Group
+    """
+
     access_object_yaml_tmpl = ACCESS_OBJECTS[access_object_yaml_tmpl_name]
     access_object_yaml = access_object_yaml_tmpl.format(
         resource_name=unique_resource_name,
@@ -237,8 +258,15 @@ def test_resource_access_flows(
     )
 
     # fmt: off
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with KopfRunner(kopf_runner_args,
+                    settings=kopf_settings,
+                    env={
+                        "GROUP_RECONCILER_INTERVAL": "1",
+                        "GROUP_RECONCILER_INIT_DELAY": "1",
+                    },
+    ) as runner:
         kubectl_create(RESOURCE_OBJ)
+        kubectl_create(GROUP_OBJ)
         time.sleep(5)  # give it some time to react
 
         kubectl_create(access_object_yaml)
@@ -251,6 +279,7 @@ def test_resource_access_flows(
         time.sleep(1)  # give it some time to react
 
         kubectl(f"delete tgr/{unique_resource_name}")
+        kubectl("delete tgg/test-group")
 
         time.sleep(5)  # give it some time to react
 

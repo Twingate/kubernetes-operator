@@ -42,7 +42,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
 def random_connector_name(ci_run_number):
     def generate(prefix: str) -> str:
         random_str = "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=8)  # noqa:S311
+            random.choices(string.ascii_lowercase + string.digits, k=8)  # noqa:S311
         )
         result = f"{prefix}-{ci_run_number}-{random_str}"
         assert len(result) <= 30

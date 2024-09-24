@@ -278,12 +278,11 @@ class ConnectorImagePolicy(BaseModel):
     @field_validator("schedule")
     @classmethod
     def check_valid_crontab(cls, v: str, info: ValidationInfo) -> str:
-        if v:
-            try:
-                croniter(v)
-            except ValueError as vex:
-                raise ValueError("Invalid schedule value") from vex
-        return v
+        try:
+            croniter(v)
+            return v
+        except ValueError as vex:
+            raise ValueError("Invalid schedule value") from vex
 
     def get_next_date_iso8601(self) -> str:
         next_date = croniter(self.schedule, pendulum.now("UTC")).get_next(datetime)

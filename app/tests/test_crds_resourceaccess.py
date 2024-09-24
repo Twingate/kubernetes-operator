@@ -436,6 +436,8 @@ def test_spec_get_resource_failure_returns_none(
 
 
 # region get_group_ref_object
+
+
 def test_spec_get_group_ref_object(
     mock_get_namespaced_custom_object, sample_resourceaccess_object, sample_group_object
 ):
@@ -450,6 +452,14 @@ def test_spec_get_group_ref_object(
     crd = TwingateResourceAccessCRD(**resource_access_object)
     response = crd.spec.get_group_ref_object()
     assert response == sample_group_object
+
+
+def test_spec_get_group_ref_object_returns_none_if_no_group_ref(
+    mock_get_namespaced_custom_object, sample_resourceaccess_object
+):
+    crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
+    response = crd.spec.get_group_ref_object()
+    assert response is None
 
 
 # endregion

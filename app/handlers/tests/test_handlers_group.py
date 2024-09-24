@@ -122,6 +122,35 @@ class TestGroupCreateUpdateHandler:
         kopf_exception_mock.assert_called_once_with("", reason="Failed to update group", exc=mock_api_client.group_update.side_effect)  # fmt: skip
         assert patch_mock.spec == {"id": None}
 
+    def test_update_if_diff_id_changes_from_none_then_skips(self, mock_api_client):
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        group_id = "test-group-id"
+        spec = {
+            "id": group_id,
+            "name": "Test Group",
+        }
+
+        result = twingate_group_create_update(
+            "",
+            spec,
+            logger_mock,
+            memo_mock,
+            patch_mock,
+            diff=(("add", ("spec", "id"), None, group_id),),
+        )
+        assert result == {
+            "success": True,
+            "ts": ANY,
+        }
+
+        mock_api_client.group_create.assert_not_called()
+        mock_api_client.group_update.assert_not_called()
+        assert patch_mock.spec == {}
+
 
 class TestGroupDeleteHandler:
     def test_delete(self, mock_api_client):

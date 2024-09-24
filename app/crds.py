@@ -183,14 +183,6 @@ class ResourceAccessSpec(BaseModel):
     def resource_ref_fullname(self) -> str:
         return f"{self.resource_ref.namespace}/{self.resource_ref.name}"
 
-    @property
-    def group_ref_fullname(self) -> str | None:
-        return (
-            f"{self.group_ref.namespace}/{self.group_ref.name}"
-            if self.group_ref
-            else None
-        )
-
     def _get_ref_object(
         self, plural_type: str, namespace: str, name: str
     ) -> OptionalK8sObject:

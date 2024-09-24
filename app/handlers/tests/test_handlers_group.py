@@ -72,6 +72,7 @@ class TestGroupCreateUpdateHandler:
             logger_mock,
             memo_mock,
             patch_mock,
+            diff=(("change", ("spec", "name"), "Test G", "Test Group"),),
         )
         assert result == {
             "success": True,

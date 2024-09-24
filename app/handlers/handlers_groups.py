@@ -5,7 +5,7 @@ import kopf
 
 from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
-from app.crds import TwingateGroupCRD
+from app.crds import GroupSpec
 from app.handlers import fail, success
 
 
@@ -26,24 +26,23 @@ def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
             return success()
         # fmt: on
 
-    crd = TwingateGroupCRD(**body)
-    group_id = crd.spec.id
-    if group_id:
-        logger.info("Updating group with name='%s'", crd.spec.name)
+    group_spec = GroupSpec(**spec)
+    if group_id := group_spec.id:
+        logger.info("Updating group with name='%s'", group_spec.name)
         try:
-            client.group_update(crd.spec)
+            client.group_update(group_spec)
+            kopf.info(body, reason="Success", message=f"Updated {group_id}")
         except GraphQLMutationError as gqlerr:
             logger.error("Failed to update group: %s", gqlerr)
+            kopf.exception(body, reason="Failed to update group", exc=gqlerr)  # fmt: skip
             if "does not exist" in gqlerr.message:
                 patch.spec["id"] = None
             return fail(error=gqlerr.message)
     else:
-        logger.info(
-            "Creating group with name='%s'",
-            crd.spec.name,
-        )
-        group_id = client.group_create(crd.spec)
+        logger.info("Creating group with name='%s'", group_spec.name)  # fmt: skip
+        group_id = client.group_create(group_spec)
         patch.spec["id"] = group_id
+        kopf.info(body, reason="Success", message=f"Created on Twingate as {group_id}")
 
     return success(
         twingate_id=group_id,

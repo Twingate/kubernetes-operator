@@ -13,8 +13,8 @@ from tests_integration.utils import (
 )
 
 
-def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
-    service_name = f"my-service-{ci_run_number}"
+def test_service_flows(kopf_runner_args, kopf_settings, random_name_generator):
+    service_name = random_name_generator("test-svc")
     resource_name = f"{service_name}-resource"
     SERVICE_OBJ = f"""
         apiVersion: v1
@@ -43,7 +43,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         kubectl_create(SERVICE_OBJ)
-        time.sleep(2)
+        time.sleep(10)
 
         kubectl_get("service", service_name)
         tgr = kubectl_get("twingateresource", resource_name)

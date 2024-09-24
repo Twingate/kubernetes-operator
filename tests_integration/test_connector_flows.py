@@ -1,5 +1,3 @@
-import random
-import string
 import time
 from contextlib import contextmanager
 from subprocess import CalledProcessError
@@ -38,21 +36,8 @@ def run_kopf(kopf_runner_args, kopf_settings):
     return inner
 
 
-@pytest.fixture
-def random_connector_name(ci_run_number):
-    def generate(prefix: str) -> str:
-        random_str = "".join(
-            random.choices(string.ascii_lowercase + string.digits, k=8)  # noqa:S311
-        )
-        result = f"{prefix}-{ci_run_number}-{random_str}"
-        assert len(result) <= 30
-        return result
-
-    return generate
-
-
-def test_connector_flows(run_kopf, random_connector_name):
-    connector_name = random_connector_name("t")
+def test_connector_flows(run_kopf, random_name_generator):
+    connector_name = random_name_generator("t")
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector
@@ -136,8 +121,8 @@ def test_connector_flows(run_kopf, random_connector_name):
             kubectl_get("pod", connector_name)
 
 
-def test_connector_flows_image_change(run_kopf, random_connector_name):
-    connector_name = random_connector_name("t-image")
+def test_connector_flows_image_change(run_kopf, random_name_generator):
+    connector_name = random_name_generator("t-image")
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector
@@ -192,8 +177,8 @@ def test_connector_flows_image_change(run_kopf, random_connector_name):
             kubectl_get("pod", connector_name)
 
 
-def test_connector_flows_pod_gone_while_operator_down(run_kopf, random_connector_name):
-    connector_name = random_connector_name("t-gone")
+def test_connector_flows_pod_gone_while_operator_down(run_kopf, random_name_generator):
+    connector_name = random_name_generator("t-gone")
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector
@@ -238,9 +223,9 @@ def test_connector_flows_pod_gone_while_operator_down(run_kopf, random_connector
 
 
 def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
-    run_kopf, ci_run_number, random_connector_name
+    run_kopf, ci_run_number, random_name_generator
 ):
-    connector_name = random_connector_name("t-migration")
+    connector_name = random_name_generator("t-migration")
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateConnector

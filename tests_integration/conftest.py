@@ -1,4 +1,6 @@
 import os
+import random
+import string
 import uuid
 
 import kopf
@@ -32,3 +34,16 @@ def kopf_settings():
 @pytest.fixture
 def unique_resource_name(request):
     return request.node.originalname.replace("_", "-") + "-" + str(uuid.uuid4())
+
+
+@pytest.fixture
+def random_name_generator(ci_run_number):
+    def generate(prefix: str, k: int = 8, max_length: int = 30) -> str:
+        random_str = "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=k)  # noqa: S311
+        )
+        result = f"{prefix}-{ci_run_number}-{random_str}"
+        assert len(result) <= max_length
+        return result
+
+    return generate

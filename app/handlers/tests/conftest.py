@@ -27,6 +27,18 @@ def kopf_info_mock():
 
 
 @pytest.fixture
+def kopf_warn_mock():
+    with patch("kopf.warn") as m:
+        yield m
+
+
+@pytest.fixture
+def kopf_exception_mock():
+    with patch("kopf.exception") as m:
+        yield m
+
+
+@pytest.fixture
 def kopf_adopt_mock():
     with patch("kopf.adopt") as m:
         yield m

@@ -321,6 +321,58 @@ def test_deserialization_with_principal_external_ref():
     assert crd.spec.resource_ref_fullname == "default/foo"
 
 
+def test_deserialization_with_no_target_ref_fails_validation():
+    data = {
+        "apiVersion": "twingate.com/v1",
+        "kind": "TwingateResourceAccess",
+        "metadata": {
+            "creationTimestamp": "2023-09-29T19:30:39Z",
+            "finalizers": ["kopf.zalando.org/KopfFinalizerMarker"],
+            "generation": 1,
+            "managedFields": [
+                {
+                    "apiVersion": "twingate.com/v1",
+                    "fieldsType": "FieldsV1",
+                    "fieldsV1": {
+                        "f:metadata": {
+                            "f:finalizers": {
+                                ".": {},
+                                'v:"kopf.zalando.org/KopfFinalizerMarker"': {},
+                            }
+                        }
+                    },
+                    "manager": "kopf",
+                    "operation": "Update",
+                    "time": "2023-09-29T19:30:39Z",
+                },
+                {
+                    "apiVersion": "twingate.com/v1",
+                    "fieldsType": "FieldsV1",
+                    "fieldsV1": {
+                        "f:spec": {
+                            ".": {},
+                            "f:principalId": {},
+                            "f:resourceRef": {".": {}, "f:name": {}, "f:namespace": {}},
+                        }
+                    },
+                    "manager": "kubectl-create",
+                    "operation": "Update",
+                    "time": "2023-09-29T19:30:39Z",
+                },
+            ],
+            "name": "foo-access-to-bar",
+            "namespace": "default",
+            "resourceVersion": "612168",
+            "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+        },
+        "spec": {
+            "resourceRef": {"name": "foo", "namespace": "default"},
+        },
+    }
+    with pytest.raises(ValueError, match="Missing principal"):
+        TwingateResourceAccessCRD(**data)
+
+
 # region get_resource
 
 

@@ -218,9 +218,9 @@ ACCESS_OBJECTS = {
 @pytest.mark.parametrize(
     "access_object_yaml_tmpl_name",
     [
-        # "OBJ_ACCESS_BY_PRINCIPAL_ID",
-        # "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP",
-        # "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA",
+        "OBJ_ACCESS_BY_PRINCIPAL_ID",
+        "OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP",
+        "OBJ_ACCESS_BY_PRINCIPAL_NAME_SA",
         "OBJ_ACCESS_BY_GROUPREF",
     ],
 )

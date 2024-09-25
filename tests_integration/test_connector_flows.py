@@ -10,8 +10,12 @@ from tests_integration.utils import (
     kubectl,
     kubectl_create,
     kubectl_delete,
+    kubectl_delete_wait,
     kubectl_get,
     kubectl_patch,
+    kubectl_wait_pod_running,
+    kubectl_wait_pod_status,
+    kubectl_wait_to_exist,
 )
 
 
@@ -56,14 +60,9 @@ def test_connector_flows(run_kopf, random_name_generator):
 
     with run_kopf():
         kubectl_create(OBJ)
-        time.sleep(10)
 
-        secret = kubectl_get("secret", connector_name)
-        pod = kubectl_get("pod", connector_name)
-
-        while pod["status"]["phase"] == "Pending":
-            time.sleep(1)
-            pod = kubectl_get("pod", connector_name)
+        secret = kubectl_wait_to_exist("secret", connector_name)
+        pod = kubectl_wait_pod_running(connector_name)
 
         connector = kubectl_get("tc", connector_name)
 
@@ -82,9 +81,8 @@ def test_connector_flows(run_kopf, random_name_generator):
         assert container_env["TWINGATE_LOG_LEVEL"] == "7"
 
         # Check that if pod is deleted we recreate it
-        kubectl_delete(f"pod/{connector_name}")
-        time.sleep(10)
-        pod = kubectl_get("pod", connector_name)
+        kubectl_delete_wait("pod", connector_name)
+        pod = kubectl_wait_pod_status(connector_name, "Running")
 
         assert pod["status"]["phase"] == "Running"
         assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
@@ -101,8 +99,8 @@ def test_connector_flows(run_kopf, random_name_generator):
                 }
             },
         )
-        time.sleep(10)
-        pod = kubectl_get("pod", connector_name)
+        time.sleep(5)
+        pod = kubectl_wait_pod_running(connector_name)
 
         assert pod["status"]["phase"] == "Running"
         assert pod["spec"]["restartPolicy"] == "OnFailure"
@@ -110,9 +108,8 @@ def test_connector_flows(run_kopf, random_name_generator):
         assert pod["spec"]["containers"][0]["env"][-1]["value"] == "bar"
         assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"
 
-        kubectl_delete(f"tc/{connector_name}")
+        kubectl_delete_wait("tc", connector_name)
         time.sleep(10)
-
         # secret & pod are deleted
         with pytest.raises(CalledProcessError):
             kubectl_get("secret", connector_name)
@@ -137,15 +134,9 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
 
     with run_kopf():
         kubectl_create(OBJ)
-        time.sleep(5)
-
+        secret = kubectl_wait_to_exist("secret", connector_name)
+        pod = kubectl_wait_pod_running(connector_name)
         connector = kubectl_get("tc", connector_name)
-        secret = kubectl_get("secret", connector_name)
-        pod = kubectl_get("pod", connector_name)
-
-        while pod["status"]["phase"] == "Pending":
-            time.sleep(1)
-            pod = kubectl_get("pod", connector_name)
 
         # connector was properly provisioned
         expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
@@ -161,12 +152,12 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
         # Change image tag
         # kubectl patch tc/test-connector-image-local -p '{"spec": {"image": {"tag": "1.63.0"}}}' --type=merge
         kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.63.0"}}})
-        time.sleep(10)
-        pod = kubectl_get("pod", connector_name)
+        time.sleep(5)
+        pod = kubectl_wait_pod_running(connector_name)
         assert pod["status"]["phase"] == "Running"
         assert pod["spec"]["containers"][0]["image"] == "twingate/connector:1.63.0"
 
-        kubectl_delete(f"tc/{connector_name}")
+        kubectl_delete_wait("tc", connector_name)
         time.sleep(10)
 
         # secret & pod are deleted
@@ -193,32 +184,24 @@ def test_connector_flows_pod_gone_while_operator_down(run_kopf, random_name_gene
 
     with run_kopf():
         kubectl_create(OBJ)
-        time.sleep(10)
-
+        kubectl_wait_to_exist("secret", connector_name)
+        kubectl_wait_pod_running(connector_name)
         connector = kubectl_get("tc", connector_name)
-        kubectl_get("secret", connector_name)
-        pod = kubectl_get("pod", connector_name)
-
-        while pod["status"]["phase"] == "Pending":
-            time.sleep(1)
-            pod = kubectl_get("pod", connector_name)
 
         # connector was properly provisioned
         expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
         assert connector["status"]["twingate_connector_create"] == expected_status
 
-    kubectl_delete(f"pod/{connector_name}")
+    kubectl_delete("pod", connector_name)
 
     # run operator again
     with run_kopf():
-        time.sleep(5)
-
         # pod was recreated
-        pod = kubectl_get("pod", connector_name)
+        pod = kubectl_wait_pod_running(connector_name)
         assert pod["status"]["phase"] == "Running"
 
         # Test done, delete connector
-        kubectl_delete(f"tc/{connector_name}")
+        kubectl_delete("tc", connector_name)
         time.sleep(5)
 
 
@@ -240,15 +223,9 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
 
     with run_kopf():
         kubectl_create(OBJ)
-        time.sleep(10)
-
+        kubectl_wait_to_exist("secret", connector_name)
+        kubectl_wait_pod_running(connector_name)
         connector = kubectl_get("tc", connector_name)
-        kubectl_get("secret", connector_name)
-        pod = kubectl_get("pod", connector_name)
-
-        while pod["status"]["phase"] == "Pending":
-            time.sleep(1)
-            pod = kubectl_get("pod", connector_name)
 
         # connector was properly provisioned
         expected_status = {"success": True, "ts": ANY, "twingate_id": ANY}
@@ -271,14 +248,10 @@ def test_connector_flows_pod_migration_from_older_pod_with_finalizers(
         time.sleep(10)
 
         # check pod was recreated
-        pod = kubectl_get("pod", connector_name)
-        if pod["status"]["phase"] == "Pending":
-            time.sleep(5)
-            pod = kubectl_get("pod", connector_name)
-
+        pod = kubectl_wait_pod_running(connector_name)
         assert pod["metadata"]["annotations"]["twingate.com/connector-podspec-version"] == "v1"  # fmt: skip
         assert pod["status"]["phase"] == "Running"
 
         # Test done, delete connector
-        kubectl_delete(f"tc/{connector_name}")
+        kubectl_delete("tc", connector_name)
         time.sleep(5)

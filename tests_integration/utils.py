@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 
 import orjson as json
 
@@ -38,13 +39,15 @@ def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
 
 
 def kubectl_delete(
-    resource: str, *, force: bool = False
+    resource_type: str, resource_name: str, *, force: bool = False
 ) -> subprocess.CompletedProcess:
     if force:
         patch_str = '{"metadata":{"finalizers":null}}'
-        kubectl(f"kubectl patch {resource} -p '{patch_str}' --type=merge")
+        kubectl(
+            f"kubectl patch {resource_type}/{resource_name} -p '{patch_str}' --type=merge"
+        )
 
-    return kubectl(f"delete {resource}")
+    return kubectl(f"delete {resource_type}/{resource_name}")
 
 
 def kubectl_get(resource_type: str, resource_name: str) -> dict:
@@ -57,3 +60,64 @@ def kubectl_patch(
 ) -> subprocess.CompletedProcess:
     patch_str = json.dumps(patch).decode()
     return kubectl(f"patch {resource} -p '{patch_str}' --type={merge_type}")
+
+
+def kubectl_wait_to_exist(
+    resource_type: str, resource_name: str, max_retries: int = 5
+) -> dict:
+    retry = 0
+    while True:
+        try:
+            return kubectl_get(resource_type, resource_name)
+        except subprocess.CalledProcessError:
+            # ruff: noqa: PERF203
+            retry += 1
+            if retry > max_retries:
+                raise
+            time.sleep(5)
+
+
+def kubectl_delete_wait(
+    resource_type: str,
+    resource_name: str,
+    *,
+    force: bool = False,
+    max_retries: int = 10,
+) -> None:
+    kubectl_delete(resource_type, resource_name, force=force)
+    retry = 0
+    while True:
+        try:
+            kubectl_get(resource_type, resource_name)
+        except subprocess.CalledProcessError:
+            return
+        retry += 1
+        if retry > max_retries:
+            raise
+        time.sleep(1)
+
+
+def kubectl_wait_pod_status(
+    pod_name: str, expected_status: str, max_retries: int = 10
+) -> dict:
+    retry = 0
+    latest_status = None
+    while True:
+        try:
+            pod = kubectl_get("pod", pod_name)
+            latest_status = pod["status"]["phase"]
+            if latest_status == expected_status:
+                return pod
+        except subprocess.CalledProcessError:
+            pass
+
+        retry += 1
+        if retry > max_retries:
+            raise RuntimeError(
+                f"Pod {pod_name} did not reach status {expected_status}. Last status is {latest_status}"
+            )
+        time.sleep(1)
+
+
+def kubectl_wait_pod_running(pod_name: str, max_retries: int = 10) -> dict:
+    return kubectl_wait_pod_status(pod_name, "Running", max_retries=max_retries)

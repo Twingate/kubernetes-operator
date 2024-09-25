@@ -99,7 +99,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, random_name_generator):
         }
 
         # Test deleting the service deletes the resource
-        kubectl_delete(f"svc/{service_name}")
+        kubectl_delete("svc", service_name)
         time.sleep(10)
         with pytest.raises(CalledProcessError):
             kubectl_get("twingateresource", resource_name)

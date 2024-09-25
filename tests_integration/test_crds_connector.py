@@ -26,7 +26,7 @@ class TestConnectorCRD:
         )
 
         assert result.returncode == 0
-        kubectl_delete(f"tc/{unique_connector_name}")
+        kubectl_delete("tc", unique_connector_name)
 
     def test_both_image_or_imagepolicy(self, unique_connector_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -84,7 +84,7 @@ class TestConnectorCRD:
             },
         }
 
-        kubectl_delete(f"tc/{unique_connector_name}")
+        kubectl_delete("tc", unique_connector_name)
 
     def test_loglevel_too_high(self, unique_connector_name):
         with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -161,7 +161,7 @@ class TestConnectorCRD:
             },
         }
 
-        kubectl_delete(f"tc/{unique_connector_name}")
+        kubectl_delete("tc", unique_connector_name)
 
     def test_image(self, unique_connector_name):
         result = kubectl_create(
@@ -199,7 +199,7 @@ class TestConnectorCRD:
             },
         }
 
-        kubectl_delete(f"tc/{unique_connector_name}")
+        kubectl_delete("tc", unique_connector_name)
 
     def test_imagepolicy(self, unique_connector_name):
         result = kubectl_create(
@@ -243,7 +243,7 @@ class TestConnectorCRD:
             },
         }
 
-        kubectl_delete(f"tc/{unique_connector_name}")
+        kubectl_delete("tc", unique_connector_name)
 
     def test_imagepolicy_validates_provider(self, unique_connector_name):
         with pytest.raises(subprocess.CalledProcessError):

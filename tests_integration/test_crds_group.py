@@ -16,7 +16,7 @@ def test_success(unique_resource_name):
     """)
 
     assert result.returncode == 0
-    kubectl_delete(f"tgg/{unique_resource_name}")
+    kubectl_delete("tgg", unique_resource_name)
 
 
 def test_name_required(unique_resource_name):

@@ -49,8 +49,6 @@ def test_service_flows(kopf_runner_args, kopf_settings, random_name_generator):
             "twingateresource", resource_name, "twingate_resource_create"
         )
 
-        # resource exists but we still need to wait for it to sync to twingate
-
         assert tgr["spec"] == {
             "address": f"{service_name}.default.svc.cluster.local",
             "alias": "myapp.internal",

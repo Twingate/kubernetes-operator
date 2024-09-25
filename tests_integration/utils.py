@@ -121,3 +121,17 @@ def kubectl_wait_pod_status(
 
 def kubectl_wait_pod_running(pod_name: str, max_retries: int = 10) -> dict:
     return kubectl_wait_pod_status(pod_name, "Running", max_retries=max_retries)
+
+
+def kubectl_wait_object_handler_success(
+    resource_type: str,
+    resource_name: str,
+    handler_name: str,
+):
+    obj = kubectl_wait_to_exist(resource_type, resource_name)
+    while True:
+        if obj.get("status", {}).get(handler_name, {}).get("success"):
+            return obj
+
+        time.sleep(5)
+        obj = kubectl_get(resource_type, resource_name)

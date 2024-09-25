@@ -10,6 +10,7 @@ from tests_integration.utils import (
     kubectl_delete,
     kubectl_get,
     kubectl_patch,
+    kubectl_wait_to_exist,
 )
 
 
@@ -43,10 +44,8 @@ def test_service_flows(kopf_runner_args, kopf_settings, random_name_generator):
 
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         kubectl_create(SERVICE_OBJ)
-        time.sleep(10)
-
         kubectl_get("service", service_name)
-        tgr = kubectl_get("twingateresource", resource_name)
+        tgr = kubectl_wait_to_exist("twingateresource", resource_name)
 
         assert tgr["spec"] == {
             "address": f"{service_name}.default.svc.cluster.local",

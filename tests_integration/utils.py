@@ -91,6 +91,7 @@ def kubectl_delete_wait(
             kubectl_get(resource_type, resource_name)
         except subprocess.CalledProcessError:
             return
+
         retry += 1
         if retry > max_retries:
             raise

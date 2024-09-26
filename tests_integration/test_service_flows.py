@@ -3,7 +3,6 @@ from subprocess import CalledProcessError
 from unittest.mock import ANY
 
 import pytest
-from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
     kubectl_create,
@@ -14,7 +13,7 @@ from tests_integration.utils import (
 )
 
 
-def test_service_flows(kopf_runner_args, kopf_settings, random_name_generator):
+def test_service_flows(run_kopf, random_name_generator):
     service_name = random_name_generator("test-svc")
     resource_name = f"{service_name}-resource"
     SERVICE_OBJ = f"""
@@ -42,7 +41,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, random_name_generator):
               name: ssh
     """
 
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with run_kopf() as runner:
         kubectl_create(SERVICE_OBJ)
         kubectl_get("service", service_name)
         tgr = kubectl_wait_object_handler_success(

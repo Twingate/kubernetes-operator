@@ -98,9 +98,7 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     # fmt: on
 
 
-def test_resource_created_before_operator_runs(
-    kopf_settings, kopf_runner_args, unique_resource_name
-):
+def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateResource
@@ -118,7 +116,7 @@ def test_resource_created_before_operator_runs(
     assert "status" not in created_object
 
     # fmt: off
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with run_kopf() as runner:
         created_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_create")
         assert created_object["spec"]["id"] is not None
         kubectl_delete_wait("tgr", unique_resource_name)
@@ -214,7 +212,7 @@ ACCESS_OBJECTS = {
     ],
 )
 def test_resource_access_flows(
-    access_object_yaml_tmpl_name, kopf_settings, kopf_runner_args, unique_resource_name
+    access_object_yaml_tmpl_name, run_kopf, unique_resource_name
 ):
     assert "TWINGATE_TEST_PRINCIPAL_ID" in os.environ
     principal_id = os.environ["TWINGATE_TEST_PRINCIPAL_ID"]
@@ -247,13 +245,7 @@ def test_resource_access_flows(
     )
 
     # fmt: off
-    with KopfRunner(kopf_runner_args,
-                    settings=kopf_settings,
-                    env={
-                        "GROUP_RECONCILER_INTERVAL": "1",
-                        "GROUP_RECONCILER_INIT_DELAY": "1",
-                    },
-    ) as runner:
+    with run_kopf() as runner:
         kubectl_create(RESOURCE_OBJ)
         kubectl_create(GROUP_OBJ)
 

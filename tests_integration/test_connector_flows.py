@@ -1,10 +1,8 @@
 import time
-from contextlib import contextmanager
 from subprocess import CalledProcessError
 from unittest.mock import ANY
 
 import pytest
-from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
     kubectl,
@@ -17,26 +15,6 @@ from tests_integration.utils import (
     kubectl_wait_pod_status,
     kubectl_wait_to_exist,
 )
-
-
-@pytest.fixture(scope="session")
-def run_kopf(kopf_runner_args, kopf_settings):
-    @contextmanager
-    def inner():
-        with KopfRunner(
-            kopf_runner_args,
-            settings=kopf_settings,
-            env={
-                "CONNECTOR_RECONCILER_INTERVAL": "1",
-                "CONNECTOR_RECONCILER_INIT_DELAY": "1",
-            },
-        ) as runner:
-            yield runner
-
-        assert runner.exception is None
-        assert runner.exit_code == 0
-
-    return inner
 
 
 def test_connector_flows(run_kopf, random_name_generator):

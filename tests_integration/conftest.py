@@ -2,9 +2,11 @@ import os
 import random
 import string
 import uuid
+from contextlib import contextmanager
 
 import kopf
 import pytest
+from kopf.testing import KopfRunner
 
 from .utils import kubectl
 
@@ -47,3 +49,25 @@ def random_name_generator(ci_run_number):
         return result
 
     return generate
+
+
+@pytest.fixture(scope="session")
+def run_kopf(kopf_runner_args, kopf_settings):
+    @contextmanager
+    def inner():
+        with KopfRunner(
+            kopf_runner_args,
+            settings=kopf_settings,
+            env={
+                "CONNECTOR_RECONCILER_INTERVAL": "1",
+                "CONNECTOR_RECONCILER_INIT_DELAY": "1",
+                "GROUP_RECONCILER_INTERVAL": "1",
+                "GROUP_RECONCILER_INIT_DELAY": "1",
+            },
+        ) as runner:
+            yield runner
+
+        assert runner.exception is None
+        assert runner.exit_code == 0
+
+    return inner

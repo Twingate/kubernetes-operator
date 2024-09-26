@@ -11,6 +11,9 @@ from tests_integration.utils import (
     kubectl,
     kubectl_apply,
     kubectl_create,
+    kubectl_delete_wait,
+    kubectl_wait_object_handler_success,
+    kubectl_wait_to_exist,
     load_stdout,
 )
 
@@ -54,15 +57,14 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     # fmt: off
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
         kubectl_create(OBJ)
-        time.sleep(5)  # give it some time to react
-        created_object = json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
+        created_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_create")
 
         # Update the name
         kubectl_apply(OBJ_UPDATED)
-        json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
+        updated_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_update/spec")
+        assert updated_object["spec"]["name"] == "My K8S Resource Renamed"
 
-        delete_command = kubectl(f"delete tgr/{unique_resource_name}")
-        time.sleep(1)  # give it some time to react
+        kubectl_delete_wait("tgr", unique_resource_name)
 
     # fmt: on
 
@@ -79,24 +81,19 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY,
-            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,
-            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,  "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY,
-            "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY,
-            "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-    assert delete_command.stdout.decode() == f'twingateresource.twingate.com "{unique_resource_name}" deleted\n'
 
     # Shutdown
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
@@ -118,21 +115,17 @@ def test_resource_created_before_operator_runs(
     """
 
     kubectl_create(OBJ)
-    time.sleep(5)  # give it some time to react
 
     # Make sure no `status` as kopf isnt running yet
-    created_object = json.loads(
-        kubectl(f"get tgr/{unique_resource_name} -o json").stdout
-    )
+    created_object = kubectl_wait_to_exist("tgr", unique_resource_name)
     assert "status" not in created_object
 
     # fmt: off
     with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-        time.sleep(5)  # give it some time to react
-        created_object = json.loads(kubectl(f"get tgr/{unique_resource_name} -o json").stdout)
+        created_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_create")
+        assert created_object["spec"]["id"] is not None
+        kubectl_delete_wait("tgr", unique_resource_name)
 
-        delete_command = kubectl(f"delete tgr/{unique_resource_name}")
-        time.sleep(1)  # give it some time to react
 
     # fmt: on
 
@@ -158,7 +151,6 @@ def test_resource_created_before_operator_runs(
     assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY,
             "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
-    assert delete_command.stdout.decode() == f'twingateresource.twingate.com "{unique_resource_name}" deleted\n'
 
     # Shutdown
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs

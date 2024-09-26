@@ -3,18 +3,18 @@ from subprocess import CalledProcessError
 from unittest.mock import ANY
 
 import pytest
-from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
     kubectl_create,
     kubectl_delete,
     kubectl_get,
     kubectl_patch,
+    kubectl_wait_object_handler_success,
 )
 
 
-def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
-    service_name = f"my-service-{ci_run_number}"
+def test_service_flows(run_kopf, random_name_generator):
+    service_name = random_name_generator("test-svc")
     resource_name = f"{service_name}-resource"
     SERVICE_OBJ = f"""
         apiVersion: v1
@@ -41,12 +41,14 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
               name: ssh
     """
 
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
+    with run_kopf(
+        enable_connector_reconciler=False, enable_group_reconciler=False
+    ) as runner:
         kubectl_create(SERVICE_OBJ)
-        time.sleep(2)
-
         kubectl_get("service", service_name)
-        tgr = kubectl_get("twingateresource", resource_name)
+        tgr = kubectl_wait_object_handler_success(
+            "twingateresource", resource_name, "twingate_resource_create"
+        )
 
         assert tgr["spec"] == {
             "address": f"{service_name}.default.svc.cluster.local",
@@ -99,7 +101,7 @@ def test_service_flows(kopf_runner_args, kopf_settings, ci_run_number):
         }
 
         # Test deleting the service deletes the resource
-        kubectl_delete(f"service/{service_name}")
+        kubectl_delete("svc", service_name)
         time.sleep(10)
         with pytest.raises(CalledProcessError):
             kubectl_get("twingateresource", resource_name)

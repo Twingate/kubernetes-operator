@@ -1,14 +1,11 @@
 import os
-import time
 from unittest.mock import ANY
 
-import orjson as json
 import pytest
 from kopf.testing import KopfRunner
 
 from tests_integration.utils import (
     assert_log_message_starts_with,
-    kubectl,
     kubectl_apply,
     kubectl_create,
     kubectl_delete_wait,
@@ -259,21 +256,20 @@ def test_resource_access_flows(
     ) as runner:
         kubectl_create(RESOURCE_OBJ)
         kubectl_create(GROUP_OBJ)
-        time.sleep(5)  # give it some time to react
+
+        # Make sure resource is created
+        resource = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_create") # fmt: skip
+        group = kubectl_wait_object_handler_success("tgg", "test-group", "twingate_group_create_update") # fmt: skip
+        assert resource["spec"]["id"] is not None
+        assert group["spec"]["id"] is not None
 
         kubectl_create(access_object_yaml)
-        time.sleep(10)  # give it some time to react
+        access = kubectl_wait_object_handler_success("tacc", unique_resource_name, "twingate_resource_access_change")  # fmt: skip
+        assert access["status"]["twingate_resource_access_change"]["resource_id"] == resource["spec"]["id"]
 
-        json.loads(kubectl(f"get tgra/{unique_resource_name} -o json").stdout)
-
-        delete_command = kubectl(f"delete tgra/{unique_resource_name}")
-
-        time.sleep(1)  # give it some time to react
-
-        kubectl(f"delete tgr/{unique_resource_name}")
-        kubectl("delete tgg/test-group")
-
-        time.sleep(5)  # give it some time to react
+        kubectl_delete_wait("tacc", unique_resource_name)
+        kubectl_delete_wait("tgr", unique_resource_name)
+        kubectl_delete_wait("tgg", "test-group")
 
     # fmt: on
 
@@ -314,10 +310,6 @@ def test_resource_access_flows(
         },
         "severity": "info",
     } in logs
-    assert (
-        delete_command.stdout.decode()
-        == f'twingateresourceaccess.twingate.com "{unique_resource_name}" deleted\n'
-    )
 
     # Shutdown
     assert {

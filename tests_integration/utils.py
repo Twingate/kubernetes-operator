@@ -127,11 +127,19 @@ def kubectl_wait_object_handler_success(
     resource_type: str,
     resource_name: str,
     handler_name: str,
+    *,
+    max_retries: int = 5,
 ):
-    obj = kubectl_wait_to_exist(resource_type, resource_name)
+    retry = 0
+    obj = kubectl_wait_to_exist(resource_type, resource_name, max_retries=max_retries)
     while True:
         if obj.get("status", {}).get(handler_name, {}).get("success"):
             return obj
 
+        retry += 1
+        if retry > max_retries:
+            raise RuntimeError(
+                f"Handler {handler_name} did not succeed for {resource_type}/{resource_name}"
+            )
         time.sleep(5)
         obj = kubectl_get(resource_type, resource_name)

@@ -94,7 +94,7 @@ def kubectl_delete_wait(
         retry += 1
         if retry > max_retries:
             raise
-        time.sleep(1)
+        time.sleep(5)
 
 
 def kubectl_wait_pod_status(

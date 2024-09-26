@@ -41,7 +41,9 @@ def test_service_flows(run_kopf, random_name_generator):
               name: ssh
     """
 
-    with run_kopf() as runner:
+    with run_kopf(
+        enable_connector_reconciler=False, enable_group_reconciler=False
+    ) as runner:
         kubectl_create(SERVICE_OBJ)
         kubectl_get("service", service_name)
         tgr = kubectl_wait_object_handler_success(

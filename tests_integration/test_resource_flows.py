@@ -245,7 +245,7 @@ def test_resource_access_flows(
     )
 
     # fmt: off
-    with run_kopf() as runner:
+    with run_kopf(enable_connector_reconciler=False) as runner:
         kubectl_create(RESOURCE_OBJ)
         kubectl_create(GROUP_OBJ)
 

@@ -51,19 +51,23 @@ def random_name_generator(ci_run_number):
     return generate
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def run_kopf(kopf_runner_args, kopf_settings):
     @contextmanager
-    def inner():
+    def inner(*, enable_connector_reconciler=True, enable_group_reconciler=True):
+        env = {}
+        if enable_connector_reconciler:
+            env["CONNECTOR_RECONCILER_INTERVAL"] = "1"
+            env["CONNECTOR_RECONCILER_INIT_DELAY"] = "1"
+
+        if enable_group_reconciler:
+            env["GROUP_RECONCILER_INTERVAL"] = "1"
+            env["GROUP_RECONCILER_INIT_DELAY"] = "1"
+
         with KopfRunner(
             kopf_runner_args,
             settings=kopf_settings,
-            env={
-                "CONNECTOR_RECONCILER_INTERVAL": "1",
-                "CONNECTOR_RECONCILER_INIT_DELAY": "1",
-                "GROUP_RECONCILER_INTERVAL": "1",
-                "GROUP_RECONCILER_INIT_DELAY": "1",
-            },
+            env=env,
         ) as runner:
             yield runner
 

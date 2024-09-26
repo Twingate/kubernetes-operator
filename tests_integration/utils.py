@@ -119,7 +119,7 @@ def kubectl_wait_pod_status(
             raise RuntimeError(
                 f"Pod {pod_name} did not reach status {expected_status}. Last status is {latest_status}"
             )
-        time.sleep(1)
+        time.sleep(5)
 
 
 def kubectl_wait_pod_running(pod_name: str, max_retries: int = 10) -> dict:
@@ -144,5 +144,5 @@ def kubectl_wait_object_handler_success(
             raise RuntimeError(
                 f"Handler {handler_name} did not succeed for {resource_type}/{resource_name}"
             )
-        time.sleep(5)
+        time.sleep(10)
         obj = kubectl_get(resource_type, resource_name)

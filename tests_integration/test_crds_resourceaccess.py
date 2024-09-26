@@ -9,7 +9,7 @@ from tests_integration.utils import kubectl_create, kubectl_delete
 def unique_access_name(sequential_number, ci_run_number):
     unique_name = f"acc-{ci_run_number}-{sequential_number}"
     yield unique_name
-    kubectl_delete(f"tacc/{unique_name}")
+    kubectl_delete("tacc", unique_name)
 
 
 def test_have_to_specify_resourceRef():

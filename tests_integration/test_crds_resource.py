@@ -20,7 +20,7 @@ def test_browser_shortcut_false_allows_wildcard_address(unique_resource_name):
     )
 
     assert result.returncode == 0
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
 
 def test_browser_shortcut_cant_have_wildcard_address(unique_resource_name):
@@ -104,7 +104,7 @@ def test_protocols_tcp_allowall_cant_specify_ports(unique_resource_name):
     )
 
     assert result.returncode == 0, result.value.stderr.decode()
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
 
 def test_protocols_udp_allowall_cant_specify_ports(unique_resource_name):
@@ -146,7 +146,7 @@ def test_protocols_udp_allowall_cant_specify_ports(unique_resource_name):
     )
 
     assert result.returncode == 0, result.value.stderr.decode()
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
 
 def test_protocols_tcp_restricted(unique_resource_name):
@@ -166,7 +166,7 @@ def test_protocols_tcp_restricted(unique_resource_name):
     )
 
     assert result.returncode == 0, result.value.stderr.decode()
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
     result = kubectl_create(
         f"""
@@ -187,7 +187,7 @@ def test_protocols_tcp_restricted(unique_resource_name):
     )
 
     assert result.returncode == 0, result.value.stderr.decode()
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
 
 def test_protocols_udp_restricted(unique_resource_name):
@@ -207,7 +207,7 @@ def test_protocols_udp_restricted(unique_resource_name):
     )
 
     assert result.returncode == 0, result.value.stderr.decode()
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
     result = kubectl_create(
         f"""
@@ -228,7 +228,7 @@ def test_protocols_udp_restricted(unique_resource_name):
     )
 
     assert result.returncode == 0, result.value.stderr.decode()
-    kubectl_delete(f"tgr/{unique_resource_name}")
+    kubectl_delete("tgr", unique_resource_name)
 
 
 def test_protocols_tcp_restricted_port_values_must_be_valid(unique_resource_name):

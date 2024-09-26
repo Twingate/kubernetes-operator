@@ -69,7 +69,7 @@ def kubectl_wait_to_exist(
     while True:
         try:
             return kubectl_get(resource_type, resource_name)
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             # ruff: noqa: PERF203
             retry += 1
             if retry > max_retries:
@@ -91,6 +91,8 @@ def kubectl_delete_wait(
             kubectl_get(resource_type, resource_name)
         except subprocess.CalledProcessError:
             return
+        except subprocess.TimeoutExpired:
+            pass
 
         retry += 1
         if retry > max_retries:
@@ -109,7 +111,7 @@ def kubectl_wait_pod_status(
             latest_status = pod["status"]["phase"]
             if latest_status == expected_status:
                 return pod
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             pass
 
         retry += 1

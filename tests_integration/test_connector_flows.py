@@ -31,7 +31,6 @@ def run_kopf(kopf_runner_args, kopf_settings):
                 "CONNECTOR_RECONCILER_INIT_DELAY": "1",
             },
         ) as runner:
-            time.sleep(5)
             yield runner
 
         assert runner.exception is None

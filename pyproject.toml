@@ -49,7 +49,7 @@ types-requests = "^2.32.0.20240914"
 optional = true
 
 [tool.poetry.group.build.dependencies]
-python-semantic-release = "^9.8.8"
+python-semantic-release = "^9.8.9"
 
 [build-system]
 requires = ["poetry-core"]

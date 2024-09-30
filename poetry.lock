@@ -1978,13 +1978,13 @@ files = [
 
 [[package]]
 name = "python-semantic-release"
-version = "9.8.9"
+version = "9.9.0"
 description = "Automatic Semantic Versioning for Python projects"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python_semantic_release-9.8.9-py3-none-any.whl", hash = "sha256:ed2193f6ccd8c46986ef9b1b37704d441b39f40ff8fbdf6fc402712299dd937d"},
-    {file = "python_semantic_release-9.8.9.tar.gz", hash = "sha256:8f70d0a3323436ba91ee1e953e95cc8c02aae1d57954fed75a7f8ce1d3166bb2"},
+    {file = "python_semantic_release-9.9.0-py3-none-any.whl", hash = "sha256:d2475e2c55cba02c723467d4f7562cd91f2b2d29085f7a5fbbf7c9d1b9ce2256"},
+    {file = "python_semantic_release-9.9.0.tar.gz", hash = "sha256:7349ec28b9c52319bae82fb2b9dc1202e10a486cbbeedc38ef9392462ec1c7d7"},
 ]
 
 [package.dependencies]
@@ -2567,4 +2567,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "3ea91ea2d1c23801c21fe241c1e1854a1c541adea77eaa247eb4b34d829f8451"
+content-hash = "42c9ad3deec4515857e9c92b2928baeb36948c3bc971f3b73099bcd2d4684c5c"

@@ -99,19 +99,19 @@ class TestResourceAccessAPIs:
         expected_variables = {"resourceId": resource_id, "principalId": principal_id}
 
         failed_response = """
-                    {
-                      "errors": [
-                        {
-                          "message": "{'id': ['Unable to parse global ID']}",
-                          "locations": [{"line": 2, "column": 3}],
-                          "path": ["connector"]
-                        }
-                      ],
-                      "data": {
-                        "resourceAccessRemove": null
-                      }
-                    }
-                """
+            {
+              "errors": [
+                {
+                  "message": "{'id': ['Unable to parse global ID']}",
+                  "locations": [{"line": 2, "column": 3}],
+                  "path": ["connector"]
+                }
+              ],
+              "data": {
+                "resourceAccessRemove": null
+              }
+            }
+        """
 
         mocked_responses.post(
             test_url,

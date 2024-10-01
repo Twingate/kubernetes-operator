@@ -1,6 +1,8 @@
 from gql import gql
+from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 
 
@@ -55,9 +57,20 @@ class TwingateResourceAccessAPIs:
     def resource_access_remove(
         self: TwingateClientProtocol, resource_id: str, principal_id: str
     ):
-        result = self.execute_mutation(
-            "resourceAccessRemove",
-            MUT_RESOURCE_REMOVE_ACCESS,
-            variable_values={"resourceId": resource_id, "principalId": principal_id},
-        )
-        return result["ok"]
+        try:
+            result = self.execute_mutation(
+                "resourceAccessRemove",
+                MUT_RESOURCE_REMOVE_ACCESS,
+                variable_values={
+                    "resourceId": resource_id,
+                    "principalId": principal_id,
+                },
+            )
+            return result["ok"]
+        except GraphQLMutationError as gql_err:
+            if "does not exist" in gql_err.error:
+                return True
+
+            raise
+        except TransportQueryError:
+            return False

@@ -729,13 +729,13 @@ requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
 
 [[package]]
 name = "google-cloud-artifact-registry"
-version = "1.12.0"
+version = "1.13.0"
 description = "Google Cloud Artifact Registry API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_cloud_artifact_registry-1.12.0-py2.py3-none-any.whl", hash = "sha256:aa0adb51fd3d58dad0ad9bb59c2c2c989188187084d1c905a52be105a440344f"},
-    {file = "google_cloud_artifact_registry-1.12.0.tar.gz", hash = "sha256:5ee3e9b3820127121f17ef6a9aa0d8cd90f0dc13ab65e554ce793fdda7f7dd74"},
+    {file = "google_cloud_artifact_registry-1.13.0-py2.py3-none-any.whl", hash = "sha256:70c03f6b131657c3c22595aa075d21289c99d817cbca6cb978bbb16ff5d8a86c"},
+    {file = "google_cloud_artifact_registry-1.13.0.tar.gz", hash = "sha256:f30d613be23fbbb3231017dbf41ff8d813ee14bfe0a8de4fd37bb9095f3c0620"},
 ]
 
 [package.dependencies]
@@ -1577,23 +1577,6 @@ identify = ">=1.0.0"
 nodeenv = ">=0.11.1"
 pyyaml = ">=5.1"
 virtualenv = ">=20.10.0"
-
-[[package]]
-name = "proto-plus"
-version = "1.22.3"
-description = "Beautiful, Pythonic protocol buffers."
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "proto-plus-1.22.3.tar.gz", hash = "sha256:fdcd09713cbd42480740d2fe29c990f7fbd885a67efc328aa8be6ee3e9f76a6b"},
-    {file = "proto_plus-1.22.3-py3-none-any.whl", hash = "sha256:a49cd903bc0b6ab41f76bf65510439d56ca76f868adf0274e738bfdd096894df"},
-]
-
-[package.dependencies]
-protobuf = ">=3.19.0,<5.0.0dev"
-
-[package.extras]
-testing = ["google-api-core[grpc] (>=1.31.5)"]
 
 [[package]]
 name = "proto-plus"
@@ -2593,4 +2576,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "662f61c95ef917b6d144ccada91aed68cee99f284ff77ef2b88c858d67490bfc"
+content-hash = "ef4a12fe73c3b1b78a7107af27c6d0a5886651b65be4fbca43f9dc5a061fd853"

@@ -2388,13 +2388,13 @@ files = [
 
 [[package]]
 name = "types-croniter"
-version = "3.0.4.20241027"
+version = "4.0.0.20241030"
 description = "Typing stubs for croniter"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "types-croniter-3.0.4.20241027.tar.gz", hash = "sha256:20eb94173cbead6a53d3890af4bac2efa53f8304447b743452c68de2af14e62c"},
-    {file = "types_croniter-3.0.4.20241027-py3-none-any.whl", hash = "sha256:b75a28aed8cfb3c441fb3bc200e3864696916ada4da869d7417e4a50bdb860c5"},
+    {file = "types-croniter-4.0.0.20241030.tar.gz", hash = "sha256:d71369cc042813026e2d6b8f94a2916a161eb62389edf53873edcd1741dda6c0"},
+    {file = "types_croniter-4.0.0.20241030-py3-none-any.whl", hash = "sha256:e32006e0c9890163fc5123a1bba21efa00a88294c9c9519e502b3400a39bde5b"},
 ]
 
 [[package]]
@@ -2576,4 +2576,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "fb9cef3821c749b54a5974461c1067ac330af88ec1e8d5bfae17c6c2dddd3021"
+content-hash = "3f7cd2d1b75e480cf04f5980d8cca899459337f295682bce91f08b22220f7f71"

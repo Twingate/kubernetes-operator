@@ -26,8 +26,8 @@ def to_bool(val: Any) -> bool:
     """
     if isinstance(val, str):
         val = val.lower()
-    truthy = {True, "true", "t", "yes", "y", "on", "1", 1}
-    falsy = {False, "false", "f", "no", "n", "off", "0", 0}
+    truthy = {True, "true", "t", "yes", "y", "on", "1"}
+    falsy = {False, "false", "f", "no", "n", "off", "0"}
     try:
         if val in truthy:
             return True

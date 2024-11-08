@@ -21,7 +21,7 @@ rules:
 
   # Application
   - apiGroups: [twingate.com]
-    resources: [twingateresources, twingateresourceaccesses, twingateconnectors]
+    resources: [twingateresources, twingateresourceaccesses, twingateconnectors, twingategroups]
     verbs: [list, watch, patch, get, create]
 
   - apiGroups: ["*"]

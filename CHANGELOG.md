@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.12.1 (2024-11-08)
+
+### Chores
+
+* chore: Bump python-semantic-release from 9.12.0 to 9.12.1 (#453)
+
+Signed-off-by: dependabot[bot] <support@github.com>
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com> ([`40cfedc`](https://github.com/Twingate/kubernetes-operator/commit/40cfedc570d263351a1e8d0c865749e74fcadfd4))
+
+### Unknown
+
+* Fix: clusterrole with permissions over twingategroups objects (#456) ([`0dd4f0c`](https://github.com/Twingate/kubernetes-operator/commit/0dd4f0cae5be58a2cac00ab196ab1bc256468869))
+
+
 ## v0.12.0 (2024-11-04)
 
 ### Bug Fixes

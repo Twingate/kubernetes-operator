@@ -1988,13 +1988,13 @@ files = [
 
 [[package]]
 name = "python-semantic-release"
-version = "9.12.2"
+version = "9.14.0"
 description = "Automatic Semantic Versioning for Python projects"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python_semantic_release-9.12.2-py3-none-any.whl", hash = "sha256:af9c89ff72020ddfaa6d969d3131946bb4fd0d192a6ce3448430a44d36df9d3e"},
-    {file = "python_semantic_release-9.12.2.tar.gz", hash = "sha256:8546e1ad92975cfda08dc026f06327fa043502832c29f76e89760142371ad5f2"},
+    {file = "python_semantic_release-9.14.0-py3-none-any.whl", hash = "sha256:f089a6ad976e909d5f87015e9f541f9fd503d3db41653efaf0157d874902e519"},
+    {file = "python_semantic_release-9.14.0.tar.gz", hash = "sha256:5b69a626458bfb50686d27d9713160eb2bf9897b0c17985f1c68d7316b8e07b6"},
 ]
 
 [package.dependencies]
@@ -2015,7 +2015,7 @@ tomlkit = ">=0.11,<1.0"
 build = ["build (>=1.2,<2.0)"]
 dev = ["pre-commit (>=3.5,<4.0)", "ruff (==0.6.1)", "tox (>=4.11,<5.0)"]
 docs = ["Sphinx (>=6.0,<7.0)", "furo (>=2024.1,<2025.0)", "sphinx-autobuild (==2024.2.4)", "sphinxcontrib-apidoc (==0.5.0)"]
-mypy = ["mypy (==1.11.2)", "types-requests (>=2.32.0,<2.33.0)"]
+mypy = ["mypy (==1.13.0)", "types-requests (>=2.32.0,<2.33.0)"]
 test = ["coverage[toml] (>=7.0,<8.0)", "pytest (>=8.3,<9.0)", "pytest-clarity (>=1.0,<2.0)", "pytest-cov (>=5.0,<6.0)", "pytest-env (>=1.0,<2.0)", "pytest-lazy-fixtures (>=1.1.1,<1.2.0)", "pytest-mock (>=3.0,<4.0)", "pytest-order (>=1.3,<2.0)", "pytest-pretty (>=1.2,<2.0)", "pytest-xdist (>=3.0,<4.0)", "pyyaml (>=6.0,<7.0)", "requests-mock (>=1.10,<2.0)", "responses (>=0.25.0,<0.26.0)"]
 
 [[package]]
@@ -2577,4 +2577,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "b8748e552d1a718b3fbdbc02bced534e4e28bff77d55ce5cfc92c0287ac459af"
+content-hash = "7fb1349345e168e396bee4cee01337e329ce9d9e02c9176693c2c9b8cecc24e3"

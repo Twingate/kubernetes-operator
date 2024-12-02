@@ -142,10 +142,13 @@ def test_spec_get_image_w_imagepolicy_raises_if_no_match(
     sample_connector_object_imagepolicy["spec"]["imagePolicy"]["version"] = "^10.0.0"
     crd = TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 
-    with patch(
-        "app.version_policy_providers.DockerhubVersionPolicyProvider.get_all_tags",
-        return_value=["1.0.0", "latest"],
-    ), pytest.raises(ValueError, match="Could not find valid tag for"):
+    with (
+        patch(
+            "app.version_policy_providers.DockerhubVersionPolicyProvider.get_all_tags",
+            return_value=["1.0.0", "latest"],
+        ),
+        pytest.raises(ValueError, match="Could not find valid tag for"),
+    ):
         crd.spec.get_image()
 
 

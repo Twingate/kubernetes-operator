@@ -26,6 +26,12 @@ def sample_connector_object_image():
                     "limits": {"cpu": "100m", "memory": "128Mi"},
                 },
             },
+            "podLabels": {
+                "my-label": "my-value",
+            },
+            "podAnnotations": {
+                "my-annotation": "my-avalue",
+            },
         },
     }
 
@@ -54,6 +60,12 @@ def sample_connector_object_imagepolicy():
                     "limits": {"cpu": "100m", "memory": "128Mi"},
                 },
             },
+            "podLabels": {
+                "my-label": "my-value",
+            },
+            "podAnnotations": {
+                "my-annotation": "my-avalue",
+            },
         },
     }
 
@@ -71,6 +83,8 @@ def test_deserialization_image(sample_connector_object_image):
             "requests": {"cpu": "100m", "memory": "128Mi"},
         },
     }
+    assert crd.spec.pod_annotations == {"my-annotation": "my-avalue"}
+    assert crd.spec.pod_labels == {"my-label": "my-value"}
 
 
 def test_deserialization_imagepolicy(sample_connector_object_imagepolicy):
@@ -87,6 +101,8 @@ def test_deserialization_imagepolicy(sample_connector_object_imagepolicy):
             "requests": {"cpu": "100m", "memory": "128Mi"},
         },
     }
+    assert crd.spec.pod_annotations == {"my-annotation": "my-avalue"}
+    assert crd.spec.pod_labels == {"my-label": "my-value"}
 
 
 def test_deserialization_imagepolicy_fails_on_invalid_version_specifier(
@@ -142,10 +158,13 @@ def test_spec_get_image_w_imagepolicy_raises_if_no_match(
     sample_connector_object_imagepolicy["spec"]["imagePolicy"]["version"] = "^10.0.0"
     crd = TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 
-    with patch(
-        "app.version_policy_providers.DockerhubVersionPolicyProvider.get_all_tags",
-        return_value=["1.0.0", "latest"],
-    ), pytest.raises(ValueError, match="Could not find valid tag for"):
+    with (
+        patch(
+            "app.version_policy_providers.DockerhubVersionPolicyProvider.get_all_tags",
+            return_value=["1.0.0", "latest"],
+        ),
+        pytest.raises(ValueError, match="Could not find valid tag for"),
+    ):
         crd.spec.get_image()
 
 

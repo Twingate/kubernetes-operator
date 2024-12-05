@@ -83,7 +83,7 @@ def get_connector_pod(
     }
     pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}
 
-    pod_meta = V1ObjectMeta(annotations=pod_annotations)
+    pod_meta = V1ObjectMeta(annotations=pod_annotations, labels=spec.pod_labels)
 
     # fmt: on
     return kubernetes.client.V1Pod(spec=pod_spec, metadata=pod_meta)
@@ -216,7 +216,7 @@ def twingate_connector_pod_reconciler(
         raise kopf.TemporaryError("Pod not running.", delay=1)
 
     # Migrate old pods
-    pod_spec_version = (k8s_pod and k8s_pod.metadata.annotations or {}).get(
+    pod_spec_version = ((k8s_pod and k8s_pod.metadata.annotations) or {}).get(
         ANNOTATION_POD_SPEC_VERSION
     )
     if k8s_pod and pod_spec_version != ANNOTATION_POD_SPEC_VERSION_VALUE:

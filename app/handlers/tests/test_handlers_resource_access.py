@@ -221,10 +221,13 @@ class TestResourceAccessChangeHandler:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ), pytest.raises(kopf.TemporaryError):
+        with (
+            patch(
+                "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+                return_value=resource_crd_mock,
+            ),
+            pytest.raises(kopf.TemporaryError),
+        ):
             twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,
@@ -257,10 +260,13 @@ class TestResourceAccessChangeHandler:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=resource_crd_mock,
-        ), patch("kopf.exception") as kopf_exception_mock:
+        with (
+            patch(
+                "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+                return_value=resource_crd_mock,
+            ),
+            patch("kopf.exception") as kopf_exception_mock,
+        ):
             result = twingate_resource_access_sync(
                 body="",
                 spec=resource_access_spec,

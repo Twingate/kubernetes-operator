@@ -16,6 +16,7 @@ spec:
         cpu: 500m
         memory: 128Mi
   podExtra: {}
+  podLabels: {}
   podAnnotations:
     some/annotation: "some-value"
 ---
@@ -41,5 +42,6 @@ spec:
         cpu: 500m
         memory: 128Mi
   podExtra: {}
+  podLabels: {}
   podAnnotations:
     some/annotation: "some-value"

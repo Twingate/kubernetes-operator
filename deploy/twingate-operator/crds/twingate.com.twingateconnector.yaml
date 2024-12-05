@@ -92,6 +92,9 @@ spec:
                 podAnnotations:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                podLabels:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 sidecarContainers:
                   type: array
                   description: "SidecarContainers allows injecting additional containers to the Connector Pod."

@@ -26,6 +26,12 @@ def sample_connector_object_image():
                     "limits": {"cpu": "100m", "memory": "128Mi"},
                 },
             },
+            "podLabels": {
+                "my-label": "my-value",
+            },
+            "podAnnotations": {
+                "my-annotation": "my-avalue",
+            },
         },
     }
 
@@ -54,6 +60,12 @@ def sample_connector_object_imagepolicy():
                     "limits": {"cpu": "100m", "memory": "128Mi"},
                 },
             },
+            "podLabels": {
+                "my-label": "my-value",
+            },
+            "podAnnotations": {
+                "my-annotation": "my-avalue",
+            },
         },
     }
 
@@ -71,6 +83,8 @@ def test_deserialization_image(sample_connector_object_image):
             "requests": {"cpu": "100m", "memory": "128Mi"},
         },
     }
+    assert crd.spec.pod_annotations == {"my-annotation": "my-avalue"}
+    assert crd.spec.pod_labels == {"my-label": "my-value"}
 
 
 def test_deserialization_imagepolicy(sample_connector_object_imagepolicy):
@@ -87,6 +101,8 @@ def test_deserialization_imagepolicy(sample_connector_object_imagepolicy):
             "requests": {"cpu": "100m", "memory": "128Mi"},
         },
     }
+    assert crd.spec.pod_annotations == {"my-annotation": "my-avalue"}
+    assert crd.spec.pod_labels == {"my-label": "my-value"}
 
 
 def test_deserialization_imagepolicy_fails_on_invalid_version_specifier(

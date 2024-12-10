@@ -65,7 +65,10 @@ spec:
                     properties:
                       provider:
                         type: string
-                        description: "Provider determines how the operator looks for a new connector version."
+                        description: >
+                          Provider determines how the operator looks for a new connector version.
+                            * dockerhub: Check Twingate's official DockerHub repository (`twingate/connector`) for new tags.
+                            * google: Check Google Container Registry specified by the `repository` value for new tags.
                         enum:
                           - dockerhub
                           - google

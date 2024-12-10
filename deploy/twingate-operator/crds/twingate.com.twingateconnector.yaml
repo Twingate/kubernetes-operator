@@ -65,14 +65,14 @@ spec:
                     properties:
                       provider:
                         type: string
-                        description: "Provider to use for checking for new versions."
+                        description: "Provider determines how the operator looks for a new connector version."
                         enum:
                           - dockerhub
                           - google
                       repository:
                         type: string
                         default: twingate/connector
-                        description: "Repository to check for new versions tags."
+                        description: "Repository to use for pod's image."
                       schedule:
                         type: string
                         description: "Cron schedule to check for new versions."
@@ -85,15 +85,19 @@ spec:
                         description: "Allow pre-release versions."
                 containerExtra:
                   type: object
+                  description: "Extra container configuration for the Connector Pod."
                   x-kubernetes-preserve-unknown-fields: true
                 podExtra:
                   type: object
+                  description: "Extra pod configuration for the Connector Pod."
                   x-kubernetes-preserve-unknown-fields: true
                 podAnnotations:
                   type: object
+                  description: "Extra annotations to add to the Connector Pod."
                   x-kubernetes-preserve-unknown-fields: true
                 podLabels:
                   type: object
+                  description: "Extra labels to add to the Connector Pod."
                   x-kubernetes-preserve-unknown-fields: true
                 sidecarContainers:
                   type: array

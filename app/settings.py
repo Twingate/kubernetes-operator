@@ -70,7 +70,6 @@ class TwingateOperatorSettings(BaseSettings):
             settings.watching.connect_timeout = self.kopf_watching_connect_timeout
         if self.kopf_watching_reconnect_backoff:
             settings.watching.reconnect_backoff = self.kopf_watching_reconnect_backoff
-        return settings
 
 
 __settings: TwingateOperatorSettings | None = None

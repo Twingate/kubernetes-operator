@@ -5,6 +5,7 @@ import tomllib
 from base64 import b64decode
 from typing import Annotated, ClassVar
 
+from kopf._cogs.configs.configuration import WatchingSettings
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,29 @@ def validate_graphql_global_id(value: str) -> str:
 
 GlobalID = Annotated[str, AfterValidator(validate_graphql_global_id)]
 
+
+class KopfWatchingSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="KOPF_WATCHING_")
+
+    server_timeout: float | None = None
+    client_timeout: float | None = None
+    connect_timeout: float | None = None
+    reconnect_backoff: float | None = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_kopf_settings(self):
+        settings = WatchingSettings()
+        if self.server_timeout:
+            settings.server_timeout = self.server_timeout
+        if self.client_timeout:
+            settings.client_timeout = self.client_timeout
+        if self.connect_timeout:
+            settings.connect_timeout = self.connect_timeout
+        if self.reconnect_backoff:
+            settings.reconnect_backoff = self.reconnect_backoff
+        return settings
 
 class TwingateOperatorSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="TWINGATE_")

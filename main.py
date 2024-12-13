@@ -32,7 +32,7 @@ def startup(
 ):
     logger.info("Operator is starting up...")
 
-    settings.watching = KopfWatchingSettings().get_kopf_settings()
+    KopfWatchingSettings().update_kopf_watching_settings(settings)
     settings.persistence.finalizer = "twingate.com/finalizer"
     settings.persistence.diffbase_storage = TwingateAnnotationsDiffBaseStorage()
     settings.persistence.progress_storage = TwingateSmartProgressStorage()

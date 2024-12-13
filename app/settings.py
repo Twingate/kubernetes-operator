@@ -5,7 +5,7 @@ import tomllib
 from base64 import b64decode
 from typing import Annotated, ClassVar
 
-from kopf._cogs.configs.configuration import WatchingSettings
+import kopf
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -39,16 +39,15 @@ class KopfWatchingSettings(BaseSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_kopf_settings(self):
-        settings = WatchingSettings()
+    def update_kopf_watching_settings(self, settings: kopf.OperatorSettings):
         if self.server_timeout:
-            settings.server_timeout = self.server_timeout
+            settings.watching.server_timeout = self.server_timeout
         if self.client_timeout:
-            settings.client_timeout = self.client_timeout
+            settings.watching.client_timeout = self.client_timeout
         if self.connect_timeout:
-            settings.connect_timeout = self.connect_timeout
+            settings.watching.connect_timeout = self.connect_timeout
         if self.reconnect_backoff:
-            settings.reconnect_backoff = self.reconnect_backoff
+            settings.watching.reconnect_backoff = self.reconnect_backoff
         return settings
 
 class TwingateOperatorSettings(BaseSettings):

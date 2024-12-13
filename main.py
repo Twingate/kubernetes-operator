@@ -5,7 +5,7 @@ import kopf
 from pydantic import ValidationError
 
 from app.handlers import *  # noqa: F403
-from app.settings import TwingateOperatorSettings, KopfWatchingSettings
+from app.settings import TwingateOperatorSettings
 
 
 class TwingateSmartProgressStorage(kopf.SmartProgressStorage):
@@ -32,13 +32,14 @@ def startup(
 ):
     logger.info("Operator is starting up...")
 
-    KopfWatchingSettings().update_kopf_watching_settings(settings)
     settings.persistence.finalizer = "twingate.com/finalizer"
     settings.persistence.diffbase_storage = TwingateAnnotationsDiffBaseStorage()
     settings.persistence.progress_storage = TwingateSmartProgressStorage()
+    twingate_operator_settings = TwingateOperatorSettings()
+    twingate_operator_settings.update_kopf_watching_settings(settings)
 
     try:
-        memo.twingate_settings = TwingateOperatorSettings()
+        memo.twingate_settings = twingate_operator_settings
     except ValidationError:
         logger.exception("Failed to load settings.")
 

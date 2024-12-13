@@ -28,28 +28,6 @@ def validate_graphql_global_id(value: str) -> str:
 GlobalID = Annotated[str, AfterValidator(validate_graphql_global_id)]
 
 
-class KopfWatchingSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="KOPF_WATCHING_")
-
-    server_timeout: float | None = None
-    client_timeout: float | None = None
-    connect_timeout: float | None = None
-    reconnect_backoff: float | None = None
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def update_kopf_watching_settings(self, settings: kopf.OperatorSettings):
-        if self.server_timeout:
-            settings.watching.server_timeout = self.server_timeout
-        if self.client_timeout:
-            settings.watching.client_timeout = self.client_timeout
-        if self.connect_timeout:
-            settings.watching.connect_timeout = self.connect_timeout
-        if self.reconnect_backoff:
-            settings.watching.reconnect_backoff = self.reconnect_backoff
-        return settings
-
 class TwingateOperatorSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="TWINGATE_")
     NULL_RN_ID: ClassVar[str] = "ZmFrZTp2YWx1ZQo="  # temp value ("fake:value" encoded)
@@ -59,6 +37,10 @@ class TwingateOperatorSettings(BaseSettings):
     remote_network_id: GlobalID = NULL_RN_ID
     remote_network_name: str | None = None
     host: str = "twingate.com"
+    kopf_watching_server_timeout: float | None = None
+    kopf_watching_client_timeout: float | None = None
+    kopf_watching_connect_timeout: float | None = None
+    kopf_watching_reconnect_backoff: float | None = None
 
     @property
     def full_url(self) -> str:
@@ -78,6 +60,17 @@ class TwingateOperatorSettings(BaseSettings):
 
         if self.remote_network_id == self.NULL_RN_ID:
             raise ValidationError("Remote network id is required")
+
+    def update_kopf_watching_settings(self, settings: kopf.OperatorSettings):
+        if self.kopf_watching_server_timeout:
+            settings.watching.server_timeout = self.kopf_watching_server_timeout
+        if self.kopf_watching_client_timeout:
+            settings.watching.client_timeout = self.kopf_watching_client_timeout
+        if self.kopf_watching_connect_timeout:
+            settings.watching.connect_timeout = self.kopf_watching_connect_timeout
+        if self.kopf_watching_reconnect_backoff:
+            settings.watching.reconnect_backoff = self.kopf_watching_reconnect_backoff
+        return settings
 
 
 __settings: TwingateOperatorSettings | None = None

@@ -275,6 +275,7 @@ def test_resource_access_flows(
     assert {
         "message": "Handler 'twingate_resource_access_change' succeeded.",
         "timestamp": ANY,
+        "taskName": ANY,
         "object": {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResourceAccess",
@@ -284,15 +285,18 @@ def test_resource_access_flows(
         },
         "severity": "info",
     } in logs
+
     # Delete
     assert {
         "message": "Result: {'resourceAccessRemove': {'ok': True, 'error': None}}",
         "timestamp": ANY,
+        "taskName": ANY,
         "severity": "info",
     } in logs
     assert {
         "message": "Handler 'twingate_resource_access_delete' succeeded.",
         "timestamp": ANY,
+        "taskName": ANY,
         "object": {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResourceAccess",
@@ -307,5 +311,6 @@ def test_resource_access_flows(
     assert {
         "message": "Activity 'shutdown' succeeded.",
         "timestamp": ANY,
+        "taskName": ANY,
         "severity": "info",
     } in logs

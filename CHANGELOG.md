@@ -1,6 +1,84 @@
 # CHANGELOG
 
 
+## v0.14.0 (2024-12-16)
+
+### Chores
+
+- Bump github.com/gruntwork-io/terratest from 0.47.2 to 0.48.0
+  ([#480](https://github.com/Twingate/kubernetes-operator/pull/480),
+  [`16dba29`](https://github.com/Twingate/kubernetes-operator/commit/16dba292e42961e6347df224ec36e2efb2a360ab))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump golang.org/x/crypto from 0.21.0 to 0.31.0
+  ([#482](https://github.com/Twingate/kubernetes-operator/pull/482),
+  [`48b5ad1`](https://github.com/Twingate/kubernetes-operator/commit/48b5ad113fb5167d7c692cebdbe2c14bdc53ca5f))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump google-cloud-artifact-registry from 1.13.1 to 1.14.0
+  ([#484](https://github.com/Twingate/kubernetes-operator/pull/484),
+  [`baeb563`](https://github.com/Twingate/kubernetes-operator/commit/baeb563f2fa9dc64fb69c78f5f3a2345ba3b0c12))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump kopf from 1.37.3 to 1.37.4 ([#488](https://github.com/Twingate/kubernetes-operator/pull/488),
+  [`f17436f`](https://github.com/Twingate/kubernetes-operator/commit/f17436fbd595fea4dc579acd3ded66bfad588ccb))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic-settings from 2.6.1 to 2.7.0
+  ([#483](https://github.com/Twingate/kubernetes-operator/pull/483),
+  [`f43c3c3`](https://github.com/Twingate/kubernetes-operator/commit/f43c3c3f050ea5ab143fa6badc559f546e9ebda8))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+Co-authored-by: Eran Kampf <eran@ekampf.com>
+
+- Bump python-semantic-release from 9.15.1 to 9.15.2
+  ([#489](https://github.com/Twingate/kubernetes-operator/pull/489),
+  [`d911b83`](https://github.com/Twingate/kubernetes-operator/commit/d911b83ca3ad6240a56544033ab8cebbcb1d9d55))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.8.2 to 0.8.3 ([#485](https://github.com/Twingate/kubernetes-operator/pull/485),
+  [`8a600a0`](https://github.com/Twingate/kubernetes-operator/commit/8a600a09a7e16cb5b04d43eb807f3c8770a8be25))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Fix README markdownlint warnings
+  ([`c623d90`](https://github.com/Twingate/kubernetes-operator/commit/c623d9030e3266ab3ca4e141aee7d25079d3c228))
+
+### Features
+
+- Allow using a pull thru docker cache with the imagepolicy schedule
+  ([#477](https://github.com/Twingate/kubernetes-operator/pull/477),
+  [`81fdb30`](https://github.com/Twingate/kubernetes-operator/commit/81fdb30022b8b7185c7148607b61dd1b7c5bb755))
+
+Co-authored-by: Lior Rozner <1411811+liorr@users.noreply.github.com>
+
+- Enable Configuration of Kopf Watch Settings via Environment Variables
+  ([#487](https://github.com/Twingate/kubernetes-operator/pull/487),
+  [`3da4225`](https://github.com/Twingate/kubernetes-operator/commit/3da4225865e767fe8ca74477f477bf2b3ca8fc02))
+
+Co-authored-by: Eran Kampf <205185+ekampf@users.noreply.github.com>
+
+
 ## v0.13.0 (2024-12-06)
 
 ### Bug Fixes

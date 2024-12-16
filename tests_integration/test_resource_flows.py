@@ -83,8 +83,7 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     assert twingate_id
 
     # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,  "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
-                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,  "taskName": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete

@@ -70,6 +70,7 @@ spec:
           - name: TWINGATE_REMOTE_NETWORK_NAME
             value: {{ .Values.twingateOperator.remoteNetworkName }}
           {{- end }}
+          {{- toYaml .Values.extraEnvVars | nindent 8 }}
         livenessProbe:
           httpGet:
             path: /healthz

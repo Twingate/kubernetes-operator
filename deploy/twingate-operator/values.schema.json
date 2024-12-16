@@ -43,6 +43,12 @@
                 "pullPolicy": "Always"
             }]
         },
+        "extraEnvVars": {
+            "type": "array",
+            "description": "Array with extra environment variables to add to the operator container",
+            "default": [],
+            "items": {}
+        },
         "twingateOperator": {
             "type": "object",
             "default": {},

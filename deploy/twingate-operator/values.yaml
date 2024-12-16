@@ -74,7 +74,7 @@ affinity: {}
 
 priorityClassName: ""
 
-## @param extraEnvVars Array with extra environment variables
+## @param extraEnvVars Array of additional environment variables to inject into the operator.
 ## e.g:
 ## extraEnvVars:
 ##   - name: FOO

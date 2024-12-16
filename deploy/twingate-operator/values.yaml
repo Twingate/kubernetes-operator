@@ -74,10 +74,10 @@ affinity: {}
 
 priorityClassName: ""
 
-## Array with extra environment variables to add to the operator container
-## e.g:
-## extraEnvVars:
-##   - name: FOO
-##     value: "bar"
-##
+# Array with extra environment variables to add to the operator container
+# e.g:
+# extraEnvVars:
+#   - name: FOO
+#     value: "bar"
+#
 extraEnvVars: []

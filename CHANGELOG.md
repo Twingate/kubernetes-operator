@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.14.1 (2024-12-16)
+
+### Bug Fixes
+
+- Allow extra env vars in the operator's Chart
+  ([#491](https://github.com/Twingate/kubernetes-operator/pull/491),
+  [`81bf885`](https://github.com/Twingate/kubernetes-operator/commit/81bf885b6c5c27dc075dab8b1f932f36170bff9c))
+
+
 ## v0.14.0 (2024-12-16)
 
 ### Chores

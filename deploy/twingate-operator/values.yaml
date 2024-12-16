@@ -74,10 +74,10 @@ affinity: {}
 
 priorityClassName: ""
 
-## @param extraEnvVars Array of additional environment variables to inject into the operator.
-## e.g:
+## @param extraEnvVars Dictionary of additional environment variables to inject into the operator.
+## Example:
 ## extraEnvVars:
-##   - name: FOO
-##     value: "bar"
+##   FOO: bar
+##   HELLO: world
 ##
-extraEnvVars: []
+extraEnvVars: {}

@@ -70,11 +70,9 @@ spec:
           - name: TWINGATE_REMOTE_NETWORK_NAME
             value: {{ .Values.twingateOperator.remoteNetworkName }}
           {{- end }}
-          {{- if .Values.extraEnvVars }}
-          {{- range .Values.extraEnvVars }}
-          - name: {{ .name }}
-            value: {{ .value | quote }}
-          {{- end }}
+          {{- range $key, $value := .Values.extraEnvVars }}
+          - name: {{ $key }}
+            value:  {{ $value | quote }}
           {{- end }}
         livenessProbe:
           httpGet:

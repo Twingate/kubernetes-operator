@@ -11,7 +11,7 @@ python = "^3.11"
 croniter = "^5.0.1"
 google-cloud-artifact-registry = "^1.13.1"
 gql = {version = "~=3.5.0", extras = ["requests"]}
-kopf = "^1.37.3"
+kopf = "^1.37.4"
 kubernetes = "^31.0.0"
 orjson = "^3.10.12"
 pendulum = "^3.0.0"

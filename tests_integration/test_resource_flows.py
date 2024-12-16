@@ -78,22 +78,21 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "taskName": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,  "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
-                       "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
+    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY,  "taskName": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "taskName": ANY, "severity": "info"} in logs
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "taskName": ANY, "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
 
     # Shutdown
-    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
+    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "taskName": ANY, "severity": "info"} in logs
 
     # fmt: on
 
@@ -135,20 +134,20 @@ def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
     # fmt: off
 
     # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY,
+    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "taskName": ANY,
             "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
     assert twingate_id
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY,
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "taskName": ANY,
             "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY,
+    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "taskName": ANY,
             "object": {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name,
                        "uid": ANY, "namespace": "default"}, "severity": "info"} in logs
 
     # Shutdown
-    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
+    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "taskName": ANY, "severity": "info"} in logs
 
     # fmt: on
 
@@ -275,6 +274,7 @@ def test_resource_access_flows(
     assert {
         "message": "Handler 'twingate_resource_access_change' succeeded.",
         "timestamp": ANY,
+        "taskName": ANY,
         "object": {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResourceAccess",
@@ -284,15 +284,18 @@ def test_resource_access_flows(
         },
         "severity": "info",
     } in logs
+
     # Delete
     assert {
         "message": "Result: {'resourceAccessRemove': {'ok': True, 'error': None}}",
         "timestamp": ANY,
+        "taskName": ANY,
         "severity": "info",
     } in logs
     assert {
         "message": "Handler 'twingate_resource_access_delete' succeeded.",
         "timestamp": ANY,
+        "taskName": ANY,
         "object": {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResourceAccess",
@@ -307,5 +310,6 @@ def test_resource_access_flows(
     assert {
         "message": "Activity 'shutdown' succeeded.",
         "timestamp": ANY,
+        "taskName": ANY,
         "severity": "info",
     } in logs

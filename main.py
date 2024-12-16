@@ -37,7 +37,9 @@ def startup(
     settings.persistence.progress_storage = TwingateSmartProgressStorage()
 
     try:
-        memo.twingate_settings = TwingateOperatorSettings()
+        twingate_operator_settings = TwingateOperatorSettings()
+        twingate_operator_settings.update_kopf_watching_settings(settings)
+        memo.twingate_settings = twingate_operator_settings
     except ValidationError:
         logger.exception("Failed to load settings.")
 

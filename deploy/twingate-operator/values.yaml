@@ -73,3 +73,11 @@ tolerations: []
 affinity: {}
 
 priorityClassName: ""
+
+## @param extraEnvVars Array with extra environment variables
+## e.g:
+## extraEnvVars:
+##   - name: FOO
+##     value: "bar"
+##
+extraEnvVars: []

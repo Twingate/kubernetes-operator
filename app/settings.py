@@ -5,6 +5,7 @@ import tomllib
 from base64 import b64decode
 from typing import Annotated, ClassVar
 
+import kopf
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,6 +37,10 @@ class TwingateOperatorSettings(BaseSettings):
     remote_network_id: GlobalID = NULL_RN_ID
     remote_network_name: str | None = None
     host: str = "twingate.com"
+    kopf_watching_server_timeout: float | None = None
+    kopf_watching_client_timeout: float | None = None
+    kopf_watching_connect_timeout: float | None = None
+    kopf_watching_reconnect_backoff: float | None = None
 
     @property
     def full_url(self) -> str:
@@ -55,6 +60,16 @@ class TwingateOperatorSettings(BaseSettings):
 
         if self.remote_network_id == self.NULL_RN_ID:
             raise ValidationError("Remote network id is required")
+
+    def update_kopf_watching_settings(self, settings: kopf.OperatorSettings):
+        if self.kopf_watching_server_timeout:
+            settings.watching.server_timeout = self.kopf_watching_server_timeout
+        if self.kopf_watching_client_timeout:
+            settings.watching.client_timeout = self.kopf_watching_client_timeout
+        if self.kopf_watching_connect_timeout:
+            settings.watching.connect_timeout = self.kopf_watching_connect_timeout
+        if self.kopf_watching_reconnect_backoff:
+            settings.watching.reconnect_backoff = self.kopf_watching_reconnect_backoff
 
 
 __settings: TwingateOperatorSettings | None = None

@@ -12,8 +12,11 @@ and manage Twingate resources within a Kubernetes environment. It provides
 seamless integration between your Kubernetes clusters and the Twingate Zero
 Trust Network.
 
-[Wiki](https://github.com/Twingate/kubernetes-operator/wiki)  |  [Getting Started](https://github.com/Twingate/kubernetes-operator/wiki/Getting-Started)  |  [API Reference](https://github.com/Twingate/kubernetes-operator/wiki/API-Reference)
+[Wiki][1]  |  [Getting Started][2]  |  [API Reference][3]
 
+[1]: https://github.com/Twingate/kubernetes-operator/wiki
+[2]: https://github.com/Twingate/kubernetes-operator/wiki/Getting-Started
+[3]: https://github.com/Twingate/kubernetes-operator/wiki/API-Reference
 
 ## Prerequisites
 

@@ -2,7 +2,7 @@ apiVersion: v2
 name: kubernetes-operator-chart
 description: A Helm chart for installing twingate-operator
 type: application
-version: 0.1.9
+version: 0.1.12
 home: https://twingate.com
 sources:
   - https://github.com/Twingate/kubernetes-operator

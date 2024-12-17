@@ -2178,13 +2178,13 @@ files = [
 
 [[package]]
 name = "pyupgrade"
-version = "3.19.0"
+version = "3.19.1"
 description = "A tool to automatically upgrade syntax for newer versions."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pyupgrade-3.19.0-py2.py3-none-any.whl", hash = "sha256:1364fcae4436a6a236a85960587390ec8a939ad0f65f429346f70a5f201c1489"},
-    {file = "pyupgrade-3.19.0.tar.gz", hash = "sha256:7ed4b7d972ed2788c43994f4a24f949d5bf044342992f3b48e1bed0092ddaa01"},
+    {file = "pyupgrade-3.19.1-py2.py3-none-any.whl", hash = "sha256:8c5b0bfacae5ff30fa136a53eb7f22c34ba007450d4099e9da8089dabb9e67c9"},
+    {file = "pyupgrade-3.19.1.tar.gz", hash = "sha256:d10e8c5f54b8327211828769e98d95d95e4715de632a3414f1eef3f51357b9e2"},
 ]
 
 [package.dependencies]
@@ -2733,4 +2733,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "b4eb735369d9b119699de2551ca8733f0451948ffed3b58e49a4d0bb2efdcc4a"
+content-hash = "1153d4a8a876ce763818bad028d343e728e79741578ae15d0a3ecd3f80c4da47"

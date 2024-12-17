@@ -1,5 +1,5 @@
 error while running command: exit status 1; Error: values don't meet the specifications of the schema(s) in the following chart(s):
-twingate-operator:
+kubernetes-operator-chart:
 - twingateOperator: Must validate at least one schema (anyOf)
 - twingateOperator: remoteNetworkId is required
 - twingateOperator: Must validate all the schemas (allOf)

@@ -40,7 +40,7 @@ export GHCR_PAT=ghp_...
 ````
 
 Then authenticate Docker to read from Github by running
-`echo $GHCR_PAT | docker login ghcr.io -u <GITHUB-USERNAME> --password-stdin`
+`echo $GHCR_PAT | helm registry login ghcr.io -u <GITHUB-USERNAME> --password-stdin`
 with your username following the `-u` flag.
 
 Make sure your setup works by running `helm pull oci://ghcr.io/twingate/helmcharts/twingate-operator`.

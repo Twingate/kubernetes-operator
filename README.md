@@ -31,21 +31,10 @@ Trust Network.
 
 ### Helm via OCI (recommended)
 
-To read helm charts for GitHub packages, you need to authenticate with GitHub
-using a Personal Access Token (PAT).
-Create a token with `read:packages` permissions and export it as an environment variable:
+The operator's helm chart is published to the following OCI repository:
+`oci://ghcr.io/twingate/helmcharts/twingate-operator`
 
-```bash
-export GHCR_PAT=ghp_...
-````
-
-Then authenticate Docker to read from Github by running
-`echo $GHCR_PAT | helm registry login ghcr.io -u <GITHUB-USERNAME> --password-stdin`
-with your username following the `-u` flag.
-
-Make sure your setup works by running `helm pull oci://ghcr.io/twingate/helmcharts/twingate-operator`.
-
-Now we're ready to install the operator:
+Follow these steps to install the operator:
 
 [default-values-yaml]: https://github.com/Twingate/kubernetes-operator/blob/main/deploy/twingate-operator/values.yaml
 

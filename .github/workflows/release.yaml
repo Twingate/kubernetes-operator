@@ -93,7 +93,7 @@ jobs:
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
-          helm push kubernetes-operator-chart-$CHART_VERSION.tgz oci://$REGISTRY/twingate/charts
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/charts
 
 #  release_prod:
 #    name: Release PROD

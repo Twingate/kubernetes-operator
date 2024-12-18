@@ -78,13 +78,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Helm Publish (Dockerhub)
-        env:
-          REGISTRY: registry-1.docker.io
-        run: |
-          echo ${{ secrets.DOCKERHUB_TOKEN }} | helm registry login $REGISTRY -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
-          helm push kubernetes-operator-chart-$CHART_VERSION.tgz oci://$REGISTRY/twingate --debug
+#      - name: Helm Publish (Dockerhub)
+#        env:
+#          REGISTRY: registry-1.docker.io
+#        run: |
+#          echo ${{ secrets.DOCKERHUB_TOKEN }} | helm registry login $REGISTRY -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+#          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $APP_VERSION
+#          helm push kubernetes-operator-chart-$CHART_VERSION.tgz oci://$REGISTRY/twingate --debug
 
 
       - name: Helm Publish (Github)

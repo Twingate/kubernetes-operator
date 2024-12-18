@@ -71,14 +71,14 @@ tags:
 ### Production Releases
 
 * Run `./scripts/release.sh`:
-   * Calculate new version based on conventional commits
-   * Update version in `pyproject.toml`
-   * Update `CHANGELOG.md`
-   * Create a tag for the version and commit
+  * Calculate new version based on conventional commits
+  * Update version in `pyproject.toml`
+  * Update `CHANGELOG.md`
+  * Create a tag for the version and commit
 * Once pushed a Github workflow will
-   * Create a Github release
-   * Publish the following tags to dockerhub:
-      * `latest`
-      * `<major>`
-      * `<major>.<minor>`
-      * `<major>.<minor>.<patch>`
+  * Create a Github release
+  * Publish the following tags to dockerhub:
+    * `latest`
+    * `<major>`
+    * `<major>.<minor>`
+    * `<major>.<minor>.<patch>`

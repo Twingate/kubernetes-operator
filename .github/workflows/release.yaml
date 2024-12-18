@@ -69,12 +69,6 @@ jobs:
           echo "CHART_VERSION=$(yq r deploy/twingate-operator/Chart.yaml version)" >> $GITHUB_ENV
           echo "APP_VERSION=$(echo ${GITHUB_REF_NAME:1})" >> $GITHUB_ENV
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Helm Publish (Github)
         env:
           REGISTRY: ghcr.io

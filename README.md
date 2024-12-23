@@ -29,6 +29,25 @@ Trust Network.
 
 ## Installation
 
+### Helm via OCI (recommended)
+
+The operator's helm chart is published to the following OCI repository:
+`oci://ghcr.io/twingate/helmcharts/twingate-operator`
+
+Follow these steps to install the operator:
+
+[default-values-yaml]: https://github.com/Twingate/kubernetes-operator/blob/main/deploy/twingate-operator/values.yaml
+
+1. Create a custom `values.yaml` (You can start by copying the [default values .yaml file][default-values-yaml]):
+1. Edit the settings in the file and specifically `twingateOperator`.
+1. Deploy (add `-n [namespace]` if you want to install to a specific namespace):
+
+```bash
+helm upgrade twop oci://ghcr.io/twingate/helmcharts/twingate-operator --install --wait -f ./values.yaml
+```
+
+### Helm by closing the git repository
+
 1. Clone this repository to your local machine.
 1. Use the `helm` chart in `./deploy/twingate-operator`:
 

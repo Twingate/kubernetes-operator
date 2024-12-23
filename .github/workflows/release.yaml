@@ -52,6 +52,40 @@ jobs:
           body: ${{ steps.changelog.outputs.changes }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  release_prod_helm:
+    runs-on: ubuntu-latest
+    name: Release PROD Helm Chart
+    needs: [create_release, release_prod]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - uses: azure/setup-helm@v4.2.0
+      - uses: chrisdickinson/setup-yq@latest
+
+      - name: Set env vars
+        run: |
+          echo "CHART_VERSION=$(poetry version -s)" >> $GITHUB_ENV
+
+      - name: Helm Publish (Github)
+        env:
+          REGISTRY: ghcr.io
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
+          helm package deploy/twingate-operator --version $CHART_VERSION
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts
+
   release_prod:
     name: Release PROD
     runs-on: ubuntu-latest

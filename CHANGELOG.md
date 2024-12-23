@@ -1,6 +1,84 @@
 # CHANGELOG
 
 
+## v0.15.0 (2024-12-23)
+
+### Chores
+
+- Bump croniter from 5.0.1 to 6.0.0
+  ([#494](https://github.com/Twingate/kubernetes-operator/pull/494),
+  [`d9944a5`](https://github.com/Twingate/kubernetes-operator/commit/d9944a5fc43e9d6bd1ca1ac00a52dcf555636e05))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump github.com/gruntwork-io/terratest from 0.48.0 to 0.48.1
+  ([#493](https://github.com/Twingate/kubernetes-operator/pull/493),
+  [`a4deb4d`](https://github.com/Twingate/kubernetes-operator/commit/a4deb4dafbff8eedbcec55cc61a2d723a6760a1e))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump jinja2 from 3.1.4 to 3.1.5 ([#499](https://github.com/Twingate/kubernetes-operator/pull/499),
+  [`05913e3`](https://github.com/Twingate/kubernetes-operator/commit/05913e3cc3aea2b814c8c1e656d64a743d36597c))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump mypy from 1.13.0 to 1.14.0 ([#498](https://github.com/Twingate/kubernetes-operator/pull/498),
+  [`e8adb5d`](https://github.com/Twingate/kubernetes-operator/commit/e8adb5d597f7df70dc4db1168a5fdb4a8f9c11e2))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic from 2.10.3 to 2.10.4
+  ([#496](https://github.com/Twingate/kubernetes-operator/pull/496),
+  [`519ee4f`](https://github.com/Twingate/kubernetes-operator/commit/519ee4f31c0cefa14de0d381c582741efd489d3d))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pyupgrade from 3.19.0 to 3.19.1
+  ([#492](https://github.com/Twingate/kubernetes-operator/pull/492),
+  [`ffbca7f`](https://github.com/Twingate/kubernetes-operator/commit/ffbca7fad06a2347b9517c8330d34c23a8d5b292))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.8.3 to 0.8.4 ([#497](https://github.com/Twingate/kubernetes-operator/pull/497),
+  [`5b03229`](https://github.com/Twingate/kubernetes-operator/commit/5b03229ba0c7f843af7213070c4a6c242ed1c26a))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Fix typo in release script
+  ([`8e31713`](https://github.com/Twingate/kubernetes-operator/commit/8e3171375aee8724df0490ee076b58c216eb9d09))
+
+- Switch to markdownlint-cli
+  ([`4468f96`](https://github.com/Twingate/kubernetes-operator/commit/4468f96f2512d5850170c335258a36ef408c4723))
+
+Easier to configure
+
+- Upgrade Poetry to 1.8.5
+  ([`e7fd65d`](https://github.com/Twingate/kubernetes-operator/commit/e7fd65d4c893a59dca02d64fad61881f093d6bb8))
+
+- Upgrade Poetry to 1.8.5 in CI
+  ([`36841ed`](https://github.com/Twingate/kubernetes-operator/commit/36841ed137e506208a85e618b18e8a9eb123fa5c))
+
+### Features
+
+- Publish versioned helm chart to GitHub OCI reposiotry
+  ([#479](https://github.com/Twingate/kubernetes-operator/pull/479),
+  [`971ba7e`](https://github.com/Twingate/kubernetes-operator/commit/971ba7ee9703202fb2cd632299ca5025c267779a))
+
+
 ## v0.14.1 (2024-12-16)
 
 ### Bug Fixes

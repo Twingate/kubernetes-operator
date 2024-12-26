@@ -68,7 +68,7 @@
                     ]
                 },
                 {
-                    "anyOf": [
+                    "oneOf": [
                         {
                             "required": ["remoteNetworkId"]
                         },

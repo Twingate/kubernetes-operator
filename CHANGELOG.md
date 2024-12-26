@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.16.0 (2024-12-26)
+
+### Features
+
+- Helm chart - Add `existingRemoteNetworkIdSecret`
+  ([#500](https://github.com/Twingate/kubernetes-operator/pull/500),
+  [`5061de0`](https://github.com/Twingate/kubernetes-operator/commit/5061de07afb2fcd13af63d0295d1c47d135e0d7b))
+
+
 ## v0.15.0 (2024-12-23)
 
 ### Chores

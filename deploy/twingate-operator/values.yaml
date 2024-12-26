@@ -4,7 +4,7 @@
 
 # Required: you have to specify `network` and
 #  - either `apiKey` or `existingAPIKeySecret`
-#  - either `remoteNetworkId` or `remoteNetworkName`
+#  - either `remoteNetworkId`, `remoteNetworkName` or `existingRemoteNetworkIdSecret`
 twingateOperator: {}
 #  apiKey: "<api key>"
 #  existingAPIKeySecret:

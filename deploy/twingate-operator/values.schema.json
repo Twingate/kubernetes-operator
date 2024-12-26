@@ -129,7 +129,7 @@
                         }
                     }
                 },
-                    "network": { "type": "string" },
+                "network": { "type": "string" },
                 "remoteNetworkId": { "type": "string" },
                 "logFormat": {
                     "type": "string",

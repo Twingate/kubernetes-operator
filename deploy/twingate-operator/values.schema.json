@@ -74,6 +74,9 @@
                         },
                         {
                             "required": ["remoteNetworkName"]
+                        },
+                        {
+                            "required": ["existingRemoteNetworkIdSecret"]
                         }
                     ]
                 }
@@ -87,7 +90,6 @@
                     "properties": {
                         "name": {
                             "type": "string",
-                            "default": "",
                             "title": "The name of the Secret object",
                             "examples": [
                                 "twingate-operator"
@@ -95,7 +97,6 @@
                         },
                         "key": {
                             "type": "string",
-                            "default": "",
                             "title": "The key for the API Key value in the Secret object",
                             "examples": [
                                 "TWINGATE_API_KEY"
@@ -107,7 +108,28 @@
                         "key": "apiKey"
                     }]
                 },
-                "network": { "type": "string" },
+                "existingRemoteNetworkIdSecret": {
+                    "type": "object",
+                    "title": "An existing secret containing the reote network ID.",
+                    "required": ["name", "key"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "title": "The name of the Secret object",
+                            "examples": [
+                                "twingate-operator"
+                            ]
+                        },
+                        "key": {
+                            "type": "string",
+                            "title": "The key for the remote network ID value in the Secret object",
+                            "examples": [
+                                "REMOTE_NETWORK_ID"
+                            ]
+                        }
+                    }
+                },
+                    "network": { "type": "string" },
                 "remoteNetworkId": { "type": "string" },
                 "logFormat": {
                     "type": "string",

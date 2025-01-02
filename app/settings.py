@@ -37,10 +37,10 @@ class TwingateOperatorSettings(BaseSettings):
     remote_network_id: GlobalID = NULL_RN_ID
     remote_network_name: str | None = None
     host: str = "twingate.com"
-    kopf_watching_server_timeout: float | None = None
-    kopf_watching_client_timeout: float | None = None
-    kopf_watching_connect_timeout: float | None = None
-    kopf_watching_reconnect_backoff: float | None = None
+    kopf_watching_server_timeout: int | None = None
+    kopf_watching_client_timeout: int | None = None
+    kopf_watching_connect_timeout: int | None = None
+    kopf_watching_reconnect_backoff: int | None = None
 
     @property
     def full_url(self) -> str:

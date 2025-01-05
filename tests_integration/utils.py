@@ -84,8 +84,11 @@ def kubectl_delete_wait(
     force: bool = False,
     max_retries: int = 10,
     sleep_time: int = 5,
+    perform_deletion: bool = True,
 ) -> None:
-    kubectl_delete(resource_type, resource_name, force=force)
+    if perform_deletion:
+        kubectl_delete(resource_type, resource_name, force=force)
+
     retry = 0
     while True:
         try:

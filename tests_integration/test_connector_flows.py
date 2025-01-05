@@ -85,8 +85,8 @@ def test_connector_flows(run_kopf, random_name_generator):
         kubectl_delete_wait("tc", connector_name)
 
         # secret & pod are deleted
-        kubectl_delete_wait("secret", connector_name)
-        kubectl_delete_wait("pod", connector_name)
+        kubectl_delete_wait("secret", connector_name, perform_deletion=False)
+        kubectl_delete_wait("pod", connector_name, perform_deletion=False)
 
 
 def test_connector_flows_image_change(run_kopf, random_name_generator):

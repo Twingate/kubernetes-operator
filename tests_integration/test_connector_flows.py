@@ -83,7 +83,7 @@ def test_connector_flows(run_kopf, random_name_generator):
         assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"
 
         kubectl_delete_wait("tc", connector_name)
-        time.sleep(10)
+
         # secret & pod are deleted
         kubectl_delete_wait("secret", connector_name)
         kubectl_delete_wait("pod", connector_name)

@@ -100,7 +100,6 @@ def test_service_flows(run_kopf, random_name_generator):
 
         # Test deleting the service deletes the resource
         kubectl_delete("svc", service_name)
-        time.sleep(10)
         kubectl_delete_wait("twingateresource", resource_name)
 
     assert runner.exception is None

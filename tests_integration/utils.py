@@ -83,6 +83,7 @@ def kubectl_delete_wait(
     *,
     force: bool = False,
     max_retries: int = 10,
+    sleep_time: int = 5,
 ) -> None:
     kubectl_delete(resource_type, resource_name, force=force)
     retry = 0
@@ -97,7 +98,7 @@ def kubectl_delete_wait(
         retry += 1
         if retry > max_retries:
             raise
-        time.sleep(5)
+        time.sleep(sleep_time)
 
 
 def kubectl_wait_pod_status(

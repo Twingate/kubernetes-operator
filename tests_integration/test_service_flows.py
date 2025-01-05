@@ -1,12 +1,10 @@
 import time
-from subprocess import CalledProcessError
 from unittest.mock import ANY
-
-import pytest
 
 from tests_integration.utils import (
     kubectl_create,
     kubectl_delete,
+    kubectl_delete_wait,
     kubectl_get,
     kubectl_patch,
     kubectl_wait_object_handler_success,
@@ -103,8 +101,7 @@ def test_service_flows(run_kopf, random_name_generator):
         # Test deleting the service deletes the resource
         kubectl_delete("svc", service_name)
         time.sleep(10)
-        with pytest.raises(CalledProcessError):
-            kubectl_get("twingateresource", resource_name)
+        kubectl_delete_wait("twingateresource", resource_name)
 
     assert runner.exception is None
     assert runner.exit_code == 0

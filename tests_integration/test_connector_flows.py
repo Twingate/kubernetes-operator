@@ -1,8 +1,5 @@
 import time
-from subprocess import CalledProcessError
 from unittest.mock import ANY
-
-import pytest
 
 from tests_integration.utils import (
     kubectl,
@@ -86,13 +83,10 @@ def test_connector_flows(run_kopf, random_name_generator):
         assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"
 
         kubectl_delete_wait("tc", connector_name)
-        time.sleep(15)
-        # secret & pod are deleted
-        with pytest.raises(CalledProcessError):
-            kubectl_get("secret", connector_name)
 
-        with pytest.raises(CalledProcessError):
-            kubectl_get("pod", connector_name)
+        # secret & pod are deleted
+        kubectl_delete_wait("secret", connector_name, perform_deletion=False)
+        kubectl_delete_wait("pod", connector_name, perform_deletion=False)
 
 
 def test_connector_flows_image_change(run_kopf, random_name_generator):
@@ -135,14 +129,10 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
         assert pod["spec"]["containers"][0]["image"] == "twingate/connector:1.63.0"
 
         kubectl_delete_wait("tc", connector_name)
-        time.sleep(10)
 
         # secret & pod are deleted
-        with pytest.raises(CalledProcessError):
-            kubectl_get("secret", connector_name)
-
-        with pytest.raises(CalledProcessError):
-            kubectl_get("pod", connector_name)
+        kubectl_delete_wait("secret", connector_name, perform_deletion=False)
+        kubectl_delete_wait("pod", connector_name, perform_deletion=False)
 
 
 def test_connector_flows_pod_gone_while_operator_down(run_kopf, random_name_generator):

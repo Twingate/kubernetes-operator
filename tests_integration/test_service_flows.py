@@ -3,7 +3,6 @@ from unittest.mock import ANY
 
 from tests_integration.utils import (
     kubectl_create,
-    kubectl_delete,
     kubectl_delete_wait,
     kubectl_get,
     kubectl_patch,
@@ -99,7 +98,7 @@ def test_service_flows(run_kopf, random_name_generator):
         }
 
         # Test deleting the service deletes the resource
-        kubectl_delete("svc", service_name)
+        kubectl_delete_wait("svc", service_name)
         kubectl_delete_wait("twingateresource", resource_name, perform_deletion=False)
 
     assert runner.exception is None

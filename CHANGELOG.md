@@ -1,6 +1,60 @@
 # CHANGELOG
 
 
+## v0.16.1 (2025-01-06)
+
+### Bug Fixes
+
+- Ensure Proper Type Parsing in Kopf Settings
+  ([#504](https://github.com/Twingate/kubernetes-operator/pull/504),
+  [`18ac8fe`](https://github.com/Twingate/kubernetes-operator/commit/18ac8fe6e24c1e3fe7bab6754fa36b058d63562b))
+
+Co-authored-by: Eran Kampf <205185+ekampf@users.noreply.github.com>
+
+- Make integration tests more stable
+  ([#506](https://github.com/Twingate/kubernetes-operator/pull/506),
+  [`ffa70d4`](https://github.com/Twingate/kubernetes-operator/commit/ffa70d461b9340eafa8a483c133d0799afaf7b3f))
+
+### Chores
+
+- Bump mypy from 1.14.0 to 1.14.1 ([#503](https://github.com/Twingate/kubernetes-operator/pull/503),
+  [`891239e`](https://github.com/Twingate/kubernetes-operator/commit/891239eb0973916d9a4c30711a5f7d1d6d94894e))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump orjson from 3.10.12 to 3.10.13
+  ([#501](https://github.com/Twingate/kubernetes-operator/pull/501),
+  [`5199b1f`](https://github.com/Twingate/kubernetes-operator/commit/5199b1f88be9dc9df7c881af7b220b69505724a7))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic-settings from 2.7.0 to 2.7.1
+  ([#502](https://github.com/Twingate/kubernetes-operator/pull/502),
+  [`868e2e3`](https://github.com/Twingate/kubernetes-operator/commit/868e2e3532fd65bfe43613338715a9457df40580))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.8.4 to 0.8.5 ([#505](https://github.com/Twingate/kubernetes-operator/pull/505),
+  [`31f694f`](https://github.com/Twingate/kubernetes-operator/commit/31f694faa3acc1f1cd6eeb9c4990fe22e05ffc0e))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.8.5 to 0.8.6 ([#507](https://github.com/Twingate/kubernetes-operator/pull/507),
+  [`98892cb`](https://github.com/Twingate/kubernetes-operator/commit/98892cb8ada9425be86bb174ba5087afcac0a721))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+
 ## v0.16.0 (2024-12-26)
 
 ### Features

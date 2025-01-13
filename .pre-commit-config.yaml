@@ -51,13 +51,6 @@ repos:
         types: [python]
         args: [--py311-plus]
 
-      - id: autoflake
-        name: autoflake
-        entry: poetry run autoflake
-        language: system
-        types: [python]
-        require_serial: true
-
       - id: ruff
         name: ruff
         entry: poetry run ruff check

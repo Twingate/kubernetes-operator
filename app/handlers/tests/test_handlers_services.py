@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import kopf
 import kubernetes
 import pytest
-import yaml  # type: ignore
+import yaml
 
 from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,

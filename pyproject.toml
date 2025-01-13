@@ -128,6 +128,8 @@ select = [
     "TID", # flake8-tidy-imports
     "ERA", # eradicate
     "FLY", # flynt
+    "FURB", # refurb
+    "PGH", # pygrep-hooks
     "RUF", # Ruff-specific rules
 ]
 

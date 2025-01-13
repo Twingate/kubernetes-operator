@@ -14,9 +14,9 @@ def load_stdout(stdout):
 
 
 def assert_log_message_starts_with(logs, message):
-    assert any(
-        log["message"].startswith(message) for log in logs
-    ), f"Could not find log message starting with '{message}'"
+    assert any(log["message"].startswith(message) for log in logs), (
+        f"Could not find log message starting with '{message}'"
+    )
 
 
 def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProcess:

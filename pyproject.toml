@@ -102,6 +102,7 @@ select = [
     "I", # isort
     "F", # Pyflakes
     "E", "W", # pycodestyle
+    "ASYNC", # flake8-async
     "S", # flake8-bandit
     "Q", # flake8-quotes
     "G", # flake8-logging-format

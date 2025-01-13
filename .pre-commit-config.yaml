@@ -58,13 +58,6 @@ repos:
         types: [python]
         require_serial: true
 
-      - id: isort
-        name: isort
-        entry: poetry run isort
-        language: system
-        types: [python]
-        require_serial: true
-
       - id: ruff
         name: ruff
         entry: poetry run ruff check

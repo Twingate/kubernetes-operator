@@ -29,7 +29,6 @@ autoflake = "^2.3.1"
 bandit = "^1.8.2"
 coveralls = "^3.3.1"
 factory-boy = "^3.3.1"
-isort = "^5.13.2"
 mypy = "^1.14.1"
 pre-commit = "^4.0.1"
 pytest = "^8.3.4"
@@ -70,14 +69,6 @@ exclude = ["tests"]
 [tool.bandit.assert_used]
 skips = ['*_test.py', '*/test_*.py']
 
-[tool.isort]
-profile = "black"
-atomic = true
-combine_as_imports = true
-combine_star = true
-remove_redundant_aliases = true
-color_output = true
-
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 allow_redefinition = false
@@ -115,6 +106,7 @@ markers = [
 [tool.ruff.lint]
 select = [
     "D",
+    "I", # isort
     "F", # Pyflakes
     "E", "W", # pycodestyle
     "S", # flake8-bandit

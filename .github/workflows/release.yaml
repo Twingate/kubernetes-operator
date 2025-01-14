@@ -11,7 +11,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: 3.12
-  POETRY_VERSION: 1.8.5
+  POETRY_VERSION: 2.0.1
 
 jobs:
   create_release:

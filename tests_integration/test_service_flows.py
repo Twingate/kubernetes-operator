@@ -97,6 +97,22 @@ def test_service_flows(run_kopf, random_name_generator):
             },
         }
 
+        # Test patching the service annotations updates the resource
+        kubectl_patch(
+            f"svc/{service_name}",
+            [
+                {
+                    "op": "replace",
+                    "path": "/metadata/annotations/twingate.com~1resource-alias",
+                    "value": "myappchanged.internal",
+                }
+            ],
+            "json",
+        )
+        time.sleep(2)
+        tgr = kubectl_get("twingateresource", resource_name)
+        assert tgr["spec"]["alias"] == "myappchanged.internal"
+
         # Test deleting the service deletes the resource
         kubectl_delete_wait("svc", service_name)
         kubectl_delete_wait("twingateresource", resource_name, perform_deletion=False)

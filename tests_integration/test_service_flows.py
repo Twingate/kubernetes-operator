@@ -121,6 +121,7 @@ def test_service_flows(run_kopf, random_name_generator):
     assert runner.exit_code == 0
 
 
+# TODO: Remove once we release v1.0 (see https://github.com/Twingate/kubernetes-operator/issues/530)
 def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
     service_name = random_name_generator("test-svc-old")
     resource_name = f"{service_name}-resource"

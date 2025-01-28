@@ -3,8 +3,8 @@ kind: Service
 metadata:
   name: my-service
   annotations:
-    twingate.com/resource: "true"
-    twingate.com/resource-alias: "myapp.internal"
+    resource.twingate.com: "true"
+    resource.twingate.com/alias: "myapp.internal"
 spec:
   selector:
     app.kubernetes.io/name: MyApp

@@ -109,3 +109,27 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
     return success(
         message=f"Created TwingateResource {resource_subobject['spec']['name']}"
     )
+
+
+@kopf.on.update("service", annotations={"resource.twingate.com": "false"})
+@kopf.on.update("service", annotations={"resource.twingate.com": kopf.ABSENT})
+def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_):
+    logger.info("twingate_service_annotation_removed: %s", spec)
+
+    resource_object_name = f"{body.meta.name}-resource"
+
+    kapi = kubernetes.client.CustomObjectsApi()
+    if existing_resource_object := k8s_get_twingate_resource(
+        namespace, resource_object_name, kapi
+    ):
+        logger.info("Deleting TwingateResource: %s", existing_resource_object)
+        kapi.delete_namespaced_custom_object(
+            "twingate.com",
+            "v1beta",
+            namespace,
+            "twingateresources",
+            resource_object_name,
+        )
+        return success(message=f"Deleted TwingateResource {resource_object_name}")
+
+    return success(message=f"TwingateResource {resource_object_name} does not exist")

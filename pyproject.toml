@@ -25,7 +25,7 @@ tenacity = "^9.0.0"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-bandit = "^1.8.2"
+bandit = "^1.8.3"
 coveralls = "^3.3.1"
 factory-boy = "^3.3.3"
 mypy = "^1.15.0"

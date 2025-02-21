@@ -71,7 +71,7 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - uses: azure/setup-helm@v4.2.0
+      - uses: azure/setup-helm@v4.3.0
       - uses: chrisdickinson/setup-yq@latest
 
       - name: Set env vars

@@ -9,6 +9,7 @@ metadata:
     helm.sh/chart: twingate-operator-major.minor.patch-test
     app.kubernetes.io/name: twingate-operator
     app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "changeme"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: twingate-operator/templates/secrets.yaml
@@ -21,6 +22,7 @@ metadata:
     helm.sh/chart: twingate-operator-major.minor.patch-test
     app.kubernetes.io/name: twingate-operator
     app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "changeme"
     app.kubernetes.io/managed-by: Helm
 data:
   TWINGATE_API_KEY: PGFwaSBrZXk+
@@ -80,6 +82,7 @@ metadata:
     helm.sh/chart: twingate-operator-major.minor.patch-test
     app.kubernetes.io/name: twingate-operator
     app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "changeme"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -110,7 +113,7 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
-        image: "twingate/kubernetes-operator:latest"
+        image: "twingate/kubernetes-operator:changeme"
         imagePullPolicy: IfNotPresent
         command:
           - kopf

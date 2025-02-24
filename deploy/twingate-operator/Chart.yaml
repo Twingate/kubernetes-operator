@@ -3,6 +3,7 @@ name: twingate-operator
 description: A Helm chart for installing twingate-operator
 type: application
 version: 0.1.13  # This version value no longer used - its overriden when publishing the OCI in `release.yaml` CI workflow
+appVersion: changeme  # This value is set by CI
 home: https://twingate.com
 sources:
   - https://github.com/Twingate/kubernetes-operator

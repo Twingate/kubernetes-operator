@@ -9,6 +9,7 @@ metadata:
     helm.sh/chart: twingate-operator-major.minor.patch-test
     app.kubernetes.io/name: twingate-operator
     app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: twingate-operator/templates/secrets.yaml
@@ -21,6 +22,7 @@ metadata:
     helm.sh/chart: twingate-operator-major.minor.patch-test
     app.kubernetes.io/name: twingate-operator
     app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
     app.kubernetes.io/managed-by: Helm
 data:
   TWINGATE_API_KEY: PGFwaSBrZXk+
@@ -80,6 +82,7 @@ metadata:
     helm.sh/chart: twingate-operator-major.minor.patch-test
     app.kubernetes.io/name: twingate-operator
     app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1

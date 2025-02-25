@@ -1,6 +1,214 @@
 # CHANGELOG
 
 
+## v0.17.0 (2025-02-25)
+
+### Chores
+
+- Bump azure/setup-helm from 4.2.0 to 4.3.0
+  ([#552](https://github.com/Twingate/kubernetes-operator/pull/552),
+  [`4213684`](https://github.com/Twingate/kubernetes-operator/commit/4213684cbf49e17f7f913954dce892d8cfc2433e))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump bandit from 1.8.2 to 1.8.3 ([#547](https://github.com/Twingate/kubernetes-operator/pull/547),
+  [`89411ed`](https://github.com/Twingate/kubernetes-operator/commit/89411ed0c72912ead747f87138358ffee418c7f0))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump danger/danger-js from 12.3.3 to 12.3.4
+  ([#545](https://github.com/Twingate/kubernetes-operator/pull/545),
+  [`1241bf6`](https://github.com/Twingate/kubernetes-operator/commit/1241bf66bf1986a15fdfdcfc30b57ae665d1412b))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump factory-boy from 3.3.1 to 3.3.3
+  ([#536](https://github.com/Twingate/kubernetes-operator/pull/536),
+  [`aef79b1`](https://github.com/Twingate/kubernetes-operator/commit/aef79b1dcfeb54936d7b0980d3855770f125c49d))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump github.com/gruntwork-io/terratest from 0.48.1 to 0.48.2
+  ([#537](https://github.com/Twingate/kubernetes-operator/pull/537),
+  [`1c81b05`](https://github.com/Twingate/kubernetes-operator/commit/1c81b05f3cbe87cdb680e1461428a2e2983fbd49))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump google-cloud-artifact-registry from 1.14.0 to 1.15.0
+  ([#546](https://github.com/Twingate/kubernetes-operator/pull/546),
+  [`06eecb6`](https://github.com/Twingate/kubernetes-operator/commit/06eecb62aee4edfecb2bb25f9e989d87b1da2292))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump google-cloud-artifact-registry from 1.15.0 to 1.15.1
+  ([#553](https://github.com/Twingate/kubernetes-operator/pull/553),
+  [`19f687b`](https://github.com/Twingate/kubernetes-operator/commit/19f687b00c177c1d7455e4d7f6242f642797e117))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump gql from 3.5.0 to 3.5.1 ([#550](https://github.com/Twingate/kubernetes-operator/pull/550),
+  [`6d6a860`](https://github.com/Twingate/kubernetes-operator/commit/6d6a860f11fc037bdc49f28a823e6ef77a72468b))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump kubernetes from 32.0.0 to 32.0.1
+  ([#549](https://github.com/Twingate/kubernetes-operator/pull/549),
+  [`fe454e9`](https://github.com/Twingate/kubernetes-operator/commit/fe454e92ee0c601c66c4a677a848c00990b3f2b8))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump mypy from 1.14.1 to 1.15.0 ([#538](https://github.com/Twingate/kubernetes-operator/pull/538),
+  [`669bf99`](https://github.com/Twingate/kubernetes-operator/commit/669bf99c77f156985c9f0acecf6ee01b77df0cc2))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ncipollo/release-action from 1.15.0 to 1.16.0
+  ([#557](https://github.com/Twingate/kubernetes-operator/pull/557),
+  [`f07184f`](https://github.com/Twingate/kubernetes-operator/commit/f07184f5233b88ac2efe8f2adb766e0942ea10d7))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic-settings from 2.7.1 to 2.8.0
+  ([#554](https://github.com/Twingate/kubernetes-operator/pull/554),
+  [`b3109d0`](https://github.com/Twingate/kubernetes-operator/commit/b3109d0cc222114c3f50625dd5798c82c8fe7773))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pytest-datadir from 1.5.0 to 1.6.1
+  ([#541](https://github.com/Twingate/kubernetes-operator/pull/541),
+  [`0f1696a`](https://github.com/Twingate/kubernetes-operator/commit/0f1696a358fb20200cc5da47d87f536d48dd682f))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump python-semantic-release from 9.17.0 to 9.18.0
+  ([#539](https://github.com/Twingate/kubernetes-operator/pull/539),
+  [`7c8a2b5`](https://github.com/Twingate/kubernetes-operator/commit/7c8a2b5d1b9e68267446917e3c467093d721c2fe))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump python-semantic-release from 9.18.0 to 9.19.0
+  ([#543](https://github.com/Twingate/kubernetes-operator/pull/543),
+  [`2db1f42`](https://github.com/Twingate/kubernetes-operator/commit/2db1f426b5bf96eb0666c28f19de43188f326303))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump python-semantic-release from 9.19.0 to 9.19.1
+  ([#544](https://github.com/Twingate/kubernetes-operator/pull/544),
+  [`efb99d0`](https://github.com/Twingate/kubernetes-operator/commit/efb99d0bdb1e27163ceddadeb3c1ee7910a7575a))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump python-semantic-release from 9.19.1 to 9.20.0
+  ([#548](https://github.com/Twingate/kubernetes-operator/pull/548),
+  [`9bfc8e5`](https://github.com/Twingate/kubernetes-operator/commit/9bfc8e5001f499f1da29b30c0a74fcf2ed90ac26))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump python-semantic-release from 9.20.0 to 9.21.0
+  ([#558](https://github.com/Twingate/kubernetes-operator/pull/558),
+  [`c425b4d`](https://github.com/Twingate/kubernetes-operator/commit/c425b4d0df93fb6a85a4278772d78f9878e57cd8))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.9.3 to 0.9.4 ([#535](https://github.com/Twingate/kubernetes-operator/pull/535),
+  [`141ec37`](https://github.com/Twingate/kubernetes-operator/commit/141ec376096941f3a7d4672e76bdb846535006d9))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.9.4 to 0.9.5 ([#540](https://github.com/Twingate/kubernetes-operator/pull/540),
+  [`98bc251`](https://github.com/Twingate/kubernetes-operator/commit/98bc25126d255b4277e94c427b3eb98d0635683e))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.9.5 to 0.9.6 ([#542](https://github.com/Twingate/kubernetes-operator/pull/542),
+  [`d3e48cf`](https://github.com/Twingate/kubernetes-operator/commit/d3e48cf458115993dd820932eb35d487122f7792))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.9.6 to 0.9.7 ([#551](https://github.com/Twingate/kubernetes-operator/pull/551),
+  [`1f9d351`](https://github.com/Twingate/kubernetes-operator/commit/1f9d351b4abe7cba8d56bdd13ed2e561356bfc0f))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump syrupy from 4.8.1 to 4.8.2 ([#555](https://github.com/Twingate/kubernetes-operator/pull/555),
+  [`7590c10`](https://github.com/Twingate/kubernetes-operator/commit/7590c10ec9a5a5fea90565c570eb89aa9f9d89bc))
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Update local dev version of Python to 3.12.9
+  ([`a8eb289`](https://github.com/Twingate/kubernetes-operator/commit/a8eb289dd36dbfe8bf3846824f0760f0ca581ddb))
+
+### Documentation
+
+- Improve TwingateResourceAccess CRD descriptions
+  ([#559](https://github.com/Twingate/kubernetes-operator/pull/559),
+  [`636670d`](https://github.com/Twingate/kubernetes-operator/commit/636670d6ac06f2e9f01f450ae8222325b2eccff7))
+
+## Changes
+
+Added\improved TwingateResourceAccess CRD descriptions
+
+### Features
+
+- Add app-version to chart when releasing prod
+  ([#560](https://github.com/Twingate/kubernetes-operator/pull/560),
+  [`d6302dc`](https://github.com/Twingate/kubernetes-operator/commit/d6302dc81d7932396b3e6d31487ea527f5b7f0f1))
+
+## Related Tickets & Documents
+
+- Issue: #556
+
+## Changes
+
+Add appVersion to chart when releasing prod
+
+
 ## v0.16.2 (2025-01-28)
 
 ### Bug Fixes

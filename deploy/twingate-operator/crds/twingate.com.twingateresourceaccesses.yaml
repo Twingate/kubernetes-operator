@@ -11,7 +11,7 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
-          description: "TwingateResourceAccess represents a resource access policy in Twingate."
+          description: "TwingateResourceAccess represents a resource access policy in Twingate. It allows to configure an access between a Resource and a Principal which is either a Group or a ServiceAccount."
           properties:
             spec:
               type: object
@@ -27,7 +27,7 @@ spec:
                 principalId:
                   type: string
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
-                  description: "principalId is the ID of the principal to provide access to the resource."
+                  description: "principalId is the ID of the principal (Group/ServiceAccount) to provide access to the resource."
                   x-kubernetes-validations:
                     - rule: self == oldSelf
                       message: "principalId is immutable"
@@ -48,6 +48,7 @@ spec:
                 principalExternalRef:
                   type: object
                   required: ["type", "name"]
+                  description: "principalExternalRef allows referencing a Principal (Group/ServiceAccount) by name."
                   properties:
                     type:
                       type: string

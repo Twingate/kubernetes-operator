@@ -43,7 +43,7 @@ jobs:
           reverseOrder: true
 
       - name: Create Release
-        uses: ncipollo/release-action@v1.15.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           allowUpdates: true
           draft: true
@@ -71,7 +71,7 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - uses: azure/setup-helm@v4.2.0
+      - uses: azure/setup-helm@v4.3.0
       - uses: chrisdickinson/setup-yq@latest
 
       - name: Set env vars
@@ -83,7 +83,7 @@ jobs:
           REGISTRY: ghcr.io
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
-          helm package deploy/twingate-operator --version $CHART_VERSION
+          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $CHART_VERSION
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts
 
   release_prod:

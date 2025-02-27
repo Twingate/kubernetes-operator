@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.16.2"
+version = "0.17.0"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
@@ -16,7 +16,7 @@ kubernetes = "^32.0.1"
 orjson = "^3.10.15"
 pendulum = "^3.0.0"
 pydantic = "^2.10.6"
-pydantic-settings = "^2.8.0"
+pydantic-settings = "^2.8.1"
 requests = "^2.32.3"
 semantic-version = "^2.10.0"
 tenacity = "^9.0.0"

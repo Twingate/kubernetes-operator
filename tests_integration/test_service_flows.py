@@ -7,6 +7,7 @@ from tests_integration.utils import (
     kubectl_get,
     kubectl_patch,
     kubectl_wait_object_handler_success,
+    kubectl_wait_to_exist,
 )
 
 
@@ -279,7 +280,7 @@ def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
           name: {service_name}
           annotations:
             twingate.com/resource: "true"
-            twingate.com/resource-name: "My Service"
+            twingate.com/resource-name: "My Service (old annotations)"
             twingate.com/resource-alias: "myapp.internal"
             twingate.com/resource-isVisible: "true"
             twingate.com/resource-isBrowserShortcutEnabled: "false"
@@ -312,7 +313,7 @@ def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
             "id": ANY,
             "isBrowserShortcutEnabled": False,
             "isVisible": True,
-            "name": "My Service",
+            "name": "My Service (old annotations)",
             "protocols": {
                 "allowIcmp": False,
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},
@@ -337,7 +338,7 @@ def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
             ],
             "json",
         )
-        time.sleep(2)
+        kubectl_wait_to_exist("twingateresource", resource_name)
         tgr = kubectl_get("twingateresource", resource_name)
         assert tgr["spec"] == {
             "address": f"{service_name}.default.svc.cluster.local",
@@ -345,7 +346,7 @@ def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
             "id": ANY,
             "isBrowserShortcutEnabled": False,
             "isVisible": True,
-            "name": "My Service",
+            "name": "My Service (old annotations)",
             "protocols": {
                 "allowIcmp": False,
                 "tcp": {

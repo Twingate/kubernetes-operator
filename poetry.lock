@@ -821,20 +821,20 @@ grpc = ["grpcio (>=1.44.0,<2.0.0.dev0)"]
 
 [[package]]
 name = "gql"
-version = "3.5.1"
+version = "3.5.2"
 description = "GraphQL client for Python"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "gql-3.5.1-py2.py3-none-any.whl", hash = "sha256:e58f23b7e2bc7239ffcf5950f43f978b27da27c348201ff8a68127a1f8ebd54c"},
-    {file = "gql-3.5.1.tar.gz", hash = "sha256:6845cf92cabf885cfd3940211f74f63328ce1148a3e0156005f33eae8b73ac09"},
+    {file = "gql-3.5.2-py2.py3-none-any.whl", hash = "sha256:c830ffc38b3997b2a146317b27758305ab3d0da3bde607b49f34e32affb23ba2"},
+    {file = "gql-3.5.2.tar.gz", hash = "sha256:07e1325b820c8ba9478e95de27ce9f23250486e7e79113dbb7659a442dc13e74"},
 ]
 
 [package.dependencies]
 anyio = ">=3.0,<5"
 backoff = ">=1.11.1,<3.0"
-graphql-core = ">=3.2,<3.2.4"
+graphql-core = ">=3.2,<3.2.5"
 requests = {version = ">=2.26,<3", optional = true, markers = "extra == \"requests\""}
 requests-toolbelt = {version = ">=1.0.0,<2", optional = true, markers = "extra == \"requests\""}
 yarl = ">=1.6,<2.0"
@@ -2936,4 +2936,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "332d469ab251cf41afbaf7843b4ef1cf2fecceb6fa86f2658032fd00039e0cfb"
+content-hash = "fa8ddf991b5a644703b860faaa2716ec458b83cf2133576756c359e1e36d46d1"

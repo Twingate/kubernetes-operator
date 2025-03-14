@@ -46,7 +46,7 @@ Follow these steps to install the operator:
 helm upgrade twop oci://ghcr.io/twingate/helmcharts/twingate-operator --install --wait -f ./values.yaml
 ```
 
-### Helm by closing the git repository
+### Helm by cloning the git repository
 
 1. Clone this repository to your local machine.
 1. Use the `helm` chart in `./deploy/twingate-operator`:

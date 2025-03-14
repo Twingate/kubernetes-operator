@@ -10,6 +10,8 @@ from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+logger = logging.getLogger(__name__)
+
 
 def validate_graphql_global_id(value: str) -> str:
     value_decoded: str = ""
@@ -95,7 +97,7 @@ def get_version() -> str:  # pragma: no cover
                     data.get("tool", {}).get("poetry", {}).get("version", "0.0.0")
                 )
         except:
-            logging.exception("Failed to load version from pyproject.toml")
+            logger.exception("Failed to load version from pyproject.toml")
             __version = "0.0.0"
 
     return __version or "0.0.0"

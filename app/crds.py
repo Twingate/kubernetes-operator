@@ -24,6 +24,8 @@ from app.version_policy_providers import get_provider
 K8sObject = MutableMapping[Any, Any]
 OptionalK8sObject = K8sObject | None
 
+logger = logging.getLogger(__name__)
+
 
 class K8sMetadata(BaseModel):
     model_config = ConfigDict(
@@ -198,7 +200,7 @@ class ResourceAccessSpec(BaseModel):
                 plural_type,
                 name,
             )
-            logging.info(
+            logger.info(
                 "%s got %s",
                 log_prefix,
                 response,
@@ -206,9 +208,9 @@ class ResourceAccessSpec(BaseModel):
             return response
         except kubernetes.client.exceptions.ApiException as api_ex:
             if api_ex.status == 404:
-                logging.warning("%s resource not found.", log_prefix)
+                logger.warning("%s resource not found.", log_prefix)
             else:
-                logging.exception("%s failed", log_prefix)
+                logger.exception("%s failed", log_prefix)
 
             return None
 

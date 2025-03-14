@@ -11,6 +11,8 @@ from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import ProtocolPolicy, ResourceSpec
 
+logger = logging.getLogger(__name__)
+
 
 class ResourceAddress(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -224,7 +226,7 @@ class TwingateResourceAPIs:
             )
             return Resource(**result["resource"]) if result["resource"] else None
         except TransportQueryError:
-            logging.exception("Failed to get resource")
+            logger.exception("Failed to get resource")
             return None
 
     def resource_create(

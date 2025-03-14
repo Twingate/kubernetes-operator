@@ -17,7 +17,7 @@ from app.api.client_service_accounts import TwingateServiceAccountAPIs
 from app.api.exceptions import GraphQLMutationError
 from app.settings import TwingateOperatorSettings, get_version
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class TwingateRetry(Retry):
@@ -99,9 +99,9 @@ class TwingateAPIClient(
     def execute_gql(
         self, document: DocumentNode, variable_values: dict[str, Any] | None = None
     ):
-        logging.info("Calling %s with %s", document, variable_values)
+        logger.info("Calling %s with %s", document, variable_values)
         result = self.client.execute(document, variable_values=variable_values)
-        logging.info("Result: %s", result)
+        logger.info("Result: %s", result)
         return result
 
     def execute_mutation(

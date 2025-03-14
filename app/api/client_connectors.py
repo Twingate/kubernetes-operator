@@ -9,6 +9,8 @@ from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import ConnectorSpec
 
+logger = logging.getLogger(__name__)
+
 
 class ConnectorTokens(BaseModel):
     model_config = ConfigDict(
@@ -119,7 +121,7 @@ class TwingateConnectorAPI:
             )
             return Connector(**result["connector"]) if result["connector"] else None
         except TransportQueryError:
-            logging.exception("Failed to get connector")
+            logger.exception("Failed to get connector")
             return None
 
     def connector_create(

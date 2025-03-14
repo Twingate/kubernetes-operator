@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from app.api.protocol import TwingateClientProtocol
 
+logger = logging.getLogger(__name__)
+
 
 class RemoteNetwork(BaseModel):
     id: str
@@ -45,5 +47,5 @@ class TwingateRemoteNetworksAPIs:
             )
             return RemoteNetwork(**result["rn"]) if result["rn"] else None
         except TransportQueryError:
-            logging.exception("Failed to get remote network")
+            logger.exception("Failed to get remote network")
             return None

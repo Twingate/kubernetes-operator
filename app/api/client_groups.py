@@ -7,6 +7,9 @@ from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import GroupSpec
 
+logger = logging.getLogger(__name__)
+
+
 _GROUP_FRAGMENT = """
     fragment GroupFields on Group {
         id
@@ -86,7 +89,7 @@ class TwingateGroupAPIs:
             )
             return result["groups"]["edges"][0]["node"]["id"]
         except (TransportQueryError, IndexError, KeyError):
-            logging.exception("Failed to get resource")
+            logger.exception("Failed to get resource")
             return None
 
     def group_create(

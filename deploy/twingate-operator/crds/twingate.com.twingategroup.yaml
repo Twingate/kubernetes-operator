@@ -45,4 +45,7 @@ spec:
     singular: twingategroup
     kind: TwingateGroup
     shortNames:
-    - tgg
+      - tgg
+    categories:
+      - all
+      - twingate

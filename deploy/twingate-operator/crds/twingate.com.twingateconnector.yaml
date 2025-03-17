@@ -129,4 +129,7 @@ spec:
     singular: twingateconnector
     kind: TwingateConnector
     shortNames:
-    - tc
+      - tc
+    categories:
+      - all
+      - twingate

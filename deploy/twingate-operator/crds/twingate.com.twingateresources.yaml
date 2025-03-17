@@ -146,5 +146,8 @@ spec:
     singular: twingateresource
     kind: TwingateResource
     shortNames:
-    - tgr
-    - tres
+      - tgr
+      - tres
+    categories:
+      - all
+      - twingate

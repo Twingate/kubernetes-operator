@@ -86,6 +86,10 @@ spec:
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
   scope: Namespaced
   names:
     plural: twingateresourceaccesses
@@ -94,3 +98,6 @@ spec:
     shortNames:
       - tgra
       - tacc
+    categories:
+      - all
+      - twingate

@@ -46,7 +46,7 @@ class TwingateResourceAccessAPIs:
         access = AccessInput(
             principal_id=principal_id, security_policy_id=security_policy_id
         )
-        access_list = [access.model_dump(by_alias=True, exclude_none=True)]
+        access_list = [access.model_dump(by_alias=True)]
         result = self.execute_mutation(
             "resourceAccessAdd",
             MUT_RESOURCE_ADD_ACCESS,

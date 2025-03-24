@@ -11,7 +11,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN echo "CACHE_BUSTER=1693774919" && apt-get update && \
     apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-FROM base as builder
+FROM base AS builder
 WORKDIR /build
 
 # hadolint ignore=DL3008
@@ -48,7 +48,7 @@ RUN python -m venv "$VIRTUAL_ENV" && \
 
 COPY . .
 
-FROM base as prod
+FROM base AS prod
 ARG ENV=prod
 WORKDIR /app
 

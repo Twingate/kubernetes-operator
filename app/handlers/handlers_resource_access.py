@@ -7,7 +7,6 @@ import kopf
 from app.api.client import GraphQLMutationError, TwingateAPIClient
 from app.crds import PrincipalTypeEnum, ResourceAccessSpec
 from app.handlers.base import fail, success
-from app.utils import HandlerLoggerAdapter
 
 K8sObject = MutableMapping[Any, Any]
 
@@ -65,7 +64,6 @@ def check_status_created(status: dict | None) -> dict | None:
 @kopf.on.create("twingateresourceaccess")
 @kopf.on.update("twingateresourceaccess", field="spec")
 def twingate_resource_access_change(body, spec, memo, logger, patch, status, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_access_change")
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
 
@@ -107,7 +105,6 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
     idle=60,
 )
 def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_access_sync")
     return twingate_resource_access_change(
         body, spec, memo, logger, patch, status, **kwargs
     )
@@ -115,7 +112,6 @@ def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwa
 
 @kopf.on.delete("twingateresourceaccess")
 def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_access_delete")
     logger.info("Got a TwingateResourceAccess delete request: %s", spec)
     creation_status = check_status_created(status)
     if not creation_status:

@@ -5,12 +5,10 @@ import kopf
 from app.api import TwingateAPIClient
 from app.crds import ResourceSpec
 from app.handlers.base import fail, success
-from app.utils import HandlerLoggerAdapter
 
 
 @kopf.on.create("twingateresource")
 def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_create")
     logger.info("Got a create request: %s", spec)
     resource = ResourceSpec(**spec)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
@@ -38,7 +36,6 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
 
 @kopf.on.update("twingateresource", field="spec")
 def twingate_resource_update(spec, diff, status, memo, logger, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_update")
     logger.info(
         "Got TwingateResource update request: %s. Diff: %s. Status: %s.",
         spec,
@@ -67,7 +64,6 @@ def twingate_resource_update(spec, diff, status, memo, logger, **kwargs):
 
 @kopf.on.delete("twingateresource")
 def twingate_resource_delete(spec, status, memo, logger, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_delete")
     logger.info("Got a delete request: %s. Status: %s", spec, status)
     if not status:
         return
@@ -82,7 +78,6 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
     "twingateresource", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
 )
 def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
-    logger = HandlerLoggerAdapter(logger, "twingate_resource_sync")
     crd = ResourceSpec(**spec)
 
     if resource_id := crd.id:

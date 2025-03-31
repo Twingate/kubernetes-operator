@@ -4,7 +4,7 @@ import kopf
 import kubernetes
 
 from app.handlers import success
-from app.utils import HandlerLoggerAdapter, to_bool
+from app.utils import to_bool
 
 
 def k8s_get_twingate_resource(
@@ -80,7 +80,6 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
 @kopf.on.create("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.update("service", annotations={"resource.twingate.com": "true"})
 def twingate_service_create(body, spec, namespace, meta, logger, **_):
-    logger = HandlerLoggerAdapter(logger, "twingate_service_create")
     logger.info("twingate_service_create: %s", spec)
 
     resource_subobject = service_to_twingate_resource(body, namespace)
@@ -115,7 +114,6 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
 @kopf.on.update("service", annotations={"resource.twingate.com": "false"})
 @kopf.on.update("service", annotations={"resource.twingate.com": kopf.ABSENT})
 def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_):
-    logger = HandlerLoggerAdapter(logger, "twingate_service_annotation_removed")
     logger.info("twingate_service_annotation_removed: %s", spec)
 
     resource_object_name = f"{body.meta.name}-resource"

@@ -54,7 +54,7 @@ class TwingateOperatorSettings(BaseSettings):
         super().__init__(*args, **kwargs)
 
         if self.remote_network_name:
-            client = TwingateAPIClient(self)
+            client = TwingateAPIClient(self, logger=logger)
             rn = client.get_remote_network_by_name(self.remote_network_name)
             if not rn:
                 raise ValueError(f"Remote network {self.remote_network_name} not found")

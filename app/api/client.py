@@ -8,6 +8,7 @@ from gql.transport.requests import RequestsHTTPTransport
 from graphql import DocumentNode
 from requests.adapters import HTTPAdapter, Retry
 
+from app import typedefs
 from app.api.client_connectors import TwingateConnectorAPI
 from app.api.client_groups import TwingateGroupAPIs
 from app.api.client_remote_networks import TwingateRemoteNetworksAPIs
@@ -17,7 +18,7 @@ from app.api.client_service_accounts import TwingateServiceAccountAPIs
 from app.api.exceptions import GraphQLMutationError
 from app.settings import TwingateOperatorSettings, get_version
 
-logger = logging.getLogger(__name__)
+DEFAULT_LOGGER = logging.getLogger(__name__)
 
 
 class TwingateRetry(Retry):
@@ -79,9 +80,11 @@ class TwingateAPIClient(
         self,
         settings: TwingateOperatorSettings,
         *,
+        logger: typedefs.Logger = None,
         fetch_schema_from_transport: bool = False,
     ):
         self.settings = settings
+        self._logger = logger or DEFAULT_LOGGER
         self.client = self._get_client(
             fetch_schema_from_transport=fetch_schema_from_transport
         )
@@ -96,12 +99,16 @@ class TwingateAPIClient(
             transport=transport, fetch_schema_from_transport=fetch_schema_from_transport
         )
 
+    @property
+    def logger(self) -> typedefs.Logger:
+        return self._logger
+
     def execute_gql(
         self, document: DocumentNode, variable_values: dict[str, Any] | None = None
     ):
-        logger.info("Calling %s with %s", document, variable_values)
+        self.logger.info("Calling %s with %s", document, variable_values)
         result = self.client.execute(document, variable_values=variable_values)
-        logger.info("Result: %s", result)
+        self.logger.info("Result: %s", result)
         return result
 
     def execute_mutation(

@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from typing import Any, Literal
 
@@ -10,8 +9,6 @@ from pydantic.alias_generators import to_camel
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import ProtocolPolicy, ResourceSpec
-
-logger = logging.getLogger(__name__)
 
 
 class ResourceAddress(BaseModel):
@@ -226,7 +223,7 @@ class TwingateResourceAPIs:
             )
             return Resource(**result["resource"]) if result["resource"] else None
         except TransportQueryError:
-            logger.exception("Failed to get resource")
+            self.logger.exception("Failed to get resource")
             return None
 
     def resource_create(

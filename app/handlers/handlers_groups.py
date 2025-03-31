@@ -7,12 +7,14 @@ from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
 from app.crds import GroupSpec
 from app.handlers import fail, success
+from app.utils import HandlerLoggerAdapter
 
 
 @kopf.on.resume("twingategroup")
 @kopf.on.create("twingategroup")
 @kopf.on.update("twingategroup")
 def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
+    logger = HandlerLoggerAdapter(logger, "twingate_group_create_update")
     logger.info("twingate_group_reconciler: %s", spec)
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings, logger=logger)
@@ -60,11 +62,13 @@ GROUP_RECONCILER_INIT_DELAY = int(os.environ.get("GROUP_RECONCILER_INIT_DELAY", 
     idle=60,
 )
 def twingate_group_reconciler(body, spec, logger, memo, patch, **_):
+    logger = HandlerLoggerAdapter(logger, "twingate_group_reconciler")
     return twingate_group_create_update(body, spec, logger, memo, patch)
 
 
 @kopf.on.delete("twingategroup")
 def twingate_group_delete(spec, status, memo, logger, **kwargs):
+    logger = HandlerLoggerAdapter(logger, "twingate_group_delete")
     logger.info("Got a delete request: %s. Status: %s", spec, status)
     if not status:
         return

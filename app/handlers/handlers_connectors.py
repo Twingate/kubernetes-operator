@@ -9,6 +9,7 @@ from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
 from app.handlers.base import fail, success
 from app.settings import get_version
+from app.utils import HandlerLoggerAdapter
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
@@ -125,6 +126,7 @@ def k8s_force_delete_pod(
 
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, memo, logger, namespace, patch, **_):
+    logger = HandlerLoggerAdapter(logger, "twingate_connector_create")
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings, logger=logger)
 
@@ -154,6 +156,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
 @kopf.on.update("twingateconnector", field=["spec"])
 def twingate_connector_update(body, memo, logger, new, diff, status, namespace, **_):
+    logger = HandlerLoggerAdapter(logger, "twingate_connector_update")
     logger.info(
         "Got TwingateConnector update request: %s. Diff: %s. Status: %s.",
         new,
@@ -182,6 +185,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
 
 @kopf.on.delete("twingateconnector")
 def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwargs):
+    logger = HandlerLoggerAdapter(logger, "twingate_connector_delete")
     logger.info("Got a delete request: %s. Status: %s", spec, status)
     if not status:
         return
@@ -205,6 +209,7 @@ CONNECTOR_RECONCILER_INIT_DELAY = int(os.environ.get("CONNECTOR_RECONCILER_INIT_
 def twingate_connector_pod_reconciler(
     body, meta, status, namespace, patch, memo, logger, **_
 ):
+    logger = HandlerLoggerAdapter(logger, "twingate_connector_pod_reconciler")
     logger.info("twingate_connector_reconciler: %s", body)
     if not (status and "twingate_connector_create" in status):
         raise kopf.TemporaryError("TwingateConnector not ready.", delay=1)

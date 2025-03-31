@@ -79,7 +79,7 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
 
     resource_id = resource_crd.spec.id
     try:
-        client = TwingateAPIClient(memo.twingate_settings)
+        client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         principal_id = get_principal_id(access_crd, creation_status, client)
         client.resource_access_add(
             resource_id, principal_id, access_crd.security_policy_id
@@ -120,6 +120,6 @@ def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource()
     if resource_id := resource_crd and resource_crd.spec.id:
-        client = TwingateAPIClient(memo.twingate_settings)
+        client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         principal_id = get_principal_id(access_crd, creation_status, client)
         client.resource_access_remove(resource_id, principal_id)

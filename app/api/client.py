@@ -80,7 +80,7 @@ class TwingateAPIClient(
         self,
         settings: TwingateOperatorSettings,
         *,
-        logger: typedefs.Logger = None,
+        logger: typedefs.Logger | None = None,
         fetch_schema_from_transport: bool = False,
     ):
         self.settings = settings

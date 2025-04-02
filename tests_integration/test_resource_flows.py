@@ -140,7 +140,7 @@ def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
     assert twingate_id
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "taskName": ANY, "severity": "info"} in logs
+    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "taskName": ANY, "object": expected_object, "severity": "info"} in logs
     assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "taskName": ANY, "object": expected_object, "severity": "info"} in logs
 
     # Shutdown

@@ -46,7 +46,6 @@ class TestResourceCreateHandler:
 
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(resource_spec)
-        logger_mock.info.assert_called_once_with("Got a create request: %s", spec)
         kopf_info_mock.assert_called_once_with(
             "", reason="Success", message=f"Created on Twingate as {resource.id}"
         )

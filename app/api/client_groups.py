@@ -1,14 +1,9 @@
-import logging
-
 from gql import gql
 from gql.transport.exceptions import TransportQueryError
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import GroupSpec
-
-logger = logging.getLogger(__name__)
-
 
 _GROUP_FRAGMENT = """
     fragment GroupFields on Group {
@@ -89,7 +84,7 @@ class TwingateGroupAPIs:
             )
             return result["groups"]["edges"][0]["node"]["id"]
         except (TransportQueryError, IndexError, KeyError):
-            logger.exception("Failed to get resource")
+            self.logger.exception("Failed to get resource")
             return None
 
     def group_create(

@@ -126,7 +126,7 @@ def k8s_force_delete_pod(
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
-    client = TwingateAPIClient(settings)
+    client = TwingateAPIClient(settings, logger=logger)
 
     logger.info("Got twingateconnector create request: %s", body)
     crd = TwingateConnectorCRD(**body)
@@ -162,7 +162,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
     )
 
     settings = memo.twingate_settings
-    client = TwingateAPIClient(settings)
+    client = TwingateAPIClient(settings, logger=logger)
 
     crd = TwingateConnectorCRD(**body)
     # diff example: (('add', ('id',), None, 'Q29ubmVjdG9yOjUwNjE3NQ=='),)
@@ -186,7 +186,7 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
     if not status:
         return
 
-    client = TwingateAPIClient(memo.twingate_settings)
+    client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
     if connector_id := spec.get("id"):
         logger.info("Deleting connector %s", connector_id)

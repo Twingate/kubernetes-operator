@@ -11,7 +11,7 @@ from app.handlers.base import fail, success
 def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
     logger.info("Got a create request: %s", spec)
     resource = ResourceSpec(**spec)
-    client = TwingateAPIClient(memo.twingate_settings)
+    client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
     # Support importing existing resources - if `id` already exist we assume it's already created
     if resource.id:
@@ -52,7 +52,7 @@ def twingate_resource_update(spec, diff, status, memo, logger, **kwargs):
         return success(twingate_id=crd.id, message="No update required")
 
     logger.info("Updating resource %s", crd.id)
-    client = TwingateAPIClient(memo.twingate_settings)
+    client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     resource = client.resource_update(crd)
     logger.info("Got resource %s", resource)
     return success(
@@ -70,7 +70,7 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
 
     if resource_id := spec.get("id"):
         logger.info("Deleting resource %s", resource_id)
-        client = TwingateAPIClient(memo.twingate_settings)
+        client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         client.resource_delete(resource_id)
 
 
@@ -82,7 +82,7 @@ def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
 
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)
-        client = TwingateAPIClient(memo.twingate_settings)
+        client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         if resource := client.get_resource(resource_id):
             logger.info("Got resource %s", resource)
             if not resource.is_matching_spec(crd):

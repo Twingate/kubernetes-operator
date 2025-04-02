@@ -15,7 +15,7 @@ from app.handlers import fail, success
 def twingate_group_create_update(body, spec, logger, memo, patch, **kwargs):
     logger.info("twingate_group_reconciler: %s", spec)
     settings = memo.twingate_settings
-    client = TwingateAPIClient(settings)
+    client = TwingateAPIClient(settings, logger=logger)
 
     if diff := kwargs.get("diff"):
         logger.info("Diff: %s", diff)
@@ -71,5 +71,5 @@ def twingate_group_delete(spec, status, memo, logger, **kwargs):
 
     if group_id := spec.get("id"):
         logger.info("Deleting group %s", group_id)
-        client = TwingateAPIClient(memo.twingate_settings)
+        client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         client.group_delete(group_id)

@@ -1,12 +1,7 @@
-import logging
-
 from gql import gql
 from gql.transport.exceptions import TransportQueryError
 
 from app.api.protocol import TwingateClientProtocol
-
-logger = logging.getLogger(__name__)
-
 
 QUERY_GET_SA_ID_BY_NAME = gql(
     """
@@ -34,5 +29,5 @@ class TwingateServiceAccountAPIs:
             )
             return result["serviceAccounts"]["edges"][0]["node"]["id"]
         except (TransportQueryError, IndexError, KeyError):
-            logger.exception("Failed to get resource")
+            self.logger.exception("Failed to get resource")
             return None

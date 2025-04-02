@@ -1,12 +1,8 @@
-import logging
-
 from gql import gql
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel
 
 from app.api.protocol import TwingateClientProtocol
-
-logger = logging.getLogger(__name__)
 
 
 class RemoteNetwork(BaseModel):
@@ -47,5 +43,5 @@ class TwingateRemoteNetworksAPIs:
             )
             return RemoteNetwork(**result["rn"]) if result["rn"] else None
         except TransportQueryError:
-            logger.exception("Failed to get remote network")
+            self.logger.exception("Failed to get remote network")
             return None

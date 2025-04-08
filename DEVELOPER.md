@@ -11,11 +11,11 @@
        ```
 
    2. Edit the settings (`twingateOperator` specifically) in `./deploy/twingate-operator/values.local.yaml`
-3. Deploy:
+   3. Deploy:
 
-   ```bash
-   helm upgrade twop ./deploy/twingate-operator --install --wait -f ./deploy/twingate-operator/values.local.yaml
-   ```
+      ```bash
+      helm upgrade twop ./deploy/twingate-operator --install --wait -f ./deploy/twingate-operator/values.local.yaml
+      ```
 
 ## Development
 

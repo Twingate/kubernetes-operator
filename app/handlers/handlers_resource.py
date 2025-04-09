@@ -10,10 +10,7 @@ from app.handlers.base import fail, success
 @kopf.on.create("twingateresource")
 def twingate_resource_create(body, spec, labels, memo, logger, patch, **kwargs):
     logger.info("Got a create request: %s", spec)
-    resource = ResourceSpec(
-        **spec,
-        tags=[ResourceTag(key=key, value=value) for key, value in labels.items()],
-    )
+    resource = ResourceSpec(**spec, tags=ResourceTag.create_tags(labels))
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
     # Support importing existing resources - if `id` already exist we assume it's already created

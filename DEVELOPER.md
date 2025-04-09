@@ -3,15 +3,15 @@
 ## Local Installation
 
 1. Clone this repository to your local machine.
-2. Use the `helm` chart in `./deploy/twingate-operator`:
+1. Use the `helm` chart in `./deploy/twingate-operator`:
    1. Create a custom `values.yaml`:
 
        ```bash
        cp ./deploy/twingate-operator/values.yaml ./deploy/twingate-operator/values.local.yaml
        ```
 
-   2. Edit the settings (`twingateOperator` specifically) in `./deploy/twingate-operator/values.local.yaml`
-   3. Deploy:
+   1. Edit the settings (`twingateOperator` specifically) in `./deploy/twingate-operator/values.local.yaml`
+   1. Deploy:
 
       ```bash
       helm upgrade twop ./deploy/twingate-operator --install --wait -f ./deploy/twingate-operator/values.local.yaml
@@ -22,25 +22,25 @@
 1. We use [asdf](https://asdf-vm.com/) for version management. Install it and
    then run `asdf install` in the root of this repo to install the correct
    versions of the tools we use.
-2. Copy the local env file and edit the values to match your environment:
+1. Copy the local env file and edit the values to match your environment:
 
     ```bash
     cp .envrc.local.example .envrc.local
     ```
 
-3. We use [direnv](https://direnv.net/) to manage environment variables. Install
+1. We use [direnv](https://direnv.net/) to manage environment variables. Install
    it and then run `direnv allow` in the root of this repo to allow it to manage
    your environment variables.
-4. We use [minikube](https://minikube.sigs.k8s.io/docs/start/) to run Kubernetes cluster locally.
+1. We use [minikube](https://minikube.sigs.k8s.io/docs/start/) to run Kubernetes cluster locally.
    Install it and then run `minikube start`.
-5. Apply the custom CRDs to the cluster:
+1. Apply the custom CRDs to the cluster:
 
    ```bash
    kubectl apply -f deploy/twingate-operator/crds/
    ```
 
-6. Run `make test-int` to see integration tests pass.
-7. You can now edit code and run `make run` to run the operator locally.
+1. Run `make test-int` to see integration tests pass.
+1. You can now edit code and run `make run` to run the operator locally.
    1. You'll also want to `poetry run pre-commit install` to make sure you have
       the pre-commit checks running locally.
 

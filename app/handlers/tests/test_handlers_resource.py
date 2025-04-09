@@ -2,7 +2,7 @@ from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
-from app.crds import ResourceSpec
+from app.crds import ResourceSpec, ResourceTag
 from app.handlers.handlers_resource import (
     twingate_resource_create,
     twingate_resource_delete,
@@ -23,6 +23,7 @@ class TestResourceCreateHandler:
     def test_create(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
+        labels = resource.to_metadata_labels()
 
         spec = resource_spec.model_dump(by_alias=True)
 
@@ -34,7 +35,12 @@ class TestResourceCreateHandler:
         mock_api_client.resource_create.return_value = resource
 
         result = twingate_resource_create(
-            body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
+            body="",
+            spec=spec,
+            labels=labels,
+            memo=memo_mock,
+            logger=logger_mock,
+            patch=patch_mock,
         )
         assert result == {
             "success": True,
@@ -56,6 +62,7 @@ class TestResourceCreateHandler:
     ):
         resource = resource_factory(id="pre-existing-id")
         resource_spec = resource.to_spec()
+        labels = resource.to_metadata_labels()
 
         spec = resource_spec.model_dump(by_alias=True)
 
@@ -67,7 +74,12 @@ class TestResourceCreateHandler:
         mock_api_client.resource_update.return_value = resource
 
         result = twingate_resource_create(
-            body="", spec=spec, memo=memo_mock, logger=logger_mock, patch=patch_mock
+            body="",
+            spec=spec,
+            labels=labels,
+            memo=memo_mock,
+            logger=logger_mock,
+            patch=patch_mock,
         )
         assert result == {
             "success": True,
@@ -94,6 +106,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
+        labels = {"env": "prod"}
         diff = (("change", ("name"), "My K8S Resource", "new-name"),)
         status = {
             "twingate_resource_create": {
@@ -102,7 +115,10 @@ class TestResourceUpdateHandler:
                 "updated_at": "2023-09-27T04:02:55.249035+00:00",
             }
         }
-        new_resource_spec = ResourceSpec(**new)
+        new_resource_spec = ResourceSpec(
+            **new,
+            tags=[ResourceTag(key="env", value="prod")],
+        )
 
         mock_api_client.resource_update.return_value = MagicMock(id=rid)
 
@@ -111,7 +127,9 @@ class TestResourceUpdateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
+        result = twingate_resource_update(
+            spec, labels, diff, status, memo_mock, logger_mock
+        )
         assert result == {
             "success": True,
             "twingate_id": rid,
@@ -128,6 +146,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
+        labels = {}
         diff = []
         status = {}
 
@@ -136,7 +155,9 @@ class TestResourceUpdateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
+        result = twingate_resource_update(
+            spec, labels, diff, status, memo_mock, logger_mock
+        )
         assert result == {
             "success": False,
             "error": "Resource ID is missing in the spec",
@@ -153,6 +174,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
+        labels = {}
         diff = (("add", ("id",), None, rid),)
         status = {
             "twingate_resource_create": {
@@ -169,7 +191,9 @@ class TestResourceUpdateHandler:
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
-        result = twingate_resource_update(spec, diff, status, memo_mock, logger_mock)
+        result = twingate_resource_update(
+            spec, labels, diff, status, memo_mock, logger_mock
+        )
         assert result == {
             "success": True,
             "twingate_id": rid,
@@ -228,6 +252,7 @@ class TestResourceSyncTimer:
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
+        labels = resource.to_metadata_labels()
         status = {
             "twingate_resource_create": {
                 "twingate_id": resource.id,
@@ -242,7 +267,8 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
-            resource_spec.model_dump(by_alias=True, exclude="id"),
+            resource_spec.model_dump(by_alias=True, exclude=["id"]),
+            labels,
             status,
             memo_mock,
             logger_mock,
@@ -257,6 +283,7 @@ class TestResourceSyncTimer:
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
+        labels = resource.to_metadata_labels()
         status = {
             "twingate_resource_create": {
                 "twingate_id": resource.id,
@@ -276,6 +303,7 @@ class TestResourceSyncTimer:
 
         twingate_resource_sync(
             resource_spec.model_dump(by_alias=True),
+            labels,
             status,
             memo_mock,
             logger_mock,
@@ -290,6 +318,7 @@ class TestResourceSyncTimer:
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
+        labels = resource.to_metadata_labels()
         resource_spec_without_id = resource_spec.model_copy(update={"id": None})
         status = {
             "twingate_resource_create": {
@@ -309,6 +338,7 @@ class TestResourceSyncTimer:
 
         twingate_resource_sync(
             resource_spec.model_dump(by_alias=True),
+            labels,
             status,
             memo_mock,
             logger_mock,

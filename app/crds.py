@@ -2,7 +2,7 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import kubernetes.client
 import pendulum
@@ -112,6 +112,19 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
+class ResourceTag(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    key: str
+    value: str
+
+    @classmethod
+    def create_tags(cls, metadata_labels: dict[str, str]) -> list[Self]:
+        return [cls(key=key, value=value) for key, value in metadata_labels.items()]
+
+
 class ResourceSpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
@@ -128,6 +141,7 @@ class ResourceSpec(BaseModel):
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
+    tags: list[ResourceTag] = Field(default_factory=list, exclude=True)
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address

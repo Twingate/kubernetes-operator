@@ -54,6 +54,15 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
+class ResourceTag(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    key: str
+    value: str
+
+
 class Resource(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -70,6 +79,7 @@ class Resource(BaseModel):
         alias="securityPolicy", default=None
     )
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
+    tags: list[ResourceTag]
 
     @staticmethod
     def get_graphql_fragment():
@@ -105,12 +115,18 @@ class Resource(BaseModel):
                         }
                     }
                 }
+                tags {
+                    key
+                    value
+                }
             }
         """
 
     def is_matching_spec(self, crd: ResourceSpec) -> bool:
         self_protocols = self.protocols.model_dump() if self.protocols else None
         crd_protocols = crd.protocols.model_dump() if crd.protocols else None
+        self_tags = {tag.key: tag.value for tag in self.tags}
+        crd_tags = {tag.key: tag.value for tag in crd.tags}
 
         return (
             self.name == crd.name
@@ -122,6 +138,7 @@ class Resource(BaseModel):
             and self.remote_network.id == crd.remote_network_id
             and (self.security_policy and self.security_policy.id)
             == crd.security_policy_id
+            and self_tags == crd_tags
         )
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
@@ -133,6 +150,7 @@ class Resource(BaseModel):
                 "is_visible",
                 "is_browser_shortcut_enabled",
                 "protocols",
+                "tags",
             }
         )
         data["address"] = self.address.value
@@ -142,6 +160,9 @@ class Resource(BaseModel):
         )
         data.update(overrides)
         return ResourceSpec(**data)
+
+    def to_metadata_labels(self) -> dict[str, str]:
+        return {tag.key: tag.value for tag in self.tags}
 
 
 # fmt:off
@@ -158,7 +179,7 @@ QUERY_GET_RESOURCE = gql(_RESOURCE_FRAGMENT + """
 )
 
 MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation CreateResource($name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID) {
+    mutation CreateResource($name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID, $tags: [TagInput!]) {
       resourceCreate(
         name: $name
         address: $address
@@ -168,6 +189,7 @@ MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
         protocols: $protocols
         remoteNetworkId: $remoteNetworkId
         securityPolicyId: $securityPolicyId
+        tags: $tags
       ) {
         ok
         error
@@ -180,7 +202,7 @@ MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
 )
 
 MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation UpdateResource($id: ID!, $name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID) {
+    mutation UpdateResource($id: ID!, $name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID, $tags: [TagInput!]) {
         resourceUpdate(
             id: $id,
             name: $name
@@ -191,6 +213,7 @@ MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
             protocols: $protocols
             remoteNetworkId: $remoteNetworkId
             securityPolicyId: $securityPolicyId
+            tags: $tags
         ) {
             ok
             error
@@ -241,6 +264,7 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
+                "tags": [tag.model_dump() for tag in resource.tags],
             },
         )
 
@@ -262,6 +286,7 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
+                "tags": [tag.model_dump() for tag in resource.tags],
             },
         )
         return Resource(**result["entity"])

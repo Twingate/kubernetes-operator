@@ -21,6 +21,7 @@ def mock_resource_data():
         "address": {"type": "DNS", "value": "my-k8s-resource.default.cluster.local"},
         "remoteNetwork": {"id": "rn1"},
         "securityPolicy": {"id": "sp1"},
+        "tags": [{"key": "env", "value": "dev"}],
     }
 
 
@@ -86,6 +87,9 @@ class TestResourceModel:
                     "tcp": {"policy": "ALLOW_ALL", "ports": []},
                     "udp": {"policy": "ALLOW_ALL", "ports": []},
                 },
+                "tags": [
+                    {"key": "env", "value": "dev"},
+                ],
             }
         )
 
@@ -98,6 +102,9 @@ class TestResourceModel:
                 "isVisible": True,
                 "name": "My K8S Resource",
                 "remoteNetworkId": "UmVtb3RlTmV0d29yazo5Njc0OTU=",
+                "tags": [
+                    {"key": "env", "value": "dev"},
+                ],
             }
         )
 

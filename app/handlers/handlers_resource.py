@@ -3,14 +3,17 @@ from datetime import timedelta
 import kopf
 
 from app.api import TwingateAPIClient
-from app.crds import ResourceSpec
+from app.crds import ResourceSpec, ResourceTag
 from app.handlers.base import fail, success
 
 
 @kopf.on.create("twingateresource")
-def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
+def twingate_resource_create(body, spec, labels, memo, logger, patch, **kwargs):
     logger.info("Got a create request: %s", spec)
-    resource = ResourceSpec(**spec)
+    resource = ResourceSpec(
+        **spec,
+        tags=[ResourceTag(key=key, value=value) for key, value in labels.items()],
+    )
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
     # Support importing existing resources - if `id` already exist we assume it's already created
@@ -34,16 +37,17 @@ def twingate_resource_create(body, spec, memo, logger, patch, **kwargs):
     )
 
 
-@kopf.on.update("twingateresource", field="spec")
-def twingate_resource_update(spec, diff, status, memo, logger, **kwargs):
+@kopf.on.update("twingateresource")
+def twingate_resource_update(spec, labels, diff, status, memo, logger, **kwargs):
     logger.info(
-        "Got TwingateResource update request: %s. Diff: %s. Status: %s.",
+        "Got TwingateResource update request: %s. Labels: %s. Diff: %s. Status: %s.",
         spec,
+        labels,
         diff,
         status,
     )
 
-    crd = ResourceSpec(**spec)
+    crd = ResourceSpec(**spec, tags=ResourceTag.create_tags(labels))
     if not crd.id:
         return fail(error="Resource ID is missing in the spec")
 
@@ -77,8 +81,8 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
 @kopf.timer(
     "twingateresource", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
 )
-def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
-    crd = ResourceSpec(**spec)
+def twingate_resource_sync(spec, labels, status, memo, logger, patch, **kwargs):
+    crd = ResourceSpec(**spec, tags=ResourceTag.create_tags(labels))
 
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)
@@ -91,8 +95,8 @@ def twingate_resource_sync(spec, status, memo, logger, patch, **kwargs):
         else:
             # Resource was deleted, recreate it
             logger.info("Resource %s was deleted, recreating...", resource_id)
-            crd_withoput_id = crd.model_copy(update={"id": None})
-            resource = client.resource_create(crd_withoput_id)
+            crd_without_id = crd.model_copy(update={"id": None})
+            resource = client.resource_create(crd_without_id)
             patch.spec["id"] = resource.id
             return success(
                 twingate_id=resource.id,

@@ -1,6 +1,954 @@
 # CHANGELOG
 
 
+## v0.19.0 (2025-04-08)
+
+### Bug Fixes
+
+- **main.py**: Set server_timeout to 5 minutes to resolve change detection issue
+  ([#599](https://github.com/Twingate/kubernetes-operator/pull/599),
+  [`7001478`](https://github.com/Twingate/kubernetes-operator/commit/7001478cd14fddfe79acd7399c28c4e96ca56131))
+
+## Related Tickets & Documents
+
+See KOPF issue https://github.com/nolar/kopf/issues/1120
+
+### Chores
+
+- Bump pydantic from 2.10.6 to 2.11.1
+  ([#591](https://github.com/Twingate/kubernetes-operator/pull/591),
+  [`4c432b2`](https://github.com/Twingate/kubernetes-operator/commit/4c432b2450db6d7007e279e3c413e70b81a0c055))
+
+Bumps [pydantic](https://github.com/pydantic/pydantic) from 2.10.6 to 2.11.1. <details>
+  <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/releases">pydantic's releases</a>.</em></p>
+  <blockquote> <h2>v2.11.1 2025-03-28</h2> <!-- raw HTML omitted --> <h2>What's Changed</h2>
+  <h3>Fixes</h3> <ul> <li>Do not override <code>'definitions-ref'</code> schemas containing
+  serialization schemas or metadata by <a href="https://github.com/Viicos"><code>@​Viicos</code></a>
+  in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11644">pydantic/pydantic#11644</a></li>
+  </ul> <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/pydantic/pydantic/compare/v2.11.0...v2.11.1">https://github.com/pydantic/pydantic/compare/v2.11.0...v2.11.1</a></p>
+  <h2>v2.11.0 2025-03-27</h2> <!-- raw HTML omitted --> <h2>What's Changed</h2> <h3>Packaging</h3>
+  <ul> <li>Re-enable memray related tests on Python 3.12+ by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11191">pydantic/pydantic#11191</a></li>
+  <li>Bump astral-sh/setup-uv from 4 to 5 by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11205">pydantic/pydantic#11205</a></li>
+  <li>Add a <code>check_pydantic_core_version()</code> function by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11324">pydantic/pydantic#11324</a></li>
+  <li>Remove <code>greenlet</code> development dependency by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11351">pydantic/pydantic#11351</a></li>
+  <li>Bump ruff from 0.9.2 to 0.9.5 by <a href="https://github.com/Viicos"><code>@​Viicos</code></a>
+  in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11407">pydantic/pydantic#11407</a></li>
+  <li>Improve release automation process by <a
+  href="https://github.com/austinyu"><code>@​austinyu</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11427">pydantic/pydantic#11427</a></li>
+  <li>Bump dawidd6/action-download-artifact from 8 to 9 by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11513">pydantic/pydantic#11513</a></li>
+  <li>Bump <code>pydantic-core</code> to v2.32.0 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11567">pydantic/pydantic#11567</a></li>
+  </ul> <h3>New Features</h3> <ul> <li>Support unsubstituted type variables with both a default and
+  a bound or constraints by <a href="https://github.com/FyZzyss"><code>@​FyZzyss</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/10789">pydantic/pydantic#10789</a></li>
+  <li>Add a <code>default_factory_takes_validated_data</code> property to <code>FieldInfo</code> by
+  <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11034">pydantic/pydantic#11034</a></li>
+  <li>Raise a better error when a generic alias is used inside <code>type[]</code> by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11088">pydantic/pydantic#11088</a></li>
+  <li>Properly support PEP 695 generics syntax by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11189">pydantic/pydantic#11189</a></li>
+  <li>Properly support type variable defaults by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11332">pydantic/pydantic#11332</a></li>
+  <li>Add support for validating v6, v7, v8 UUIDs by <a
+  href="https://github.com/astei"><code>@​astei</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11436">pydantic/pydantic#11436</a></li>
+  <li>Improve alias configuration APIs by <a
+  href="https://github.com/sydney-runkle"><code>@​sydney-runkle</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11468">pydantic/pydantic#11468</a></li>
+  <li>Add experimental support for free threading by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11516">pydantic/pydantic#11516</a></li>
+  <li>Add <code>encoded_string()</code> method to the URL types by <a
+  href="https://github.com/YassinNouh21"><code>@​YassinNouh21</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11580">pydantic/pydantic#11580</a></li>
+  <li>Add support for <code>defer_build</code> with <code>@validate_call</code> decorator by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11584">pydantic/pydantic#11584</a></li>
+  <li>Allow <code>@with_config</code> decorator to be used with keyword arguments by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11608">pydantic/pydantic#11608</a></li>
+  <li>Simplify customization of default value inclusion in JSON Schema generation by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11634">pydantic/pydantic#11634</a></li>
+  <li>Add <code>generate_arguments_schema()</code> function by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11572">pydantic/pydantic#11572</a></li>
+  </ul> <h3>Changes</h3> <ul> <li>Rework <code>create_model</code> field definitions format by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11032">pydantic/pydantic#11032</a></li>
+  <li>Raise a deprecation warning when a field is annotated as final with a default value by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11168">pydantic/pydantic#11168</a></li>
+  <li>Deprecate accessing <code>model_fields</code> and <code>model_computed_fields</code> on
+  instances by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11169">pydantic/pydantic#11169</a></li>
+  <li>Move core schema generation logic for path types inside the <code>GenerateSchema</code> class
+  by <a href="https://github.com/sydney-runkle"><code>@​sydney-runkle</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/10846">pydantic/pydantic#10846</a></li>
+  <li>Move <code>Mapping</code> schema gen to <code>GenerateSchema</code> to complete removal of
+  <code>prepare_annotations_for_known_type</code> workaround by <a
+  href="https://github.com/sydney-runkle"><code>@​sydney-runkle</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11247">pydantic/pydantic#11247</a></li>
+  <li>Remove Python 3.8 Support by <a
+  href="https://github.com/sydney-runkle"><code>@​sydney-runkle</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11258">pydantic/pydantic#11258</a></li>
+  <li>Optimize calls to <code>get_type_ref</code> by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/10863">pydantic/pydantic#10863</a></li>
+  </ul> <!-- raw HTML omitted --> </blockquote> <p>... (truncated)</p> </details> <details>
+  <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/blob/main/HISTORY.md">pydantic's
+  changelog</a>.</em></p> <blockquote> <h2>v2.11.1 (2025-03-28)</h2> <p><a
+  href="https://github.com/pydantic/pydantic/releases/tag/v2.11.1">GitHub release</a></p> <h3>What's
+  Changed</h3> <h4>Fixes</h4> <ul> <li>Do not override <code>'definitions-ref'</code> schemas
+  containing serialization schemas or metadata by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11644">#11644</a></li> </ul> <h2>v2.11.0
+  (2025-03-27)</h2> <p><a href="https://github.com/pydantic/pydantic/releases/tag/v2.11.0">GitHub
+  release</a></p> <h3>What's Changed</h3> <p>Pydantic v2.11 is a version strongly focused on build
+  time performance of Pydantic models (and core schema generation in general). See the <a
+  href="https://pydantic.dev/articles/pydantic-v2-11-release">blog post</a> for more details.</p>
+  <h4>Packaging</h4> <ul> <li>Bump <code>pydantic-core</code> to v2.33.0 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11631">#11631</a></li> </ul> <h4>New
+  Features</h4> <ul> <li>Add <code>encoded_string()</code> method to the URL types by <a
+  href="https://github.com/YassinNouh21"><code>@​YassinNouh21</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11580">#11580</a></li> <li>Add support
+  for <code>defer_build</code> with <code>@validate_call</code> decorator by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11584">#11584</a></li> <li>Allow
+  <code>@with_config</code> decorator to be used with keyword arguments by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11608">#11608</a></li> <li>Simplify
+  customization of default value inclusion in JSON Schema generation by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11634">#11634</a></li> <li>Add
+  <code>generate_arguments_schema()</code> function by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11572">#11572</a></li> </ul>
+  <h4>Fixes</h4> <ul> <li>Allow generic typed dictionaries to be used for unpacked variadic keyword
+  parameters by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11571">#11571</a></li> <li>Fix runtime
+  error when computing model string representation involving cached properties and self-referenced
+  models by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11579">#11579</a></li> <li>Preserve other
+  steps when using the ellipsis in the pipeline API by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11626">#11626</a></li> <li>Fix deferred
+  discriminator application logic by <a href="https://github.com/Viicos"><code>@​Viicos</code></a>
+  in <a href="https://redirect.github.com/pydantic/pydantic/pull/11591">#11591</a></li> </ul>
+  <h3>New Contributors</h3> <ul> <li><a
+  href="https://github.com/cmenon12"><code>@​cmenon12</code></a> made their first contribution in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11562">#11562</a></li> <li><a
+  href="https://github.com/Jeukoh"><code>@​Jeukoh</code></a> made their first contribution in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11611">#11611</a></li> </ul>
+  <h2>v2.11.0b2 (2025-03-17)</h2> <p><a
+  href="https://github.com/pydantic/pydantic/releases/tag/v2.11.0b2">GitHub release</a></p>
+  <h3>What's Changed</h3> <h4>Packaging</h4> <!-- raw HTML omitted --> </blockquote> <p>...
+  (truncated)</p> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/pydantic/pydantic/commit/6c38dc93f40a47f4d1350adca9ec0d72502e223f"><code>6c38dc9</code></a>
+  Prepare release v2.11.1 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11648">#11648</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/1dcddac2c5e1ac2361fc897f804f44338a1d8067"><code>1dcddac</code></a>
+  Do not override <code>'definitions-ref'</code> schemas containing serialization schemas ...</li>
+  <li><a
+  href="https://github.com/pydantic/pydantic/commit/024fdae2b55bd41866418586d48009956cfa9e1b"><code>024fdae</code></a>
+  Fix small typos (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11643">#11643</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/58e61fa3c60ffb8140d01ca9f74ff7528326a0c6"><code>58e61fa</code></a>
+  Prepare release v2.11.0 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11635">#11635</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/e2c2e811e3cafb35d376c22e8830f2773d65ee58"><code>e2c2e81</code></a>
+  Add <code>generate_arguments_schema()</code> experimental function (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11572">#11572</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/72bea3f22f8d5380cb10af017deae4a0e16709c0"><code>72bea3f</code></a>
+  Add <code>mkdocs-llmstxt</code> documentation plugin (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11632">#11632</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/fcba83291a8fe7e1dcfde9bbcc8ea57f8ef322c0"><code>fcba832</code></a>
+  Simplify customization of default value inclusion in JSON Schema generation (...</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/6f11161524e495f6ed7597abcd4006f19a7cd2c1"><code>6f11161</code></a>
+  Add support for extra keys validation for models (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11578">#11578</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/7917b11bd28706d77a5d0180381bc96b6b61b044"><code>7917b11</code></a>
+  Disable third-party workflow issue report (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11629">#11629</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/f5226d294664788d1fbea13bec2dbc1ce6305c8e"><code>f5226d2</code></a>
+  Bump <code>pydantic-core</code> to v2.33.0 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11631">#11631</a>)</li> <li>Additional
+  commits viewable in <a
+  href="https://github.com/pydantic/pydantic/compare/v2.10.6...v2.11.1">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pydantic&package-manager=pip&previous-version=2.10.6&new-version=2.11.1)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic from 2.11.1 to 2.11.2
+  ([#597](https://github.com/Twingate/kubernetes-operator/pull/597),
+  [`c9a60e5`](https://github.com/Twingate/kubernetes-operator/commit/c9a60e5a7155ca4d4895fd958f31682d406b3c32))
+
+Bumps [pydantic](https://github.com/pydantic/pydantic) from 2.11.1 to 2.11.2. <details>
+  <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/releases">pydantic's releases</a>.</em></p>
+  <blockquote> <h2>v2.11.2 2025-04-03</h2> <!-- raw HTML omitted --> <h2>What's Changed</h2>
+  <h3>Fixes</h3> <ul> <li>Bump <code>pydantic-core</code> to v2.33.1 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11678">pydantic/pydantic#11678</a></li>
+  <li>Make sure <code>__pydantic_private__</code> exists before setting private attributes by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11666">pydantic/pydantic#11666</a></li>
+  <li>Do not override <code>FieldInfo._complete</code> when using field from parent class by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11668">pydantic/pydantic#11668</a></li>
+  <li>Provide the available definitions when applying discriminated unions by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11670">pydantic/pydantic#11670</a></li>
+  <li>Do not expand root type in the mypy plugin for variables by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11676">pydantic/pydantic#11676</a></li>
+  <li>Mention the attribute name in model fields deprecation message by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11674">pydantic/pydantic#11674</a></li>
+  <li>Properly validate parameterized mappings by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11658">pydantic/pydantic#11658</a></li>
+  <li>Prepare release v2.11.2 by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11684">pydantic/pydantic#11684</a></li>
+  </ul> <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/pydantic/pydantic/compare/v2.11.1...v2.11.2">https://github.com/pydantic/pydantic/compare/v2.11.1...v2.11.2</a></p>
+  </blockquote> </details> <details> <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/blob/main/HISTORY.md">pydantic's
+  changelog</a>.</em></p> <blockquote> <h2>v2.11.2 (2025-04-03)</h2> <p><a
+  href="https://github.com/pydantic/pydantic/releases/tag/v2.11.2">GitHub release</a></p> <h3>What's
+  Changed</h3> <h4>Fixes</h4> <ul> <li>Bump <code>pydantic-core</code> to v2.33.1 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11678">#11678</a></li> <li>Make sure
+  <code>__pydantic_private__</code> exists before setting private attributes by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11666">#11666</a></li> <li>Do not
+  override <code>FieldInfo._complete</code> when using field from parent class by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11668">#11668</a></li> <li>Provide the
+  available definitions when applying discriminated unions by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11670">#11670</a></li> <li>Do not expand
+  root type in the mypy plugin for variables by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11676">#11676</a></li> <li>Mention the
+  attribute name in model fields deprecation message by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11674">#11674</a></li> <li>Properly
+  validate parameterized mappings by <a href="https://github.com/Viicos"><code>@​Viicos</code></a>
+  in <a href="https://redirect.github.com/pydantic/pydantic/pull/11658">#11658</a></li> </ul>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/pydantic/pydantic/commit/bd1f8cf44a271e7313026faab318f3c37f23b3f4"><code>bd1f8cf</code></a>
+  Prepare release v2.11.2 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11684">#11684</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/f70f2917913e53adfb82700f348bf8e3fae21357"><code>f70f291</code></a>
+  Add integration documentation for llms.txt (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11677">#11677</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/34095c7523371e04b6b8fd9b55680845dd7dd279"><code>34095c7</code></a>
+  Properly validate parameterized mappings (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11658">#11658</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/dfa6c6715df831c2eba3c4c96c231b66e0fc3d4a"><code>dfa6c67</code></a>
+  Mention the attribute name in model fields deprecation message (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11674">#11674</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/cbf4202637a56fc5325ab4b18452e3f3ba910a84"><code>cbf4202</code></a>
+  Do not expand root type in the mypy plugin for variables (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11676">#11676</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/8b0825add81e53daefba83e5a147cd13ca57a63b"><code>8b0825a</code></a>
+  Provide the available definitions when applying discriminated unions (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11670">#11670</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/86c5703a2d4afe43f2adea9b2c5450b178ce5121"><code>86c5703</code></a>
+  Do not override <code>FieldInfo._complete</code> when using field from parent class (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11">#11</a>...</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/da841493831c86229ce5d5dd4dfbc482bfea3ddb"><code>da84149</code></a>
+  Make sure <code>__pydantic_private__</code> exists before setting private attributes (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/1">#1</a>...</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/0cfe85396a9aa9f96113a7c3cba1feedb518a364"><code>0cfe853</code></a>
+  Bump <code>pydantic-core</code> to v2.33.1 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11678">#11678</a>)</li> <li>See full
+  diff in <a href="https://github.com/pydantic/pydantic/compare/v2.11.1...v2.11.2">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pydantic&package-manager=pip&previous-version=2.11.1&new-version=2.11.2)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic from 2.11.2 to 2.11.3
+  ([#602](https://github.com/Twingate/kubernetes-operator/pull/602),
+  [`39f85d6`](https://github.com/Twingate/kubernetes-operator/commit/39f85d68955bc85afeda96fdcb5fee3b0cdd7209))
+
+Bumps [pydantic](https://github.com/pydantic/pydantic) from 2.11.2 to 2.11.3. <details>
+  <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/releases">pydantic's releases</a>.</em></p>
+  <blockquote> <h2>v2.11.3 2025-04-08</h2> <!-- raw HTML omitted --> <h2>What's Changed</h2>
+  <h3>Packaging</h3> <ul> <li>Update V1 copy to v1.10.21 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11706">pydantic/pydantic#11706</a></li>
+  </ul> <h3>Fixes</h3> <ul> <li>Preserve field description when rebuilding model fields by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11698">pydantic/pydantic#11698</a></li>
+  </ul> <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/pydantic/pydantic/compare/v2.11.2...v2.11.3">https://github.com/pydantic/pydantic/compare/v2.11.2...v2.11.3</a></p>
+  </blockquote> </details> <details> <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/blob/main/HISTORY.md">pydantic's
+  changelog</a>.</em></p> <blockquote> <h2>v2.11.3 (2025-04-08)</h2> <p><a
+  href="https://github.com/pydantic/pydantic/releases/tag/v2.11.3">GitHub release</a></p> <h3>What's
+  Changed</h3> <h4>Packaging</h4> <ul> <li>Update V1 copy to v1.10.21 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11706">#11706</a></li> </ul>
+  <h4>Fixes</h4> <ul> <li>Preserve field description when rebuilding model fields by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11698">#11698</a></li> </ul>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/pydantic/pydantic/commit/876bf76f34f9ab313923a3428a4d4aaf00144f43"><code>876bf76</code></a>
+  Prepare release v2.11.3 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11716">#11716</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/4a8c9297052534c33411f0268527ab9bcb55bc1b"><code>4a8c929</code></a>
+  Fix code annotation in <code>@computed_field</code> documentation (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11693">#11693</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/a8b8b5f6f34f27ef721d4d1f85a3747847762db9"><code>a8b8b5f</code></a>
+  Fix source locations in documentation for external packages (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11710">#11710</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/f14b7da9cf7f5f802ca5b8076ba7d9fcde1352cf"><code>f14b7da</code></a>
+  Preserve field description when rebuilding model fields (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11698">#11698</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/04fd6395c7165232785992a6ad0e817e9db6e590"><code>04fd639</code></a>
+  Update V1 copy to v1.10.21 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11706">#11706</a>)</li> <li>See full
+  diff in <a href="https://github.com/pydantic/pydantic/compare/v2.11.2...v2.11.3">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pydantic&package-manager=pip&previous-version=2.11.2&new-version=2.11.3)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.2 to 0.11.3 ([#598](https://github.com/Twingate/kubernetes-operator/pull/598),
+  [`0967e60`](https://github.com/Twingate/kubernetes-operator/commit/0967e604f5c0a85a1952712aa961d1934a094229))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.2 to 0.11.3. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.3</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>[<code>airflow</code>] Add more autofixes for <code>AIR302</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16876">#16876</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16977">#16977</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16976">#16976</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16965">#16965</a>)</li>
+  <li>[<code>airflow</code>] Move <code>AIR301</code> to <code>AIR002</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16978">#16978</a>)</li>
+  <li>[<code>airflow</code>] Move <code>AIR302</code> to <code>AIR301</code> and <code>AIR303</code>
+  to <code>AIR302</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17151">#17151</a>)</li>
+  <li>[<code>flake8-bandit</code>] Mark <code>str</code> and <code>list[str]</code> literals as
+  trusted input (<code>S603</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17136">#17136</a>)</li>
+  <li>[<code>ruff</code>] Support slices in <code>RUF005</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17078">#17078</a>)</li> <li>[syntax-errors]
+  Start detecting compile-time syntax errors (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16106">#16106</a>)</li> <li>[syntax-errors]
+  Duplicate type parameter names (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16858">#16858</a>)</li> <li>[syntax-errors]
+  Irrefutable <code>case</code> pattern before final case (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16905">#16905</a>)</li> <li>[syntax-errors]
+  Multiple assignments in <code>case</code> pattern (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16957">#16957</a>)</li> <li>[syntax-errors]
+  Single starred assignment target (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17024">#17024</a>)</li> <li>[syntax-errors]
+  Starred expressions in <code>return</code>, <code>yield</code>, and <code>for</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17134">#17134</a>)</li> <li>[syntax-errors]
+  Store to or delete <code>__debug__</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16984">#16984</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>Error instead of <code>panic!</code> when running Ruff from a deleted
+  directory (<a href="https://redirect.github.com/astral-sh/ruff/issues/16903">#16903</a>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17054">#17054</a>)</li> <li>[syntax-errors]
+  Fix false positive for parenthesized tuple index (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16948">#16948</a>)</li> </ul> <h3>CLI</h3>
+  <ul> <li>Check <code>pyproject.toml</code> correctly when it is passed via stdin (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16971">#16971</a>)</li> </ul>
+  <h3>Configuration</h3> <ul> <li>[<code>flake8-import-conventions</code>] Add import
+  <code>numpy.typing as npt</code> to default <code>flake8-import-conventions.aliases</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17133">#17133</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>[<code>refurb</code>] Document why <code>UserDict</code>,
+  <code>UserList</code>, and <code>UserString</code> are preferred over <code>dict</code>,
+  <code>list</code>, and <code>str</code> (<code>FURB189</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16927">#16927</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/BurntSushi"><code>@​BurntSushi</code></a></li> <li><a
+  href="https://github.com/InSyncWithFoo"><code>@​InSyncWithFoo</code></a></li> <li><a
+  href="https://github.com/Lee-W"><code>@​Lee-W</code></a></li> <li><a
+  href="https://github.com/MatthewMckee4"><code>@​MatthewMckee4</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/VascoSch92"><code>@​VascoSch92</code></a></li> <li><a
+  href="https://github.com/akx"><code>@​akx</code></a></li> <li><a
+  href="https://github.com/alex-700"><code>@​alex-700</code></a></li> <li><a
+  href="https://github.com/amin-not-found"><code>@​amin-not-found</code></a></li> <li><a
+  href="https://github.com/ashb"><code>@​ashb</code></a></li> <li><a
+  href="https://github.com/cake-monotone"><code>@​cake-monotone</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> </ul> <!-- raw HTML omitted -->
+  </blockquote> <p>... (truncated)</p> </details> <details> <summary>Changelog</summary>
+  <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's
+  changelog</a>.</em></p> <blockquote> <h2>0.11.3</h2> <h3>Preview features</h3> <ul>
+  <li>[<code>airflow</code>] Add more autofixes for <code>AIR302</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16876">#16876</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16977">#16977</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16976">#16976</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16965">#16965</a>)</li>
+  <li>[<code>airflow</code>] Move <code>AIR301</code> to <code>AIR002</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16978">#16978</a>)</li>
+  <li>[<code>airflow</code>] Move <code>AIR302</code> to <code>AIR301</code> and <code>AIR303</code>
+  to <code>AIR302</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17151">#17151</a>)</li>
+  <li>[<code>flake8-bandit</code>] Mark <code>str</code> and <code>list[str]</code> literals as
+  trusted input (<code>S603</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17136">#17136</a>)</li>
+  <li>[<code>ruff</code>] Support slices in <code>RUF005</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17078">#17078</a>)</li> <li>[syntax-errors]
+  Start detecting compile-time syntax errors (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16106">#16106</a>)</li> <li>[syntax-errors]
+  Duplicate type parameter names (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16858">#16858</a>)</li> <li>[syntax-errors]
+  Irrefutable <code>case</code> pattern before final case (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16905">#16905</a>)</li> <li>[syntax-errors]
+  Multiple assignments in <code>case</code> pattern (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16957">#16957</a>)</li> <li>[syntax-errors]
+  Single starred assignment target (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17024">#17024</a>)</li> <li>[syntax-errors]
+  Starred expressions in <code>return</code>, <code>yield</code>, and <code>for</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17134">#17134</a>)</li> <li>[syntax-errors]
+  Store to or delete <code>__debug__</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16984">#16984</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>Error instead of <code>panic!</code> when running Ruff from a deleted
+  directory (<a href="https://redirect.github.com/astral-sh/ruff/issues/16903">#16903</a>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17054">#17054</a>)</li> <li>[syntax-errors]
+  Fix false positive for parenthesized tuple index (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16948">#16948</a>)</li> </ul> <h3>CLI</h3>
+  <ul> <li>Check <code>pyproject.toml</code> correctly when it is passed via stdin (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16971">#16971</a>)</li> </ul>
+  <h3>Configuration</h3> <ul> <li>[<code>flake8-import-conventions</code>] Add import
+  <code>numpy.typing as npt</code> to default <code>flake8-import-conventions.aliases</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17133">#17133</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>[<code>refurb</code>] Document why <code>UserDict</code>,
+  <code>UserList</code>, and <code>UserString</code> are preferred over <code>dict</code>,
+  <code>list</code>, and <code>str</code> (<code>FURB189</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16927">#16927</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/755ece0c36ea0f1064b496f2daf4c5fd97565667"><code>755ece0</code></a>
+  Bump 0.11.3 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17173">#17173</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/62f8d855d269281023df6164aed05e33d0642ddb"><code>62f8d85</code></a>
+  [red-knot] Improve <code>Debug</code> implementation for <code>semantic_index::SymbolTable</code>
+  (...</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/130339f3d813e821ff59d929039095ac1933b4f6"><code>130339f</code></a>
+  [red-knot] Fix <code>str(…)</code> calls (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17163">#17163</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/e50fc049abaa563edb4a05551222d7329051f7b7"><code>e50fc04</code></a>
+  [red-knot] visibility_constraint analysis for match cases (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17077">#17077</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/66355a6185d1a4964cf8d48615b0c62182dcbfa5"><code>66355a6</code></a>
+  [red-knot] Fix playground crashes when diagnostics are stale (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17165">#17165</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/177afabe18ea9b067ecaf0419c87f968b4aa8176"><code>177afab</code></a>
+  [red-knot] Callable types are disjoint from literals (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17160">#17160</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/28c68934a42ddb6dec4ad5324a0546d13a35771d"><code>28c6893</code></a>
+  [red-knot] Fix inference for <code>pow</code> between two literal integers (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17161">#17161</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/195bb433db3968973638fd831beff29dbd469f6c"><code>195bb43</code></a>
+  [red-knot] Add GitHub PR annotations when mdtests fail in CI (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17150">#17150</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/c2bb5d52507621ec5905dbb72ce187d989dd934f"><code>c2bb5d5</code></a>
+  [red-knot] Fix equivalence of differently ordered unions that contain `Callab...</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/cb7dae1e96b2054d11821f1c8b578eb80ae6ca13"><code>cb7dae1</code></a>
+  [red-knot] Add initial set of tests for unreachable code (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17159">#17159</a>)</li> <li>Additional
+  commits viewable in <a href="https://github.com/astral-sh/ruff/compare/0.11.2...0.11.3">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.2&new-version=0.11.3)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.3 to 0.11.4 ([#600](https://github.com/Twingate/kubernetes-operator/pull/600),
+  [`6aef5a5`](https://github.com/Twingate/kubernetes-operator/commit/6aef5a52e7626f6ba42cd7616b207ef6b136e404))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.3 to 0.11.4. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.4</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>[<code>ruff</code>] Implement <code>invalid-rule-code</code> as
+  <code>RUF102</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17138">#17138</a>)</li> <li>[syntax-errors]
+  Detect duplicate keys in <code>match</code> mapping patterns (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17129">#17129</a>)</li> <li>[syntax-errors]
+  Detect duplicate attributes in <code>match</code> class patterns (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17186">#17186</a>)</li> <li>[syntax-errors]
+  Detect invalid syntax in annotations (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17101">#17101</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[syntax-errors] Fix multiple assignment error for class fields in
+  <code>match</code> patterns (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17184">#17184</a>)</li> <li>Don't skip
+  visiting non-tuple slice in <code>typing.Annotated</code> subscripts (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17201">#17201</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/Daverball"><code>@​Daverball</code></a></li> <li><a
+  href="https://github.com/Gankra"><code>@​Gankra</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> <li><a
+  href="https://github.com/dcreager"><code>@​dcreager</code></a></li> <li><a
+  href="https://github.com/dylwil3"><code>@​dylwil3</code></a></li> <li><a
+  href="https://github.com/maxmynter"><code>@​maxmynter</code></a></li> <li><a
+  href="https://github.com/ntBre"><code>@​ntBre</code></a></li> <li><a
+  href="https://github.com/sharkdp"><code>@​sharkdp</code></a></li> </ul> <h2>Install ruff
+  0.11.4</h2> <h3>Install prebuilt binaries via shell script</h3> <pre lang="sh"><code>curl --proto
+  '=https' --tlsv1.2 -LsSf
+  https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-installer.sh | sh </code></pre>
+  <h3>Install prebuilt binaries via powershell script</h3> <pre lang="sh"><code>powershell
+  -ExecutionPolicy Bypass -c &quot;irm
+  https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-installer.ps1 | iex&quot;
+  </code></pre> <h2>Download ruff 0.11.4</h2> <table> <thead> <tr> <th>File</th> <th>Platform</th>
+  <th>Checksum</th> </tr> </thead> <tbody> <tr> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-aarch64-apple-darwin.tar.gz">ruff-aarch64-apple-darwin.tar.gz</a></td>
+  <td>Apple Silicon macOS</td> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-aarch64-apple-darwin.tar.gz.sha256">checksum</a></td>
+  </tr> <tr> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-x86_64-apple-darwin.tar.gz">ruff-x86_64-apple-darwin.tar.gz</a></td>
+  <td>Intel macOS</td> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-x86_64-apple-darwin.tar.gz.sha256">checksum</a></td>
+  </tr> <tr> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-aarch64-pc-windows-msvc.zip">ruff-aarch64-pc-windows-msvc.zip</a></td>
+  <td>ARM64 Windows</td> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-aarch64-pc-windows-msvc.zip.sha256">checksum</a></td>
+  </tr> <tr> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-i686-pc-windows-msvc.zip">ruff-i686-pc-windows-msvc.zip</a></td>
+  <td>x86 Windows</td> <td><a
+  href="https://github.com/astral-sh/ruff/releases/download/0.11.4/ruff-i686-pc-windows-msvc.zip.sha256">checksum</a></td>
+  </tr> </tbody> </table> <!-- raw HTML omitted --> </blockquote> <p>... (truncated)</p> </details>
+  <details> <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's changelog</a>.</em></p>
+  <blockquote> <h2>0.11.4</h2> <h3>Preview features</h3> <ul> <li>[<code>ruff</code>] Implement
+  <code>invalid-rule-code</code> as <code>RUF102</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17138">#17138</a>)</li> <li>[syntax-errors]
+  Detect duplicate keys in <code>match</code> mapping patterns (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17129">#17129</a>)</li> <li>[syntax-errors]
+  Detect duplicate attributes in <code>match</code> class patterns (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17186">#17186</a>)</li> <li>[syntax-errors]
+  Detect invalid syntax in annotations (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17101">#17101</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[syntax-errors] Fix multiple assignment error for class fields in
+  <code>match</code> patterns (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17184">#17184</a>)</li> <li>Don't skip
+  visiting non-tuple slice in <code>typing.Annotated</code> subscripts (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17201">#17201</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/95d6ed40cc096f09f62b5f01d392f83646ad84c3"><code>95d6ed4</code></a>
+  Bump 0.11.4 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17212">#17212</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/acc5662e8bc59de624f1037591844a8844e13792"><code>acc5662</code></a>
+  [syntax-errors] Allow <code>yield</code> in base classes and annotations (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17206">#17206</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/33a56f198b3653312f9adb4bc8be41aedce52fbc"><code>33a56f1</code></a>
+  Don't skip visiting non-tuple slice in <code>typing.Annotated</code> subscripts (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17201">#17201</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/5cee34674472b976998ee79683f08dcd2fde090a"><code>5cee346</code></a>
+  [red-knot] mypy_primer: do not specify Python version (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17200">#17200</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/ffa824e0376a2d54cc6aae8845d610b34c10c0a6"><code>ffa824e</code></a>
+  [red-knot] Add <code>Type.definition</code> method (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17153">#17153</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/98b95c9c38a36cfee572b072e07c634cf7b762f4"><code>98b95c9</code></a>
+  Implement <code>Invalid rule provided</code> as rule RUF102 with <code>--fix</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17138">#17138</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/a4ba10ff0ae89d331422d50c87c0ac0691ee0161"><code>a4ba10f</code></a>
+  [red-knot] Add basic on-hover to playground and LSP (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17057">#17057</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/bf0306887abadfff1f3c857846baf0b6320b5572"><code>bf03068</code></a>
+  [red-knot] don't remove negations when simplifying constrained typevars (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17189">#17189</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/4f924bb97524c217d743d9244e76651e1d7cafc7"><code>4f924bb</code></a>
+  [minor] Fix extra semicolon for clippy (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17188">#17188</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/c2b2e42ad3f83617a75565fb5e4a6bb1b129212c"><code>c2b2e42</code></a>
+  [syntax-errors] Invalid syntax in annotations (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17101">#17101</a>)</li> <li>Additional
+  commits viewable in <a href="https://github.com/astral-sh/ruff/compare/0.11.3...0.11.4">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.3&new-version=0.11.4)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump tenacity from 9.0.0 to 9.1.2
+  ([#594](https://github.com/Twingate/kubernetes-operator/pull/594),
+  [`c8fa1a1`](https://github.com/Twingate/kubernetes-operator/commit/c8fa1a1239a8e819ee3971b7917270b223d1f328))
+
+Bumps [tenacity](https://github.com/jd/tenacity) from 9.0.0 to 9.1.2. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/jd/tenacity/releases">tenacity's
+  releases</a>.</em></p> <blockquote> <h2>9.1.2</h2> <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/jd/tenacity/compare/9.1.1...9.1.2">https://github.com/jd/tenacity/compare/9.1.1...9.1.2</a></p>
+  <h2>9.1.1</h2> <h2>What's Changed</h2> <ul> <li>Test with Python 3.13 by <a
+  href="https://github.com/edgarrmondragon"><code>@​edgarrmondragon</code></a> in <a
+  href="https://redirect.github.com/jd/tenacity/pull/480">jd/tenacity#480</a></li> <li>ci: remove
+  Python 3.8 support by <a href="https://github.com/jd"><code>@​jd</code></a> in <a
+  href="https://redirect.github.com/jd/tenacity/pull/515">jd/tenacity#515</a></li> <li>fix: return
+  &quot;Self&quot; from &quot;BaseRetrying.copy&quot; by <a
+  href="https://github.com/ThirVondukr"><code>@​ThirVondukr</code></a> in <a
+  href="https://redirect.github.com/jd/tenacity/pull/518">jd/tenacity#518</a></li> <li>ci: upload on
+  PyPI using trusted publishing by <a href="https://github.com/jd"><code>@​jd</code></a> in <a
+  href="https://redirect.github.com/jd/tenacity/pull/520">jd/tenacity#520</a></li> <li>Add
+  re.Pattern to allowed match types by <a
+  href="https://github.com/robertschweizer"><code>@​robertschweizer</code></a> in <a
+  href="https://redirect.github.com/jd/tenacity/pull/497">jd/tenacity#497</a></li> </ul> <h2>New
+  Contributors</h2> <ul> <li><a href="https://github.com/Young-Lord"><code>@​Young-Lord</code></a>
+  made their first contribution in <a
+  href="https://redirect.github.com/jd/tenacity/pull/491">jd/tenacity#491</a></li> <li><a
+  href="https://github.com/edgarrmondragon"><code>@​edgarrmondragon</code></a> made their first
+  contribution in <a
+  href="https://redirect.github.com/jd/tenacity/pull/480">jd/tenacity#480</a></li> <li><a
+  href="https://github.com/ThirVondukr"><code>@​ThirVondukr</code></a> made their first contribution
+  in <a href="https://redirect.github.com/jd/tenacity/pull/518">jd/tenacity#518</a></li> <li><a
+  href="https://github.com/robertschweizer"><code>@​robertschweizer</code></a> made their first
+  contribution in <a
+  href="https://redirect.github.com/jd/tenacity/pull/497">jd/tenacity#497</a></li> </ul>
+  <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/jd/tenacity/compare/9.0.0...9.1.0">https://github.com/jd/tenacity/compare/9.0.0...9.1.0</a></p>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/jd/tenacity/commit/62787c34bb052d28d814bc07e5c3caed22cd73a2"><code>62787c3</code></a>
+  ci: fix build</li> <li><a
+  href="https://github.com/jd/tenacity/commit/2b173a1039009773dbf5d377f95cc8aabe83bf58"><code>2b173a1</code></a>
+  ci: fix typo</li> <li><a
+  href="https://github.com/jd/tenacity/commit/a44271f3d7d917d81e432ce7f85d448b437b4e41"><code>a44271f</code></a>
+  fix: Add re.Pattern to allowed match types (<a
+
+href="https://redirect.github.com/jd/tenacity/issues/497">#497</a>)</li> <li><a
+  href="https://github.com/jd/tenacity/commit/b4dfa3fe88707f42561d11dea4bca06c45fb5523"><code>b4dfa3f</code></a>
+  chore(deps): bump actions/setup-python in the github-actions group (<a
+  href="https://redirect.github.com/jd/tenacity/issues/522">#522</a>)</li> <li><a
+  href="https://github.com/jd/tenacity/commit/f9a879c531ff4be938309aae6c69f46fc5b732d8"><code>f9a879c</code></a>
+  ci: upload on PyPI using trusted publishing (<a
+
+href="https://redirect.github.com/jd/tenacity/issues/520">#520</a>)</li> <li><a
+  href="https://github.com/jd/tenacity/commit/bfbf17314612b8546a650c4b56d6c6438e6857df"><code>bfbf173</code></a>
+  fix: return &quot;Self&quot; from &quot;BaseRetrying.copy&quot; (<a
+
+href="https://redirect.github.com/jd/tenacity/issues/518">#518</a>)</li> <li><a
+  href="https://github.com/jd/tenacity/commit/212c47c05fec89c3aca8c4fec0b426c9f33036e8"><code>212c47c</code></a>
+  ci: update ubuntu image (<a
+
+href="https://redirect.github.com/jd/tenacity/issues/516">#516</a>)</li> <li><a
+  href="https://github.com/jd/tenacity/commit/3e2c18175944c1896a1065809db15378d545cdce"><code>3e2c181</code></a>
+  ci: remove Python 3.8 support (<a
+
+href="https://redirect.github.com/jd/tenacity/issues/515">#515</a>)</li> <li><a
+  href="https://github.com/jd/tenacity/commit/320335902409ed2e09f21cb83431de7ee7a0c2a6"><code>3203359</code></a>
+  Test with Python 3.13 (<a href="https://redirect.github.com/jd/tenacity/issues/480">#480</a>)</li>
+  <li><a
+  href="https://github.com/jd/tenacity/commit/72db2740cab8248d2d9b7b9a0716cb1ea9867051"><code>72db274</code></a>
+  chore(deps): bump actions/setup-python in the github-actions group (<a
+  href="https://redirect.github.com/jd/tenacity/issues/513">#513</a>)</li> <li>Additional commits
+  viewable in <a href="https://github.com/jd/tenacity/compare/9.0.0...9.1.2">compare view</a></li>
+  </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=tenacity&package-manager=pip&previous-version=9.0.0&new-version=9.1.2)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump types-pyyaml from 6.0.12.20250326 to 6.0.12.20250402
+  ([#595](https://github.com/Twingate/kubernetes-operator/pull/595),
+  [`bd8582e`](https://github.com/Twingate/kubernetes-operator/commit/bd8582e04c1b0080d1fb400f7185d5cbb7f5c8d5))
+
+Bumps [types-pyyaml](https://github.com/typeshed-internal/stub_uploader) from 6.0.12.20250326 to
+  6.0.12.20250402. <details> <summary>Commits</summary> <ul> <li>See full diff in <a
+  href="https://github.com/typeshed-internal/stub_uploader/commits">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=types-pyyaml&package-manager=pip&previous-version=6.0.12.20250326&new-version=6.0.12.20250402)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump types-requests from 2.32.0.20250306 to 2.32.0.20250328
+  ([#590](https://github.com/Twingate/kubernetes-operator/pull/590),
+  [`ee88a8d`](https://github.com/Twingate/kubernetes-operator/commit/ee88a8d487ddba56fa2fd9f4d95842ce6f71503a))
+
+Bumps [types-requests](https://github.com/python/typeshed) from 2.32.0.20250306 to 2.32.0.20250328.
+  <details> <summary>Commits</summary> <ul> <li>See full diff in <a
+  href="https://github.com/python/typeshed/commits">compare view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=types-requests&package-manager=pip&previous-version=2.32.0.20250306&new-version=2.32.0.20250328)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Remove redundant integration test marker
+  ([#603](https://github.com/Twingate/kubernetes-operator/pull/603),
+  [`bce6996`](https://github.com/Twingate/kubernetes-operator/commit/bce69966972c23cd0ea3bb1c4c02b03e45079c74))
+
+## Changes - Remove `integration` test marker on `TestConnectorCRD`
+
+### Features
+
+- Improve logs for better debugging experience
+  ([#592](https://github.com/Twingate/kubernetes-operator/pull/592),
+  [`c6ec9e2`](https://github.com/Twingate/kubernetes-operator/commit/c6ec9e2d42fe03023a48d6e6cdc6cac041aeab7f))
+
+## Changes
+
+- Propogate `logger` from handler down to the rest of the stack - Add `handler` to all logs so we
+  can filter for logs of a specific handler
+
+
 ## v0.18.0 (2025-03-26)
 
 ### Bug Fixes

@@ -266,10 +266,14 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": [
-                    {"key": key, "value": value}
-                    for key, value in k8s_metadata.labels.items()
-                ],
+                "tags": (
+                    [
+                        {"key": key, "value": value}
+                        for key, value in k8s_metadata.labels.items()
+                    ]
+                    if resource.sync_labels
+                    else []
+                ),
             },
         )
 
@@ -291,10 +295,14 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": [
-                    {"key": key, "value": value}
-                    for key, value in k8s_metadata.labels.items()
-                ],
+                "tags": (
+                    [
+                        {"key": key, "value": value}
+                        for key, value in k8s_metadata.labels.items()
+                    ]
+                    if resource.sync_labels
+                    else []
+                ),
             },
         )
         return Resource(**result["entity"])

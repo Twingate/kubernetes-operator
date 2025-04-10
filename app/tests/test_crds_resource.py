@@ -1,6 +1,6 @@
 import pytest
 
-from app.crds import Label, TwingateResourceCRD
+from app.crds import TwingateResourceCRD
 
 
 @pytest.fixture
@@ -177,11 +177,3 @@ def test_resourceprotocol_ports_validation():
                 },
             },
         )
-
-
-def test_resource_tag_create_tags():
-    tags = Label.create_labels(k8s_metadata_labels={"env": "prod"})
-    assert tags == [Label(key="env", value="prod")]
-
-    tags = Label.create_labels(k8s_metadata_labels={})
-    assert tags == []

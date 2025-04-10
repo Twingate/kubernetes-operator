@@ -3,20 +3,20 @@ from datetime import timedelta
 import kopf
 
 from app.api import TwingateAPIClient
-from app.crds import Label, ResourceSpec
+from app.crds import K8sMetadata, ResourceSpec
 from app.handlers.base import fail, success
 
 
 @kopf.on.create("twingateresource")
-def twingate_resource_create(body, spec, labels, memo, logger, patch, **kwargs):
-    logger.info("Got a create request: %s", spec)
+def twingate_resource_create(body, meta, spec, memo, logger, patch, **kwargs):
+    logger.info("Got a create request: %s. Metadata", spec, meta)
+    k8s_metadata = K8sMetadata(**meta)
     resource = ResourceSpec(**spec)
-    labels = Label.create_labels(labels)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
     # Support importing existing resources - if `id` already exist we assume it's already created
     if resource.id:
-        resource = client.resource_update(resource, labels)
+        resource = client.resource_update(resource, k8s_metadata)
         kopf.info(body, reason="Success", message=f"Imported {resource.id}")
         return success(
             twingate_id=resource.id,
@@ -25,7 +25,7 @@ def twingate_resource_create(body, spec, labels, memo, logger, patch, **kwargs):
             message="Resource id already present - assuming an import of an existing resource.",
         )
 
-    resource = client.resource_create(resource, labels)
+    resource = client.resource_create(resource, k8s_metadata)
     patch.spec["id"] = resource.id
     kopf.info(body, reason="Success", message=f"Created on Twingate as {resource.id}")
     return success(
@@ -36,17 +36,17 @@ def twingate_resource_create(body, spec, labels, memo, logger, patch, **kwargs):
 
 
 @kopf.on.update("twingateresource")
-def twingate_resource_update(spec, labels, diff, status, memo, logger, **kwargs):
+def twingate_resource_update(meta, spec, diff, status, memo, logger, **kwargs):
     logger.info(
-        "Got TwingateResource update request: %s. Labels: %s. Diff: %s. Status: %s.",
+        "Got TwingateResource update request: %s. Metadata: %s. Diff: %s. Status: %s.",
         spec,
-        labels,
+        meta,
         diff,
         status,
     )
 
+    k8s_metadata = K8sMetadata(**meta)
     crd = ResourceSpec(**spec)
-    labels = Label.create_labels(labels)
     if not crd.id:
         return fail(error="Resource ID is missing in the spec")
 
@@ -56,7 +56,7 @@ def twingate_resource_update(spec, labels, diff, status, memo, logger, **kwargs)
 
     logger.info("Updating resource %s", crd.id)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-    resource = client.resource_update(crd, labels)
+    resource = client.resource_update(crd, k8s_metadata)
     logger.info("Got resource %s", resource)
     return success(
         twingate_id=resource.id,
@@ -80,24 +80,25 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
 @kopf.timer(
     "twingateresource", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
 )
-def twingate_resource_sync(spec, labels, status, memo, logger, patch, **kwargs):
+def twingate_resource_sync(meta, spec, status, memo, logger, patch, **kwargs):
+    k8s_metadata = K8sMetadata(**meta)
     crd = ResourceSpec(**spec)
-    labels = Label.create_labels(labels)
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         if resource := client.get_resource(resource_id):
             logger.info("Got resource %s", resource)
             if not (
-                resource.is_matching_spec(crd) and resource.is_matching_labels(labels)
+                resource.is_matching_spec(crd)
+                and resource.is_matching_labels(k8s_metadata.labels)
             ):
                 logger.info("Resource %s is out of date, updating...", resource_id)
-                client.resource_update(crd, labels)
+                client.resource_update(crd, k8s_metadata)
         else:
             # Resource was deleted, recreate it
             logger.info("Resource %s was deleted, recreating...", resource_id)
             crd_without_id = crd.model_copy(update={"id": None})
-            resource = client.resource_create(crd_without_id, labels)
+            resource = client.resource_create(crd_without_id, k8s_metadata)
             patch.spec["id"] = resource.id
             return success(
                 twingate_id=resource.id,

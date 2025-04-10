@@ -8,7 +8,7 @@ from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
-from app.crds import Label, ProtocolPolicy, ResourceSpec
+from app.crds import K8sMetadata, ProtocolPolicy, ResourceSpec
 
 
 class ResourceAddress(BaseModel):
@@ -138,8 +138,7 @@ class Resource(BaseModel):
             == crd.security_policy_id
         )
 
-    def is_matching_labels(self, labels: list[Label]) -> bool:
-        crd_labels = {label.key: label.value for label in labels}
+    def is_matching_labels(self, crd_labels: dict[str, str]) -> bool:
         self_labels = {tag.key: tag.value for tag in self.tags}
 
         return crd_labels == self_labels
@@ -253,7 +252,7 @@ class TwingateResourceAPIs:
             return None
 
     def resource_create(
-        self: TwingateClientProtocol, resource: ResourceSpec, labels: list[Label]
+        self: TwingateClientProtocol, resource: ResourceSpec, k8s_metadata: K8sMetadata
     ) -> Resource:
         result = self.execute_mutation(
             "resourceCreate",
@@ -267,14 +266,17 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": [label.model_dump() for label in labels],
+                "tags": [
+                    {"key": key, "value": value}
+                    for key, value in k8s_metadata.labels.items()
+                ],
             },
         )
 
         return Resource(**result["entity"])
 
     def resource_update(
-        self: TwingateClientProtocol, resource: ResourceSpec, labels: list[Label]
+        self: TwingateClientProtocol, resource: ResourceSpec, k8s_metadata: K8sMetadata
     ) -> Resource | None:
         result = self.execute_mutation(
             "resourceUpdate",
@@ -289,7 +291,10 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": [label.model_dump() for label in labels],
+                "tags": [
+                    {"key": key, "value": value}
+                    for key, value in k8s_metadata.labels.items()
+                ],
             },
         )
         return Resource(**result["entity"])

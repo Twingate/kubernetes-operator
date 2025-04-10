@@ -5,7 +5,7 @@ from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import Resource
-from app.crds import Label, ResourceSpec
+from app.crds import K8sMetadata, ResourceSpec
 
 
 @pytest.fixture
@@ -167,7 +167,12 @@ class TestTwingateResourceAPIs:
     ):
         resource = resource_factory()
         crd = resource.to_spec(id=None)
-        labels = Label.create_labels(resource.to_metadata_labels())
+        k8s_metadata = K8sMetadata(
+            name="my-resource",
+            namespace="default",
+            uid="ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            labels=resource.to_metadata_labels(),
+        )
         success_response = json.dumps(
             {
                 "data": {
@@ -190,7 +195,7 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        result = api_client.resource_create(crd, labels)
+        result = api_client.resource_create(crd, k8s_metadata)
         assert result == resource
 
     def test_resource_create_failure(
@@ -198,7 +203,12 @@ class TestTwingateResourceAPIs:
     ):
         resource = resource_factory()
         crd = resource.to_spec(id=None)
-        labels = Label.create_labels(resource.to_metadata_labels())
+        k8s_metadata = K8sMetadata(
+            name="my-resource",
+            namespace="default",
+            uid="ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            labels=resource.to_metadata_labels(),
+        )
         success_response = json.dumps(
             {"data": {"resourceCreate": {"ok": False, "error": "some error"}}}
         )
@@ -217,14 +227,19 @@ class TestTwingateResourceAPIs:
         with pytest.raises(
             GraphQLMutationError, match="resourceCreate mutation failed."
         ):
-            api_client.resource_create(crd, labels)
+            api_client.resource_create(crd, k8s_metadata)
 
     def test_resource_update(
         self, test_url, api_client, resource_factory, mocked_responses
     ):
         resource = resource_factory()
         crd = resource.to_spec()
-        labels = Label.create_labels(resource.to_metadata_labels())
+        k8s_metadata = K8sMetadata(
+            name="my-resource",
+            namespace="default",
+            uid="ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            labels=resource.to_metadata_labels(),
+        )
         success_response = json.dumps(
             {
                 "data": {
@@ -246,7 +261,7 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        result = api_client.resource_update(crd, labels)
+        result = api_client.resource_update(crd, k8s_metadata)
         assert result == resource
 
     def test_resource_delete(self, test_url, api_client, mocked_responses):

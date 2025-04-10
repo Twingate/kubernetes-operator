@@ -2,7 +2,7 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum
-from typing import Any, Self
+from typing import Any
 
 import kubernetes.client
 import pendulum
@@ -35,6 +35,7 @@ class K8sMetadata(BaseModel):
     uid: str
     name: str
     namespace: str
+    labels: dict[str, str] = {}
 
     @property
     def owner_reference_object(self) -> dict:
@@ -110,19 +111,6 @@ class ResourceProtocols(BaseModel):
     allow_icmp: bool | None = True
     tcp: ResourceProtocol = Field(default_factory=ResourceProtocol)
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
-
-
-class Label(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel
-    )
-
-    key: str
-    value: str
-
-    @classmethod
-    def create_labels(cls, k8s_metadata_labels: dict[str, str]) -> list[Self]:
-        return [cls(key=key, value=value) for key, value in k8s_metadata_labels.items()]
 
 
 class ResourceSpec(BaseModel):

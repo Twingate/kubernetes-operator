@@ -5,7 +5,7 @@ from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import Resource
-from app.crds import ResourceSpec
+from app.crds import Label, ResourceSpec
 
 
 @pytest.fixture
@@ -167,6 +167,7 @@ class TestTwingateResourceAPIs:
     ):
         resource = resource_factory()
         crd = resource.to_spec(id=None)
+        labels = Label.create_labels(resource.to_metadata_labels())
         success_response = json.dumps(
             {
                 "data": {
@@ -189,7 +190,7 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        result = api_client.resource_create(crd)
+        result = api_client.resource_create(crd, labels)
         assert result == resource
 
     def test_resource_create_failure(
@@ -197,6 +198,7 @@ class TestTwingateResourceAPIs:
     ):
         resource = resource_factory()
         crd = resource.to_spec(id=None)
+        labels = Label.create_labels(resource.to_metadata_labels())
         success_response = json.dumps(
             {"data": {"resourceCreate": {"ok": False, "error": "some error"}}}
         )
@@ -215,13 +217,14 @@ class TestTwingateResourceAPIs:
         with pytest.raises(
             GraphQLMutationError, match="resourceCreate mutation failed."
         ):
-            api_client.resource_create(crd)
+            api_client.resource_create(crd, labels)
 
     def test_resource_update(
         self, test_url, api_client, resource_factory, mocked_responses
     ):
         resource = resource_factory()
         crd = resource.to_spec()
+        labels = Label.create_labels(resource.to_metadata_labels())
         success_response = json.dumps(
             {
                 "data": {
@@ -243,7 +246,7 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        result = api_client.resource_update(crd)
+        result = api_client.resource_update(crd, labels)
         assert result == resource
 
     def test_resource_delete(self, test_url, api_client, mocked_responses):

@@ -180,8 +180,8 @@ def test_resourceprotocol_ports_validation():
 
 
 def test_resource_tag_create_tags():
-    tags = Label.create_labels(metadata_labels={"env": "prod"})
+    tags = Label.create_labels(k8s_metadata_labels={"env": "prod"})
     assert tags == [Label(key="env", value="prod")]
 
-    tags = Label.create_labels(metadata_labels={})
+    tags = Label.create_labels(k8s_metadata_labels={})
     assert tags == []

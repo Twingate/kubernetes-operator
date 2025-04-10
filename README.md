@@ -25,7 +25,7 @@ Trust Network.
 - Twingate account setup with a `Remote Network` for the Kubernetes cluster and
  connectors deployed (see [this Helm chart](https://github.com/Twingate/helm-charts)
  if required)
-- `Read/Write` API token - this can be generated in the Twingate Admin Console
+- Twingate API token with `Read/Write/Provision` permissions - this can be generated in the Twingate Admin Console
 
 ## Installation
 

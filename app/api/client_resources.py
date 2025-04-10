@@ -8,7 +8,7 @@ from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
-from app.crds import ProtocolPolicy, ResourceSpec
+from app.crds import Label, ProtocolPolicy, ResourceSpec
 
 
 class ResourceAddress(BaseModel):
@@ -54,7 +54,7 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
-class ResourceTag(BaseModel):
+class Tag(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
@@ -79,7 +79,7 @@ class Resource(BaseModel):
         alias="securityPolicy", default=None
     )
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
-    tags: list[ResourceTag]
+    tags: list[Tag]
 
     @staticmethod
     def get_graphql_fragment():
@@ -125,8 +125,6 @@ class Resource(BaseModel):
     def is_matching_spec(self, crd: ResourceSpec) -> bool:
         self_protocols = self.protocols.model_dump() if self.protocols else None
         crd_protocols = crd.protocols.model_dump() if crd.protocols else None
-        self_tags = {tag.key: tag.value for tag in self.tags}
-        crd_tags = {tag.key: tag.value for tag in crd.tags}
 
         return (
             self.name == crd.name
@@ -138,8 +136,13 @@ class Resource(BaseModel):
             and self.remote_network.id == crd.remote_network_id
             and (self.security_policy and self.security_policy.id)
             == crd.security_policy_id
-            and self_tags == crd_tags
         )
+
+    def is_matching_labels(self, labels: list[Label]) -> bool:
+        crd_labels = {label.key: label.value for label in labels}
+        self_labels = {tag.key: tag.value for tag in self.tags}
+
+        return crd_labels == self_labels
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data = self.model_dump(
@@ -250,7 +253,7 @@ class TwingateResourceAPIs:
             return None
 
     def resource_create(
-        self: TwingateClientProtocol, resource: ResourceSpec
+        self: TwingateClientProtocol, resource: ResourceSpec, labels: list[Label]
     ) -> Resource:
         result = self.execute_mutation(
             "resourceCreate",
@@ -264,14 +267,14 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": [tag.model_dump() for tag in resource.tags],
+                "tags": [label.model_dump() for label in labels],
             },
         )
 
         return Resource(**result["entity"])
 
     def resource_update(
-        self: TwingateClientProtocol, resource: ResourceSpec
+        self: TwingateClientProtocol, resource: ResourceSpec, labels: list[Label]
     ) -> Resource | None:
         result = self.execute_mutation(
             "resourceUpdate",
@@ -286,7 +289,7 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": [tag.model_dump() for tag in resource.tags],
+                "tags": [label.model_dump() for label in labels],
             },
         )
         return Resource(**result["entity"])

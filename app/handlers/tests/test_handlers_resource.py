@@ -2,7 +2,7 @@ from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
-from app.crds import ResourceSpec, ResourceTag
+from app.crds import Label, ResourceSpec
 from app.handlers.handlers_resource import (
     twingate_resource_create,
     twingate_resource_delete,
@@ -23,9 +23,10 @@ class TestResourceCreateHandler:
     def test_create(self, resource_factory, kopf_info_mock, mock_api_client):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
-        labels = resource.to_metadata_labels()
+        k8s_metadata_labels = {"env": "dev"}
 
         spec = resource_spec.model_dump(by_alias=True)
+        labels = [Label(key="env", value="dev")]
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
@@ -37,7 +38,7 @@ class TestResourceCreateHandler:
         result = twingate_resource_create(
             body="",
             spec=spec,
-            labels=labels,
+            labels=k8s_metadata_labels,
             memo=memo_mock,
             logger=logger_mock,
             patch=patch_mock,
@@ -51,7 +52,7 @@ class TestResourceCreateHandler:
         }
 
         mock_api_client.resource_update.assert_not_called()
-        mock_api_client.resource_create.assert_called_once_with(resource_spec)
+        mock_api_client.resource_create.assert_called_once_with(resource_spec, labels)
         kopf_info_mock.assert_called_once_with(
             "", reason="Success", message=f"Created on Twingate as {resource.id}"
         )
@@ -62,9 +63,10 @@ class TestResourceCreateHandler:
     ):
         resource = resource_factory(id="pre-existing-id")
         resource_spec = resource.to_spec()
-        labels = resource.to_metadata_labels()
+        k8s_metadata_labels = {"env": "dev"}
 
         spec = resource_spec.model_dump(by_alias=True)
+        labels = [Label(key="env", value="dev")]
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
@@ -76,7 +78,7 @@ class TestResourceCreateHandler:
         result = twingate_resource_create(
             body="",
             spec=spec,
-            labels=labels,
+            labels=k8s_metadata_labels,
             memo=memo_mock,
             logger=logger_mock,
             patch=patch_mock,
@@ -90,7 +92,7 @@ class TestResourceCreateHandler:
             "ts": ANY,
         }
 
-        mock_api_client.resource_update.assert_called_once_with(resource_spec)
+        mock_api_client.resource_update.assert_called_once_with(resource_spec, labels)
         mock_api_client.resource_create.assert_not_called()
 
         kopf_info_mock.assert_called_once_with(
@@ -106,7 +108,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
-        labels = {"env": "prod"}
+        k8s_metadata_labels = {"env": "dev"}
         diff = (("change", ("name"), "My K8S Resource", "new-name"),)
         status = {
             "twingate_resource_create": {
@@ -117,8 +119,8 @@ class TestResourceUpdateHandler:
         }
         new_resource_spec = ResourceSpec(
             **new,
-            tags=[ResourceTag(key="env", value="prod")],
         )
+        labels = [Label(key="env", value="dev")]
 
         mock_api_client.resource_update.return_value = MagicMock(id=rid)
 
@@ -128,7 +130,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            spec, labels, diff, status, memo_mock, logger_mock
+            spec, k8s_metadata_labels, diff, status, memo_mock, logger_mock
         )
         assert result == {
             "success": True,
@@ -138,7 +140,9 @@ class TestResourceUpdateHandler:
             "ts": ANY,
         }
 
-        mock_api_client.resource_update.assert_called_once_with(new_resource_spec)
+        mock_api_client.resource_update.assert_called_once_with(
+            new_resource_spec, labels
+        )
         assert patch_mock.spec == {}
 
     def test_update_called_without_id_fails(self, mock_api_client):
@@ -146,7 +150,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
-        labels = {}
+        k8s_metadata_labels = {}
         diff = []
         status = {}
 
@@ -156,7 +160,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            spec, labels, diff, status, memo_mock, logger_mock
+            spec, k8s_metadata_labels, diff, status, memo_mock, logger_mock
         )
         assert result == {
             "success": False,
@@ -174,7 +178,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
-        labels = {}
+        k8s_metadata_labels = {}
         diff = (("add", ("id",), None, rid),)
         status = {
             "twingate_resource_create": {
@@ -192,7 +196,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            spec, labels, diff, status, memo_mock, logger_mock
+            spec, k8s_metadata_labels, diff, status, memo_mock, logger_mock
         )
         assert result == {
             "success": True,
@@ -252,7 +256,7 @@ class TestResourceSyncTimer:
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
-        labels = resource.to_metadata_labels()
+        k8s_metadata_labels = resource.to_metadata_labels()
         status = {
             "twingate_resource_create": {
                 "twingate_id": resource.id,
@@ -261,14 +265,16 @@ class TestResourceSyncTimer:
             }
         }
 
+        mock_api_client.get_resource.return_value = resource
+
         logger_mock = MagicMock()
         memo_mock = MagicMock()
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
         twingate_resource_sync(
-            resource_spec.model_dump(by_alias=True, exclude=["id"]),
-            labels,
+            resource_spec.model_dump(by_alias=True),
+            k8s_metadata_labels,
             status,
             memo_mock,
             logger_mock,
@@ -278,12 +284,12 @@ class TestResourceSyncTimer:
         mock_api_client.resource_update.assert_not_called()
         assert patch_mock.spec == {}
 
-    def test_sync_when_resource_exists_and_requires_update(
+    def test_sync_when_resource_exists_and_spec_requires_update(
         self, resource_factory, mock_api_client
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
-        labels = resource.to_metadata_labels()
+        k8s_metadata_labels = resource.to_metadata_labels()
         status = {
             "twingate_resource_create": {
                 "twingate_id": resource.id,
@@ -293,6 +299,7 @@ class TestResourceSyncTimer:
         }
 
         mutated_resource = resource.model_copy(update={"name": "new-name"})
+        labels = Label.create_labels(k8s_metadata_labels)
 
         mock_api_client.get_resource.return_value = mutated_resource
 
@@ -303,14 +310,49 @@ class TestResourceSyncTimer:
 
         twingate_resource_sync(
             resource_spec.model_dump(by_alias=True),
-            labels,
+            k8s_metadata_labels,
             status,
             memo_mock,
             logger_mock,
             patch_mock,
         )
 
-        mock_api_client.resource_update.assert_called_once_with(resource_spec)
+        mock_api_client.resource_update.assert_called_once_with(resource_spec, labels)
+        assert patch_mock.spec == {}
+
+    def test_sync_when_resource_exists_and_label_requires_update(
+        self, resource_factory, mock_api_client
+    ):
+        resource = resource_factory()
+        resource_spec = resource.to_spec()
+        updated_k8s_metadata_labels = resource.to_metadata_labels() | {
+            "team": "engineering"
+        }
+        status = {
+            "twingate_resource_create": {
+                "twingate_id": resource.id,
+                "created_at": resource.created_at.isoformat(),
+                "updated_at": resource.updated_at.isoformat(),
+            }
+        }
+        labels = Label.create_labels(updated_k8s_metadata_labels)
+
+        mock_api_client.get_resource.return_value = resource
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        twingate_resource_sync(
+            resource_spec.model_dump(by_alias=True),
+            updated_k8s_metadata_labels,
+            status,
+            memo_mock,
+            logger_mock,
+            patch_mock,
+        )
+
+        mock_api_client.resource_update.assert_called_once_with(resource_spec, labels)
         assert patch_mock.spec == {}
 
     def test_sync_when_resource_doesnt_exists_recreate_it(
@@ -318,8 +360,9 @@ class TestResourceSyncTimer:
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
-        labels = resource.to_metadata_labels()
+        k8s_metadata_labels = resource.to_metadata_labels()
         resource_spec_without_id = resource_spec.model_copy(update={"id": None})
+        labels = Label.create_labels(k8s_metadata_labels)
         status = {
             "twingate_resource_create": {
                 "twingate_id": resource.id,
@@ -338,7 +381,7 @@ class TestResourceSyncTimer:
 
         twingate_resource_sync(
             resource_spec.model_dump(by_alias=True),
-            labels,
+            k8s_metadata_labels,
             status,
             memo_mock,
             logger_mock,
@@ -347,7 +390,7 @@ class TestResourceSyncTimer:
 
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
-            resource_spec_without_id
+            resource_spec_without_id, labels
         )
 
         assert patch_mock.spec == {"id": resource.id}

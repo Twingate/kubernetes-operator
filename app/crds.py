@@ -112,7 +112,7 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
-class ResourceTag(BaseModel):
+class Label(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
@@ -121,8 +121,8 @@ class ResourceTag(BaseModel):
     value: str
 
     @classmethod
-    def create_tags(cls, metadata_labels: dict[str, str]) -> list[Self]:
-        return [cls(key=key, value=value) for key, value in metadata_labels.items()]
+    def create_labels(cls, k8s_metadata_labels: dict[str, str]) -> list[Self]:
+        return [cls(key=key, value=value) for key, value in k8s_metadata_labels.items()]
 
 
 class ResourceSpec(BaseModel):
@@ -141,7 +141,6 @@ class ResourceSpec(BaseModel):
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
-    tags: list[ResourceTag] = Field(default_factory=list, exclude=True)
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address

@@ -8,4 +8,3 @@ spec:
   name: My K8S Resource
   address: my.default.cluster.local
   alias: mine.local
-#  syncLabels: true

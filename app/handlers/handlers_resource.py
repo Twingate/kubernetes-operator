@@ -9,7 +9,7 @@ from app.handlers.base import fail, success
 
 @kopf.on.create("twingateresource")
 def twingate_resource_create(body, meta, spec, memo, logger, patch, **kwargs):
-    logger.info("Got a create request: %s. Metadata", spec, meta)
+    logger.info("Got a create request: %s. Metadata: %s", spec, meta)
     k8s_metadata = K8sMetadata(**meta)
     resource = ResourceSpec(**spec)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)

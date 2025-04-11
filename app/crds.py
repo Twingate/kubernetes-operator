@@ -35,6 +35,7 @@ class K8sMetadata(BaseModel):
     uid: str
     name: str
     namespace: str
+    labels: dict[str, str] = {}
 
     @property
     def owner_reference_object(self) -> dict:

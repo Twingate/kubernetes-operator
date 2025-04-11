@@ -1,7 +1,7 @@
 import datetime
 from base64 import b64encode
 
-import factory
+import factory.fuzzy
 
 from app.api.client_connectors import Connector
 from app.api.client_resources import (
@@ -9,6 +9,7 @@ from app.api.client_resources import (
     ResourceAddress,
     ResourceRemoteNetwork,
     ResourceSecurityPolicy,
+    Tag,
 )
 
 
@@ -43,6 +44,14 @@ class ResourceSecurityPolicyFactory(factory.Factory):
     id = factory.Sequence(lambda n: to_global_id("SecurityPolicy", str(n)))
 
 
+class TagFactory(factory.Factory):
+    class Meta:
+        model = Tag
+
+    key = factory.fuzzy.FuzzyText(length=3)
+    value = factory.fuzzy.FuzzyText(length=3)
+
+
 class ResourceFactory(factory.Factory):
     class Meta:
         model = Resource
@@ -59,6 +68,7 @@ class ResourceFactory(factory.Factory):
     is_browser_shortcut_enabled = False
     remote_network = factory.SubFactory(ResourceRemoteNetworkFactory)
     security_policy = factory.SubFactory(ResourceSecurityPolicyFactory)
+    tags = factory.List([factory.SubFactory(TagFactory)])
 
 
 class ConnectorFactory(factory.Factory):

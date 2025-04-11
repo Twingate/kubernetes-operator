@@ -19,6 +19,9 @@ def test_service_flows(run_kopf, random_name_generator):
         kind: Service
         metadata:
           name: {service_name}
+          labels:
+            env: dev
+            team: engineering
           annotations:
             resource.twingate.com: "true"
             resource.twingate.com/name: "My Service"
@@ -47,7 +50,10 @@ def test_service_flows(run_kopf, random_name_generator):
         tgr = kubectl_wait_object_handler_success(
             "twingateresource", resource_name, "twingate_resource_create"
         )
-
+        assert tgr["metadata"]["labels"] == {
+            "env": "dev",
+            "team": "engineering",
+        }
         assert tgr["spec"] == {
             "address": f"{service_name}.default.svc.cluster.local",
             "alias": "myapp.internal",

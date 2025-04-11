@@ -2,6 +2,8 @@ apiVersion: twingate.com/v1beta
 kind: TwingateResource
 metadata:
   name: my-twingate-resource
+  labels:
+    env: dev
 spec:
   name: My K8S Resource
   address: my.default.cluster.local

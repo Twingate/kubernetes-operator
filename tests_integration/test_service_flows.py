@@ -66,6 +66,7 @@ def test_service_flows(run_kopf, random_name_generator):
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
+            "syncLabels": True,
         }
 
         # Test patching the service updates the resource
@@ -102,6 +103,7 @@ def test_service_flows(run_kopf, random_name_generator):
                 },
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
+            "syncLabels": True,
         }
 
         # Test patching the service annotations updates the resource
@@ -177,6 +179,7 @@ def test_service_flows_annotation_removed(run_kopf, random_name_generator):
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
+            "syncLabels": True,
         }
 
         # Test removing the resource annotation
@@ -250,6 +253,7 @@ def test_service_flows_annotation_changed_to_false(run_kopf, random_name_generat
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
+            "syncLabels": True,
         }
 
         # Test changing resource annotation to false
@@ -325,6 +329,7 @@ def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
                 "tcp": {"policy": "RESTRICTED", "ports": [{"end": 80, "start": 80}]},
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
+            "syncLabels": True,
         }
 
         # Test patching the service updates the resource
@@ -361,6 +366,7 @@ def test_service_flows_with_old_annotations(run_kopf, random_name_generator):
                 },
                 "udp": {"policy": "RESTRICTED", "ports": [{"end": 22, "start": 22}]},
             },
+            "syncLabels": True,
         }
 
         # Test deleting the service deletes the resource

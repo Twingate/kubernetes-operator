@@ -28,6 +28,7 @@ def test_service_flows(run_kopf, random_name_generator):
             resource.twingate.com/alias: "myapp.internal"
             resource.twingate.com/isVisible: "true"
             resource.twingate.com/isBrowserShortcutEnabled: "false"
+            resource.twingate.com/syncLabels: "true"
         spec:
           selector:
             app.kubernetes.io/name: MyApp

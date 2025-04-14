@@ -8,7 +8,7 @@ from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
-from app.crds import ProtocolPolicy, ResourceSpec
+from app.crds import K8sMetadata, ProtocolPolicy, ResourceSpec
 
 
 class ResourceAddress(BaseModel):
@@ -54,6 +54,15 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
+class Tag(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    key: str
+    value: str
+
+
 class Resource(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -70,6 +79,7 @@ class Resource(BaseModel):
         alias="securityPolicy", default=None
     )
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
+    tags: list[Tag]
 
     @staticmethod
     def get_graphql_fragment():
@@ -105,6 +115,10 @@ class Resource(BaseModel):
                         }
                     }
                 }
+                tags {
+                    key
+                    value
+                }
             }
         """
 
@@ -124,6 +138,9 @@ class Resource(BaseModel):
             == crd.security_policy_id
         )
 
+    def is_matching_labels(self, crd_labels: dict[str, str]) -> bool:
+        return crd_labels == self.to_metadata_labels()
+
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data = self.model_dump(
             include={
@@ -133,6 +150,7 @@ class Resource(BaseModel):
                 "is_visible",
                 "is_browser_shortcut_enabled",
                 "protocols",
+                "tags",
             }
         )
         data["address"] = self.address.value
@@ -142,6 +160,9 @@ class Resource(BaseModel):
         )
         data.update(overrides)
         return ResourceSpec(**data)
+
+    def to_metadata_labels(self) -> dict[str, str]:
+        return {tag.key: tag.value for tag in self.tags}
 
 
 # fmt:off
@@ -158,7 +179,7 @@ QUERY_GET_RESOURCE = gql(_RESOURCE_FRAGMENT + """
 )
 
 MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation CreateResource($name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID) {
+    mutation CreateResource($name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID, $tags: [TagInput!]) {
       resourceCreate(
         name: $name
         address: $address
@@ -168,6 +189,7 @@ MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
         protocols: $protocols
         remoteNetworkId: $remoteNetworkId
         securityPolicyId: $securityPolicyId
+        tags: $tags
       ) {
         ok
         error
@@ -180,7 +202,7 @@ MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
 )
 
 MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation UpdateResource($id: ID!, $name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID) {
+    mutation UpdateResource($id: ID!, $name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID, $tags: [TagInput!]) {
         resourceUpdate(
             id: $id,
             name: $name
@@ -191,6 +213,7 @@ MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
             protocols: $protocols
             remoteNetworkId: $remoteNetworkId
             securityPolicyId: $securityPolicyId
+            tags: $tags
         ) {
             ok
             error
@@ -227,7 +250,7 @@ class TwingateResourceAPIs:
             return None
 
     def resource_create(
-        self: TwingateClientProtocol, resource: ResourceSpec
+        self: TwingateClientProtocol, resource: ResourceSpec, k8s_metadata: K8sMetadata
     ) -> Resource:
         result = self.execute_mutation(
             "resourceCreate",
@@ -241,13 +264,17 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
+                "tags": [
+                    {"key": key, "value": value}
+                    for key, value in k8s_metadata.labels.items()
+                ],
             },
         )
 
         return Resource(**result["entity"])
 
     def resource_update(
-        self: TwingateClientProtocol, resource: ResourceSpec
+        self: TwingateClientProtocol, resource: ResourceSpec, k8s_metadata: K8sMetadata
     ) -> Resource | None:
         result = self.execute_mutation(
             "resourceUpdate",
@@ -262,6 +289,10 @@ class TwingateResourceAPIs:
                 "remoteNetworkId": resource.remote_network_id,
                 "securityPolicyId": resource.security_policy_id,
                 "protocols": resource.protocols.model_dump(by_alias=True),
+                "tags": [
+                    {"key": key, "value": value}
+                    for key, value in k8s_metadata.labels.items()
+                ],
             },
         )
         return Resource(**result["entity"])

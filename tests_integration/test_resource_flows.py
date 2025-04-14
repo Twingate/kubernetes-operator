@@ -58,7 +58,7 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
 
         # Update the name
         kubectl_apply(OBJ_UPDATED)
-        updated_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_update/spec")
+        updated_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_update")
         assert updated_object["spec"]["name"] == "My K8S Resource Renamed"
 
         kubectl_delete_wait("tgr", unique_resource_name)

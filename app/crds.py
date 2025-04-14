@@ -288,7 +288,7 @@ class ConnectorImagePolicy(BaseModel):
             raise ValueError("Invalid schedule value") from vex
 
     def get_next_date_iso8601(self) -> str:
-        next_date = croniter(self.schedule, pendulum.now("UTC")).get_next(datetime)
+        next_date = croniter(self.schedule, pendulum.now("UTC"), datetime).get_next()
         return pendulum.instance(next_date).to_iso8601_string()
 
     def get_image(self) -> str:

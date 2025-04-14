@@ -190,7 +190,53 @@ class TestTwingateResourceAPIs:
             body=success_response,
             match=[
                 responses.matchers.json_params_matcher(
-                    {"variables": crd.model_dump(exclude=["id"], by_alias=True)},
+                    {
+                        "variables": crd.model_dump(
+                            exclude=["id", "sync_labels"], by_alias=True
+                        )
+                        | {"tags": [tag.model_dump() for tag in resource.tags]}
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+        result = api_client.resource_create(crd, k8s_metadata)
+        assert result == resource
+
+    def test_resource_create_with_disable_sync_labels(
+        self, test_url, api_client, resource_factory, mocked_responses
+    ):
+        resource = resource_factory(tags=[])
+        crd = resource.to_spec(id=None, sync_labels=False)
+        k8s_metadata = K8sMetadata(
+            name="my-resource",
+            namespace="default",
+            uid="ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+            labels=resource.to_metadata_labels(),
+        )
+        success_response = json.dumps(
+            {
+                "data": {
+                    "resourceCreate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": crd.model_dump(
+                            exclude=["id", "sync_labels"], by_alias=True
+                        )
+                        | {"tags": []}
+                    },
                     strict_match=False,
                 )
             ],

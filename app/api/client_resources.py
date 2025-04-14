@@ -139,9 +139,7 @@ class Resource(BaseModel):
         )
 
     def is_matching_labels(self, crd_labels: dict[str, str]) -> bool:
-        self_labels = {tag.key: tag.value for tag in self.tags}
-
-        return crd_labels == self_labels
+        return crd_labels == self.to_metadata_labels()
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data = self.model_dump(

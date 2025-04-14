@@ -1,4 +1,5 @@
 TWINGATE_API_KEY=<Twingate API Key>
-TWINGATE_NETWORK=<Twingate network name. ex: my-network if at https://my-network.twingate.com>
+TWINGATE_NETWORK=<Twingate network ID. For example, network ID is autoco if your URL is autoco.twingate.com>
 TWINGATE_HOST=<for debugging purposes. twingate.com by default>
 TWINGATE_REMOTE_NETWORK_ID=<Global ID for the remote network this operator is running at>
+TWINGATE_TEST_PRINCIPAL_ID=<Global ID of the principal (Group or Service Account) used to run integration tests locally>

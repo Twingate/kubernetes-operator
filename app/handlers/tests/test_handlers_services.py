@@ -65,9 +65,7 @@ class TestServiceToTwingateResource:
         expected = {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResource",
-            "metadata": {
-                "name": "my-service-resource",
-            },
+            "metadata": {"name": "my-service-resource", "labels": {"env": "dev"}},
             "spec": {
                 "name": "my-service-resource",
                 "address": "my-service.default.svc.cluster.local",

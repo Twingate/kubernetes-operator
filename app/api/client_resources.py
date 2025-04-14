@@ -283,7 +283,7 @@ class TwingateResourceAPIs:
                 "id": resource.id,
                 "name": resource.name,
                 "address": resource.address,
-                "alias": resource.alias,
+                "alias": "" if resource.alias is None else resource.alias,
                 "isVisible": resource.is_visible,
                 "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
                 "remoteNetworkId": resource.remote_network_id,

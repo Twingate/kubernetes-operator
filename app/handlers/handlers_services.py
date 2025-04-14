@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import kopf
 import kubernetes
+from kopf import Body
 
 from app.handlers import success
 from app.utils import to_bool
@@ -30,7 +31,7 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
 ]
 
 
-def service_to_twingate_resource(service_body, namespace) -> dict:
+def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
     service_name = service_body.meta.name
@@ -41,6 +42,7 @@ def service_to_twingate_resource(service_body, namespace) -> dict:
         "kind": "TwingateResource",
         "metadata": {
             "name": resource_object_name,
+            "labels": dict(meta.labels),
         },
         "spec": {
             "name": resource_object_name,
@@ -92,13 +94,20 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
         namespace, resource_object_name, kapi
     ):
         logger.info("TwingateResource already exists: %s", existing_resource_object)
-        kapi.patch_namespaced_custom_object(
+        existing_resource_object["spec"] = {
+            "id": existing_resource_object["spec"]["id"],
+            **resource_subobject["spec"],
+        }
+        existing_resource_object["metadata"]["labels"] = resource_subobject["metadata"][
+            "labels"
+        ]
+        kapi.replace_namespaced_custom_object(
             "twingate.com",
             "v1beta",
             namespace,
             "twingateresources",
             resource_object_name,
-            resource_subobject,
+            existing_resource_object,
         )
     else:
         api_response = kapi.create_namespaced_custom_object(

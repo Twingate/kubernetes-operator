@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import kopf
 import kubernetes
+from kopf import Body
 
 from app.handlers import success
 from app.utils import to_bool
@@ -27,10 +28,11 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("isBrowserShortcutEnabled", to_bool),
     ("securityPolicyId", str),
     ("isVisible", to_bool),
+    ("syncLabels", to_bool),
 ]
 
 
-def service_to_twingate_resource(service_body, namespace) -> dict:
+def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
     service_name = service_body.meta.name

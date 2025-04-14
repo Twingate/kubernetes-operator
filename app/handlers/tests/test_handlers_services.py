@@ -90,6 +90,7 @@ class TestServiceToTwingateResource:
             "isBrowserShortcutEnabled": True,
             "securityPolicyId": "12345",
             "isVisible": True,
+            "syncLabels": True,
         }
 
         if annotation_name_converter is not None:

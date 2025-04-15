@@ -18,6 +18,11 @@ twingateOperator: {}
 #  remoteNetworkName: "<remote network name>"
 #  logFormat: "plain|full|json"
 #  logVerbosity: "quiet|verbose|debug"
+#  defaultResourceTags:
+#    - name: "tag1"
+#      value: "value1"
+#    - name: "tag2"
+#      value: "value2"
 
 
 image:

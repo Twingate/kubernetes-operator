@@ -62,6 +62,8 @@ spec:
             value: {{ required "Network name required" .Values.twingateOperator.network }}
           - name: TWINGATE_HOST
             value: {{ .Values.twingateOperator.host | default "twingate.com" }}
+          - name: TWINGATE_DEFAULT_RESOURCE_TAGS
+            value: {{ .Values.twingateOperator.defaultResourceTags | default list | toJson | quote }}
           {{- if .Values.twingateOperator.existingRemoteNetworkIdSecret }}
           - name: TWINGATE_REMOTE_NETWORK_ID
             valueFrom:

@@ -28,6 +28,7 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("isBrowserShortcutEnabled", to_bool),
     ("securityPolicyId", str),
     ("isVisible", to_bool),
+    ("syncLabels", to_bool),
 ]
 
 

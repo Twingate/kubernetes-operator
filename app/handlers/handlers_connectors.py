@@ -74,11 +74,39 @@ def get_connector_pod(
                     "seccompProfile": {
                         "type": "RuntimeDefault"
                     },
-               },
+                    "readOnlyRootFilesystem": True,
+                },
+                "readinessProbe": {
+                    "exec": {
+                        "command": [
+                            "/connectorctl",
+                            "health",
+                        ]
+                    },
+                    "initialDelaySeconds": 5,
+                    "periodSeconds": 5,
+                },
+                "livenessProbe": {
+                    "exec": {
+                        "command": [
+                            "/connectorctl",
+                            "health",
+                        ]
+                    },
+                    "initialDelaySeconds": 5,
+                    "periodSeconds": 5,
+                },
+                "volumeMounts": [
+                    {
+                        "name": "twingate-socket",
+                        "mountPath": "/var/run/twingate",
+                    }
+                ],
                 **container_extra,
             },
             *spec.sidecar_containers,
         ],
+        "volumes": [{"name": "twingate-socket", "emptyDir": {}}],
         **spec.pod_extra,
     }
     pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}

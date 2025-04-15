@@ -129,6 +129,7 @@ class ResourceSpec(BaseModel):
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
+    sync_labels: bool = True
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address

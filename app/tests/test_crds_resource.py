@@ -1,6 +1,6 @@
 import pytest
 
-from app.crds import TwingateResourceCRD
+from app.crds import ResourceSpec, TwingateResourceCRD
 
 
 @pytest.fixture
@@ -177,3 +177,34 @@ def test_resourceprotocol_ports_validation():
                 },
             },
         )
+
+
+def test_resource_spec_to_graphql_arguments(sample_resource_object):
+    resource_spec = ResourceSpec(**sample_resource_object["spec"], sync_labels=True)
+    graphql_arguments = resource_spec.to_graphql_arguments(labels={"key": "value"})
+
+    assert graphql_arguments == {
+        "id": "UmVzb3VyY2U6OTM3Mzkw",
+        "name": "My K8S Resource",
+        "address": "my.default.cluster.local",
+        "alias": None,
+        "remote_network_id": "UmVtb3RlTmV0d29yazoxMjMK",
+        "security_policy_id": None,
+        "is_visible": True,
+        "is_browser_shortcut_enabled": True,
+        "protocols": {
+            "allowIcmp": True,
+            "tcp": {"policy": "RESTRICTED", "ports": [{"start": 80, "end": 80}]},
+            "udp": {"policy": "ALLOW_ALL", "ports": []},
+        },
+        "tags": [{"key": "key", "value": "value"}],
+    }
+
+
+def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
+    sample_resource_object,
+):
+    resource_spec = ResourceSpec(**sample_resource_object["spec"], sync_labels=False)
+    graphql_arguments = resource_spec.to_graphql_arguments(labels={"key": "value"})
+
+    assert graphql_arguments["tags"] == []

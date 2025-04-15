@@ -37,6 +37,7 @@ def mock_memo_with_default_resource_tags():
             network="slug",
             host="test.com",
             api_key="test_key",
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
             default_resource_tags=[
                 {
                     "name": "default",

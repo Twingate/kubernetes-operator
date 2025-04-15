@@ -212,7 +212,7 @@ class TestTwingateResourceAPIs:
             name="my-resource",
             namespace="default",
             uid="ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
-            labels=resource.to_metadata_labels(),
+            labels={"env": "dev"},
         )
         success_response = json.dumps(
             {
@@ -329,7 +329,7 @@ class TestTwingateResourceAPIs:
             name="my-resource",
             namespace="default",
             uid="ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
-            labels=resource.to_metadata_labels(),
+            labels={"env": "dev"},
         )
         success_response = json.dumps(
             {

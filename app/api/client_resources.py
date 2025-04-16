@@ -259,9 +259,8 @@ class TwingateResourceAPIs:
         is_browser_shortcut_enabled: bool,
         remote_network_id: str,
         security_policy_id: str | None,
-        protocols: ResourceProtocols,
+        protocols: dict[str, Any],
         tags: list[dict[str, str]],
-        **_kwargs,
     ) -> Resource:
         result = self.execute_mutation(
             "resourceCreate",
@@ -293,7 +292,6 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         protocols: ResourceProtocols,
         tags: list[dict[str, str]],
-        **_kwargs,
     ) -> Resource | None:
         result = self.execute_mutation(
             "resourceUpdate",

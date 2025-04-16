@@ -181,10 +181,11 @@ def test_resourceprotocol_ports_validation():
 
 def test_resource_spec_to_graphql_arguments(sample_resource_object):
     resource_spec = ResourceSpec(**sample_resource_object["spec"], sync_labels=True)
-    graphql_arguments = resource_spec.to_graphql_arguments(labels={"key": "value"})
+    graphql_arguments = resource_spec.to_graphql_arguments(
+        labels={"key": "value"}, exclude={"id"}
+    )
 
     assert graphql_arguments == {
-        "id": "UmVzb3VyY2U6OTM3Mzkw",
         "name": "My K8S Resource",
         "address": "my.default.cluster.local",
         "alias": None,

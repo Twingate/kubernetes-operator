@@ -195,7 +195,9 @@ class TestTwingateResourceAPIs:
             ],
         )
         result = api_client.resource_create(
-            **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+            **crd.to_graphql_arguments(
+                labels=resource.to_metadata_labels(), exclude={"id"}
+            )
         )
         assert result == resource
 
@@ -227,7 +229,9 @@ class TestTwingateResourceAPIs:
             GraphQLMutationError, match="resourceCreate mutation failed."
         ):
             api_client.resource_create(
-                **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), exclude={"id"}
+                )
             )
 
     def test_resource_update(

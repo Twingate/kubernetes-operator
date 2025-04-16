@@ -13,13 +13,10 @@ def twingate_resource_create(body, labels, spec, memo, logger, patch, **kwargs):
     resource = ResourceSpec(**spec)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     labels = {
-        **{
-            tag["name"]: tag["value"]
-            for tag in memo.twingate_settings.default_resource_tags
-        },
-        **dict(labels),
-    }
-    graphql_arguments = resource.to_graphql_arguments(labels=labels)
+        tag["name"]: tag["value"]
+        for tag in memo.twingate_settings.default_resource_tags_dict
+    } | dict(labels)
+    graphql_arguments = resource.to_graphql_arguments(labels=labels, exclude={"id"})
 
     # Support importing existing resources - if `id` already exist we assume it's already created
     if resource.id:
@@ -53,12 +50,9 @@ def twingate_resource_update(labels, spec, diff, status, memo, logger, **kwargs)
     )
     crd = ResourceSpec(**spec)
     labels = {
-        **{
-            tag["name"]: tag["value"]
-            for tag in memo.twingate_settings.default_resource_tags
-        },
-        **dict(labels),
-    }
+        tag["name"]: tag["value"]
+        for tag in memo.twingate_settings.default_resource_tags_dict
+    } | dict(labels)
     graphql_arguments = crd.to_graphql_arguments(labels=labels)
 
     if not crd.id:
@@ -97,12 +91,9 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
 def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
     crd = ResourceSpec(**spec)
     labels = {
-        **{
-            tag["name"]: tag["value"]
-            for tag in memo.twingate_settings.default_resource_tags
-        },
-        **dict(labels),
-    }
+        tag["name"]: tag["value"]
+        for tag in memo.twingate_settings.default_resource_tags_dict
+    } | dict(labels)
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
@@ -116,9 +107,8 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
         else:
             # Resource was deleted, recreate it
             logger.info("Resource %s was deleted, recreating...", resource_id)
-            crd_without_id = crd.model_copy(update={"id": None})
             resource = client.resource_create(
-                **crd_without_id.to_graphql_arguments(labels=labels)
+                **crd.to_graphql_arguments(labels=labels, exclude={"id"})
             )
             patch.spec["id"] = resource.id
             return success(

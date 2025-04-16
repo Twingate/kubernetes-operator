@@ -31,18 +31,23 @@ def mock_k8s_metadata():
 
 
 @pytest.fixture
-def mock_memo_with_default_resource_tags():
+def mock_memo_with_default_resource_tags_dict():
     return MagicMock(
         twingate_settings=TwingateOperatorSettings(
             network="slug",
             host="test.com",
             api_key="test_key",
             remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
-            default_resource_tags=[
+            default_resource_tags_dict=[
                 {
-                    "name": "default",
-                    "value": "value",
-                }
+                    "name": "managed_by",
+                    "value": "test",
+                },
+                # This tag is overwritten by the k8s metadata labels above
+                {
+                    "name": "env",
+                    "value": "test",
+                },
             ],
         )
     )
@@ -55,7 +60,7 @@ class TestResourceCreateHandler:
         kopf_info_mock,
         mock_api_client,
         mock_k8s_metadata,
-        mock_memo_with_default_resource_tags,
+        mock_memo_with_default_resource_tags_dict,
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
@@ -71,7 +76,7 @@ class TestResourceCreateHandler:
             body="",
             labels=mock_k8s_metadata["labels"],
             spec=spec,
-            memo=mock_memo_with_default_resource_tags,
+            memo=mock_memo_with_default_resource_tags_dict,
             logger=logger_mock,
             patch=patch_mock,
         )
@@ -86,7 +91,8 @@ class TestResourceCreateHandler:
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
             **resource_spec.to_graphql_arguments(
-                labels={"default": "value", **mock_k8s_metadata["labels"]}
+                labels={"managed_by": "test"} | mock_k8s_metadata["labels"],
+                exclude={"id"},
             )
         )
         kopf_info_mock.assert_called_once_with(
@@ -127,7 +133,9 @@ class TestResourceCreateHandler:
         }
 
         mock_api_client.resource_update.assert_called_once_with(
-            **resource_spec.to_graphql_arguments(labels=mock_k8s_metadata["labels"])
+            **resource_spec.to_graphql_arguments(
+                labels=mock_k8s_metadata["labels"], exclude={"id"}
+            )
         )
         mock_api_client.resource_create.assert_not_called()
 
@@ -138,7 +146,10 @@ class TestResourceCreateHandler:
 
 class TestResourceUpdateHandler:
     def test_update(
-        self, mock_api_client, mock_k8s_metadata, mock_memo_with_default_resource_tags
+        self,
+        mock_api_client,
+        mock_k8s_metadata,
+        mock_memo_with_default_resource_tags_dict,
     ):
         rid = "UmVzb3VyY2U6OTMxODE3"
         spec = new = {
@@ -167,7 +178,7 @@ class TestResourceUpdateHandler:
             spec,
             diff,
             status,
-            mock_memo_with_default_resource_tags,
+            mock_memo_with_default_resource_tags_dict,
             logger_mock,
         )
         assert result == {
@@ -180,7 +191,7 @@ class TestResourceUpdateHandler:
 
         mock_api_client.resource_update.assert_called_once_with(
             **new_resource_spec.to_graphql_arguments(
-                labels={"default": "value", **mock_k8s_metadata["labels"]}
+                labels={"managed_by": "test"} | mock_k8s_metadata["labels"]
             )
         )
         assert patch_mock.spec == {}
@@ -325,11 +336,7 @@ class TestResourceSyncTimer:
         assert patch_mock.spec == {}
 
     def test_sync_when_resource_exists_and_spec_requires_update(
-        self,
-        resource_factory,
-        mock_api_client,
-        mock_k8s_metadata,
-        mock_memo_with_default_resource_tags,
+        self, resource_factory, mock_api_client, mock_k8s_metadata
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -348,44 +355,7 @@ class TestResourceSyncTimer:
 
         logger_mock = MagicMock()
         patch_mock = MagicMock()
-        patch_mock.spec = {}
-
-        twingate_resource_sync(
-            mock_k8s_metadata["labels"],
-            resource_spec.model_dump(by_alias=True),
-            status,
-            mock_memo_with_default_resource_tags,
-            logger_mock,
-            patch_mock,
-        )
-
-        mock_api_client.resource_update.assert_called_once_with(
-            **resource_spec.to_graphql_arguments(
-                labels={"default": "value", **mock_k8s_metadata["labels"]},
-            )
-        )
-        assert patch_mock.spec == {}
-
-    def test_sync_when_resource_exists_and_label_requires_update(
-        self, resource_factory, mock_api_client, mock_k8s_metadata
-    ):
-        resource = resource_factory()
-        resource_spec = resource.to_spec()
-        mock_k8s_metadata["labels"] = resource.to_metadata_labels() | {
-            "team": "dev",
-        }
-        status = {
-            "twingate_resource_create": {
-                "twingate_id": resource.id,
-                "created_at": resource.created_at.isoformat(),
-                "updated_at": resource.updated_at.isoformat(),
-            }
-        }
-
-        mock_api_client.get_resource.return_value = resource
-        logger_mock = MagicMock()
         memo_mock = MagicMock()
-        patch_mock = MagicMock()
         patch_mock.spec = {}
 
         twingate_resource_sync(
@@ -402,16 +372,54 @@ class TestResourceSyncTimer:
         )
         assert patch_mock.spec == {}
 
+    def test_sync_when_resource_exists_and_label_requires_update(
+        self,
+        resource_factory,
+        mock_api_client,
+        mock_k8s_metadata,
+        mock_memo_with_default_resource_tags_dict,
+    ):
+        resource = resource_factory()
+        resource_spec = resource.to_spec()
+        mock_k8s_metadata["labels"] = {"env": "dev"} | resource.to_metadata_labels()
+        status = {
+            "twingate_resource_create": {
+                "twingate_id": resource.id,
+                "created_at": resource.created_at.isoformat(),
+                "updated_at": resource.updated_at.isoformat(),
+            }
+        }
+
+        mock_api_client.get_resource.return_value = resource
+        logger_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        twingate_resource_sync(
+            mock_k8s_metadata["labels"],
+            resource_spec.model_dump(by_alias=True),
+            status,
+            mock_memo_with_default_resource_tags_dict,
+            logger_mock,
+            patch_mock,
+        )
+
+        mock_api_client.resource_update.assert_called_once_with(
+            **resource_spec.to_graphql_arguments(
+                labels={"managed_by": "test"} | mock_k8s_metadata["labels"]
+            )
+        )
+        assert patch_mock.spec == {}
+
     def test_sync_when_resource_doesnt_exists_recreate_it(
         self,
         resource_factory,
         mock_api_client,
         mock_k8s_metadata,
-        mock_memo_with_default_resource_tags,
+        mock_memo_with_default_resource_tags_dict,
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
-        resource_spec_without_id = resource_spec.model_copy(update={"id": None})
         status = {
             "twingate_resource_create": {
                 "twingate_id": resource.id,
@@ -431,15 +439,16 @@ class TestResourceSyncTimer:
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
-            mock_memo_with_default_resource_tags,
+            mock_memo_with_default_resource_tags_dict,
             logger_mock,
             patch_mock,
         )
 
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
-            **resource_spec_without_id.to_graphql_arguments(
-                labels={"default": "value", **mock_k8s_metadata["labels"]}
+            **resource_spec.to_graphql_arguments(
+                labels={"managed_by": "test"} | mock_k8s_metadata["labels"],
+                exclude={"id"},
             )
         )
 

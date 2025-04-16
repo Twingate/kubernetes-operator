@@ -19,10 +19,8 @@ twingateOperator: {}
 #  logFormat: "plain|full|json"
 #  logVerbosity: "quiet|verbose|debug"
 #  defaultResourceTags:
-#    - name: "tag1"
-#      value: "value1"
-#    - name: "tag2"
-#      value: "value2"
+#    tag1: value_for_tag1
+#    tag2: value_for_tag2
 
 
 image:

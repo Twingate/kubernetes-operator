@@ -147,6 +147,20 @@
                         "verbose",
                         "debug"
                     ]
+                },
+                "defaultResourceTags": {
+                    "type": "array",
+                    "description": "Array with default resource tags to be added to the operator",
+                    "default": [],
+                    "items": {
+                        "type": "object",
+                        "required": ["name", "value"],
+                        "properties": {
+                          "name": { "type": "string" },
+                          "value": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                    }
                 }
             },
             "examples": [{

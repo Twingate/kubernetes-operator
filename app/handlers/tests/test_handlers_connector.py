@@ -6,12 +6,18 @@ import pendulum
 import pytest
 
 from app.api.client_connectors import ConnectorTokens
-from app.crds import ConnectorImagePolicy, ConnectorSpec, TwingateConnectorCRD
+from app.crds import (
+    ConnectorImagePolicy,
+    ConnectorSpec,
+    K8sMetadata,
+    TwingateConnectorCRD,
+)
 from app.handlers.handlers_connectors import (
     ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
     ANNOTATION_POD_SPEC_VERSION,
     ANNOTATION_POD_SPEC_VERSION_VALUE,
+    get_connector_pod,
     k8s_read_namespaced_pod,
     twingate_connector_create,
     twingate_connector_delete,
@@ -49,7 +55,7 @@ def get_connector_and_crd(connector_factory):
         crd = TwingateConnectorCRD(
             api_version="twingate.com/v1beta",
             kind="TwingateConnector",
-            metadata=dict(
+            metadata=K8sMetadata(
                 uid="123",
                 name=connector_spec.name,
                 namespace="default",
@@ -395,3 +401,46 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         assert run.patch_mock.meta == {}
         run.k8s_client_mock.patch_namespaced_pod.assert_not_called()
         mock_get_image.assert_not_called()
+
+
+class TestGetConnectorPod:
+    @pytest.fixture
+    def mock_tenant_url(self):
+        return "https://test.twingate.com"
+
+    @pytest.fixture
+    def mock_image(self):
+        return "twingate/connector:latest"
+
+    def test_get_connector_with_extra_volume_mounts(
+        self, get_connector_and_crd, mock_tenant_url, mock_image
+    ):
+        extra_volume_mount = {
+            "name": "extra-volume-mount",
+            "mountPath": "/var/run/extra-volume",
+        }
+        _, crd = get_connector_and_crd(
+            spec_overrides={"container_extra": {"volumeMounts": [extra_volume_mount]}},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert pod.spec["containers"][0]["volumeMounts"] == [
+            {"name": "twingate-socket", "mountPath": "/var/run/twingate"},
+            extra_volume_mount,
+        ]
+
+    def test_get_connector_with_extra_volumes(
+        self, get_connector_and_crd, mock_tenant_url, mock_image
+    ):
+        extra_volume = {"name": "extra-volume", "emptyDir": {}}
+        _, crd = get_connector_and_crd(
+            spec_overrides={"pod_extra": {"volumes": [extra_volume]}},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert pod.spec["volumes"] == [
+            {"name": "twingate-socket", "emptyDir": {}},
+            extra_volume,
+        ]

@@ -39,7 +39,7 @@ class TwingateOperatorSettings(BaseSettings):
     remote_network_id: GlobalID = NULL_RN_ID
     remote_network_name: str | None = None
     host: str = "twingate.com"
-    default_resource_tags: list[dict[str, str]] = []
+    default_resource_tags: dict[str, str] = {}
     kopf_watching_server_timeout: int | None = None
     kopf_watching_client_timeout: int | None = None
     kopf_watching_connect_timeout: int | None = None

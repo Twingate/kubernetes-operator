@@ -149,17 +149,11 @@
                     ]
                 },
                 "defaultResourceTags": {
-                    "type": "array",
-                    "description": "Array with default resource tags to be added to the operator",
-                    "default": [],
-                    "items": {
-                        "type": "object",
-                        "required": ["name", "value"],
-                        "properties": {
-                          "name": { "type": "string" },
-                          "value": { "type": "string" }
-                        },
-                        "additionalProperties": false
+                    "type": "object",
+                    "description": "Map of string keys and values that will be used as tags in every TwingateResource object managed by the operator",
+                    "default": {},
+                    "additionalProperties": {
+                        "type": "string"
                     }
                 }
             },

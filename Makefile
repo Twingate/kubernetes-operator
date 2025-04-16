@@ -32,7 +32,7 @@ lock: ##@poetry Generates poetry.lock from pyproject.toml
 
 .PHONY: dev-deps
 dev-deps:
-	poetry install --sync --with dev -n
+	poetry sync --with dev -n
 
 .PHONY: check-pre-commit
 check-pre-commit:

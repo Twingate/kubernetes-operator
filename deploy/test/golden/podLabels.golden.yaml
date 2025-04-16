@@ -133,6 +133,8 @@ spec:
             value: <network slug>
           - name: TWINGATE_HOST
             value: twingate.com
+          - name: TWINGATE_DEFAULT_RESOURCE_TAGS
+            value: "[]"
           - name: TWINGATE_REMOTE_NETWORK_ID
             value: <remote network id>
         livenessProbe:

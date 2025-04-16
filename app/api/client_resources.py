@@ -8,7 +8,7 @@ from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
-from app.crds import K8sMetadata, ProtocolPolicy, ResourceSpec
+from app.crds import ProtocolPolicy, ResourceSpec
 
 
 class ResourceAddress(BaseModel):
@@ -250,57 +250,63 @@ class TwingateResourceAPIs:
             return None
 
     def resource_create(
-        self: TwingateClientProtocol, resource: ResourceSpec, k8s_metadata: K8sMetadata
+        self: TwingateClientProtocol,
+        *,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        is_browser_shortcut_enabled: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        protocols: dict[str, Any],
+        tags: list[dict[str, str]],
     ) -> Resource:
         result = self.execute_mutation(
             "resourceCreate",
             MUT_CREATE_RESOURCE,
             variable_values={
-                "name": resource.name,
-                "address": resource.address,
-                "alias": resource.alias,
-                "isVisible": resource.is_visible,
-                "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
-                "remoteNetworkId": resource.remote_network_id,
-                "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": (
-                    [
-                        {"key": key, "value": value}
-                        for key, value in k8s_metadata.labels.items()
-                    ]
-                    if resource.sync_labels
-                    else []
-                ),
+                "name": name,
+                "address": address,
+                "alias": alias,
+                "isVisible": is_visible,
+                "isBrowserShortcutEnabled": is_browser_shortcut_enabled,
+                "remoteNetworkId": remote_network_id,
+                "securityPolicyId": security_policy_id,
+                "protocols": protocols,
+                "tags": tags,
             },
         )
-
         return Resource(**result["entity"])
 
     def resource_update(
-        self: TwingateClientProtocol, resource: ResourceSpec, k8s_metadata: K8sMetadata
+        self: TwingateClientProtocol,
+        *,
+        id: str,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        is_browser_shortcut_enabled: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        protocols: ResourceProtocols,
+        tags: list[dict[str, str]],
     ) -> Resource | None:
         result = self.execute_mutation(
             "resourceUpdate",
             MUT_UPDATE_RESOURCE,
             variable_values={
-                "id": resource.id,
-                "name": resource.name,
-                "address": resource.address,
-                "alias": resource.alias,
-                "isVisible": resource.is_visible,
-                "isBrowserShortcutEnabled": resource.is_browser_shortcut_enabled,
-                "remoteNetworkId": resource.remote_network_id,
-                "securityPolicyId": resource.security_policy_id,
-                "protocols": resource.protocols.model_dump(by_alias=True),
-                "tags": (
-                    [
-                        {"key": key, "value": value}
-                        for key, value in k8s_metadata.labels.items()
-                    ]
-                    if resource.sync_labels
-                    else []
-                ),
+                "id": id,
+                "name": name,
+                "address": address,
+                "alias": alias,
+                "isVisible": is_visible,
+                "isBrowserShortcutEnabled": is_browser_shortcut_enabled,
+                "remoteNetworkId": remote_network_id,
+                "securityPolicyId": security_policy_id,
+                "protocols": protocols,
+                "tags": tags,
             },
         )
         return Resource(**result["entity"])

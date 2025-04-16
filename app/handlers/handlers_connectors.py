@@ -47,6 +47,8 @@ def get_connector_pod(
     container_extra = spec.container_extra
     extra_env = container_extra.pop("env", [])
     extra_env_from = container_extra.pop("envFrom", [])
+    extra_volumes = container_extra.pop("volumes", [])
+    extra_volume_mounts = container_extra.pop("volumeMounts", [])
 
     # fmt: off
     pod_spec = {
@@ -100,13 +102,14 @@ def get_connector_pod(
                     {
                         "name": "twingate-socket",
                         "mountPath": "/var/run/twingate",
-                    }
+                    },
+                    *extra_volume_mounts
                 ],
                 **container_extra,
             },
             *spec.sidecar_containers,
         ],
-        "volumes": [{"name": "twingate-socket", "emptyDir": {}}],
+        "volumes": [{"name": "twingate-socket", "emptyDir": {}}, *extra_volumes],
         **spec.pod_extra,
     }
     pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}

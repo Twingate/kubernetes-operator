@@ -143,6 +143,18 @@ class ResourceSpec(BaseModel):
 
         return self
 
+    def to_graphql_arguments(
+        self, *, labels: dict[str, str], exclude: set[str] | None = None
+    ) -> dict[str, Any]:
+        exclude = exclude or set()
+        return {
+            **self.model_dump(exclude=exclude | {"sync_labels"}),
+            "protocols": self.protocols.model_dump(by_alias=True),
+            "tags": [{"key": key, "value": value} for key, value in labels.items()]
+            if self.sync_labels
+            else [],
+        }
+
 
 class TwingateResourceCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")

@@ -31,6 +31,18 @@ def mock_k8s_metadata():
 
 
 @pytest.fixture
+def mock_memo():
+    return MagicMock(
+        twingate_settings=TwingateOperatorSettings(
+            network="slug",
+            host="test.com",
+            api_key="test_key",
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+        )
+    )
+
+
+@pytest.fixture
 def mock_memo_with_default_resource_tags():
     return MagicMock(
         twingate_settings=TwingateOperatorSettings(
@@ -38,17 +50,10 @@ def mock_memo_with_default_resource_tags():
             host="test.com",
             api_key="test_key",
             remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
-            default_resource_tags=[
-                {
-                    "name": "managed_by",
-                    "value": "test",
-                },
-                # This tag is overwritten by the k8s metadata labels above
-                {
-                    "name": "env",
-                    "value": "test",
-                },
-            ],
+            default_resource_tags={
+                "managed_by": "test",
+                "env": "test",
+            },
         )
     )
 
@@ -101,7 +106,12 @@ class TestResourceCreateHandler:
         assert patch_mock.spec == {"id": resource.id}
 
     def test_when_id_is_specified_update_instead_of_create(
-        self, resource_factory, kopf_info_mock, mock_api_client, mock_k8s_metadata
+        self,
+        resource_factory,
+        kopf_info_mock,
+        mock_api_client,
+        mock_k8s_metadata,
+        mock_memo,
     ):
         resource = resource_factory(id="pre-existing-id")
         resource_spec = resource.to_spec()
@@ -109,7 +119,6 @@ class TestResourceCreateHandler:
         spec = resource_spec.model_dump(by_alias=True)
 
         logger_mock = MagicMock()
-        memo_mock = MagicMock()
         patch_mock = MagicMock()
         patch_mock.spec = {}
 
@@ -119,7 +128,7 @@ class TestResourceCreateHandler:
             body="",
             labels=mock_k8s_metadata["labels"],
             spec=spec,
-            memo=memo_mock,
+            memo=mock_memo,
             logger=logger_mock,
             patch=patch_mock,
         )
@@ -303,7 +312,7 @@ class TestResourceDeleteHandler:
 
 class TestResourceSyncTimer:
     def test_sync_when_resource_exists_and_doesnt_need_update(
-        self, resource_factory, mock_api_client, mock_k8s_metadata
+        self, resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -320,14 +329,13 @@ class TestResourceSyncTimer:
 
         logger_mock = MagicMock()
         patch_mock = MagicMock()
-        memo_mock = MagicMock()
         patch_mock.spec = {}
 
         twingate_resource_sync(
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
-            memo_mock,
+            mock_memo,
             logger_mock,
             patch_mock,
         )
@@ -336,7 +344,7 @@ class TestResourceSyncTimer:
         assert patch_mock.spec == {}
 
     def test_sync_when_resource_exists_and_spec_requires_update(
-        self, resource_factory, mock_api_client, mock_k8s_metadata
+        self, resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -355,14 +363,13 @@ class TestResourceSyncTimer:
 
         logger_mock = MagicMock()
         patch_mock = MagicMock()
-        memo_mock = MagicMock()
         patch_mock.spec = {}
 
         twingate_resource_sync(
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
-            memo_mock,
+            mock_memo,
             logger_mock,
             patch_mock,
         )

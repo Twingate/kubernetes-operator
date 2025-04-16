@@ -31,14 +31,14 @@ def mock_k8s_metadata():
 
 
 @pytest.fixture
-def mock_memo_with_default_resource_tags_dict():
+def mock_memo_with_default_resource_tags():
     return MagicMock(
         twingate_settings=TwingateOperatorSettings(
             network="slug",
             host="test.com",
             api_key="test_key",
             remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
-            default_resource_tags_dict=[
+            default_resource_tags=[
                 {
                     "name": "managed_by",
                     "value": "test",
@@ -60,7 +60,7 @@ class TestResourceCreateHandler:
         kopf_info_mock,
         mock_api_client,
         mock_k8s_metadata,
-        mock_memo_with_default_resource_tags_dict,
+        mock_memo_with_default_resource_tags,
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec(id=None)
@@ -76,7 +76,7 @@ class TestResourceCreateHandler:
             body="",
             labels=mock_k8s_metadata["labels"],
             spec=spec,
-            memo=mock_memo_with_default_resource_tags_dict,
+            memo=mock_memo_with_default_resource_tags,
             logger=logger_mock,
             patch=patch_mock,
         )
@@ -149,7 +149,7 @@ class TestResourceUpdateHandler:
         self,
         mock_api_client,
         mock_k8s_metadata,
-        mock_memo_with_default_resource_tags_dict,
+        mock_memo_with_default_resource_tags,
     ):
         rid = "UmVzb3VyY2U6OTMxODE3"
         spec = new = {
@@ -178,7 +178,7 @@ class TestResourceUpdateHandler:
             spec,
             diff,
             status,
-            mock_memo_with_default_resource_tags_dict,
+            mock_memo_with_default_resource_tags,
             logger_mock,
         )
         assert result == {
@@ -377,7 +377,7 @@ class TestResourceSyncTimer:
         resource_factory,
         mock_api_client,
         mock_k8s_metadata,
-        mock_memo_with_default_resource_tags_dict,
+        mock_memo_with_default_resource_tags,
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -399,7 +399,7 @@ class TestResourceSyncTimer:
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
-            mock_memo_with_default_resource_tags_dict,
+            mock_memo_with_default_resource_tags,
             logger_mock,
             patch_mock,
         )
@@ -416,7 +416,7 @@ class TestResourceSyncTimer:
         resource_factory,
         mock_api_client,
         mock_k8s_metadata,
-        mock_memo_with_default_resource_tags_dict,
+        mock_memo_with_default_resource_tags,
     ):
         resource = resource_factory()
         resource_spec = resource.to_spec()
@@ -439,7 +439,7 @@ class TestResourceSyncTimer:
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
-            mock_memo_with_default_resource_tags_dict,
+            mock_memo_with_default_resource_tags,
             logger_mock,
             patch_mock,
         )

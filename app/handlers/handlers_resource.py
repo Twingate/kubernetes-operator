@@ -14,7 +14,7 @@ def twingate_resource_create(body, labels, spec, memo, logger, patch, **kwargs):
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     labels = {
         tag["name"]: tag["value"]
-        for tag in memo.twingate_settings.default_resource_tags_dict
+        for tag in memo.twingate_settings.default_resource_tags
     } | dict(labels)
     graphql_arguments = resource.to_graphql_arguments(labels=labels, exclude={"id"})
 
@@ -51,7 +51,7 @@ def twingate_resource_update(labels, spec, diff, status, memo, logger, **kwargs)
     crd = ResourceSpec(**spec)
     labels = {
         tag["name"]: tag["value"]
-        for tag in memo.twingate_settings.default_resource_tags_dict
+        for tag in memo.twingate_settings.default_resource_tags
     } | dict(labels)
     graphql_arguments = crd.to_graphql_arguments(labels=labels)
 
@@ -92,7 +92,7 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
     crd = ResourceSpec(**spec)
     labels = {
         tag["name"]: tag["value"]
-        for tag in memo.twingate_settings.default_resource_tags_dict
+        for tag in memo.twingate_settings.default_resource_tags
     } | dict(labels)
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)

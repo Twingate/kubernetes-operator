@@ -22,6 +22,8 @@ def example_service_body():
     kind: Service
     metadata:
       name: my-service
+      labels:
+        env: dev
       annotations:
         twingate.com/resource: "true"
         twingate.com/resource-alias: "myapp.internal"
@@ -63,9 +65,7 @@ class TestServiceToTwingateResource:
         expected = {
             "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResource",
-            "metadata": {
-                "name": "my-service-resource",
-            },
+            "metadata": {"name": "my-service-resource", "labels": {"env": "dev"}},
             "spec": {
                 "name": "my-service-resource",
                 "address": "my-service.default.svc.cluster.local",
@@ -152,10 +152,35 @@ class TestTwingateServiceCreate:
     def test_update_service_propogates_changes_to_twingate_resource(
         self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
     ):
-        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
-            "metadata": {"name": "my-service-resource"},
-            "spec": {"address": "my-service.default.svc.cluster.local"},
+        existing_resource = {
+            "metadata": {"name": "my-service-resource", "labels": {}},
+            "spec": {
+                "id": "1",
+                "name": "my-service-resource",
+                "address": "my-service.default.svc.cluster.local",
+                "protocols": {
+                    "allowIcmp": False,
+                    "tcp": {
+                        "policy": "RESTRICTED",
+                        "ports": [{"start": 80, "end": 80}, {"start": 443, "end": 443}],
+                    },
+                    "udp": {
+                        "policy": "RESTRICTED",
+                        "ports": [{"start": 22, "end": 22}],
+                    },
+                },
+            },
         }
+        updated_resource = {
+            "metadata": {**existing_resource["metadata"], "labels": {"env": "dev"}},
+            "spec": {
+                **existing_resource["spec"],
+                "alias": "myapp.internal",
+            },
+        }
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = (
+            existing_resource
+        )
 
         twingate_service_create(
             example_service_body,
@@ -165,12 +190,12 @@ class TestTwingateServiceCreate:
             MagicMock(),
         )
 
-        k8s_customobjects_client_mock.patch_namespaced_custom_object.assert_called_once_with(
+        k8s_customobjects_client_mock.replace_namespaced_custom_object.assert_called_once_with(
             "twingate.com",
             "v1beta",
             "default",
             "twingateresources",
             "my-service-resource",
-            service_to_twingate_resource(example_service_body, "default"),
+            updated_resource,
         )
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()

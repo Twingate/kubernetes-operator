@@ -1,6 +1,495 @@
 # CHANGELOG
 
 
+## v0.20.0 (2025-04-16)
+
+### Bug Fixes
+
+- `defaultresourcetags` to match labels schema
+  ([#617](https://github.com/Twingate/kubernetes-operator/pull/617),
+  [`f0fd5cc`](https://github.com/Twingate/kubernetes-operator/commit/f0fd5ccb6aaf48b9d9018a9a1f3fd5a9a02e12f7))
+
+## Changes
+
+Changed `defaultResourceTags` schema in `values.yaml` to match how labels are defined in k8s - as an
+  object rather than a list of objects. (see example:
+  https://github.com/instrumenta/kubernetes-json-schema/blob/master/v1.7.8/_definitions.json#L528)
+
+- K8s Service annotations not removed properly
+  ([#610](https://github.com/Twingate/kubernetes-operator/pull/610),
+  [`1e2b7ae`](https://github.com/Twingate/kubernetes-operator/commit/1e2b7ae7f1c6ea881d992b965e00c30dc2bb9eb1))
+
+## Related Tickets & Documents
+
+- Issue: #607
+
+## Changes - Update service handler to use k8s `replace_namespaced_custom_object` API instead of
+  `patch_namespaced_custom_object` - Update integration test to test scenario where we removing
+  annotations and labels from k8s Service
+
+---------
+
+Co-authored-by: Eran Kampf <205185+ekampf@users.noreply.github.com>
+
+### Chores
+
+- Bump danger/danger-js from 12.3.4 to 13.0.4
+  ([#616](https://github.com/Twingate/kubernetes-operator/pull/616),
+  [`216d644`](https://github.com/Twingate/kubernetes-operator/commit/216d644c732cd823001af5dc443ef5fc3d505035))
+
+Bumps [danger/danger-js](https://github.com/danger/danger-js) from 12.3.4 to 13.0.4. <details>
+  <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/danger/danger-js/releases">danger/danger-js's releases</a>.</em></p>
+  <blockquote> <h2>Release 13.0.4</h2> <hr /> <p>Fun sidenote, it's been exactly a year and we had
+  to update the node version etc</p> <p><img
+  src="https://github.com/user-attachments/assets/0aee376f-14d7-4b38-956f-a3d2aa76c83a"
+  alt="Screenshot 2025-04-16 at 08 14 22" /></p> </blockquote> </details> <details>
+  <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/danger/danger-js/blob/main/CHANGELOG.md">danger/danger-js's
+  changelog</a>.</em></p> <blockquote> <!-- raw HTML omitted --> <h2>Main</h2> <!-- raw HTML omitted
+  --> <!-- raw HTML omitted --> <h2>13.0.3</h2> <ul> <li>Lots of deploy faff, as we are forced to
+  update node in all the build processing [<a
+  href="https://github.com/orta"><code>@​orta</code></a>]</li> </ul> <h2>13.0.0</h2> <ul>
+  <li><strong>Breaking</strong> Update <code>@octokit/rest</code> from 18 to 20 to prevent
+  transitive CVEs - Fixes <a
+  href="https://redirect.github.com/danger/danger-js/issues/1479">#1479</a> [<a
+  href="https://github.com/fbartho"><code>@​fbartho</code></a>]</li> <li>Clean up dead discussion
+  link - Fixes <a href="https://redirect.github.com/danger/danger-js/issues/1467">#1467</a> [<a
+  href="https://github.com/fbartho"><code>@​fbartho</code></a>]</li> <li>Adds infra for pythons
+  pre-commit hooks</li> <li>Replace parse-git-config with ini + fs as it has a CVE out - <a
+  href="https://redirect.github.com/danger/danger-js/pull/1486">#1486</a></li> <li>Disabled Windows
+  CI as it was failing for successful builds</li> </ul> </blockquote> </details> <details>
+  <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/danger/danger-js/commit/bdccecb77e0144055fbaea9224f10cf8b1229b68"><code>bdccecb</code></a>
+  Release 13.0.4</li> <li><a
+  href="https://github.com/danger/danger-js/commit/24aa2be6177cc316d27cdd691366588779d5a906"><code>24aa2be</code></a>
+  Try not to crash release it</li> <li><a
+  href="https://github.com/danger/danger-js/commit/fe5b5fc30e3001436a83d2849d3275e0d6f15a4e"><code>fe5b5fc</code></a>
+  Release 13.0.3</li> <li><a
+  href="https://github.com/danger/danger-js/commit/b739f1dd978e64d2933b097d7d362da8b43080ee"><code>b739f1d</code></a>
+  Always include a changelog of some sort, as it seems github's API changed to ...</li> <li><a
+  href="https://github.com/danger/danger-js/commit/7fbddd4718caa63573485ee729faaf2ac9961484"><code>7fbddd4</code></a>
+  Release 13.0.2</li> <li><a
+  href="https://github.com/danger/danger-js/commit/7afd18af0ab3027f4b0b358221c2affbd6c15525"><code>7afd18a</code></a>
+  Adds get the app builds working</li> <li><a
+  href="https://github.com/danger/danger-js/commit/e9316ce812454a5e824293498f25840a1a4685b7"><code>e9316ce</code></a>
+  Release 13.0.1</li> <li><a
+  href="https://github.com/danger/danger-js/commit/b8fa1dacb5a10686fd0a05752dd14b85716ece67"><code>b8fa1da</code></a>
+  Make our docker file use node 20</li> <li><a
+  href="https://github.com/danger/danger-js/commit/1d3521e44b5f4914e0e503efa145ac03f9a5332f"><code>1d3521e</code></a>
+  Release 13.0.0</li> <li><a
+  href="https://github.com/danger/danger-js/commit/71c4695c422d724cba7a88bb38296db68b7448ce"><code>71c4695</code></a>
+  Prepare for major bump</li> <li>Additional commits viewable in <a
+  href="https://github.com/danger/danger-js/compare/12.3.4...13.0.4">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=danger/danger-js&package-manager=github_actions&previous-version=12.3.4&new-version=13.0.4)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump google-cloud-artifact-registry from 1.15.2 to 1.16.0
+  ([#611](https://github.com/Twingate/kubernetes-operator/pull/611),
+  [`6646803`](https://github.com/Twingate/kubernetes-operator/commit/66468039b764222f51a5de2b0fcc9f517326b403))
+
+Bumps [google-cloud-artifact-registry](https://github.com/googleapis/google-cloud-python) from
+  1.15.2 to 1.16.0. <details> <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/googleapis/google-cloud-python/releases">google-cloud-artifact-registry's
+  releases</a>.</em></p> <blockquote> <h2>google-cloud-artifact-registry: v1.16.0</h2> <h2><a
+  href="https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.15.2...google-cloud-artifact-registry-v1.16.0">1.16.0</a>
+  (2025-04-12)</h2> <h3>Features</h3> <ul> <li>add the GoModule and KfpArtifact resources (<a
+  href="https://github.com/googleapis/google-cloud-python/commit/33b1d93d262266a274cf0ad3b822fd61d260406d">33b1d93</a>)</li>
+  </ul> <h3>Documentation</h3> <ul> <li>remove the restriction of the maximum numbers of versions
+  that can be deleted in one BatchDeleteVersions call (<a
+  href="https://github.com/googleapis/google-cloud-python/commit/33b1d93d262266a274cf0ad3b822fd61d260406d">33b1d93</a>)</li>
+  </ul> </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/32bacdb8a94afdd50d4f2cbaa0b17fe56ed9561e"><code>32bacdb</code></a>
+  chore: release main (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13720">#13720</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/907ea2a3ff98e87b5659aa2cb67642e3ff5e436e"><code>907ea2a</code></a>
+  chore: maintain a single .gitignore file (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13746">#13746</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/5e4f8814d1750bc269aa49f8a769e9aa058b4897"><code>5e4f881</code></a>
+  chore: remove obsolete scripts (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13750">#13750</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/fb55416a3b62c3182704982c56dccf64ea9ee487"><code>fb55416</code></a>
+  chore: remove duplicate CONTRIBUTING.rst (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13749">#13749</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/e7ed43138c8c03b3a5a6bbacd3a6def12ac21f98"><code>e7ed431</code></a>
+  chore: remove duplicate CODE_OF_CONDUCT.md (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13747">#13747</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/0240d3bd7fbf60f9355a7dd9e066f37acbf194bc"><code>0240d3b</code></a>
+  chore: exclude publicca v1alpha1 (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13754">#13754</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/e9fda4e97ab7202421a604df9112b9fb14c5f352"><code>e9fda4e</code></a>
+  docs: [google-cloud-edgenetwork] fix typos in comments (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13756">#13756</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/40b98e63c2f99f8d7b6b18cc4f3bad82298d15c7"><code>40b98e6</code></a>
+  feat: [google-cloud-oracledatabase] add new AutonomousDatabase RPCs (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13752">#13752</a>)</li>
+  <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff"><code>9114e1d</code></a>
+  feat: [google-cloud-iap] Identity-aware Proxy (IAP) released a feature `Use I...</li> <li><a
+  href="https://github.com/googleapis/google-cloud-python/commit/5535afe64021ce9688dd95742af201edb402dcf0"><code>5535afe</code></a>
+  feat: expand QuotaFailure with quota error details (<a
+
+href="https://redirect.github.com/googleapis/google-cloud-python/issues/13745">#13745</a>)</li>
+  <li>Additional commits viewable in <a
+  href="https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.15.2...google-cloud-artifact-registry-v1.16.0">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=google-cloud-artifact-registry&package-manager=pip&previous-version=1.15.2&new-version=1.16.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.4 to 0.11.5 ([#608](https://github.com/Twingate/kubernetes-operator/pull/608),
+  [`bf3c26d`](https://github.com/Twingate/kubernetes-operator/commit/bf3c26df8733bbc6b4e08fa51ab1b772a784f43c))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.4 to 0.11.5. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.5</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>[<code>airflow</code>] Add missing <code>AIR302</code> attribute check (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17115">#17115</a>)</li>
+  <li>[<code>airflow</code>] Expand module path check to individual symbols (<code>AIR302</code>)
+  (<a href="https://redirect.github.com/astral-sh/ruff/pull/17278">#17278</a>)</li>
+  <li>[<code>airflow</code>] Extract <code>AIR312</code> from <code>AIR302</code> rules
+  (<code>AIR302</code>, <code>AIR312</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17152">#17152</a>)</li>
+  <li>[<code>airflow</code>] Update oudated <code>AIR301</code>, <code>AIR302</code> rules (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17123">#17123</a>)</li> <li>[syntax-errors]
+  Async comprehension in sync comprehension (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17177">#17177</a>)</li> <li>[syntax-errors]
+  Check annotations in annotated assignments (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17283">#17283</a>)</li> <li>[syntax-errors]
+  Extend annotation checks to <code>await</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17282">#17282</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[<code>flake8-pie</code>] Avoid false positive for multiple assignment with
+  <code>auto()</code> (<code>PIE796</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17274">#17274</a>)</li> </ul> <h3>Rule
+  changes</h3> <ul> <li>[<code>ruff</code>] Fix <code>RUF100</code> to detect unused file-level
+  <code>noqa</code> directives with specific codes (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17042">#17042</a>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17061">#17061</a>)</li>
+  <li>[<code>flake8-pytest-style</code>] Avoid false positive for legacy form of
+  <code>pytest.raises</code> (<code>PT011</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17231">#17231</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Fix formatting of &quot;See Style Guide&quot; link (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17272">#17272</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/BurntSushi"><code>@​BurntSushi</code></a></li> <li><a
+  href="https://github.com/Gankra"><code>@​Gankra</code></a></li> <li><a
+  href="https://github.com/InSyncWithFoo"><code>@​InSyncWithFoo</code></a></li> <li><a
+  href="https://github.com/Lee-W"><code>@​Lee-W</code></a></li> <li><a
+  href="https://github.com/MatthewMckee4"><code>@​MatthewMckee4</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/Skylion007"><code>@​Skylion007</code></a></li> <li><a
+  href="https://github.com/browniebroke"><code>@​browniebroke</code></a></li> <li><a
+  href="https://github.com/cake-monotone"><code>@​cake-monotone</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> <li><a
+  href="https://github.com/dcreager"><code>@​dcreager</code></a></li> <li><a
+  href="https://github.com/maxmynter"><code>@​maxmynter</code></a></li> <li><a
+  href="https://github.com/mishamsk"><code>@​mishamsk</code></a></li> <li><a
+  href="https://github.com/ntBre"><code>@​ntBre</code></a></li> <li><a
+  href="https://github.com/renovate"><code>@​renovate</code></a></li> <li><a
+  href="https://github.com/sharkdp"><code>@​sharkdp</code></a></li> <li><a
+  href="https://github.com/twentyone212121"><code>@​twentyone212121</code></a></li> </ul>
+  <h2>Install ruff 0.11.5</h2> <h3>Install prebuilt binaries via shell script</h3> <!-- raw HTML
+  omitted --> </blockquote> <p>... (truncated)</p> </details> <details> <summary>Changelog</summary>
+  <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's
+  changelog</a>.</em></p> <blockquote> <h2>0.11.5</h2> <h3>Preview features</h3> <ul>
+  <li>[<code>airflow</code>] Add missing <code>AIR302</code> attribute check (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17115">#17115</a>)</li>
+  <li>[<code>airflow</code>] Expand module path check to individual symbols (<code>AIR302</code>)
+  (<a href="https://redirect.github.com/astral-sh/ruff/pull/17278">#17278</a>)</li>
+  <li>[<code>airflow</code>] Extract <code>AIR312</code> from <code>AIR302</code> rules
+  (<code>AIR302</code>, <code>AIR312</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17152">#17152</a>)</li>
+  <li>[<code>airflow</code>] Update oudated <code>AIR301</code>, <code>AIR302</code> rules (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17123">#17123</a>)</li> <li>[syntax-errors]
+  Async comprehension in sync comprehension (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17177">#17177</a>)</li> <li>[syntax-errors]
+  Check annotations in annotated assignments (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17283">#17283</a>)</li> <li>[syntax-errors]
+  Extend annotation checks to <code>await</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17282">#17282</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[<code>flake8-pie</code>] Avoid false positive for multiple assignment with
+  <code>auto()</code> (<code>PIE796</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17274">#17274</a>)</li> </ul> <h3>Rule
+  changes</h3> <ul> <li>[<code>ruff</code>] Fix <code>RUF100</code> to detect unused file-level
+  <code>noqa</code> directives with specific codes (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17042">#17042</a>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17061">#17061</a>)</li>
+  <li>[<code>flake8-pytest-style</code>] Avoid false positive for legacy form of
+  <code>pytest.raises</code> (<code>PT011</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17231">#17231</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Fix formatting of &quot;See Style Guide&quot; link (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17272">#17272</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/7186d5e9add868037df5bb9a42c43d5340c7ea44"><code>7186d5e</code></a>
+  Bump 0.11.5 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17337">#17337</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/5b6e94981df14d86dc29a37327ff43fbb5f9ea59"><code>5b6e949</code></a>
+  [red-knot] Silence <code>unresolved-attribute</code> in unreachable code (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17305">#17305</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/ec74f2d522de68113117817f0fbf23d7a0084e31"><code>ec74f2d</code></a>
+  Revert &quot;[red-knot] Type narrowing for assertions (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17149">#17149</a>)&quot; (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17335">#17335</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/907b6ed7b57d58dd6a26488e1393106dba78cb2d"><code>907b6ed</code></a>
+  [red-knot] Type narrowing for assertions (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17149">#17149</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/fd9882a1f4fbd66b87095b5fede5eaee56876ceb"><code>fd9882a</code></a>
+  [red-knot] avoid unnecessary evaluation of visibility constraint on definitel...</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/66a33bfd32c3fa7fbbca29abb1dbb4ba78cc2cf4"><code>66a33bf</code></a>
+  update cargo-dist (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17325">#17325</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/5b1d8350ff65e1bacd6468bccf7652c6b2b67ae8"><code>5b1d835</code></a>
+  [red-knot] Fix double hovers/inlays in playground (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17334">#17334</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/4d50ee6f527e6628e6e788a90d95fb9285618679"><code>4d50ee6</code></a>
+  [red-knot] Track reachability of scopes (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17332">#17332</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/06ffeb2e09e8a5440fc9bc07d2f49295ad809497"><code>06ffeb2</code></a>
+  Add pre-commit hook to check for merge conflicts (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17279">#17279</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/10e44124e616eac5f550f4ea467649b4f1e942c5"><code>10e4412</code></a>
+  [red-knot] Add inlay type hints (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17214">#17214</a>)</li> <li>Additional
+  commits viewable in <a href="https://github.com/astral-sh/ruff/compare/0.11.4...0.11.5">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.4&new-version=0.11.5)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump types-croniter from 5.0.1.20250322 to 6.0.0.20250411
+  ([#609](https://github.com/Twingate/kubernetes-operator/pull/609),
+  [`862942d`](https://github.com/Twingate/kubernetes-operator/commit/862942d75d23be05fd00c5854c1beda45dfa08bc))
+
+Bumps [types-croniter](https://github.com/typeshed-internal/stub_uploader) from 5.0.1.20250322 to
+  6.0.0.20250411. <details> <summary>Commits</summary> <ul> <li>See full diff in <a
+  href="https://github.com/typeshed-internal/stub_uploader/commits">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=types-croniter&package-manager=pip&previous-version=5.0.1.20250322&new-version=6.0.0.20250411)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Update `poetry install —sync` command to `poetry sync` as —sync is deprecated
+  ([`8ba8561`](https://github.com/Twingate/kubernetes-operator/commit/8ba8561c381ac78602df4bec2b27dd7720388804))
+
+### Documentation
+
+- Improve `DEVELOPER.md` and `README.md` documentations
+  ([#601](https://github.com/Twingate/kubernetes-operator/pull/601),
+  [`81387a9`](https://github.com/Twingate/kubernetes-operator/commit/81387a982ca4d2f11e4f42c6954cbc41b90cfde9))
+
+## Changes - Update `.envrc.local.example` to include missing envvar `TWINGATE_TEST_PRINCIPAL_ID`,
+  which is needed to run
+  [`test_resource_flows`](https://github.com/Twingate/kubernetes-operator/blob/c6ec9e2d42fe03023a48d6e6cdc6cac041aeab7f/tests_integration/test_resource_flows.py#L213-L214)
+  locally - Update `README.md` instructions to include `Provision` permission for Twingate API token
+  - Update `DEVELOPER.md` - Update local development instructions to be clearer - Fix some minor
+  typos
+
+### Features
+
+- Support `livenessProbe`, `readinessProbe` and enhance security by setting `readOnlyRootFilesystem`
+  on `TwingateConnector` ([#612](https://github.com/Twingate/kubernetes-operator/pull/612),
+  [`26bf5e1`](https://github.com/Twingate/kubernetes-operator/commit/26bf5e10703b76a8274d497593428c85b737c704))
+
+## Related Tickets & Documents
+
+- Issue: https://github.com/Twingate/kubernetes-operator/issues/604
+
+## Changes - Add `livenessProbe` and `readinessProbe` to `TwingateConnector.spec.container` - Set
+  `readOnlyRootFilesystem` in `securityContext` to `True` by default. Also, add `volumes` and
+  `volumeMounts`
+
+---------
+
+Co-authored-by: Eran Kampf <eran@ekampf.com>
+
+Co-authored-by: Eran Kampf <205185+ekampf@users.noreply.github.com>
+
+- Support `syncLabels` on `TwingateResource.spec` and k8s `Service` annotations
+  ([#606](https://github.com/Twingate/kubernetes-operator/pull/606),
+  [`f9371b5`](https://github.com/Twingate/kubernetes-operator/commit/f9371b50f5196ee99d2f584c9c671e77bddf8b59))
+
+## Changes - Add `syncLabels` field on `TwingateResource.spec` to support whether to sync k8s
+  metadata labels to Twingate Resource as tags. The default value is `True` - Add `syncLabels`
+  Twingate Resource annotations to k8s Service
+
+## Notes ~⚠️ This PR is branched out from #605~
+
+- Support Twingate Resource tagging
+  ([#605](https://github.com/Twingate/kubernetes-operator/pull/605),
+  [`e77773d`](https://github.com/Twingate/kubernetes-operator/commit/e77773d38246bd1352bf6dd6af6271a50d8d13da))
+
+## Changes - Support adding k8s labels as Twingate Resource tags for `TwingateResource` CRD - Since
+  k8s `Service` also syncs the same `metadata.labels` to `TwingateResource` CRD (see
+  [code](https://github.com/Twingate/kubernetes-operator/blob/e6cd06849d5e958be082c97706e25a04374272ec/app/handlers/handlers_services.py#L86)),
+  Twingate Resource tags will also be added as a result.
+
+## Usage Example ```yaml apiVersion: twingate.com/v1beta
+
+kind: TwingateResource
+
+metadata: name: my-twingate-resource
+
+labels: env: prod # 👈🏼 This will add a `env:prod` tag in Twingate Resource spec: name: My K8S
+  Resource
+
+address: my.default.cluster.local
+
+alias: mine.local ```
+
+---------
+
+Co-authored-by: Eran Kampf <205185+ekampf@users.noreply.github.com>
+
+- Supporting adding default tags on Twingate Resource
+  ([#613](https://github.com/Twingate/kubernetes-operator/pull/613),
+  [`a623091`](https://github.com/Twingate/kubernetes-operator/commit/a623091f3724698d9f6193a38342fac89f5690c9))
+
+## Changes - Add default tags to Twingate Resource based on `TWINGATE_DEFAULT_RESOURCE_TAGS` envvar
+  set on the Operator. - Refactor Resource client API code
+
+---------
+
+Co-authored-by: Eran Kampf <eran@ekampf.com>
+
+
 ## v0.19.0 (2025-04-08)
 
 ### Bug Fixes

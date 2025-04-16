@@ -47,7 +47,9 @@ def get_connector_pod(
     container_extra = spec.container_extra
     extra_env = container_extra.pop("env", [])
     extra_env_from = container_extra.pop("envFrom", [])
-    extra_volumes = container_extra.pop("volumes", [])
+
+    pod_extra = spec.pod_extra
+    extra_volumes = pod_extra.pop("volumes", [])
     extra_volume_mounts = container_extra.pop("volumeMounts", [])
 
     # fmt: off

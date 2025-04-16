@@ -435,7 +435,7 @@ class TestGetConnectorPod:
     ):
         extra_volume = {"name": "extra-volume", "emptyDir": {}}
         _, crd = get_connector_and_crd(
-            spec_overrides={"container_extra": {"volumes": [extra_volume]}},
+            spec_overrides={"pod_extra": {"volumes": [extra_volume]}},
         )
 
         pod = get_connector_pod(crd, mock_tenant_url, mock_image)

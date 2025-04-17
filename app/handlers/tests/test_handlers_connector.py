@@ -24,6 +24,7 @@ from app.handlers.handlers_connectors import (
     twingate_connector_pod_reconciler,
     twingate_connector_update,
 )
+from app.settings import get_version
 
 
 @pytest.fixture(autouse=True)
@@ -412,7 +413,131 @@ class TestGetConnectorPod:
     def mock_image(self):
         return "twingate/connector:latest"
 
-    def test_get_connector_with_extra_volume_mounts(
+    def test_get_connector_pod_default(
+        self, get_connector_and_crd, mock_tenant_url, mock_image
+    ):
+        _, crd = get_connector_and_crd()
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert pod.spec == {
+            "containers": [
+                {
+                    "env": [
+                        {"name": "TWINGATE_LABEL_DEPLOYED_BY", "value": "operator"},
+                        {
+                            "name": "TWINGATE_LABEL_OPERATOR_VERSION",
+                            "value": get_version(),
+                        },
+                        {"name": "TWINGATE_URL", "value": mock_tenant_url},
+                        {"name": "TWINGATE_LOG_LEVEL", "value": "3"},
+                        {"name": "TWINGATE_LOG_ANALYTICS", "value": "v2"},
+                    ],
+                    "envFrom": [
+                        {"secretRef": {"name": crd.metadata.name, "optional": False}}
+                    ],
+                    "image": mock_image,
+                    "imagePullPolicy": "Always",
+                    "name": "connector",
+                    "securityContext": {
+                        "allowPrivilegeEscalation": False,
+                        "capabilities": {
+                            "drop": ["ALL"],
+                        },
+                        "runAsNonRoot": True,
+                        "runAsUser": 65532,
+                        "seccompProfile": {"type": "RuntimeDefault"},
+                        "readOnlyRootFilesystem": True,
+                    },
+                    "readinessProbe": {
+                        "exec": {
+                            "command": [
+                                "/connectorctl",
+                                "health",
+                            ]
+                        },
+                        "initialDelaySeconds": 5,
+                        "periodSeconds": 5,
+                    },
+                    "livenessProbe": {
+                        "exec": {
+                            "command": [
+                                "/connectorctl",
+                                "health",
+                            ]
+                        },
+                        "initialDelaySeconds": 5,
+                        "periodSeconds": 5,
+                    },
+                    "volumeMounts": [
+                        {
+                            "name": "twingate-socket",
+                            "mountPath": "/var/run/twingate",
+                        },
+                    ],
+                },
+            ],
+            "volumes": [{"name": "twingate-socket", "emptyDir": {}}],
+        }
+
+    def test_connector_env_vars_with_image_policy_set(
+        self, get_connector_and_crd, mock_tenant_url, mock_image
+    ):
+        image_policy = ConnectorImagePolicy()
+        _, crd = get_connector_and_crd(
+            spec_overrides={"image_policy": image_policy},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        expected_env_vars = [
+            {
+                "name": "TWINGATE_LABEL_VERSION_POLICY_SCHEDULE",
+                "value": image_policy.schedule,
+            },
+            {
+                "name": "TWINGATE_LABEL_VERSION_POLICY_SPEC",
+                "value": image_policy.version,
+            },
+        ]
+
+        assert all(env in pod.spec["containers"][0]["env"] for env in expected_env_vars)
+
+    @pytest.mark.parametrize(
+        ("log_analytics_enabled", "expected_in"),
+        [(True, True), (False, False)],
+    )
+    def test_connector_env_vars_log_analytics(
+        self,
+        get_connector_and_crd,
+        mock_tenant_url,
+        mock_image,
+        log_analytics_enabled,
+        expected_in,
+    ):
+        _, crd = get_connector_and_crd(
+            spec_overrides={"log_analytics": log_analytics_enabled}
+        )
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        env_var = {"name": "TWINGATE_LOG_ANALYTICS", "value": "v2"}
+        container_env = pod.spec["containers"][0]["env"]
+
+        if expected_in:
+            assert env_var in container_env
+        else:
+            assert env_var not in container_env
+
+    def test_extra_env(self, get_connector_and_crd, mock_tenant_url, mock_image):
+        extra_env = {"name": "TWINGATE_EXTRA_ENV", "value": "extra-value"}
+        _, crd = get_connector_and_crd(
+            spec_overrides={"container_extra": {"env": [extra_env]}},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert extra_env in pod.spec["containers"][0]["env"]
+
+    def test_extra_volume_mounts(
         self, get_connector_and_crd, mock_tenant_url, mock_image
     ):
         extra_volume_mount = {
@@ -430,9 +555,19 @@ class TestGetConnectorPod:
             extra_volume_mount,
         ]
 
-    def test_get_connector_with_extra_volumes(
+    def test_sidecar_containers(
         self, get_connector_and_crd, mock_tenant_url, mock_image
     ):
+        sidecar_container = {"name": "sidecar-extra", "image": "sidecar-extra-image"}
+        _, crd = get_connector_and_crd(
+            spec_overrides={"sidecar_containers": [sidecar_container]},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert pod.spec["containers"][1] == sidecar_container
+
+    def test_extra_volumes(self, get_connector_and_crd, mock_tenant_url, mock_image):
         extra_volume = {"name": "extra-volume", "emptyDir": {}}
         _, crd = get_connector_and_crd(
             spec_overrides={"pod_extra": {"volumes": [extra_volume]}},
@@ -444,3 +579,25 @@ class TestGetConnectorPod:
             {"name": "twingate-socket", "emptyDir": {}},
             extra_volume,
         ]
+
+    def test_annotations(self, get_connector_and_crd, mock_tenant_url, mock_image):
+        annotations = {"twingate.com/extra-annotation": "test-value"}
+        _, crd = get_connector_and_crd(
+            spec_overrides={"pod_annotations": annotations},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert pod.metadata.annotations == annotations | {
+            "twingate.com/connector-podspec-version": "v1"
+        }
+
+    def test_pod_labels(self, get_connector_and_crd, mock_tenant_url, mock_image):
+        labels = {"env": "test"}
+        _, crd = get_connector_and_crd(
+            spec_overrides={"pod_labels": labels},
+        )
+
+        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+
+        assert pod.metadata.labels == labels

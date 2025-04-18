@@ -1,6 +1,347 @@
 # CHANGELOG
 
 
+## v0.20.1 (2025-04-18)
+
+### Bug Fixes
+
+- Twingate_default_resource_tags default value should be empty dict
+  ([#622](https://github.com/Twingate/kubernetes-operator/pull/622),
+  [`29a1679`](https://github.com/Twingate/kubernetes-operator/commit/29a1679d9318a1a5869bce29380214097603b1eb))
+
+## Changes
+
+- TWINGATE_DEFAULT_RESOURCE_TAGS default value should be empty dict
+
+### Chores
+
+- Bump golang.org/x/net from 0.36.0 to 0.38.0
+  ([#618](https://github.com/Twingate/kubernetes-operator/pull/618),
+  [`0125265`](https://github.com/Twingate/kubernetes-operator/commit/01252655333c2f1bad80129947f6b8ad5102845f))
+
+Bumps [golang.org/x/net](https://github.com/golang/net) from 0.36.0 to 0.38.0. <details>
+  <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/golang/net/commit/e1fcd82abba34df74614020343be8eb1fe85f0d9"><code>e1fcd82</code></a>
+  html: properly handle trailing solidus in unquoted attribute value in foreign...</li> <li><a
+  href="https://github.com/golang/net/commit/ebed060e8f30f20235f74808c22125fd86b15edd"><code>ebed060</code></a>
+  internal/http3: fix build of tests with GOEXPERIMENT=nosynctest</li> <li><a
+  href="https://github.com/golang/net/commit/1f1fa29e0a46fffe18c43a9da8daa5a0b180dfa9"><code>1f1fa29</code></a>
+  publicsuffix: regenerate table</li> <li><a
+  href="https://github.com/golang/net/commit/12150816f701c912a32a376754ab28dd3878833a"><code>1215081</code></a>
+  http2: improve error when server sends HTTP/1</li> <li><a
+  href="https://github.com/golang/net/commit/312450e473eae9f9e6173ad895c80bc5ea2f79ad"><code>312450e</code></a>
+  html: ensure &lt;search&gt; tag closes &lt;p&gt; and update tests</li> <li><a
+  href="https://github.com/golang/net/commit/09731f9bf919b00b344c763894cd1920b3d96d90"><code>09731f9</code></a>
+  http2: improve handling of lost PING in Server</li> <li><a
+  href="https://github.com/golang/net/commit/55989e24b972a90ab99308fdc7ea1fb58a96fef1"><code>55989e2</code></a>
+  http2/h2c: use ResponseController for hijacking connections</li> <li><a
+  href="https://github.com/golang/net/commit/2914f46773171f4fa13e276df1135bafef677801"><code>2914f46</code></a>
+  websocket: re-recommend gorilla/websocket</li> <li><a
+  href="https://github.com/golang/net/commit/99b3ae0643f9a2f9d820fcbba5f9e4c83b23bd48"><code>99b3ae0</code></a>
+  go.mod: update golang.org/x dependencies</li> <li>See full diff in <a
+  href="https://github.com/golang/net/compare/v0.36.0...v0.38.0">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=golang.org/x/net&package-manager=go_modules&previous-version=0.36.0&new-version=0.38.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself) You can disable automated security fix PRs for this repo from the
+  [Security Alerts page](https://github.com/Twingate/kubernetes-operator/network/alerts).
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic-settings from 2.8.1 to 2.9.0
+  ([#620](https://github.com/Twingate/kubernetes-operator/pull/620),
+  [`29f4573`](https://github.com/Twingate/kubernetes-operator/commit/29f45737d823480585c23662b9079ecb9557993e))
+
+Bumps [pydantic-settings](https://github.com/pydantic/pydantic-settings) from 2.8.1 to 2.9.0.
+  <details> <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic-settings/releases">pydantic-settings's
+  releases</a>.</em></p> <blockquote> <h2>v2.9.0</h2> <h2>What's Changed</h2> <ul> <li>Drop support
+  for Python 3.8 by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/560">pydantic/pydantic-settings#560</a></li>
+  <li>Switch to <code>typing-inspection</code> by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/556">pydantic/pydantic-settings#556</a></li>
+  <li>Introduce <code>uv</code> for Project Management by <a
+  href="https://github.com/KanchiShimono"><code>@​KanchiShimono</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/547">pydantic/pydantic-settings#547</a></li>
+  <li>Refactor sources.py into a subpackage (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/546">#546</a>) by <a
+  href="https://github.com/ezwiefel"><code>@​ezwiefel</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/548">pydantic/pydantic-settings#548</a></li>
+  <li>chore: cleanup by <a href="https://github.com/CodeWithEmad"><code>@​CodeWithEmad</code></a> in
+  <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/563">pydantic/pydantic-settings#563</a></li>
+  <li>Fix typo in documentation by <a
+  href="https://github.com/CodeWithEmad"><code>@​CodeWithEmad</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/564">pydantic/pydantic-settings#564</a></li>
+  <li>Add support for AWS Secrets Manager by <a
+  href="https://github.com/mavwolverine"><code>@​mavwolverine</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/532">pydantic/pydantic-settings#532</a></li>
+  <li>Fix minor typo: conotations =&gt; connotations by <a
+  href="https://github.com/svenevs"><code>@​svenevs</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/577">pydantic/pydantic-settings#577</a></li>
+  <li>Azure Key Vault: Don't load disabled secret by <a
+  href="https://github.com/AndreuCodina"><code>@​AndreuCodina</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/578">pydantic/pydantic-settings#578</a></li>
+  <li>Add support for GCP Secret Manager by <a
+  href="https://github.com/ezwiefel"><code>@​ezwiefel</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/567">pydantic/pydantic-settings#567</a></li>
+  <li>CLI JSON Optional Default by <a href="https://github.com/kschwab"><code>@​kschwab</code></a>
+  in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/581">pydantic/pydantic-settings#581</a></li>
+  <li>Fix for env nested enum. by <a href="https://github.com/kschwab"><code>@​kschwab</code></a> in
+  <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/589">pydantic/pydantic-settings#589</a></li>
+  <li>CLI submodel suppress. by <a href="https://github.com/kschwab"><code>@​kschwab</code></a> in
+  <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/587">pydantic/pydantic-settings#587</a></li>
+  <li>Cli retrieve unknown args by <a href="https://github.com/kschwab"><code>@​kschwab</code></a>
+  in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/588">pydantic/pydantic-settings#588</a></li>
+  <li>Update pydantic by <a href="https://github.com/hramezani"><code>@​hramezani</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/593">pydantic/pydantic-settings#593</a></li>
+  <li>Fix check in CI by <a href="https://github.com/hramezani"><code>@​hramezani</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/595">pydantic/pydantic-settings#595</a></li>
+  </ul> <h2>New Contributors</h2> <ul> <li><a
+  href="https://github.com/ezwiefel"><code>@​ezwiefel</code></a> made their first contribution in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/548">pydantic/pydantic-settings#548</a></li>
+  <li><a href="https://github.com/CodeWithEmad"><code>@​CodeWithEmad</code></a> made their first
+  contribution in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/563">pydantic/pydantic-settings#563</a></li>
+  <li><a href="https://github.com/mavwolverine"><code>@​mavwolverine</code></a> made their first
+  contribution in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/532">pydantic/pydantic-settings#532</a></li>
+  <li><a href="https://github.com/svenevs"><code>@​svenevs</code></a> made their first contribution
+  in <a
+  href="https://redirect.github.com/pydantic/pydantic-settings/pull/577">pydantic/pydantic-settings#577</a></li>
+  </ul> <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/pydantic/pydantic-settings/compare/v2.8.1...v2.9.0">https://github.com/pydantic/pydantic-settings/compare/v2.8.1...v2.9.0</a></p>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/8c0f5f18b08175a1f03e3db5027948a4d53093a7"><code>8c0f5f1</code></a>
+  Fix check in CI (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/595">#595</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/0ac2312042cfa780ef5bb37e906624ebe0e3c76e"><code>0ac2312</code></a>
+  Prepare release 2.9.0 (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/594">#594</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/f3e5ac382c9318e465012f60adda22919c01d1c7"><code>f3e5ac3</code></a>
+  Update pydantic (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/593">#593</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/20640b0efe9db1b94e8e9461d1662f7c2202fe56"><code>20640b0</code></a>
+  Cli retrieve unknown args (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/588">#588</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/ed7fd42bfb1fd0f0cd22de1182fcf5a488a4ca35"><code>ed7fd42</code></a>
+  CLI submodel suppress. (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/587">#587</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/e9fb3164ebf2fc0414d7fbd6b194e6f485dcba69"><code>e9fb316</code></a>
+  Fix for env nested enum. (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/589">#589</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/0e9b329c74549144e669a8a167fc5cdd0ae6c3b4"><code>0e9b329</code></a>
+  CLI JSON Optional Default (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/581">#581</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/fde79e8a4d03fcfee118b3e960374d8984ba29fc"><code>fde79e8</code></a>
+  Add support for GCP Secret Manager (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/567">#567</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/d54d1462466761880a1aa7dc417c3afdf7c82459"><code>d54d146</code></a>
+  Azure Key Vault: Don't load disabled secret (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/578">#578</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/3b83fc283ccd69e03201fc4f9ca62df9deb27aeb"><code>3b83fc2</code></a>
+  Fix minor typo in documentation (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/577">#577</a>)</li>
+  <li>Additional commits viewable in <a
+  href="https://github.com/pydantic/pydantic-settings/compare/v2.8.1...v2.9.0">compare view</a></li>
+  </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pydantic-settings&package-manager=pip&previous-version=2.8.1&new-version=2.9.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.5 to 0.11.6 ([#621](https://github.com/Twingate/kubernetes-operator/pull/621),
+  [`4dd320d`](https://github.com/Twingate/kubernetes-operator/commit/4dd320d88af14c0730274881b0cc75cfc812fb4a))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.5 to 0.11.6. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.6</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>Avoid adding whitespace to the end of a docstring after an escaped quote
+  (<a href="https://redirect.github.com/astral-sh/ruff/pull/17216">#17216</a>)</li>
+  <li>[<code>airflow</code>] Extract <code>AIR311</code> from <code>AIR301</code> rules
+  (<code>AIR301</code>, <code>AIR311</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17310">#17310</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17422">#17422</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>Raise syntax error when <code>\</code> is at end of file (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17409">#17409</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/BurntSushi"><code>@​BurntSushi</code></a></li> <li><a
+  href="https://github.com/Lee-W"><code>@​Lee-W</code></a></li> <li><a
+  href="https://github.com/MatthewMckee4"><code>@​MatthewMckee4</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/cake-monotone"><code>@​cake-monotone</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> <li><a
+  href="https://github.com/charliermarsh"><code>@​charliermarsh</code></a></li> <li><a
+  href="https://github.com/dcreager"><code>@​dcreager</code></a></li> <li><a
+  href="https://github.com/dhruvmanila"><code>@​dhruvmanila</code></a></li> <li><a
+  href="https://github.com/github-actions"><code>@​github-actions</code></a></li> <li><a
+  href="https://github.com/maxmynter"><code>@​maxmynter</code></a></li> <li><a
+  href="https://github.com/mishamsk"><code>@​mishamsk</code></a></li> <li><a
+  href="https://github.com/mtshiba"><code>@​mtshiba</code></a></li> <li><a
+  href="https://github.com/ntBre"><code>@​ntBre</code></a></li> <li><a
+  href="https://github.com/renovate"><code>@​renovate</code></a></li> <li><a
+  href="https://github.com/sharkdp"><code>@​sharkdp</code></a></li> </ul> <h2>Install ruff
+  0.11.6</h2> <h3>Install prebuilt binaries via shell script</h3> <pre lang="sh"><code>curl --proto
+  '=https' --tlsv1.2 -LsSf
+  https://github.com/astral-sh/ruff/releases/download/0.11.6/ruff-installer.sh | sh </code></pre>
+  <h3>Install prebuilt binaries via powershell script</h3> <pre lang="sh"><code>powershell
+  -ExecutionPolicy Bypass -c &quot;irm
+  https://github.com/astral-sh/ruff/releases/download/0.11.6/ruff-installer.ps1 | iex&quot;
+  </code></pre> <h2>Download ruff 0.11.6</h2> <table> <thead> <tr> <th>File</th> <th>Platform</th>
+  <th>Checksum</th> </tr> </thead> </table> <!-- raw HTML omitted --> </blockquote> <p>...
+  (truncated)</p> </details> <details> <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's changelog</a>.</em></p>
+  <blockquote> <h2>0.11.6</h2> <h3>Preview features</h3> <ul> <li>Avoid adding whitespace to the end
+  of a docstring after an escaped quote (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17216">#17216</a>)</li>
+  <li>[<code>airflow</code>] Extract <code>AIR311</code> from <code>AIR301</code> rules
+  (<code>AIR301</code>, <code>AIR311</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17310">#17310</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17422">#17422</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>Raise syntax error when <code>\</code> is at end of file (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17409">#17409</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/fcd50a0496d725f773c6da149035f98bd90b6a30"><code>fcd50a0</code></a>
+  Bump 0.11.6 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17449">#17449</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/3ada36b766583c92c82bccce3519a467ae068630"><code>3ada36b</code></a>
+  Auto generate <code>visit_source_order</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17180">#17180</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/bd8983821289e436c2d4c1463c118baa02c7ef5b"><code>bd89838</code></a>
+  [red-knot] Initial tests for protocols (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17436">#17436</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/b32407b6f3c300650b8a3b0a6cb1ce3c5f812c84"><code>b32407b</code></a>
+  [red-knot] Dataclasses: synthesize <code>__init__</code> with proper signature (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17428">#17428</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/b4de245a5accc5ebe35e580a73040da8d99ed566"><code>b4de245</code></a>
+  [red-knot] Dataclasses: support <code>order=True</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17406">#17406</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/914095d08f02ed91b1acf807aca89723f3632fb9"><code>914095d</code></a>
+  [red-knot] Super-basic generic inference at call sites (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17301">#17301</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/5350288d0773f986e90653c44a6304d9411b5782"><code>5350288</code></a>
+  [red-knot] Check assignability of bound methods to callables (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17430">#17430</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/649610cc98add11d8ff48c6d0fba928fb1e00262"><code>649610c</code></a>
+  [red-knot] Support <code>super</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17174">#17174</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/1a79722ee0fb160f8929612508d5ee88b7838d09"><code>1a79722</code></a>
+  [<code>airflow</code>] Extend <code>AIR311</code> rules (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17422">#17422</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/b67590bfde9de44757a3365d43040b8f93c10f35"><code>b67590b</code></a>
+  [red-knot] simplify union size limit handling (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17429">#17429</a>)</li> <li>Additional
+  commits viewable in <a href="https://github.com/astral-sh/ruff/compare/0.11.5...0.11.6">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.5&new-version=0.11.6)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+### Testing
+
+- Improve tests for `get_connector_pod()` and `test_handler_resources`
+  ([#619](https://github.com/Twingate/kubernetes-operator/pull/619),
+  [`3322937`](https://github.com/Twingate/kubernetes-operator/commit/3322937ea0d67cd8235240a439ab5de2d09c4c8d))
+
+## Changes - Improve tests for `get_connector_pod()` method and `test_handler_resources` file - Fix
+  `resource_update()` typing
+
+Co-authored-by: Eran Kampf <205185+ekampf@users.noreply.github.com>
+
+
 ## v0.20.0 (2025-04-16)
 
 ### Bug Fixes

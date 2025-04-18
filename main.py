@@ -43,8 +43,9 @@ def startup(
         twingate_operator_settings = TwingateOperatorSettings()
         twingate_operator_settings.update_kopf_watching_settings(settings)
         memo.twingate_settings = twingate_operator_settings
-    except ValidationError:
+    except ValidationError as vexc:
         logger.exception("Failed to load settings.")
+        raise RuntimeError("Failed to load settings.") from vexc
 
     # Disable health logging
     logging.getLogger("aiohttp.access").setLevel(level=logging.WARNING)

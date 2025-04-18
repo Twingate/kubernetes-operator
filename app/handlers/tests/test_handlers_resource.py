@@ -96,7 +96,7 @@ class TestResourceCreateHandler:
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
             **resource_spec.to_graphql_arguments(
-                labels={"managed_by": "test"} | mock_k8s_metadata["labels"],
+                labels={"managed_by": "test", "env": "dev"},
                 exclude={"id"},
             )
         )
@@ -142,9 +142,7 @@ class TestResourceCreateHandler:
         }
 
         mock_api_client.resource_update.assert_called_once_with(
-            **resource_spec.to_graphql_arguments(
-                labels=mock_k8s_metadata["labels"], exclude={"id"}
-            )
+            **resource_spec.to_graphql_arguments(labels={"env": "dev"}, exclude={"id"})
         )
         mock_api_client.resource_create.assert_not_called()
 
@@ -200,7 +198,7 @@ class TestResourceUpdateHandler:
 
         mock_api_client.resource_update.assert_called_once_with(
             **new_resource_spec.to_graphql_arguments(
-                labels={"managed_by": "test"} | mock_k8s_metadata["labels"]
+                labels={"managed_by": "test", "env": "dev"}
             )
         )
         assert patch_mock.spec == {}
@@ -375,7 +373,7 @@ class TestResourceSyncTimer:
         )
 
         mock_api_client.resource_update.assert_called_once_with(
-            **resource_spec.to_graphql_arguments(labels=mock_k8s_metadata["labels"])
+            **resource_spec.to_graphql_arguments(labels=resource.to_metadata_labels())
         )
         assert patch_mock.spec == {}
 
@@ -413,7 +411,8 @@ class TestResourceSyncTimer:
 
         mock_api_client.resource_update.assert_called_once_with(
             **resource_spec.to_graphql_arguments(
-                labels={"managed_by": "test"} | mock_k8s_metadata["labels"]
+                labels={"managed_by": "test", "env": "dev"}
+                | resource.to_metadata_labels()
             )
         )
         assert patch_mock.spec == {}
@@ -454,7 +453,7 @@ class TestResourceSyncTimer:
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
             **resource_spec.to_graphql_arguments(
-                labels={"managed_by": "test"} | mock_k8s_metadata["labels"],
+                labels={"managed_by": "test", "env": "dev"},
                 exclude={"id"},
             )
         )

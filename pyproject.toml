@@ -118,10 +118,9 @@ select = [
     "FBT", # flake8-boolean-trap
     "DTZ", # flake8-datetimez
     "T10", # flake8-debugger
-    "ISC", # flake8-implicit-str-concat,
+    "ISC", # flake8-implicit-str-concat
     "ICN", # flake8-import-conventions
     "LOG", # flake8-logging
-    "RSE", # flake8-raise
     "RET", # flake8-return
     "SLF", # flake8-self
     "SLOT", # flake8-slots
@@ -129,6 +128,7 @@ select = [
     "TID", # flake8-tidy-imports
     "ERA", # eradicate
     "FLY", # flynt
+    "UP", # pyupgrade
     "FURB", # refurb
     "PGH", # pygrep-hooks
     "RUF", # Ruff-specific rules

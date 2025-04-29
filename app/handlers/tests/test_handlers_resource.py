@@ -164,7 +164,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
-        diff = (("change", ("name"), "My K8S Resource", "new-name"),)
+        diff = (("change", ("spec", "name"), "My K8S Resource", "new-name"),)
         status = {
             "twingate_resource_create": {
                 "twingate_id": rid,
@@ -237,7 +237,7 @@ class TestResourceUpdateHandler:
             "address": "my.default.cluster.local",
             "name": "new-name",
         }
-        diff = (("add", ("id",), None, rid),)
+        diff = (("add", ("spec", "id"), None, rid),)
         status = {
             "twingate_resource_create": {
                 "twingate_id": rid,

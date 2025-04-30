@@ -1,6 +1,525 @@
 # CHANGELOG
 
 
+## v0.20.2 (2025-04-30)
+
+### Bug Fixes
+
+- Operator should halt if settings are invalid
+  ([#623](https://github.com/Twingate/kubernetes-operator/pull/623),
+  [`2d0f1c3`](https://github.com/Twingate/kubernetes-operator/commit/2d0f1c34204070906d2aeb03f7fd2bd681ddf8fa))
+
+## Changes
+
+- Raise `RuntimeException` if failed to load settings
+
+- Skip `twingate_resource_update` handler when `spec.id` is added
+  ([#627](https://github.com/Twingate/kubernetes-operator/pull/627),
+  [`aeb3758`](https://github.com/Twingate/kubernetes-operator/commit/aeb37583d9e395c271c67661e9ba56a311ea17ed))
+
+## Changes - A regression bug was introduced when we updated `twingate_resource_update` handler to
+  detect change on the whole object instead of the `spec` field in this
+  [PR](https://github.com/Twingate/kubernetes-operator/commit/e77773d38246bd1352bf6dd6af6271a50d8d13da#diff-dab0a0f836e493ffe8dc057c0f1a4b6c4914c67865f7747b06c0c170068a8075L37-L38).
+  As a result, the `diff` structure is different and needs to be updated to match the new structure.
+  - Return `success` result when resource is updated in `twingate_resource_sync` handler. This is an
+  improvement for better status logging.
+
+### Chores
+
+- Bump orjson from 3.10.16 to 3.10.18
+  ([#628](https://github.com/Twingate/kubernetes-operator/pull/628),
+  [`2c12e5d`](https://github.com/Twingate/kubernetes-operator/commit/2c12e5d606671f7de921cc476febd5cd51e686c3))
+
+Bumps [orjson](https://github.com/ijl/orjson) from 3.10.16 to 3.10.18. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/ijl/orjson/releases">orjson's
+  releases</a>.</em></p> <blockquote> <h2>3.10.18</h2> <h3>Fixed</h3> <ul> <li>Fix incorrect
+  escaping of the vertical tabulation character. This was introduced in 3.10.17.</li> </ul>
+  <h2>3.10.17</h2> <h3>Changed</h3> <ul> <li>Publish PyPI Windows aarch64/arm64 wheels.</li> <li>ABI
+  compatibility with CPython 3.14 alpha 7.</li> <li>Fix incompatibility running on Python 3.13 using
+  WASM.</li> </ul> </blockquote> </details> <details> <summary>Changelog</summary> <p><em>Sourced
+  from <a href="https://github.com/ijl/orjson/blob/master/CHANGELOG.md">orjson's
+  changelog</a>.</em></p> <blockquote> <h2>3.10.18</h2> <h3>Fixed</h3> <ul> <li>Fix incorrect
+  escaping of the vertical tabulation character. This was introduced in 3.10.17.</li> </ul>
+  <h2>3.10.17</h2> <h3>Changed</h3> <ul> <li>Publish PyPI Windows aarch64/arm64 wheels.</li> <li>ABI
+  compatibility with CPython 3.14 alpha 7.</li> <li>Fix incompatibility running on Python 3.13 using
+  WASM.</li> </ul> </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/ijl/orjson/commit/4b29943c2df5035f7ec573c1a0052c08d293c119"><code>4b29943</code></a>
+  3.10.18</li> <li><a
+  href="https://github.com/ijl/orjson/commit/e6086d7283d44e53dc9f87ff034ce15de6771a30"><code>e6086d7</code></a>
+  Fix escaping of 0x0b</li> <li><a
+  href="https://github.com/ijl/orjson/commit/692f32137dac578ea532f69425e594bbde3688a9"><code>692f321</code></a>
+  3.10.17</li> <li><a
+  href="https://github.com/ijl/orjson/commit/f84829d14998027e55d2541acd2418351c118b8f"><code>f84829d</code></a>
+  build maintenance</li> <li><a
+  href="https://github.com/ijl/orjson/commit/ef1f6f4175384b84c0b88ca7aee243b73f9f5733"><code>ef1f6f4</code></a>
+  aarch64-pc-windows-msvc CI</li> <li><a
+  href="https://github.com/ijl/orjson/commit/4f57bf82a731082d6db6aa9ff3bbd19f219d54bf"><code>4f57bf8</code></a>
+  Use static *_Type objects</li> <li><a
+  href="https://github.com/ijl/orjson/commit/21808b8776a1cffca8c05a72fb11aa4184b3ba32"><code>21808b8</code></a>
+  SIMD feature cfg, escape refactor</li> <li><a
+  href="https://github.com/ijl/orjson/commit/27d7e27fe16e68fa0ddb43265db5282e038d2a98"><code>27d7e27</code></a>
+  Define _PyLong_AsByteArray with_exceptions in 3.13+</li> <li><a
+  href="https://github.com/ijl/orjson/commit/ff6741ae57b37fb6d4395f0e3939b6970669a909"><code>ff6741a</code></a>
+  Fix ptr_eq lint</li> <li><a
+  href="https://github.com/ijl/orjson/commit/d71e2ad598687dc35e9245478276b068ffdb5dd4"><code>d71e2ad</code></a>
+  ABI compatibility with CPython 3.14 PyTupleObject.ob_hash</li> <li>Additional commits viewable in
+  <a href="https://github.com/ijl/orjson/compare/3.10.16...3.10.18">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=orjson&package-manager=pip&previous-version=3.10.16&new-version=3.10.18)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pendulum from 3.0.0 to 3.1.0
+  ([#625](https://github.com/Twingate/kubernetes-operator/pull/625),
+  [`cc5c276`](https://github.com/Twingate/kubernetes-operator/commit/cc5c2762696e2d503a6e04cb88e7e57dd80fc541))
+
+Bumps [pendulum](https://github.com/sdispater/pendulum) from 3.0.0 to 3.1.0. <details>
+  <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/sdispater/pendulum/releases">pendulum's releases</a>.</em></p>
+  <blockquote> <h2>3.1.0</h2> <p>See CHANGELOG.md for details</p> </blockquote> </details> <details>
+  <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/python-pendulum/pendulum/blob/master/CHANGELOG.md">pendulum's
+  changelog</a>.</em></p> <blockquote> <h2>[3.1.0] - 2025-04-19</h2> <h3>Added</h3> <ul> <li>Added
+  support for Python 3.13 <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/871">#871</a></li> </ul>
+  <h3>Changed</h3> <ul> <li>Removed support for Python 3.8 <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/863">#863</a></li> <li>Fixed pure
+  Python wheels support <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/889">#889</a></li> <li>Fixed
+  <code>pendulum.tz.timezones()</code> to use system tzdata <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/801">#801</a></li> <li>Fixed
+  spelling of Kyiv <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/885">#885</a></li> <li>Fixed
+  <code>DeprecationWarning</code> from <code>utcfromtimestamp</code> <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/887">#887</a></li> <li>Fixed
+  parsing of invalid intervals <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/843">#843</a></li> </ul>
+  <h3>Locales</h3> <ul> <li>Added UA (Ukraine) locale <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/793">#793</a></li> <li>Added BG
+  (Bulgarian) locale <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/812">#812</a></li> <li>Fixed KO
+  (Korean) translations for <code>before</code> and <code>after</code> <a
+  href="https://redirect.github.com/python-pendulum/pendulum/pull/858">#858</a></li> </ul>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/e57ca8e5587e7e6ab95222ba79e9ec39d0caa7f2"><code>e57ca8e</code></a>
+  Include missing file in the sdist (<a
+  href="https://redirect.github.com/sdispater/pendulum/issues/895">#895</a>)</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/104c700dc11532459ae27d94654fbf67aaa66814"><code>104c700</code></a>
+  Version bump (<a href="https://redirect.github.com/sdispater/pendulum/issues/894">#894</a>)</li>
+  <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/85288e66d42c3163eca0537c2c4fdbf1bb410c5f"><code>85288e6</code></a>
+  Fix release workflow (<a
+  href="https://redirect.github.com/sdispater/pendulum/issues/893">#893</a>)</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/c3aca76c5ff98b76c2ec75d8cfc74d1717cdff07"><code>c3aca76</code></a>
+  Pre-release changelog update (<a
+  href="https://redirect.github.com/sdispater/pendulum/issues/892">#892</a>)</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/4dbb1373ec695c5b85cc445075d2304d701b7382"><code>4dbb137</code></a>
+  Remove unnecessary duplicated sdist build</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/15d4f1bf0688ed3f2dc2055dcfc18f25f7f2840c"><code>15d4f1b</code></a>
+  Fix sed in release pipeline. (<a
+  href="https://redirect.github.com/sdispater/pendulum/issues/890">#890</a>)</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/df18589538cb750ccfb7b81cf843ea43a69f5ae6"><code>df18589</code></a>
+  Fix noext builds and setup or Trusted publisher</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/5bd4a1db110df596cad74936e28c776ff3907054"><code>5bd4a1d</code></a>
+  Merge pull request <a href="https://redirect.github.com/sdispater/pendulum/issues/887">#887</a>
+  from Secrus/fromtimestamp-fix</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/038d115327159374a53abb3ff46aa71773824c64"><code>038d115</code></a>
+  Fix DeprecationWarning for timezone-aware fromtimestamp</li> <li><a
+  href="https://github.com/python-pendulum/pendulum/commit/dcd981634172344b1c0e0c281c876f8f3f1ee021"><code>dcd9816</code></a>
+  Merge pull request <a href="https://redirect.github.com/sdispater/pendulum/issues/886">#886</a>
+  from python-pendulum/dependabot/cargo/rust/pyo3-0.24.1</li> <li>Additional commits viewable in <a
+  href="https://github.com/sdispater/pendulum/compare/3.0.0...3.1.0">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pendulum&package-manager=pip&previous-version=3.0.0&new-version=3.1.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic from 2.11.3 to 2.11.4
+  ([#629](https://github.com/Twingate/kubernetes-operator/pull/629),
+  [`542ef8c`](https://github.com/Twingate/kubernetes-operator/commit/542ef8c18504fb068e44126b9b73315db0186190))
+
+Bumps [pydantic](https://github.com/pydantic/pydantic) from 2.11.3 to 2.11.4. <details>
+  <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/releases">pydantic's releases</a>.</em></p>
+  <blockquote> <h2>v2.11.4 2025-04-29</h2> <h3>What's Changed</h3> <h4>Packaging</h4> <ul> <li>Bump
+  <code>mkdocs-llmstxt</code> to v0.2.0 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11725">#11725</a></li> </ul>
+  <h4>Changes</h4> <ul> <li>Allow config and bases to be specified together in
+  <code>create_model()</code> by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11714">#11714</a>. This change was
+  backported as it was previously possible (although not meant to be supported) to provide
+  <code>model_config</code> as a field, which would make it possible to provide both configuration
+  and bases.</li> </ul> <h4>Fixes</h4> <ul> <li>Remove generics cache workaround by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11755">#11755</a></li> <li>Remove
+  coercion of decimal constraints by <a href="https://github.com/Viicos"><code>@​Viicos</code></a>
+  in <a href="https://redirect.github.com/pydantic/pydantic/pull/11772">#11772</a></li> <li>Fix
+  crash when expanding root type in the mypy plugin by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11735">#11735</a></li> <li>Fix issue with
+  recursive generic models by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11775">#11775</a></li> <li>Traverse
+  <code>function-before</code> schemas during schema gathering by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11801">#11801</a></li> </ul>
+  </blockquote> </details> <details> <summary>Changelog</summary> <p><em>Sourced from <a
+  href="https://github.com/pydantic/pydantic/blob/main/HISTORY.md">pydantic's
+  changelog</a>.</em></p> <blockquote> <h2>v2.11.4 (2025-04-29)</h2> <p><a
+  href="https://github.com/pydantic/pydantic/releases/tag/v2.11.4">GitHub release</a></p> <h3>What's
+  Changed</h3> <h4>Packaging</h4> <ul> <li>Bump <code>mkdocs-llmstxt</code> to v0.2.0 by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11725">#11725</a></li> </ul>
+  <h4>Changes</h4> <ul> <li>Allow config and bases to be specified together in
+  <code>create_model()</code> by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11714">#11714</a>. This change was
+  backported as it was previously possible (although not meant to be supported) to provide
+  <code>model_config</code> as a field, which would make it possible to provide both configuration
+  and bases.</li> </ul> <h4>Fixes</h4> <ul> <li>Remove generics cache workaround by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11755">#11755</a></li> <li>Remove
+  coercion of decimal constraints by <a href="https://github.com/Viicos"><code>@​Viicos</code></a>
+  in <a href="https://redirect.github.com/pydantic/pydantic/pull/11772">#11772</a></li> <li>Fix
+  crash when expanding root type in the mypy plugin by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11735">#11735</a></li> <li>Fix issue with
+  recursive generic models by <a href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11775">#11775</a></li> <li>Traverse
+  <code>function-before</code> schemas during schema gathering by <a
+  href="https://github.com/Viicos"><code>@​Viicos</code></a> in <a
+  href="https://redirect.github.com/pydantic/pydantic/pull/11801">#11801</a></li> </ul>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/pydantic/pydantic/commit/d444cd1cf6c5af54b23a335aff2ea45eaac2c2f6"><code>d444cd1</code></a>
+  Prepare release v2.11.4</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/828fc48d55a73c43a500a1d572dbc04ded67438f"><code>828fc48</code></a>
+  Add documentation note about common pitfall with the annotated pattern</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/42bf1fd784a3c8666ff7ed68f8d4fa2d395c6492"><code>42bf1fd</code></a>
+  Bump <code>pydantic-core</code> to v2.33.2 (<a
+  href="https://redirect.github.com/pydantic/pydantic/issues/11804">#11804</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/7b3f5132159af75e0a13cf66a75880e007c81cbc"><code>7b3f513</code></a>
+  Allow config and bases to be specified together in <code>create_model()</code></li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/fc521388f212d3f7cf20f36c3714a3b2abc4d723"><code>fc52138</code></a>
+  Traverse <code>function-before</code> schemas during schema gathering</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/25af78934ab5c58380c9b52370c15825a97b57e7"><code>25af789</code></a>
+  Fix issue with recursive generic models</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/91ef6bb39e596a275d46d73485dd65bb00b7ca09"><code>91ef6bb</code></a>
+  Update monthly download count in documentation</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/a830775328d11f5adc9d6c5c943d1c1c75f1adaf"><code>a830775</code></a>
+  Bump <code>mkdocs-llmstxt</code> to v0.2.0</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/f5d1c871286da0fdffa2fd488ff1a67d8b584d3c"><code>f5d1c87</code></a>
+  Fix crash when expanding root type in the mypy plugin</li> <li><a
+  href="https://github.com/pydantic/pydantic/commit/c80bb355d73e563fd4bc53e3cfe261ec3ac01d72"><code>c80bb35</code></a>
+  Remove coercion of decimal constraints</li> <li>Additional commits viewable in <a
+  href="https://github.com/pydantic/pydantic/compare/v2.11.3...v2.11.4">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pydantic&package-manager=pip&previous-version=2.11.3&new-version=2.11.4)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump pydantic-settings from 2.9.0 to 2.9.1
+  ([#624](https://github.com/Twingate/kubernetes-operator/pull/624),
+  [`9cd8168`](https://github.com/Twingate/kubernetes-operator/commit/9cd8168fac83f2981347b50ea4e044681b8d118a))
+
+Bumps [pydantic-settings](https://github.com/pydantic/pydantic-settings) from 2.9.0 to 2.9.1.
+  <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/18747409238dbba5c4ba9779c46353648f79f7ca"><code>1874740</code></a>
+  Prepare release 2.9.1 (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/600">#600</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/88e77bc8aab234b1eba50f13999e5eff4bd69f8d"><code>88e77bc</code></a>
+  Fix typo in gcp secret manager error message (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/598">#598</a>)</li> <li><a
+  href="https://github.com/pydantic/pydantic-settings/commit/e973d9afc8fbfeaaddca466f10d56e7671e67abd"><code>e973d9a</code></a>
+  fix: Expose ConfigFileSourceMixing on top level sources/<strong>init</strong>.py (<a
+  href="https://redirect.github.com/pydantic/pydantic-settings/issues/597">#597</a>)</li> <li>See
+  full diff in <a
+  href="https://github.com/pydantic/pydantic-settings/compare/v2.9.0...v2.9.1">compare view</a></li>
+  </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=pydantic-settings&package-manager=pip&previous-version=2.9.0&new-version=2.9.1)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.6 to 0.11.7 ([#626](https://github.com/Twingate/kubernetes-operator/pull/626),
+  [`e4d7b61`](https://github.com/Twingate/kubernetes-operator/commit/e4d7b617d79b254c8af3669faeae95d1fd27962d))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.6 to 0.11.7. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.7</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>[<code>airflow</code>] Apply auto fixes to cases where the names have
+  changed in Airflow 3 (<code>AIR301</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17355">#17355</a>)</li>
+  <li>[<code>perflint</code>] Implement fix for <code>manual-dict-comprehension</code>
+  (<code>PERF403</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16719">#16719</a>)</li> <li>[syntax-errors]
+  Make duplicate parameter names a semantic error (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17131">#17131</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[<code>airflow</code>] Fix typos in provider package names
+  (<code>AIR302</code>, <code>AIR312</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17574">#17574</a>)</li>
+  <li>[<code>flake8-type-checking</code>] Visit keyword arguments in checks involving
+  <code>typing.cast</code>/<code>typing.NewType</code> arguments (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17538">#17538</a>)</li>
+  <li>[<code>pyupgrade</code>] Preserve parenthesis when fixing native literals containing newlines
+  (<code>UP018</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17220">#17220</a>)</li>
+  <li>[<code>refurb</code>] Mark the <code>FURB161</code> fix unsafe except for integers and
+  booleans (<a href="https://redirect.github.com/astral-sh/ruff/pull/17240">#17240</a>)</li> </ul>
+  <h3>Rule changes</h3> <ul> <li>[<code>perflint</code>] Allow list function calls to be replaced
+  with a comprehension (<code>PERF401</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17519">#17519</a>)</li>
+  <li>[<code>pycodestyle</code>] Auto-fix redundant boolean comparison (<code>E712</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17090">#17090</a>)</li>
+  <li>[<code>pylint</code>] make fix unsafe if delete comments (<code>PLR1730</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17459">#17459</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Add fix safety sections to docs for several rules (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17410">#17410</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17440">#17440</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17441">#17441</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17443">#17443</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17444">#17444</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/BurntSushi"><code>@​BurntSushi</code></a></li> <li><a
+  href="https://github.com/Daverball"><code>@​Daverball</code></a></li> <li><a
+  href="https://github.com/Gankra"><code>@​Gankra</code></a></li> <li><a
+  href="https://github.com/Glyphack"><code>@​Glyphack</code></a></li> <li><a
+  href="https://github.com/Kalmaegi"><code>@​Kalmaegi</code></a></li> <li><a
+  href="https://github.com/Lee-W"><code>@​Lee-W</code></a></li> <li><a
+  href="https://github.com/MatthewMckee4"><code>@​MatthewMckee4</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/VascoSch92"><code>@​VascoSch92</code></a></li> <li><a
+  href="https://github.com/camper42"><code>@​camper42</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> <li><a
+  href="https://github.com/dcreager"><code>@​dcreager</code></a></li> <li><a
+  href="https://github.com/dhruvmanila"><code>@​dhruvmanila</code></a></li> <li><a
+  href="https://github.com/ericmarkmartin"><code>@​ericmarkmartin</code></a></li> <li><a
+  href="https://github.com/jnooree"><code>@​jnooree</code></a></li> <li><a
+  href="https://github.com/knavdeep152002"><code>@​knavdeep152002</code></a></li> <li><a
+  href="https://github.com/maxmynter"><code>@​maxmynter</code></a></li> <li><a
+  href="https://github.com/mtshiba"><code>@​mtshiba</code></a></li> <li><a
+  href="https://github.com/ntBre"><code>@​ntBre</code></a></li> <li><a
+  href="https://github.com/renovate"><code>@​renovate</code></a></li> <li><a
+  href="https://github.com/sharkdp"><code>@​sharkdp</code></a></li> <li><a
+  href="https://github.com/w0nder1ng"><code>@​w0nder1ng</code></a></li> </ul> <!-- raw HTML omitted
+  --> </blockquote> <p>... (truncated)</p> </details> <details> <summary>Changelog</summary>
+  <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's
+  changelog</a>.</em></p> <blockquote> <h2>0.11.7</h2> <h3>Preview features</h3> <ul>
+  <li>[<code>airflow</code>] Apply auto fixes to cases where the names have changed in Airflow 3
+  (<code>AIR301</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17355">#17355</a>)</li>
+  <li>[<code>perflint</code>] Implement fix for <code>manual-dict-comprehension</code>
+  (<code>PERF403</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16719">#16719</a>)</li> <li>[syntax-errors]
+  Make duplicate parameter names a semantic error (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17131">#17131</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[<code>airflow</code>] Fix typos in provider package names
+  (<code>AIR302</code>, <code>AIR312</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17574">#17574</a>)</li>
+  <li>[<code>flake8-type-checking</code>] Visit keyword arguments in checks involving
+  <code>typing.cast</code>/<code>typing.NewType</code> arguments (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17538">#17538</a>)</li>
+  <li>[<code>pyupgrade</code>] Preserve parenthesis when fixing native literals containing newlines
+  (<code>UP018</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17220">#17220</a>)</li>
+  <li>[<code>refurb</code>] Mark the <code>FURB161</code> fix unsafe except for integers and
+  booleans (<a href="https://redirect.github.com/astral-sh/ruff/pull/17240">#17240</a>)</li> </ul>
+  <h3>Rule changes</h3> <ul> <li>[<code>perflint</code>] Allow list function calls to be replaced
+  with a comprehension (<code>PERF401</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17519">#17519</a>)</li>
+  <li>[<code>pycodestyle</code>] Auto-fix redundant boolean comparison (<code>E712</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17090">#17090</a>)</li>
+  <li>[<code>pylint</code>] make fix unsafe if delete comments (<code>PLR1730</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17459">#17459</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Add fix safety sections to docs for several rules (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17410">#17410</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17440">#17440</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17441">#17441</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17443">#17443</a>,<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17444">#17444</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/f7b48510b58026f73c153ecb57720754365ba92e"><code>f7b4851</code></a>
+  Bump 0.11.7 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17613">#17613</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/99370647615c853e1fdd5bebb3fdff221a826d15"><code>9937064</code></a>
+  [red-knot] Use iterative approach to collect overloads (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17607">#17607</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/8d2c79276d167fcfcf9143a2bc1b328bb9d0f876"><code>8d2c792</code></a>
+  red_knot_python_semantic: avoid Rust's screaming snake case convention in mdtest</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/0f4781076864e60db0dabd52c8e0cd8955b7e2a9"><code>0f47810</code></a>
+  red_knot_python_semantic: improve diagnostics for unsupported boolean convers...</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/eb1d2518c131e31ab1a1faee9061f79ed23b3eff"><code>eb1d251</code></a>
+  red_knot_python_semantic: add &quot;return type span&quot; helper method</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/a45a0a92bd1a9cea2a48e6c00c44c206e56da6b5"><code>a45a0a9</code></a>
+  red_knot_python_semantic: move parameter span helper method</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/43bd0437559a5c267b1ac8b44dfc436d7fcff3bb"><code>43bd043</code></a>
+  ruff_db: add a <code>From</code> impl for <code>FileRange</code> to <code>Span</code></li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/9a54ee3a1cb030027dc83e6257599ed06e6f28ba"><code>9a54ee3</code></a>
+  red_knot_python_semantic: add snapshot tests for unsupported boolean conversions</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/25c3be51d24e4436654baabe8f4ae79dfc31fa02"><code>25c3be5</code></a>
+  [red-knot] simplify != narrowing (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17610">#17610</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/e71f3ed2c589976aaae5de69639351ab132790db"><code>e71f3ed</code></a>
+  [red-knot] Update <code>==</code> and <code>!=</code> narrowing (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17567">#17567</a>)</li> <li>Additional
+  commits viewable in <a href="https://github.com/astral-sh/ruff/compare/0.11.6...0.11.7">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.6&new-version=0.11.7)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Removed duplicate “RSE” ruff rule and added “UP”
+  ([`3e7d29c`](https://github.com/Twingate/kubernetes-operator/commit/3e7d29c4993df6d536b1fa52b83dcc5cf9f93d69))
+
+
 ## v0.20.1 (2025-04-18)
 
 ### Bug Fixes

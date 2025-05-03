@@ -72,6 +72,7 @@ spec:
                         enum:
                           - dockerhub
                           - google
+                        default: dockerhub
                       repository:
                         type: string
                         default: twingate/connector

@@ -244,6 +244,49 @@ class TestConnectorCRD:
 
         kubectl_delete("tc", unique_connector_name)
 
+    def test_imagepolicy_defaults_to_dockerhub(self, unique_connector_name):
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateConnector
+            metadata:
+                name: {unique_connector_name}
+            spec:
+                name: {unique_connector_name}
+                imagePolicy:
+                    version: "^1.0.0"
+            """
+        )
+        assert result.returncode == 0
+
+        data = kubectl_get("tc", unique_connector_name)
+        assert data == {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateConnector",
+            "metadata": {
+                "creationTimestamp": ANY,
+                "generation": 1,
+                "name": unique_connector_name,
+                "namespace": "default",
+                "resourceVersion": ANY,
+                "uid": ANY,
+            },
+            "spec": {
+                "imagePolicy": {
+                    "provider": "dockerhub",
+                    "repository": "twingate/connector",
+                    "version": "^1.0.0",
+                    "allowPrerelease": False,
+                },
+                "name": unique_connector_name,
+                "logLevel": 3,
+                "logAnalytics": True,
+                "hasStatusNotificationsEnabled": True,
+            },
+        }
+
+        kubectl_delete("tc", unique_connector_name)
+
     def test_imagepolicy_validates_provider(self, unique_connector_name):
         with pytest.raises(subprocess.CalledProcessError):
             kubectl_create(

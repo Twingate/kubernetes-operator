@@ -53,86 +53,78 @@ def get_connector_deployment(
     extra_volume_mounts = container_extra.pop("volumeMounts", [])
 
     # fmt: off
-    pod_spec = {
-        "containers": [
-            {
-                "env": [
-                    {"name": "TWINGATE_LABEL_DEPLOYED_BY", "value": "operator"},
-                    {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
-                    {"name": "TWINGATE_URL", "value": tenant_url},
-                    {"name": "TWINGATE_LOG_LEVEL", "value": str(spec.log_level)},
-                    *connector_env_vars,
-                    *extra_env
-                ],
-                "envFrom": [{"secretRef": {"name": name, "optional": False}}, *extra_env_from],
-                "image": image,
-                "imagePullPolicy": "Always",
-                "name": "connector",
-                "securityContext": {
-                    "allowPrivilegeEscalation": False,
-                    "capabilities": {
-                        "drop": ["ALL"],
-                    },
-                    "runAsNonRoot": True,
-                    "runAsUser": 65532,
-                    "seccompProfile": {
-                        "type": "RuntimeDefault"
-                    },
-                    "readOnlyRootFilesystem": True,
-                },
-                "readinessProbe": {
-                    "exec": {
-                        "command": [
-                            "/connectorctl",
-                            "health",
-                        ]
-                    },
-                    "initialDelaySeconds": 5,
-                    "periodSeconds": 5,
-                },
-                "livenessProbe": {
-                    "exec": {
-                        "command": [
-                            "/connectorctl",
-                            "health",
-                        ]
-                    },
-                    "initialDelaySeconds": 5,
-                    "periodSeconds": 5,
-                },
-                "volumeMounts": [
-                    {
-                        "name": "twingate-socket",
-                        "mountPath": "/var/run/twingate",
-                    },
-                    *extra_volume_mounts
-                ],
-                **container_extra,
-            },
-            *spec.sidecar_containers,
-        ],
-        "volumes": [{"name": "twingate-socket", "emptyDir": {}}, *extra_volumes],
-        **spec.pod_extra,
-    }
     pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}
+    pod_labels = spec.pod_labels | { "connector.twingate.com/name": name }
 
     deployment_spec = {
         "replicas": 1,
         "selector": {
-            "matchLabels": spec.pod_labels,
+            "matchLabels": pod_labels,
         },
         "template": {
             "metadata": {
                 "annotations": pod_annotations,
-                "labels": spec.pod_labels,
+                "labels": pod_labels,
             },
-            "spec": pod_spec,
+            "spec": {
+                "containers": [
+                    {
+                        "env": [
+                            {"name": "TWINGATE_LABEL_DEPLOYED_BY", "value": "operator"},
+                            {"name": "TWINGATE_LABEL_OPERATOR_VERSION", "value": get_version()},
+                            {"name": "TWINGATE_URL", "value": tenant_url},
+                            {"name": "TWINGATE_LOG_LEVEL", "value": str(spec.log_level)},
+                            *connector_env_vars,
+                            *extra_env
+                        ],
+                        "envFrom": [{"secretRef": {"name": name, "optional": False}}, *extra_env_from],
+                        "image": image,
+                        "imagePullPolicy": "Always",
+                        "name": "connector",
+                        "securityContext": {
+                            "allowPrivilegeEscalation": False,
+                            "capabilities": {
+                                "drop": ["ALL"],
+                            },
+                            "runAsNonRoot": True,
+                            "runAsUser": 65532,
+                            "seccompProfile": {
+                                "type": "RuntimeDefault"
+                            },
+                            "readOnlyRootFilesystem": True,
+                        },
+                        "readinessProbe": {
+                            "exec": {
+                                "command": ["/connectorctl", "health"]
+                            },
+                            "initialDelaySeconds": 5,
+                            "periodSeconds": 5,
+                        },
+                        "livenessProbe": {
+                            "exec": {
+                                "command": ["/connectorctl", "health"]
+                            },
+                            "initialDelaySeconds": 5,
+                            "periodSeconds": 5,
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "twingate-socket",
+                                "mountPath": "/var/run/twingate",
+                            },
+                            *extra_volume_mounts
+                        ],
+                        **container_extra,
+                    },
+                    *spec.sidecar_containers,
+                ],
+                "volumes": [{"name": "twingate-socket", "emptyDir": {}}, *extra_volumes],
+                **spec.pod_extra,
+            },
         },
-
     }
 
-
-    deployment_meta = V1ObjectMeta(annotations=pod_annotations, labels=spec.pod_labels)
+    deployment_meta = V1ObjectMeta(annotations=pod_annotations, labels=pod_labels)
 
     # fmt: on
     return kubernetes.client.V1Deployment(

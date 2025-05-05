@@ -17,9 +17,9 @@ ANNOTATION_POD_SPEC_VERSION = "twingate.com/connector-podspec-version"
 ANNOTATION_POD_SPEC_VERSION_VALUE = "v1"
 
 
-def get_connector_pod(
+def get_connector_deployment(
     crd: TwingateConnectorCRD, tenant_url: str, image: str
-) -> kubernetes.client.V1Pod:
+) -> kubernetes.client.V1Deployment:
     spec = crd.spec
     name = crd.metadata.name
 
@@ -116,10 +116,28 @@ def get_connector_pod(
     }
     pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}
 
-    pod_meta = V1ObjectMeta(annotations=pod_annotations, labels=spec.pod_labels)
+    deployment_spec = {
+        "replicas": 1,
+        "selector": {
+            "matchLabels": spec.pod_labels,
+        },
+        "template": {
+            "metadata": {
+                "annotations": pod_annotations,
+                "labels": spec.pod_labels,
+            },
+            "spec": pod_spec,
+        },
+
+    }
+
+
+    deployment_meta = V1ObjectMeta(annotations=pod_annotations, labels=spec.pod_labels)
 
     # fmt: on
-    return kubernetes.client.V1Pod(spec=pod_spec, metadata=pod_meta)
+    return kubernetes.client.V1Deployment(
+        spec=deployment_spec, metadata=deployment_meta
+    )
 
 
 def get_connector_secret(
@@ -244,6 +262,7 @@ def twingate_connector_pod_reconciler(
 
     crd = TwingateConnectorCRD(**body)
     kapi = kubernetes.client.CoreV1Api()
+    kapi_apps = kubernetes.client.AppsV1Api()
     k8s_pod = k8s_read_namespaced_pod(namespace, crd.metadata.name, kapi=kapi)
     if k8s_pod and k8s_pod.status.phase != "Running":
         raise kopf.TemporaryError("Pod not running.", delay=1)
@@ -282,8 +301,10 @@ def twingate_connector_pod_reconciler(
             k8s_pod.spec.containers[0].image = image
             kapi.patch_namespaced_pod(meta.name, namespace, body=k8s_pod)
     else:
-        pod = get_connector_pod(crd, memo.twingate_settings.full_url, image)
-        kopf.adopt(pod, owner=body, strict=True, forced=True)
-        kapi.create_namespaced_pod(namespace, body=pod)
+        deployment = get_connector_deployment(
+            crd, memo.twingate_settings.full_url, image
+        )
+        kopf.adopt(deployment, owner=body, strict=True, forced=True)
+        kapi_apps.create_namespaced_deployment(namespace, body=deployment)
 
     return success()

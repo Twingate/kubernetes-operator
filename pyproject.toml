@@ -48,7 +48,7 @@ types-pyyaml = "^6.0.12.20250402"
 optional = true
 
 [tool.poetry.group.build.dependencies]
-python-semantic-release = "^9.21.0"
+python-semantic-release = "^9.21.1"
 
 [build-system]
 requires = ["poetry-core"]

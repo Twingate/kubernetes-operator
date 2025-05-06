@@ -211,8 +211,14 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
 
     updated_connector = client.connector_update(crd.spec)
 
-    kapi = kubernetes.client.AppsV1Api()
-    kapi.delete_namespaced_deployment(crd.metadata.name, namespace)
+    try:
+        kapi = kubernetes.client.AppsV1Api()
+        kapi.delete_namespaced_deployment(crd.metadata.name, namespace)
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            logger.info("Deployment not found, skipping delete")
+        else:
+            raise
 
     return success(twingate_id=updated_connector.id)
 
@@ -272,14 +278,17 @@ def twingate_connector_pod_reconciler(
                 ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
             }
 
-    if k8s_deployment and k8s_pod_image != expected_image:
-        k8s_deployment.spec.template.spec.containers[0].image = expected_image
-        kapi_apps.patch_namespaced_deployment(meta.name, namespace, body=k8s_deployment)
-        kopf.info(
-            body,
-            reason="Image updated",
-            message=f"Updated image from {k8s_pod_image} to {expected_image}",
-        )
+    if k8s_deployment:
+        if k8s_pod_image != expected_image:
+            k8s_deployment.spec.template.spec.containers[0].image = expected_image
+            kapi_apps.patch_namespaced_deployment(
+                meta.name, namespace, body=k8s_deployment
+            )
+            kopf.info(
+                body,
+                reason="Image updated",
+                message=f"Updated image from {k8s_pod_image} to {expected_image}",
+            )
     else:
         deployment = get_connector_deployment(
             crd, memo.twingate_settings.full_url, expected_image

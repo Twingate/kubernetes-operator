@@ -259,7 +259,7 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
         client.connector_delete(connector_id)
 
 
-CONNECTOR_RECONCILER_INTERVAL = int(os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "9999999"))  # fmt: skip
+CONNECTOR_RECONCILER_INTERVAL = int(os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "5"))  # fmt: skip
 CONNECTOR_RECONCILER_INIT_DELAY = int(os.environ.get("CONNECTOR_RECONCILER_INIT_DELAY", "5"))  # fmt: skip
 
 

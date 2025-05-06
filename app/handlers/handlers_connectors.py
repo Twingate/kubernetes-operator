@@ -13,9 +13,6 @@ from app.settings import get_version
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
 
-ANNOTATION_POD_SPEC_VERSION = "twingate.com/connector-podspec-version"
-ANNOTATION_POD_SPEC_VERSION_VALUE = "v1"
-
 
 def get_connector_deployment(
     crd: TwingateConnectorCRD, tenant_url: str, image: str
@@ -53,7 +50,7 @@ def get_connector_deployment(
     extra_volume_mounts = container_extra.pop("volumeMounts", [])
 
     # fmt: off
-    pod_annotations = spec.pod_annotations | {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}
+    pod_annotations = spec.pod_annotations
     pod_labels = spec.pod_labels | { "connector.twingate.com/name": name }
 
     deployment_spec = {
@@ -144,6 +141,18 @@ def get_connector_secret(
     )
 
 
+def k8s_read_namespaced_deployment(
+    namespace: str, name: str, kapi_apps: kubernetes.client.AppsV1Api | None = None
+) -> kubernetes.client.V1Deployment | None:
+    try:
+        kapi_apps = kapi_apps or kubernetes.client.AppsV1Api()
+        return kapi_apps.read_namespaced_deployment(name=name, namespace=namespace)
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            return None
+        raise
+
+
 def k8s_read_namespaced_pod(
     namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
 ) -> kubernetes.client.V1Pod | None:
@@ -164,6 +173,14 @@ def k8s_force_delete_pod(
     kapi.delete_namespaced_pod(
         name, namespace, body=kubernetes.client.V1DeleteOptions(grace_period_seconds=0)
     )
+
+
+def delete_pre_deployment_pod_if_exists(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+):
+    """Delete the pod if it exists. This is used to delete the old pod that was used before we switched to using Deployment objects."""
+    if k8s_read_namespaced_pod(namespace, name, kapi=kapi):
+        k8s_force_delete_pod(namespace, name, kapi=kapi)
 
 
 @kopf.on.create("twingateconnector")
@@ -208,17 +225,23 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
     client = TwingateAPIClient(settings, logger=logger)
 
     crd = TwingateConnectorCRD(**body)
-    # diff example: (('add', ('id',), None, 'Q29ubmVjdG9yOjUwNjE3NQ=='),)
+    # diff example: (('add', ('name',), None, 'whispering-petrel'), ('add', ('id',), None, 'Q29ubmVjdG9yOjEwMzkyMTI='))
+    # but name could be missing
     if len(diff) == 1 and diff[0][:3] == ("add", ("id",), None):
         return success(twingate_id=crd.spec.id, message="No update required")
+
+    if len(diff) == 2:
+        diffs = [d[:3] for d in diff]
+        if ("add", ("name",), None) in diffs and ("add", ("id",), None) in diffs:
+            return success(twingate_id=crd.spec.id, message="No update required")
 
     if not crd.spec.id:
         return fail(error="Update called before Connector has an ID")
 
     updated_connector = client.connector_update(crd.spec)
 
-    kapi = kubernetes.client.CoreV1Api()
-    kapi.delete_namespaced_pod(crd.metadata.name, namespace)
+    kapi = kubernetes.client.AppsV1Api()
+    kapi.delete_namespaced_deployment(crd.metadata.name, namespace)
 
     return success(twingate_id=updated_connector.id)
 
@@ -236,7 +259,7 @@ def twingate_connector_delete(spec, meta, status, namespace, memo, logger, **kwa
         client.connector_delete(connector_id)
 
 
-CONNECTOR_RECONCILER_INTERVAL = int(os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "5"))  # fmt: skip
+CONNECTOR_RECONCILER_INTERVAL = int(os.environ.get("CONNECTOR_RECONCILER_INTERVAL", "9999999"))  # fmt: skip
 CONNECTOR_RECONCILER_INIT_DELAY = int(os.environ.get("CONNECTOR_RECONCILER_INIT_DELAY", "5"))  # fmt: skip
 
 
@@ -255,24 +278,16 @@ def twingate_connector_pod_reconciler(
     crd = TwingateConnectorCRD(**body)
     kapi = kubernetes.client.CoreV1Api()
     kapi_apps = kubernetes.client.AppsV1Api()
-    k8s_pod = k8s_read_namespaced_pod(namespace, crd.metadata.name, kapi=kapi)
-    if k8s_pod and k8s_pod.status.phase != "Running":
-        raise kopf.TemporaryError("Pod not running.", delay=1)
 
-    # Migrate old pods
-    pod_spec_version = ((k8s_pod and k8s_pod.metadata.annotations) or {}).get(
-        ANNOTATION_POD_SPEC_VERSION
-    )
-    if k8s_pod and pod_spec_version != ANNOTATION_POD_SPEC_VERSION_VALUE:
-        k8s_force_delete_pod(namespace, crd.metadata.name, kapi)
-        return success(
-            message=f"Pod spec version mismatch. Deleting pod {crd.metadata.name}."
-        )
+    delete_pre_deployment_pod_if_exists(namespace, crd.metadata.name, kapi=kapi)
 
-    image = k8s_pod.spec.containers[0].image if k8s_pod else None
+    k8s_deployment = k8s_read_namespaced_deployment(namespace, crd.metadata.name)
+    k8s_pod = k8s_deployment.spec.template if k8s_deployment else None
+    k8s_pod_image = k8s_pod.spec.containers[0].image if k8s_pod else None
+    expected_image = k8s_pod_image
 
     if crd.spec.image or not k8s_pod:
-        image = crd.spec.get_image()
+        expected_image = crd.spec.get_image()
     elif crd.spec.image_policy:
         now = pendulum.now("UTC").start_of("minute")
         next_check_at = pendulum.parse(
@@ -280,23 +295,30 @@ def twingate_connector_pod_reconciler(
         )
 
         if now >= next_check_at:
-            image = crd.spec.get_image()
+            expected_image = crd.spec.get_image()
             patch.meta["annotations"] = {
                 ANNOTATION_LAST_VERSION_CHECK: now.to_iso8601_string(),
                 ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
             }
 
-    if k8s_pod:
-        # When pod exists, can only update the image or we get `Forbidden: pod updates may not change fields other than `spec.containers[*].image`
-        current_image = k8s_pod.spec.containers[0].image
-        if current_image != image:
-            k8s_pod.spec.containers[0].image = image
-            kapi.patch_namespaced_pod(meta.name, namespace, body=k8s_pod)
+    if k8s_deployment and k8s_pod_image != expected_image:
+        k8s_deployment.spec.template.spec.containers[0].image = expected_image
+        kapi_apps.patch_namespaced_deployment(meta.name, namespace, body=k8s_deployment)
+        kopf.info(
+            body,
+            reason="Image updated",
+            message=f"Updated image from {k8s_pod_image} to {expected_image}",
+        )
     else:
         deployment = get_connector_deployment(
-            crd, memo.twingate_settings.full_url, image
+            crd, memo.twingate_settings.full_url, expected_image
         )
         kopf.adopt(deployment, owner=body, strict=True, forced=True)
         kapi_apps.create_namespaced_deployment(namespace, body=deployment)
+        kopf.info(
+            body,
+            reason="Deployment created",
+            message=f"Created connector deployment with image {expected_image}",
+        )
 
     return success()

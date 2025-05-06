@@ -1,3 +1,4 @@
+import functools
 import time
 from unittest.mock import ANY
 
@@ -8,8 +9,8 @@ from tests_integration.utils import (
     kubectl_delete_wait,
     kubectl_get,
     kubectl_patch,
+    kubectl_wait_deployment_available,
     kubectl_wait_pod_running,
-    kubectl_wait_pod_status,
     kubectl_wait_to_exist,
 )
 
@@ -35,8 +36,13 @@ def test_connector_flows(run_kopf, random_name_generator):
     with run_kopf():
         kubectl_create(OBJ)
 
+        wait_for_deployment = functools.partial(
+            kubectl_wait_deployment_available,
+            connector_name,
+        )
+
         secret = kubectl_wait_to_exist("secret", connector_name)
-        pod = kubectl_wait_pod_running(connector_name)
+        deployment = wait_for_deployment()
 
         connector = kubectl_get("tc", connector_name)
 
@@ -45,22 +51,10 @@ def test_connector_flows(run_kopf, random_name_generator):
         assert connector["status"]["twingate_connector_create"] == expected_status
         # Secret was properly created
         assert secret["data"] == {"TWINGATE_ACCESS_TOKEN": ANY, "TWINGATE_REFRESH_TOKEN": ANY}  # fmt: skip
-        # pod was properly created
-        assert pod["status"]["phase"] == "Running"
-        assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
-        assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
-        container = pod["spec"]["containers"][0]
+        container = deployment["spec"]["template"]["spec"]["containers"][0]
         container_env = {t["name"]: t["value"] for t in container["env"]}
         assert container_env["TWINGATE_LOG_LEVEL"] == "7"
-
-        # Check that if pod is deleted we recreate it
-        kubectl_delete_wait("pod", connector_name)
-        pod = kubectl_wait_pod_status(connector_name, "Running")
-
-        assert pod["status"]["phase"] == "Running"
-        assert pod["metadata"]["ownerReferences"][0]["name"] == connector_name
-        assert pod["metadata"]["ownerReferences"][0]["kind"] == "TwingateConnector"
 
         # Check patching TwingateConnector updates the pod
         kubectl_patch(
@@ -68,16 +62,14 @@ def test_connector_flows(run_kopf, random_name_generator):
             {
                 "spec": {
                     "containerExtra": {"env": [{"name": "FOO", "value": "bar"}]},
-                    "podExtra": {"restartPolicy": "OnFailure"},
                     "podAnnotations": {"some/annotation": "some-value"},
                 }
             },
         )
         time.sleep(5)
-        pod = kubectl_wait_pod_running(connector_name)
+        deployment = wait_for_deployment()
+        pod = deployment["spec"]["template"]
 
-        assert pod["status"]["phase"] == "Running"
-        assert pod["spec"]["restartPolicy"] == "OnFailure"
         assert pod["spec"]["containers"][0]["env"][-1]["name"] == "FOO"
         assert pod["spec"]["containers"][0]["env"][-1]["value"] == "bar"
         assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"

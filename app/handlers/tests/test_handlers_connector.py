@@ -323,7 +323,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         mock_container.image = "twingate/connector:latest"
 
         mock_dep = MagicMock()
-        mock_dep.spec.teamplate.containers = [mock_container]
+        mock_dep.spec.template.containers = [mock_container]
         k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())

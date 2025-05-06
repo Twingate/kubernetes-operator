@@ -13,14 +13,6 @@ register(ConnectorFactory)
 
 
 @pytest.fixture
-def k8s_client_mock():
-    client_mock = MagicMock()
-    with patch("kubernetes.client.CoreV1Api") as k8sclient_mock:
-        k8sclient_mock.return_value = client_mock
-        yield client_mock
-
-
-@pytest.fixture
 def kopf_info_mock():
     with patch("kopf.info") as m:
         yield m

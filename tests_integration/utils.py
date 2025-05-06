@@ -131,7 +131,7 @@ def kubectl_wait_pod_running(pod_name: str, max_retries: int = 10) -> dict:
 
 
 def kubectl_wait_deployment_available(
-    deployment_name: str, *, max_retries: int = 10
+    deployment_name: str, *, max_retries: int = 5
 ) -> dict:
     retry = 0
     while True:

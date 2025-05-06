@@ -9,6 +9,11 @@ from app.api import TwingateAPIClient
 from app.crds import TwingateConnectorCRD
 from app.handlers.base import fail, success
 from app.settings import get_version
+from app.utils_k8s import (
+    k8s_delete_pod,
+    k8s_read_namespaced_deployment,
+    k8s_read_namespaced_pod,
+)
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
 ANNOTATION_NEXT_VERSION_CHECK = "twingate.com/next-version-check"
@@ -141,46 +146,12 @@ def get_connector_secret(
     )
 
 
-def k8s_read_namespaced_deployment(
-    namespace: str, name: str, kapi_apps: kubernetes.client.AppsV1Api | None = None
-) -> kubernetes.client.V1Deployment | None:
-    try:
-        kapi_apps = kapi_apps or kubernetes.client.AppsV1Api()
-        return kapi_apps.read_namespaced_deployment(name=name, namespace=namespace)
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status == 404:
-            return None
-        raise
-
-
-def k8s_read_namespaced_pod(
-    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
-) -> kubernetes.client.V1Pod | None:
-    try:
-        kapi = kapi or kubernetes.client.CoreV1Api()
-        return kapi.read_namespaced_pod(name=name, namespace=namespace)
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status == 404:
-            return None
-        raise
-
-
-def k8s_force_delete_pod(
-    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
-):
-    kapi = kapi or kubernetes.client.CoreV1Api()
-    kapi.patch_namespaced_pod(name, namespace, body={"metadata": {"finalizers": None}})
-    kapi.delete_namespaced_pod(
-        name, namespace, body=kubernetes.client.V1DeleteOptions(grace_period_seconds=0)
-    )
-
-
 def delete_pre_deployment_pod_if_exists(
     namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
 ):
     """Delete the pod if it exists. This is used to delete the old pod that was used before we switched to using Deployment objects."""
     if k8s_read_namespaced_pod(namespace, name, kapi=kapi):
-        k8s_force_delete_pod(namespace, name, kapi=kapi)
+        k8s_delete_pod(namespace, name, kapi=kapi, force=True)
 
 
 @kopf.on.create("twingateconnector")

@@ -1,6 +1,7 @@
 import os
 import random
 import string
+import time
 import uuid
 from contextlib import contextmanager
 
@@ -69,7 +70,11 @@ def run_kopf(kopf_runner_args, kopf_settings):
             settings=kopf_settings,
             env=env,
         ) as runner:
-            yield runner
+            try:
+                yield runner
+            finally:
+                kubectl("delete twingate --all")
+                time.sleep(5)
 
         assert runner.exception is None
         assert runner.exit_code == 0

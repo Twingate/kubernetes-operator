@@ -240,9 +240,6 @@ class TestTwingateConnectorPodReconciler_Image:
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
-        mock_dep = MagicMock()
-        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
-
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()

@@ -10,10 +10,9 @@ from app.crds import TwingateConnectorCRD
 from app.handlers.base import fail, success
 from app.settings import get_version
 from app.utils_k8s import (
-    k8s_delete_pod,
     k8s_read_namespaced_deployment,
-    k8s_read_namespaced_pod,
     k8s_safe_delete_deployment,
+    k8s_safe_delete_pod,
 )
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
@@ -151,8 +150,7 @@ def delete_pre_deployment_pod_if_exists(
     namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
 ):
     """Delete the pod if it exists. This is used to delete the old pod that was used before we switched to using Deployment objects."""
-    if k8s_read_namespaced_pod(namespace, name, kapi=kapi):
-        k8s_delete_pod(namespace, name, kapi=kapi, force=True)
+    k8s_safe_delete_pod(namespace, name, kapi=kapi, force=True)
 
 
 @kopf.on.create("twingateconnector")

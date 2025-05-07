@@ -52,7 +52,7 @@ rules:
   # Application
   - apiGroups: [twingate.com]
     resources: [twingateresources, twingateresourceaccesses, twingateconnectors, twingategroups]
-    verbs: [list, watch, patch, get, create]
+    verbs: [list, watch, patch, get, create, delete]
 
   - apiGroups: ["*"]
     resources: [pods, services, secrets, services/status]

@@ -162,11 +162,9 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
     logger.info("Got twingateconnector create request: %s", body)
     crd = TwingateConnectorCRD(**body)
-    connector_id = crd.spec.id
 
     if not crd.spec.id:
         connector = client.connector_create(crd.spec)
-        connector_id = connector.id
         patch.spec["id"] = connector.id
         patch.spec["name"] = connector.name
     else:
@@ -181,6 +179,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     kapi = kubernetes.client.CoreV1Api()
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
 
+    connector_id = connector.id
     return success(twingate_id=connector_id)
 
 

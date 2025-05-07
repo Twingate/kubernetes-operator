@@ -114,7 +114,7 @@ class TwingateAPIClient(
             },
         )
         result = self.client.execute(document, variable_values=variable_values)
-        self.logger.debug("Twingate API Result: %s", result)
+        self.logger.info("Twingate API Result: %s", result)
         return result
 
     def execute_mutation(

@@ -106,9 +106,15 @@ class TwingateAPIClient(
     def execute_gql(
         self, document: DocumentNode, variable_values: dict[str, Any] | None = None
     ):
-        self.logger.info("Calling %s with %s", print_ast(document), variable_values)
+        self.logger.info(
+            "Calling Twingate API",
+            extra={
+                "query": print_ast(document),
+                "variables": variable_values,
+            },
+        )
         result = self.client.execute(document, variable_values=variable_values)
-        self.logger.info("Result: %s", result)
+        self.logger.debug("Twingate API Result: %s", result)
         return result
 
     def execute_mutation(

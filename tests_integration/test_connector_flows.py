@@ -53,7 +53,7 @@ def test_connector_flows(run_kopf, random_name_generator):
         container_env = {t["name"]: t["value"] for t in container["env"]}
         assert container_env["TWINGATE_LOG_LEVEL"] == "7"
 
-        # Check patching TwingateConnector updates the pod
+        # Check patching TwingateConnector updates the deployment
         kubectl_patch(
             f"tc/{connector_name}",
             {

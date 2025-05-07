@@ -105,7 +105,7 @@ class TestTwingateConnectorCreate:
     ):
         connector, crd = get_connector_and_crd(with_id=True)
 
-        mock_api_client.connector_create.return_value = connector
+        mock_api_client.get_connector.return_value = connector
         mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
             access_token="at",
             refresh_token="rt",  # nosec

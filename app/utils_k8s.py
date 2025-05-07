@@ -30,20 +30,6 @@ def k8s_delete_pod(
     )
 
 
-def k8s_safe_delete_pod(
-    namespace: str,
-    name: str,
-    kapi: kubernetes.client.CoreV1Api | None = None,
-    *,
-    force: bool = False,
-):
-    try:
-        k8s_delete_pod(namespace, name, kapi=kapi, force=force)
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status != 404:
-            raise
-
-
 def k8s_read_namespaced_deployment(
     namespace: str, name: str, kapi_apps: kubernetes.client.AppsV1Api | None = None
 ) -> kubernetes.client.V1Deployment | None:

@@ -1,6 +1,356 @@
 # CHANGELOG
 
 
+## v0.21.0 (2025-05-07)
+
+### Bug Fixes
+
+- Add delete permission to Twingate resources
+  ([#634](https://github.com/Twingate/kubernetes-operator/pull/634),
+  [`dd6b242`](https://github.com/Twingate/kubernetes-operator/commit/dd6b242df0281d51347057a1cc1e1345969753ea))
+
+## Changes
+
+Added `delete` permission to twingate resources. When removing resource annotation from a `Service`
+  object the operator needs to delete the corresponding `TwingateResource` object
+
+### Chores
+
+- Bump python-semantic-release from 9.21.0 to 9.21.1
+  ([#632](https://github.com/Twingate/kubernetes-operator/pull/632),
+  [`1446548`](https://github.com/Twingate/kubernetes-operator/commit/14465483d3c5a46b1846b982079ece9923e64c83))
+
+Bumps [python-semantic-release](https://github.com/python-semantic-release/python-semantic-release)
+  from 9.21.0 to 9.21.1. <details> <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/python-semantic-release/python-semantic-release/releases">python-semantic-release's
+  releases</a>.</em></p> <blockquote> <h2>v9.21.1 (2025-05-05)</h2> <p><em>This release is published
+  under the MIT License.</em></p> <h3>🪲 Bug Fixes</h3> <ul> <li><strong>changelog-filters</strong>:
+  Fixes url resolution when prefix &amp; path share letters (<a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1239">PR#1239</a>,
+  <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/f61f8a38a1a3f44a7a56cf9dcb7dde748f90ca1e"><code>f61f8a3</code></a>)</li>
+  </ul> <h3>📖 Documentation</h3> <ul> <li><strong>github-actions</strong>: Expound on monorepo
+  example to include publishing actions (<a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1229">PR#1229</a>,
+  <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/550e85f5ec2695d5aa680014127846d58c680e31"><code>550e85f</code></a>)</li>
+  </ul> <h3>⚙️ Build System</h3> <ul> <li> <p><strong>deps</strong>: Bump <code>rich</code>
+  dependency from <code>13.0</code> to <code>14.0</code> (<a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1224">PR#1224</a>,
+  <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/691536e98f311d0fc6d29a72c41ce5a65f1f4b6c"><code>691536e</code></a>)</p>
+  </li> <li> <p><strong>deps</strong>: Expand <code>python-gitlab</code> dependency to include
+  <code>v5.0.0</code> (<a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1228">PR#1228</a>,
+  <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/a0cd1be4e3aa283cbdc544785e5f895c8391dfb8"><code>a0cd1be</code></a>)</p>
+  </li> </ul> <h3>✅ Resolved Issues</h3> <ul> <li><a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/issues/1204">#1204</a>:
+  <em>Unexpected &amp; Invalid urls generated in changelog</em></li> </ul> <hr />
+  <p><strong>Detailed Changes</strong>: <a
+  href="https://github.com/python-semantic-release/python-semantic-release/compare/v9.21.0...v9.21.1">v9.21.0...v9.21.1</a></p>
+  <hr /> <p><strong>Installable artifacts are available from</strong>:</p> <ul> <li> <p><a
+  href="https://pypi.org/project/python-semantic-release/9.21.1">PyPi Registry</a></p> </li> <li>
+  <p><a
+  href="https://github.com/python-semantic-release/python-semantic-release/releases/tag/v9.21.1">GitHub
+  Release Assets</a></p> </li> </ul> </blockquote> </details> <details> <summary>Changelog</summary>
+  <p><em>Sourced from <a
+  href="https://github.com/python-semantic-release/python-semantic-release/blob/master/CHANGELOG.rst">python-semantic-release's
+  changelog</a>.</em></p> <blockquote> <h1>v9.21.1 (2025-05-05)</h1> <h2>🪲 Bug Fixes</h2> <ul>
+  <li><strong>changelog-filters</strong>: Fixes url resolution when prefix &amp; path share letters,
+  closes
+  <code>[#1204](https://github.com/python-semantic-release/python-semantic-release/issues/1204)</code>_
+  (<code>PR#1239</code><em>, <code>f61f8a3</code></em>)</li> </ul> <h2>📖 Documentation</h2> <ul>
+  <li><strong>github-actions</strong>: Expound on monorepo example to include publishing actions
+  (<code>PR#1229</code><em>, <code>550e85f</code></em>)</li> </ul> <h2>⚙️ Build System</h2> <ul>
+  <li> <p><strong>deps</strong>: Bump <code>rich</code> dependency from <code>13.0</code> to
+  <code>14.0</code> (<code>PR#1224</code><em>, <code>691536e</code></em>)</p> </li> <li>
+  <p><strong>deps</strong>: Expand <code>python-gitlab</code> dependency to include
+  <code>v5.0.0</code> (<code>PR#1228</code><em>, <code>a0cd1be</code></em>)</p> </li> </ul> <p>..
+  _<a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/issues/1204">#1204</a>:
+  <a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/issues/1204">python-semantic-release/python-semantic-release#1204</a>
+  .. _550e85f: <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/550e85f5ec2695d5aa680014127846d58c680e31">https://github.com/python-semantic-release/python-semantic-release/commit/550e85f5ec2695d5aa680014127846d58c680e31</a>
+  .. _691536e: <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/691536e98f311d0fc6d29a72c41ce5a65f1f4b6c">https://github.com/python-semantic-release/python-semantic-release/commit/691536e98f311d0fc6d29a72c41ce5a65f1f4b6c</a>
+  .. _a0cd1be: <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/a0cd1be4e3aa283cbdc544785e5f895c8391dfb8">https://github.com/python-semantic-release/python-semantic-release/commit/a0cd1be4e3aa283cbdc544785e5f895c8391dfb8</a>
+  .. _f61f8a3: <a
+  href="https://github.com/python-semantic-release/python-semantic-release/commit/f61f8a38a1a3f44a7a56cf9dcb7dde748f90ca1e">https://github.com/python-semantic-release/python-semantic-release/commit/f61f8a38a1a3f44a7a56cf9dcb7dde748f90ca1e</a>
+  .. _PR#1224: <a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1224">python-semantic-release/python-semantic-release#1224</a>
+  .. _PR#1228: <a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1228">python-semantic-release/python-semantic-release#1228</a>
+  .. _PR#1229: <a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1229">python-semantic-release/python-semantic-release#1229</a>
+  .. _PR#1239: <a
+  href="https://redirect.github.com/python-semantic-release/python-semantic-release/pull/1239">python-semantic-release/python-semantic-release#1239</a></p>
+  <p>.. _changelog-v9.21.0:</p> </blockquote> </details> <details> <summary>Commits</summary> <ul>
+  <li>See full diff in <a
+  href="https://github.com/python-semantic-release/python-semantic-release/compare/v9.21...v9.21.1">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=python-semantic-release&package-manager=pip&previous-version=9.21.0&new-version=9.21.1)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.7 to 0.11.8 ([#630](https://github.com/Twingate/kubernetes-operator/pull/630),
+  [`20ae013`](https://github.com/Twingate/kubernetes-operator/commit/20ae0137c24fd0d9b6f6ad3c5d6866b95f2000a7))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.7 to 0.11.8. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.8</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>[<code>airflow</code>] Apply auto fixes to cases where the names have
+  changed in Airflow 3 (<code>AIR302</code>, <code>AIR311</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17553">#17553</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17570">#17570</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17571">#17571</a>)</li>
+  <li>[<code>airflow</code>] Extend <code>AIR301</code> rule (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17598">#17598</a>)</li>
+  <li>[<code>airflow</code>] Update existing <code>AIR302</code> rules with better suggestions (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17542">#17542</a>)</li>
+  <li>[<code>refurb</code>] Mark fix as safe for <code>readlines-in-for</code>
+  (<code>FURB129</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17644">#17644</a>)</li> <li>[syntax-errors]
+  <code>nonlocal</code> declaration at module level (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17559">#17559</a>)</li> <li>[syntax-errors]
+  Detect single starred expression assignment <code>x = *y</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17624">#17624</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[<code>flake8-pyi</code>] Ensure <code>Literal[None,] | Literal[None,]</code>
+  is not autofixed to <code>None | None</code> (<code>PYI061</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17659">#17659</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Avoid suggesting <code>Path.iterdir()</code> for
+  <code>os.listdir</code> with file descriptor (<code>PTH208</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17715">#17715</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Fix <code>PTH104</code> false positive when
+  <code>rename</code> is passed a file descriptor (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17712">#17712</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Fix <code>PTH116</code> false positive when
+  <code>stat</code> is passed a file descriptor (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17709">#17709</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Fix <code>PTH123</code> false positive when
+  <code>open</code> is passed a file descriptor from a function call (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17705">#17705</a>)</li>
+  <li>[<code>pycodestyle</code>] Fix duplicated diagnostic in <code>E712</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17651">#17651</a>)</li>
+  <li>[<code>pylint</code>] Detect <code>global</code> declarations in module scope
+  (<code>PLE0118</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17411">#17411</a>)</li> <li>[syntax-errors]
+  Make <code>async-comprehension-in-sync-comprehension</code> more specific (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17460">#17460</a>)</li> </ul>
+  <h3>Configuration</h3> <ul> <li>Add option to disable <code>typing_extensions</code> imports (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17611">#17611</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Fix example syntax for the
+  <code>lint.pydocstyle.ignore-var-parameters</code> option (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17740">#17740</a>)</li> <li>Add fix safety
+  sections (<code>ASYNC116</code>, <code>FLY002</code>, <code>D200</code>, <code>RUF005</code>,
+  <code>RUF017</code>, <code>RUF027</code>, <code>RUF028</code>, <code>RUF057</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17497">#17497</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17496">#17496</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17502">#17502</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17484">#17484</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17480">#17480</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17485">#17485</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17722">#17722</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17483">#17483</a>)</li> </ul> <h3>Other
+  changes</h3> <ul> <li>Add Python 3.14 to configuration options (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17647">#17647</a>)</li> <li>Make syntax
+  error for unparenthesized except tuples version specific to before 3.14 (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17660">#17660</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/BurntSushi"><code>@​BurntSushi</code></a></li> <li><a
+  href="https://github.com/Jie211"><code>@​Jie211</code></a></li> <li><a
+  href="https://github.com/Kalmaegi"><code>@​Kalmaegi</code></a></li> <li><a
+  href="https://github.com/LaBatata101"><code>@​LaBatata101</code></a></li> <li><a
+  href="https://github.com/Lee-W"><code>@​Lee-W</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/VascoSch92"><code>@​VascoSch92</code></a></li> <li><a
+  href="https://github.com/abhijeetbodas2001"><code>@​abhijeetbodas2001</code></a></li> <li><a
+  href="https://github.com/brendancooley"><code>@​brendancooley</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> </ul> <!-- raw HTML omitted -->
+  </blockquote> <p>... (truncated)</p> </details> <details> <summary>Changelog</summary>
+  <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's
+  changelog</a>.</em></p> <blockquote> <h2>0.11.8</h2> <h3>Preview features</h3> <ul>
+  <li>[<code>airflow</code>] Apply auto fixes to cases where the names have changed in Airflow 3
+  (<code>AIR302</code>, <code>AIR311</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17553">#17553</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17570">#17570</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17571">#17571</a>)</li>
+  <li>[<code>airflow</code>] Extend <code>AIR301</code> rule (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17598">#17598</a>)</li>
+  <li>[<code>airflow</code>] Update existing <code>AIR302</code> rules with better suggestions (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17542">#17542</a>)</li>
+  <li>[<code>refurb</code>] Mark fix as safe for <code>readlines-in-for</code>
+  (<code>FURB129</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17644">#17644</a>)</li> <li>[syntax-errors]
+  <code>nonlocal</code> declaration at module level (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17559">#17559</a>)</li> <li>[syntax-errors]
+  Detect single starred expression assignment <code>x = *y</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17624">#17624</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>[<code>flake8-pyi</code>] Ensure <code>Literal[None,] | Literal[None,]</code>
+  is not autofixed to <code>None | None</code> (<code>PYI061</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17659">#17659</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Avoid suggesting <code>Path.iterdir()</code> for
+  <code>os.listdir</code> with file descriptor (<code>PTH208</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17715">#17715</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Fix <code>PTH104</code> false positive when
+  <code>rename</code> is passed a file descriptor (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17712">#17712</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Fix <code>PTH116</code> false positive when
+  <code>stat</code> is passed a file descriptor (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17709">#17709</a>)</li>
+  <li>[<code>flake8-use-pathlib</code>] Fix <code>PTH123</code> false positive when
+  <code>open</code> is passed a file descriptor from a function call (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17705">#17705</a>)</li>
+  <li>[<code>pycodestyle</code>] Fix duplicated diagnostic in <code>E712</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17651">#17651</a>)</li>
+  <li>[<code>pylint</code>] Detect <code>global</code> declarations in module scope
+  (<code>PLE0118</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17411">#17411</a>)</li> <li>[syntax-errors]
+  Make <code>async-comprehension-in-sync-comprehension</code> more specific (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17460">#17460</a>)</li> </ul>
+  <h3>Configuration</h3> <ul> <li>Add option to disable <code>typing_extensions</code> imports (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17611">#17611</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Fix example syntax for the
+  <code>lint.pydocstyle.ignore-var-parameters</code> option (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17740">#17740</a>)</li> <li>Add fix safety
+  sections (<code>ASYNC116</code>, <code>FLY002</code>, <code>D200</code>, <code>RUF005</code>,
+  <code>RUF017</code>, <code>RUF027</code>, <code>RUF028</code>, <code>RUF057</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17497">#17497</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17496">#17496</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17502">#17502</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17484">#17484</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17480">#17480</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17485">#17485</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17722">#17722</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17483">#17483</a>)</li> </ul> <h3>Other
+  changes</h3> <ul> <li>Add Python 3.14 to configuration options (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17647">#17647</a>)</li> <li>Make syntax
+  error for unparenthesized except tuples version specific to before 3.14 (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17660">#17660</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/75effb8ed7430288648eb616b1499939700edff6"><code>75effb8</code></a>
+  Bump 0.11.8 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17766">#17766</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/3353d07938da58314abbd00b29e2ed9a6a08aa83"><code>3353d07</code></a>
+  [<code>flake8-use-pathlib</code>] Fix <code>PTH104</code>false positive when <code>rename</code>
+  is passed a f...</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/41f3f21629c62e6ecf3613b4a27b19fe0a06a458"><code>41f3f21</code></a>
+  Improve messages outputted by py-fuzzer (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17764">#17764</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/76ec64d5357f2db4371c3759d417b890964d5726"><code>76ec64d</code></a>
+  [<code>red-knot</code>] Allow subclasses of Any to be assignable to Callable types (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17717">#17717</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/b7e69ecbfc5d3455e309432cc2d1da34973e739b"><code>b7e69ec</code></a>
+  [red-knot] Increase durability of read-only <code>File</code> fields (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17757">#17757</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/9c57862262558c08dae8b4e488444cac611f45cf"><code>9c57862</code></a>
+  [red-knot] Cache source type during semanic index building (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17756">#17756</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/67ef3707339ec29dc6d10d09a3daae4ea9760f18"><code>67ef370</code></a>
+  [<code>flake8-use-pathlib</code>] Fix <code>PTH116</code> false positive when <code>stat</code> is
+  passed a fi...</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/e17e1e860b2f075d0aab31754d1a9e1a38d42144"><code>e17e1e8</code></a>
+  Sync vendored typeshed stubs (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17753">#17753</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/03d8679adff964ddb4d2945d5b39665bead72755"><code>03d8679</code></a>
+  [red-knot] Preliminary <code>NamedTuple</code> support (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17738">#17738</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/d33a50368644c0bd98d4d66d0b9b5dbbaa5f89db"><code>d33a503</code></a>
+  [red-knot] Add tests for classes that have incompatible <code>__new__</code> and `__init...</li>
+  <li>Additional commits viewable in <a
+  href="https://github.com/astral-sh/ruff/compare/0.11.7...0.11.8">compare view</a></li> </ul>
+  </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.7&new-version=0.11.8)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Nicer Makefile
+  ([`f67790b`](https://github.com/Twingate/kubernetes-operator/commit/f67790b8119cd222fd4516a6e7029c751e0ad84a))
+
+- Update asdf to Python 3.12.10
+  ([`7c9e2a4`](https://github.com/Twingate/kubernetes-operator/commit/7c9e2a424abc5f0e8c97a8af57d5cbd9f4dc1e7d))
+
+- Update coveralls dependency ([#635](https://github.com/Twingate/kubernetes-operator/pull/635),
+  [`a21e955`](https://github.com/Twingate/kubernetes-operator/commit/a21e955571eeb2aed5ad3df118b95054a0d79520))
+
+## Changes
+
+Updated `coveralls` and `pytest-cov`
+
+### Features
+
+- Add default value for repository source to streamline configuration process
+  ([#631](https://github.com/Twingate/kubernetes-operator/pull/631),
+  [`7cbcd7f`](https://github.com/Twingate/kubernetes-operator/commit/7cbcd7f6356f4562ca867fa8dcec6fc488c2b606))
+
+## Changes
+
+`TwingateConnector` provider should default to `dockerhub`
+
+
 ## v0.20.2 (2025-04-30)
 
 ### Bug Fixes

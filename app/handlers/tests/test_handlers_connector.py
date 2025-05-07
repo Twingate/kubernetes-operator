@@ -139,7 +139,14 @@ class TestTwingateConnectorUpdate:
         mock_api_client.connector_update.return_value = connector
 
         run = kopf_handler_runner(
-            twingate_connector_update, crd, MagicMock(), new={}, diff={}
+            twingate_connector_update,
+            crd,
+            MagicMock(),
+            new={},
+            diff=(
+                ("add", ("logLevel",), 3, 7),
+                ("add", ("name",), "before", "after"),
+            ),
         )
         run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
             crd.metadata.name, "default"

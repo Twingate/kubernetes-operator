@@ -5,6 +5,7 @@ from unittest.mock import ANY
 from tests_integration.utils import (
     kubectl_create,
     kubectl_delete,
+    kubectl_delete_wait,
     kubectl_get,
     kubectl_patch,
     kubectl_wait_deployment_available,
@@ -70,6 +71,12 @@ def test_connector_flows(run_kopf, random_name_generator):
         assert pod["spec"]["containers"][0]["env"][-1]["value"] == "bar"
         assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"
 
+        kubectl_delete_wait("tc", connector_name)
+
+        # ensure owned secret & deployment are deleted
+        kubectl_delete_wait("secret", connector_name, perform_deletion=False)
+        kubectl_delete_wait("deployment", connector_name, perform_deletion=False)
+
 
 def test_connector_flows_image_change(run_kopf, random_name_generator):
     connector_name = random_name_generator("t-image")
@@ -110,6 +117,12 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
         time.sleep(5)
         wait_for_deployment()
 
+        kubectl_delete_wait("tc", connector_name)
+
+        # ensure owned secret & deployment are deleted
+        kubectl_delete_wait("secret", connector_name, perform_deletion=False)
+        kubectl_delete_wait("deployment", connector_name, perform_deletion=False)
+
 
 def test_connector_flows_deployment_gone_while_operator_down(
     run_kopf, random_name_generator
@@ -148,3 +161,9 @@ def test_connector_flows_deployment_gone_while_operator_down(
     with run_kopf():
         # deployment recreated was recreated
         wait_for_deployment()
+
+        kubectl_delete_wait("tc", connector_name)
+
+        # ensure owned secret & deployment are deleted
+        kubectl_delete_wait("secret", connector_name, perform_deletion=False)
+        kubectl_delete_wait("deployment", connector_name, perform_deletion=False)

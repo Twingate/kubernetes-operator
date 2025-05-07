@@ -7,7 +7,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 croniter = "^6.0.0"
 google-cloud-artifact-registry = "^1.16.0"
 gql = {version = "~=3.5.2", extras = ["requests"]}
@@ -26,12 +26,12 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.8.3"
-coveralls = "^3.3.1"
+coveralls = "^4.0.1"
 factory-boy = "^3.3.3"
 mypy = "^1.15.0"
 pre-commit = "^4.2.0"
 pytest = "^8.3.5"
-pytest-cov = "^5.0.0"
+pytest-cov = "^6.0.0"
 pytest-datadir = "^1.6.1"
 pytest-factoryboy = "^2.7.0"
 pytest-freezegun = "^0.4.2"

@@ -13,6 +13,7 @@ from app.utils_k8s import (
     k8s_delete_pod,
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
+    k8s_safe_delete_deployment,
 )
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
@@ -211,14 +212,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
 
     updated_connector = client.connector_update(crd.spec)
 
-    try:
-        kapi = kubernetes.client.AppsV1Api()
-        kapi.delete_namespaced_deployment(crd.metadata.name, namespace)
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status == 404:
-            logger.info("Deployment not found, skipping delete")
-        else:
-            raise
+    k8s_safe_delete_deployment(namespace, crd.metadata.name)
 
     return success(twingate_id=updated_connector.id)
 

@@ -99,6 +99,39 @@ class TestTwingateConnectorCreate:
             "TWINGATE_REFRESH_TOKEN": "rt",
         }
 
+    def test_connector_provisioning_with_id(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd(with_id=True)
+
+        mock_api_client.connector_create.return_value = connector
+        mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
+            access_token="at",
+            refresh_token="rt",  # nosec
+        )
+        run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
+
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
+
+        # didnt need to patch - connector already has id
+        assert run.patch_mock.spec == {}
+
+        run.kopf_adopt_mock.assert_called_once_with(
+            ANY, owner=ANY, strict=True, forced=True
+        )
+
+        run.k8s_core_client_mock.create_namespaced_secret.assert_called_once()
+        call_kw = run.k8s_core_client_mock.create_namespaced_secret.call_args.kwargs
+        assert call_kw["namespace"] == "default"
+        assert call_kw["body"].string_data == {
+            "TWINGATE_ACCESS_TOKEN": "at",
+            "TWINGATE_REFRESH_TOKEN": "rt",
+        }
+
     def test_with_imagepolicy_sets_check_annotation(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):

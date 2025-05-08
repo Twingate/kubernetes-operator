@@ -40,19 +40,3 @@ def k8s_read_namespaced_deployment(
         if ex.status == 404:
             return None
         raise
-
-
-def k8s_safe_delete_deployment(
-    namespace: str,
-    name: str,
-    kapi_apps: kubernetes.client.AppsV1Api | None = None,
-):
-    try:
-        kapi_apps = kapi_apps or kubernetes.client.AppsV1Api()
-        kapi_apps.delete_namespaced_deployment(
-            name,
-            namespace,
-        )
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status != 404:
-            raise

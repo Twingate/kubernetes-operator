@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.21.1 (2025-05-08)
+
+### Bug Fixes
+
+- Update operator ClusterRole permissions for twingate.com apiGroup
+  ([#636](https://github.com/Twingate/kubernetes-operator/pull/636),
+  [`dae0916`](https://github.com/Twingate/kubernetes-operator/commit/dae0916092dc677ee49112a9cc13a515298861de))
+
+## Changes
+
+- Operator should have full control on `twingate.com` resources. This will make us future proof as
+  we add features and resources
+
+
 ## v0.21.0 (2025-05-07)
 
 ### Bug Fixes

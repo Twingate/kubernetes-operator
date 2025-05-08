@@ -13,7 +13,6 @@ from app.utils_k8s import (
     k8s_delete_pod,
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
-    k8s_safe_delete_deployment,
 )
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
@@ -213,9 +212,6 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
         return fail(error="Update called before Connector has an ID")
 
     updated_connector = client.connector_update(crd.spec)
-
-    k8s_safe_delete_deployment(namespace, crd.metadata.name)
-
     return success(twingate_id=updated_connector.id)
 
 

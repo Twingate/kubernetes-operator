@@ -1,7 +1,6 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
-import kubernetes
 import pendulum
 import pytest
 
@@ -165,12 +164,11 @@ class TestTwingateConnectorCreate:
 
 
 class TestTwingateConnectorUpdate:
-    def test_updates_connector_and_deletes_deployment(
+    def test_updates_connector(
         self,
         get_connector_and_crd,
         kopf_handler_runner,
         mock_api_client,
-        k8s_apps_client_mock,
     ):
         connector, crd = get_connector_and_crd(with_id=True)
 
@@ -186,67 +184,7 @@ class TestTwingateConnectorUpdate:
                 ("add", ("name",), "before", "after"),
             ),
         )
-        run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
-            crd.metadata.name, "default"
-        )
         assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
-
-    def test_updates_connector_and_ignore_delete_failure_if_deployment_doesnt_exist(
-        self,
-        get_connector_and_crd,
-        kopf_handler_runner,
-        mock_api_client,
-        k8s_apps_client_mock,
-    ):
-        k8s_apps_client_mock.delete_namespaced_deployment.side_effect = (
-            kubernetes.client.exceptions.ApiException(status=404)
-        )
-
-        connector, crd = get_connector_and_crd(with_id=True)
-
-        mock_api_client.connector_update.return_value = connector
-
-        run = kopf_handler_runner(
-            twingate_connector_update,
-            crd,
-            MagicMock(),
-            new={},
-            diff=(
-                ("add", ("logLevel",), 3, 7),
-                ("add", ("name",), "before", "after"),
-            ),
-        )
-        run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
-            crd.metadata.name, "default"
-        )
-        assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
-
-    def test_raises_if_fail_to_delete_deployment(
-        self,
-        get_connector_and_crd,
-        kopf_handler_runner,
-        mock_api_client,
-        k8s_apps_client_mock,
-    ):
-        k8s_apps_client_mock.delete_namespaced_deployment.side_effect = (
-            kubernetes.client.exceptions.ApiException(status=500)
-        )
-
-        connector, crd = get_connector_and_crd(with_id=True)
-
-        mock_api_client.connector_update.return_value = connector
-
-        with pytest.raises(kubernetes.client.exceptions.ApiException):
-            kopf_handler_runner(
-                twingate_connector_update,
-                crd,
-                MagicMock(),
-                new={},
-                diff=(
-                    ("add", ("logLevel",), 3, 7),
-                    ("add", ("name",), "before", "after"),
-                ),
-            )
 
     def test_does_nothing_if_only_id_changed(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client

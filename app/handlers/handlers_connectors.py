@@ -179,8 +179,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     kapi = kubernetes.client.CoreV1Api()
     kapi.create_namespaced_secret(namespace=namespace, body=secret)
 
-    connector_id = connector.id
-    return success(twingate_id=connector_id)
+    return success(twingate_id=connector.id)
 
 
 @kopf.on.update("twingateconnector", field=["spec"])

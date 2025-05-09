@@ -67,8 +67,11 @@ def test_connector_flows(run_kopf, random_name_generator):
         deployment = wait_for_deployment()
         pod = deployment["spec"]["template"]
 
-        assert pod["spec"]["containers"][0]["env"][-1]["name"] == "FOO"
-        assert pod["spec"]["containers"][0]["env"][-1]["value"] == "bar"
+        container = pod["spec"]["containers"][0]
+        container_env = container["env"]
+
+        assert container_env[-1]["name"] == "FOO"
+        assert container_env[-1]["value"] == "bar"
         assert pod["metadata"]["annotations"]["some/annotation"] == "some-value"
 
         kubectl_delete_wait("tc", connector_name)

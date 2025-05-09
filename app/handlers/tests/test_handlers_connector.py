@@ -18,6 +18,7 @@ from app.handlers.handlers_connectors import (
     twingate_connector_create,
     twingate_connector_delete,
     twingate_connector_pod_reconciler,
+    twingate_connector_resume,
     twingate_connector_update,
 )
 from app.settings import get_version
@@ -64,6 +65,29 @@ def get_connector_and_crd(connector_factory):
         return connector, crd
 
     return get
+
+
+class TestTwingateConnectorResume:
+    def test_resume_deletes_old_pod_as_we_migrated_to_deployment(
+        self, get_connector_and_crd, kopf_handler_runner, k8s_core_client_mock
+    ):
+        connector, crd = get_connector_and_crd(
+            with_id=True, status={"twingate_connector_create": {"success": True}}
+        )
+
+        run = kopf_handler_runner(
+            twingate_connector_resume,
+            crd,
+            MagicMock(),
+            new={},
+            diff={},
+        )
+        k8s_core_client_mock.delete_namespaced_pod.assert_called_once()
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
 
 
 class TestTwingateConnectorCreate:

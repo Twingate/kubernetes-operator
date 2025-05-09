@@ -12,16 +12,14 @@ from app.crds import (
     K8sMetadata,
     TwingateConnectorCRD,
 )
+from app.handlers import get_connector_deployment
 from app.handlers.handlers_connectors import (
     ANNOTATION_LAST_VERSION_CHECK,
     ANNOTATION_NEXT_VERSION_CHECK,
-    ANNOTATION_POD_SPEC_VERSION,
-    ANNOTATION_POD_SPEC_VERSION_VALUE,
-    get_connector_pod,
-    k8s_read_namespaced_pod,
     twingate_connector_create,
     twingate_connector_delete,
     twingate_connector_pod_reconciler,
+    twingate_connector_resume,
     twingate_connector_update,
 )
 from app.settings import get_version
@@ -70,244 +68,329 @@ def get_connector_and_crd(connector_factory):
     return get
 
 
-def test_k8s_read_namespaced_pod_handles_404_returns_none(k8s_client_mock):
-    k8s_client_mock.read_namespaced_pod.side_effect = (
-        kubernetes.client.exceptions.ApiException(status=404)
-    )
-    assert k8s_read_namespaced_pod("default", "test") is None
+class TestTwingateConnectorResume:
+    def test_resume_deletes_old_pod_as_we_migrated_to_deployment(
+        self, get_connector_and_crd, kopf_handler_runner, k8s_core_client_mock
+    ):
+        connector, crd = get_connector_and_crd(
+            with_id=True, status={"twingate_connector_create": {"success": True}}
+        )
+
+        run = kopf_handler_runner(
+            twingate_connector_resume,
+            crd,
+            MagicMock(),
+            new={},
+            diff={},
+        )
+        k8s_core_client_mock.delete_namespaced_pod.assert_called_once()
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
 
 
-def test_k8s_read_namespaced_reraises_non_404_exceptions(k8s_client_mock):
-    k8s_client_mock.read_namespaced_pod.side_effect = (
-        kubernetes.client.exceptions.ApiException(status=500)
-    )
-    with pytest.raises(kubernetes.client.exceptions.ApiException):
-        k8s_read_namespaced_pod("default", "test")
+class TestTwingateConnectorCreate:
+    def test_connector_provisioning(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd()
+
+        mock_api_client.connector_create.return_value = connector
+        mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
+            access_token="at",
+            refresh_token="rt",  # nosec
+        )
+        run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
+
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
+
+        assert run.patch_mock.spec == {"id": connector.id, "name": connector.name}
+
+        run.kopf_adopt_mock.assert_called_once_with(
+            ANY, owner=ANY, strict=True, forced=True
+        )
+
+        run.k8s_core_client_mock.create_namespaced_secret.assert_called_once()
+        call_kw = run.k8s_core_client_mock.create_namespaced_secret.call_args.kwargs
+        assert call_kw["namespace"] == "default"
+        assert call_kw["body"].string_data == {
+            "TWINGATE_ACCESS_TOKEN": "at",
+            "TWINGATE_REFRESH_TOKEN": "rt",
+        }
+
+    def test_connector_provisioning_with_id(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd(with_id=True)
+
+        mock_api_client.get_connector.return_value = connector
+        mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
+            access_token="at",
+            refresh_token="rt",  # nosec
+        )
+        run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
+
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
+
+        # didnt need to patch - connector already has id
+        assert run.patch_mock.spec == {}
+
+        run.kopf_adopt_mock.assert_called_once_with(
+            ANY, owner=ANY, strict=True, forced=True
+        )
+
+        run.k8s_core_client_mock.create_namespaced_secret.assert_called_once()
+        call_kw = run.k8s_core_client_mock.create_namespaced_secret.call_args.kwargs
+        assert call_kw["namespace"] == "default"
+        assert call_kw["body"].string_data == {
+            "TWINGATE_ACCESS_TOKEN": "at",
+            "TWINGATE_REFRESH_TOKEN": "rt",
+        }
+
+    def test_with_imagepolicy_sets_check_annotation(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd(
+            spec_overrides=dict(image_policy=ConnectorImagePolicy())
+        )
+
+        mock_api_client.connector_create.return_value = connector
+        mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
+            access_token="at",
+            refresh_token="rt",  # nosec
+        )
+
+        run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
+
+        assert run.patch_mock.spec == {"id": connector.id, "name": connector.name}
+
+        run.k8s_core_client_mock.create_namespaced_secret.assert_called_once()
+        call_kw = run.k8s_core_client_mock.create_namespaced_secret.call_args.kwargs
+        assert call_kw["namespace"] == "default"
+        assert call_kw["body"].string_data == {
+            "TWINGATE_ACCESS_TOKEN": "at",
+            "TWINGATE_REFRESH_TOKEN": "rt",
+        }
 
 
-def test_twingate_connector_create(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd()
+class TestTwingateConnectorUpdate:
+    def test_updates_connector_and_deletes_deployment(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        mock_api_client,
+        k8s_apps_client_mock,
+    ):
+        connector, crd = get_connector_and_crd(with_id=True)
 
-    mock_api_client.connector_create.return_value = connector
-    mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
-        access_token="at",
-        refresh_token="rt",  # nosec
-    )
-    run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
+        mock_api_client.connector_update.return_value = connector
 
-    assert run.result == {
-        "success": True,
-        "twingate_id": connector.id,
-        "ts": ANY,
-    }
+        run = kopf_handler_runner(
+            twingate_connector_update,
+            crd,
+            MagicMock(),
+            new={},
+            diff=(
+                ("add", ("logLevel",), 3, 7),
+                ("add", ("name",), "before", "after"),
+            ),
+        )
+        run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
+            crd.metadata.name, "default"
+        )
+        assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
 
-    assert run.patch_mock.spec == {"id": connector.id, "name": connector.name}
+    def test_updates_connector_and_ignore_delete_failure_if_deployment_doesnt_exist(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        mock_api_client,
+        k8s_apps_client_mock,
+    ):
+        k8s_apps_client_mock.delete_namespaced_deployment.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=404)
+        )
 
-    run.kopf_adopt_mock.assert_called_once_with(
-        ANY, owner=ANY, strict=True, forced=True
-    )
+        connector, crd = get_connector_and_crd(with_id=True)
 
-    run.k8s_client_mock.create_namespaced_secret.assert_called_once()
-    call_kw = run.k8s_client_mock.create_namespaced_secret.call_args.kwargs
-    assert call_kw["namespace"] == "default"
-    assert call_kw["body"].string_data == {
-        "TWINGATE_ACCESS_TOKEN": "at",
-        "TWINGATE_REFRESH_TOKEN": "rt",
-    }
+        mock_api_client.connector_update.return_value = connector
 
+        run = kopf_handler_runner(
+            twingate_connector_update,
+            crd,
+            MagicMock(),
+            new={},
+            diff=(
+                ("add", ("logLevel",), 3, 7),
+                ("add", ("name",), "before", "after"),
+            ),
+        )
+        run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
+            crd.metadata.name, "default"
+        )
+        assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
 
-def test_twingate_connector_create_with_imagepolicy_sets_check_annotation(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd(
-        spec_overrides=dict(image_policy=ConnectorImagePolicy())
-    )
+    def test_raises_if_fail_to_delete_deployment(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        mock_api_client,
+        k8s_apps_client_mock,
+    ):
+        k8s_apps_client_mock.delete_namespaced_deployment.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=500)
+        )
 
-    mock_api_client.connector_create.return_value = connector
-    mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
-        access_token="at",
-        refresh_token="rt",  # nosec
-    )
+        connector, crd = get_connector_and_crd(with_id=True)
 
-    run = kopf_handler_runner(twingate_connector_create, crd, MagicMock())
-    assert run.result == {
-        "success": True,
-        "twingate_id": connector.id,
-        "ts": ANY,
-    }
+        mock_api_client.connector_update.return_value = connector
 
-    assert run.patch_mock.spec == {"id": connector.id, "name": connector.name}
+        with pytest.raises(kubernetes.client.exceptions.ApiException):
+            kopf_handler_runner(
+                twingate_connector_update,
+                crd,
+                MagicMock(),
+                new={},
+                diff=(
+                    ("add", ("logLevel",), 3, 7),
+                    ("add", ("name",), "before", "after"),
+                ),
+            )
 
-    run.k8s_client_mock.create_namespaced_secret.assert_called_once()
-    call_kw = run.k8s_client_mock.create_namespaced_secret.call_args.kwargs
-    assert call_kw["namespace"] == "default"
-    assert call_kw["body"].string_data == {
-        "TWINGATE_ACCESS_TOKEN": "at",
-        "TWINGATE_REFRESH_TOKEN": "rt",
-    }
+    def test_does_nothing_if_only_id_changed(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd(with_id=False)
 
+        mock_api_client.connector_update.return_value = connector
 
-def test_twingate_connector_update(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd(with_id=True)
+        run = kopf_handler_runner(
+            twingate_connector_update,
+            crd,
+            MagicMock(),
+            new={},
+            diff=(("add", ("id",), None, "123"),),
+        )
+        assert run.result == {
+            "success": True,
+            "message": "No update required",
+            "ts": ANY,
+            "twingate_id": crd.spec.id,
+        }
 
-    mock_api_client.connector_update.return_value = connector
+    def test_does_nothing_if_only_id_and_name_changed(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd(with_id=False)
 
-    run = kopf_handler_runner(
-        twingate_connector_update, crd, MagicMock(), new={}, diff={}
-    )
-    run.k8s_client_mock.delete_namespaced_pod.assert_called_with(
-        crd.metadata.name, "default"
-    )
-    assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
+        mock_api_client.connector_update.return_value = connector
 
+        run = kopf_handler_runner(
+            twingate_connector_update,
+            crd,
+            MagicMock(),
+            new={},
+            diff=(
+                ("add", ("id",), None, "123"),
+                ("add", ("name",), None, "lalala"),
+            ),
+        )
+        assert run.result == {
+            "success": True,
+            "message": "No update required",
+            "ts": ANY,
+            "twingate_id": crd.spec.id,
+        }
 
-def test_twingate_connector_update_only_id_does_nothing(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd(with_id=False)
+    def test_does_nothing_without_id(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
+    ):
+        connector, crd = get_connector_and_crd(with_id=False)
 
-    mock_api_client.connector_update.return_value = connector
+        mock_api_client.connector_update.return_value = connector
 
-    run = kopf_handler_runner(
-        twingate_connector_update,
-        crd,
-        MagicMock(),
-        new={},
-        diff=(("add", ("id",), None, "123"),),
-    )
-    assert run.result == {
-        "success": True,
-        "message": "No update required",
-        "ts": ANY,
-        "twingate_id": crd.spec.id,
-    }
-
-
-def test_twingate_connector_update_without_id_does_nothing(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd(with_id=False)
-
-    mock_api_client.connector_update.return_value = connector
-
-    run = kopf_handler_runner(
-        twingate_connector_update, crd, MagicMock(), new={}, diff={}
-    )
-    assert run.result == {
-        "error": "Update called before Connector has an ID",
-        "success": False,
-        "ts": ANY,
-    }
-
-
-def test_twingate_connector_delete_deletes_connector(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd(
-        status={"twingate_connector_create": {"success": True}}, with_id=True
-    )
-    kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
-    mock_api_client.connector_delete.assert_called_once()
-
-
-def test_twingate_connector_delete_without_status_does_nothing(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd()
-    kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
-    mock_api_client.connector_delete.assert_not_called()
-
-
-def test_twingate_connector_pod_reconciler_raises_if_ran_before_create(
-    get_connector_and_crd, kopf_handler_runner, mock_api_client
-):
-    connector, crd = get_connector_and_crd()
-    with pytest.raises(kopf.TemporaryError):
-        kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        run = kopf_handler_runner(
+            twingate_connector_update, crd, MagicMock(), new={}, diff={}
+        )
+        assert run.result == {
+            "error": "Update called before Connector has an ID",
+            "success": False,
+            "ts": ANY,
+        }
 
 
-class TestTwingateConnectorPodReconciler_Image:
-    def test_pod_create(
-        self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+class TestTwingateConnectorDelete:
+    def test_twingate_connector_delete_deletes_connector(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):
         connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
+        kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+        mock_api_client.connector_delete.assert_called_once()
 
-        k8s_client_mock.read_namespaced_pod.return_value = None
-
-        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
-        assert run.result == {"success": True, "ts": ANY}
-        run.k8s_client_mock.create_namespaced_pod.assert_called_once()
-
-    def test_pod_update(
-        self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+    def test_twingate_connector_delete_without_status_does_nothing(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):
-        connector, crd = get_connector_and_crd(
-            status={"twingate_connector_create": {"success": True}}, with_id=True
-        )
+        connector, crd = get_connector_and_crd()
+        kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
+        mock_api_client.connector_delete.assert_not_called()
 
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Running"
-        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
-
-        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
-        assert run.result == {"success": True, "ts": ANY}
-        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
-
-    def test_pod_not_running(
-        self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+    def test_twingate_connector_pod_reconciler_raises_if_ran_before_create(
+        self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):
-        connector, crd = get_connector_and_crd(
-            status={"twingate_connector_create": {"success": True}}, with_id=True
-        )
-
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Pending"
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
-
+        connector, crd = get_connector_and_crd()
         with pytest.raises(kopf.TemporaryError):
             kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
 
-    def test_no_old_pod_spec_is_deleted(
-        self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+
+class TestTwingateConnectorPodReconciler_Image:
+    def test_deployment_create(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_core_client_mock,
+        k8s_apps_client_mock,
     ):
         connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Running"
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+        k8s_apps_client_mock.read_namespaced_deployment.return_value = None
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
-        assert run.result == {"success": True, "ts": ANY, "message": ANY}
-        assert run.result["message"].startswith("Pod spec version mismatch.")
-        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
-        run.k8s_client_mock.delete_namespaced_pod.assert_called_once()
+        assert run.result == {"success": True, "ts": ANY}
+        run.k8s_apps_client_mock.create_namespaced_deployment.assert_called_once()
 
-    def test_old_pod_spec_is_deleted(
-        self, get_connector_and_crd, kopf_handler_runner, k8s_client_mock
+    def test_deployment_update(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_core_client_mock,
+        k8s_apps_client_mock,
     ):
         connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Running"
-        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: "not ANNOTATION_POD_SPEC_VERSION_VALUE"}  # fmt: skip
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
-
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
-        assert run.result == {"success": True, "ts": ANY, "message": ANY}
-        assert run.result["message"].startswith("Pod spec version mismatch.")
-        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
-        run.k8s_client_mock.delete_namespaced_pod.assert_called_once()
+        assert run.result == {"success": True, "ts": ANY}
+        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()
 
 
 class TestTwingateConnectorPodReconciler_ImagePolicy:
@@ -321,7 +404,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         self,
         get_connector_and_crd,
         kopf_handler_runner,
-        k8s_client_mock,
+        k8s_apps_client_mock,
         mock_get_image,
     ):
         connector, crd = get_connector_and_crd(
@@ -330,14 +413,12 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Running"
-        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+        mock_dep = MagicMock()
+        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
-        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
+        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()
         assert run.patch_mock.meta["annotations"] == {
             ANNOTATION_LAST_VERSION_CHECK: ANY,
             ANNOTATION_NEXT_VERSION_CHECK: ANY,
@@ -348,7 +429,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         self,
         get_connector_and_crd,
         kopf_handler_runner,
-        k8s_client_mock,
+        k8s_apps_client_mock,
         mock_get_image,
     ):
         connector, crd = get_connector_and_crd(
@@ -358,14 +439,12 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Running"
-        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+        mock_dep = MagicMock()
+        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
-        run.k8s_client_mock.patch_namespaced_pod.assert_called_once()
+        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()
         assert run.patch_mock.meta["annotations"] == {
             ANNOTATION_LAST_VERSION_CHECK: ANY,
             ANNOTATION_NEXT_VERSION_CHECK: ANY,
@@ -376,7 +455,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         self,
         get_connector_and_crd,
         kopf_handler_runner,
-        k8s_client_mock,
+        k8s_apps_client_mock,
         mock_get_image,
         freezer,
     ):
@@ -391,20 +470,18 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         mock_container = MagicMock()
         mock_container.image = "twingate/connector:latest"
 
-        mock_pod = MagicMock()
-        mock_pod.status.phase = "Running"
-        mock_pod.metadata.annotations = {ANNOTATION_POD_SPEC_VERSION: ANNOTATION_POD_SPEC_VERSION_VALUE}  # fmt: skip
-        mock_pod.spec.containers = [mock_container]
-        k8s_client_mock.read_namespaced_pod.return_value = mock_pod
+        mock_dep = MagicMock()
+        mock_dep.spec.template.containers = [mock_container]
+        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         assert run.patch_mock.meta == {}
-        run.k8s_client_mock.patch_namespaced_pod.assert_not_called()
+        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_not_called()
         mock_get_image.assert_not_called()
 
 
-class TestGetConnectorPod:
+class TestGetConnectorDeployment:
     @pytest.fixture
     def mock_tenant_url(self):
         return "https://test.twingate.com"
@@ -413,14 +490,12 @@ class TestGetConnectorPod:
     def mock_image(self):
         return "twingate/connector:latest"
 
-    def test_get_connector_pod_default(
-        self, get_connector_and_crd, mock_tenant_url, mock_image
-    ):
+    def test_default(self, get_connector_and_crd, mock_tenant_url, mock_image):
         _, crd = get_connector_and_crd()
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
 
-        assert pod.spec == {
+        assert dep.spec["template"]["spec"] == {
             "containers": [
                 {
                     "env": [
@@ -488,7 +563,8 @@ class TestGetConnectorPod:
             spec_overrides={"image_policy": image_policy},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        container = dep.spec["template"]["spec"]["containers"][0]
         expected_env_vars = [
             {
                 "name": "TWINGATE_LABEL_VERSION_POLICY_SCHEDULE",
@@ -500,7 +576,7 @@ class TestGetConnectorPod:
             },
         ]
 
-        assert all(env in pod.spec["containers"][0]["env"] for env in expected_env_vars)
+        assert all(env in container["env"] for env in expected_env_vars)
 
     @pytest.mark.parametrize(
         ("log_analytics_enabled", "expected_in"),
@@ -517,10 +593,11 @@ class TestGetConnectorPod:
         _, crd = get_connector_and_crd(
             spec_overrides={"log_analytics": log_analytics_enabled}
         )
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        container = dep.spec["template"]["spec"]["containers"][0]
 
         env_var = {"name": "TWINGATE_LOG_ANALYTICS", "value": "v2"}
-        container_env = pod.spec["containers"][0]["env"]
+        container_env = container["env"]
 
         if expected_in:
             assert env_var in container_env
@@ -533,9 +610,10 @@ class TestGetConnectorPod:
             spec_overrides={"container_extra": {"env": [extra_env]}},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        container = dep.spec["template"]["spec"]["containers"][0]
 
-        assert extra_env in pod.spec["containers"][0]["env"]
+        assert extra_env in container["env"]
 
     def test_extra_volume_mounts(
         self, get_connector_and_crd, mock_tenant_url, mock_image
@@ -548,9 +626,10 @@ class TestGetConnectorPod:
             spec_overrides={"container_extra": {"volumeMounts": [extra_volume_mount]}},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        container = dep.spec["template"]["spec"]["containers"][0]
 
-        assert pod.spec["containers"][0]["volumeMounts"] == [
+        assert container["volumeMounts"] == [
             {"name": "twingate-socket", "mountPath": "/var/run/twingate"},
             extra_volume_mount,
         ]
@@ -563,9 +642,10 @@ class TestGetConnectorPod:
             spec_overrides={"sidecar_containers": [sidecar_container]},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        containers = dep.spec["template"]["spec"]["containers"]
 
-        assert pod.spec["containers"][1] == sidecar_container
+        assert containers[1] == sidecar_container
 
     def test_extra_volumes(self, get_connector_and_crd, mock_tenant_url, mock_image):
         extra_volume = {"name": "extra-volume", "emptyDir": {}}
@@ -573,9 +653,10 @@ class TestGetConnectorPod:
             spec_overrides={"pod_extra": {"volumes": [extra_volume]}},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        pod_spec = dep.spec["template"]["spec"]
 
-        assert pod.spec["volumes"] == [
+        assert pod_spec["volumes"] == [
             {"name": "twingate-socket", "emptyDir": {}},
             extra_volume,
         ]
@@ -586,11 +667,10 @@ class TestGetConnectorPod:
             spec_overrides={"pod_annotations": annotations},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        pod_metadata = dep.spec["template"]["metadata"]
 
-        assert pod.metadata.annotations == annotations | {
-            "twingate.com/connector-podspec-version": "v1"
-        }
+        assert pod_metadata["annotations"] == annotations
 
     def test_pod_labels(self, get_connector_and_crd, mock_tenant_url, mock_image):
         labels = {"env": "test"}
@@ -598,6 +678,10 @@ class TestGetConnectorPod:
             spec_overrides={"pod_labels": labels},
         )
 
-        pod = get_connector_pod(crd, mock_tenant_url, mock_image)
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        pod_metadata = dep.spec["template"]["metadata"]
 
-        assert pod.metadata.labels == labels
+        assert pod_metadata["labels"] == labels | {
+            "app.kubernetes.io/name": "TwingateConnector",
+            "app.kubernetes.io/instance": crd.metadata.name,
+        }

@@ -88,7 +88,7 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}' name='My K8S Resource Renamed'")
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "object": expected_object, "taskName": ANY, "severity": "info"} in logs
+    assert {"message": "Twingate API Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "object": expected_object, "taskName": ANY, "severity": "info"} in logs
     assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "taskName": ANY, "object": expected_object, "severity": "info"} in logs
 
     # Shutdown
@@ -140,7 +140,7 @@ def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
     assert twingate_id
 
     # Delete
-    assert {"message": "Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "taskName": ANY, "object": expected_object, "severity": "info"} in logs
+    assert {"message": "Twingate API Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "taskName": ANY, "object": expected_object, "severity": "info"} in logs
     assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "taskName": ANY, "object": expected_object, "severity": "info"} in logs
 
     # Shutdown
@@ -286,7 +286,7 @@ def test_resource_access_flows(
 
     # Delete
     assert {
-        "message": "Result: {'resourceAccessRemove': {'ok': True, 'error': None}}",
+        "message": "Twingate API Result: {'resourceAccessRemove': {'ok': True, 'error': None}}",
         "object": expected_object,
         "timestamp": ANY,
         "taskName": ANY,

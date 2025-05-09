@@ -1,6 +1,7 @@
 import os
 import random
 import string
+import time
 import uuid
 from contextlib import contextmanager
 
@@ -54,7 +55,9 @@ def random_name_generator(ci_run_number):
 @pytest.fixture
 def run_kopf(kopf_runner_args, kopf_settings):
     @contextmanager
-    def inner(*, enable_connector_reconciler=True, enable_group_reconciler=True):
+    def inner(
+        *, enable_connector_reconciler=True, enable_group_reconciler=True, cleanup=True
+    ):
         env = {}
         if enable_connector_reconciler:
             env["CONNECTOR_RECONCILER_INTERVAL"] = "1"
@@ -69,7 +72,12 @@ def run_kopf(kopf_runner_args, kopf_settings):
             settings=kopf_settings,
             env=env,
         ) as runner:
-            yield runner
+            try:
+                yield runner
+            finally:
+                if cleanup:
+                    kubectl("delete twingate --all")
+                    time.sleep(5)
 
         assert runner.exception is None
         assert runner.exit_code == 0

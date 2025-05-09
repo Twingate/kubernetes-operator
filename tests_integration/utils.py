@@ -130,6 +130,25 @@ def kubectl_wait_pod_running(pod_name: str, max_retries: int = 10) -> dict:
     return kubectl_wait_pod_status(pod_name, "Running", max_retries=max_retries)
 
 
+def kubectl_wait_deployment_available(
+    deployment_name: str, *, max_retries: int = 5
+) -> dict:
+    retry = 0
+    while True:
+        try:
+            result = kubectl(
+                f"wait --for=condition=available --timeout=60s deployment/{deployment_name} -o json"
+            )
+            return json.loads(result.stdout)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass
+
+        retry += 1
+        if retry > max_retries:
+            raise RuntimeError(f"Deployment {deployment_name} isn't available")
+        time.sleep(5)
+
+
 def kubectl_wait_object_handler_success(
     resource_type: str,
     resource_name: str,

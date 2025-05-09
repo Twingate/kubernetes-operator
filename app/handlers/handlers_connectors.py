@@ -158,6 +158,13 @@ def delete_pre_deployment_pod_if_exists(
         k8s_delete_pod(namespace, name, kapi=kapi, force=True)
 
 
+@kopf.on.resume("twingateconnector")
+def twingate_connector_resume(body, namespace, **_):
+    crd = TwingateConnectorCRD(**body)
+    delete_pre_deployment_pod_if_exists(namespace, crd.metadata.name)
+    return success(twingate_id=crd.spec.id)
+
+
 @kopf.on.create("twingateconnector")
 def twingate_connector_create(body, memo, logger, namespace, patch, **_):
     settings = memo.twingate_settings
@@ -245,10 +252,7 @@ def twingate_connector_pod_reconciler(
         raise kopf.TemporaryError("TwingateConnector not ready.", delay=1)
 
     crd = TwingateConnectorCRD(**body)
-    kapi = kubernetes.client.CoreV1Api()
     kapi_apps = kubernetes.client.AppsV1Api()
-
-    delete_pre_deployment_pod_if_exists(namespace, crd.metadata.name, kapi=kapi)
 
     k8s_deployment = k8s_read_namespaced_deployment(namespace, crd.metadata.name)
     k8s_pod = k8s_deployment.spec.template if k8s_deployment else None

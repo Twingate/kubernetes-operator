@@ -1073,14 +1073,14 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "kopf"
-version = "1.37.5"
+version = "1.38.0"
 description = "Kubernetes Operator Pythonic Framework (Kopf)"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "kopf-1.37.5-py3-none-any.whl", hash = "sha256:ca6999350052c2f179200bead2386cc35f5bed873f60af3cb8f8a736994e0d68"},
-    {file = "kopf-1.37.5.tar.gz", hash = "sha256:c468b4adc1c9ec7dde5bb852ab9b0d4e51e07b98c22538bc5dc5876422ba767c"},
+    {file = "kopf-1.38.0-py3-none-any.whl", hash = "sha256:2384b8021032d9f87e53a6b46097c47e566d9280c838809483698640e1b36df0"},
+    {file = "kopf-1.38.0.tar.gz", hash = "sha256:7b9f83240269636e00e4b11e9c7c8afbfefba3d3326ac2d2aa7904d35c4f89cd"},
 ]
 
 [package.dependencies]
@@ -1092,7 +1092,6 @@ click = "*"
 iso8601 = "*"
 python-json-logger = "*"
 pyyaml = "*"
-typing_extensions = "*"
 
 [package.extras]
 dev = ["certbuilder", "certvalidator", "oscrypto", "pyngrok"]
@@ -2957,4 +2956,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "c84ca288cc2157c819c602e1f2d96ca44ce7ce16771e08afc0961eecbdd75dc6"
+content-hash = "483e98e71aa20c51fc885760edb197991c15b901aadab708c6bd850e7aedb872"

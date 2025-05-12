@@ -404,7 +404,6 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         kopf_handler_runner,
         k8s_apps_client_mock,
         mock_get_image,
-        freezer,
     ):
         now = pendulum.now("UTC").start_of("minute")
         connector, crd = get_connector_and_crd(

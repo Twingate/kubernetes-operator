@@ -68,6 +68,9 @@ def get_connector_deployment(
         "selector": {
             "matchLabels": pod_selector_label,
         },
+        "strategy": {
+            "type": "Recreate",
+        },
         "template": {
             "metadata": {
                 "annotations": pod_annotations,

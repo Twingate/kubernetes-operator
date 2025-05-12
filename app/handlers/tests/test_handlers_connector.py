@@ -1,7 +1,6 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
-import kubernetes
 import pendulum
 import pytest
 
@@ -38,6 +37,12 @@ def mock_api_client():
     with patch("app.handlers.handlers_connectors.TwingateAPIClient") as mock_api_client:
         mock_api_client.return_value = api_client_instance
         yield api_client_instance
+
+
+@pytest.fixture
+def mock_create_or_replace_deployment():
+    with patch("app.handlers.handlers_connectors.create_or_replace_deployment") as m:
+        yield m
 
 
 @pytest.fixture
@@ -189,12 +194,12 @@ class TestTwingateConnectorCreate:
 
 
 class TestTwingateConnectorUpdate:
-    def test_updates_connector_and_deletes_deployment(
+    def test_updates_connector_and_deployment(
         self,
         get_connector_and_crd,
         kopf_handler_runner,
         mock_api_client,
-        k8s_apps_client_mock,
+        mock_create_or_replace_deployment,
     ):
         connector, crd = get_connector_and_crd(with_id=True)
 
@@ -210,67 +215,9 @@ class TestTwingateConnectorUpdate:
                 ("add", ("name",), "before", "after"),
             ),
         )
-        run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
-            crd.metadata.name, "default"
-        )
+
+        mock_create_or_replace_deployment.assert_called_once()
         assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
-
-    def test_updates_connector_and_ignore_delete_failure_if_deployment_doesnt_exist(
-        self,
-        get_connector_and_crd,
-        kopf_handler_runner,
-        mock_api_client,
-        k8s_apps_client_mock,
-    ):
-        k8s_apps_client_mock.delete_namespaced_deployment.side_effect = (
-            kubernetes.client.exceptions.ApiException(status=404)
-        )
-
-        connector, crd = get_connector_and_crd(with_id=True)
-
-        mock_api_client.connector_update.return_value = connector
-
-        run = kopf_handler_runner(
-            twingate_connector_update,
-            crd,
-            MagicMock(),
-            new={},
-            diff=(
-                ("add", ("logLevel",), 3, 7),
-                ("add", ("name",), "before", "after"),
-            ),
-        )
-        run.k8s_apps_client_mock.delete_namespaced_deployment.assert_called_with(
-            crd.metadata.name, "default"
-        )
-        assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
-
-    def test_raises_if_fail_to_delete_deployment(
-        self,
-        get_connector_and_crd,
-        kopf_handler_runner,
-        mock_api_client,
-        k8s_apps_client_mock,
-    ):
-        k8s_apps_client_mock.delete_namespaced_deployment.side_effect = (
-            kubernetes.client.exceptions.ApiException(status=500)
-        )
-
-        connector, crd = get_connector_and_crd(with_id=True)
-
-        mock_api_client.connector_update.return_value = connector
-
-        with pytest.raises(kubernetes.client.exceptions.ApiException):
-            kopf_handler_runner(
-                twingate_connector_update,
-                crd,
-                MagicMock(),
-                new={},
-                diff=(
-                    ("add", ("logLevel",), 3, 7),
-                    ("add", ("name",), "before", "after"),
-                ),
-            )
 
     def test_does_nothing_if_only_id_changed(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client
@@ -390,7 +337,7 @@ class TestTwingateConnectorPodReconciler_Image:
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
-        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()
+        run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
 
 
 class TestTwingateConnectorPodReconciler_ImagePolicy:
@@ -418,7 +365,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
-        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()
+        run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
         assert run.patch_mock.meta["annotations"] == {
             ANNOTATION_LAST_VERSION_CHECK: ANY,
             ANNOTATION_NEXT_VERSION_CHECK: ANY,
@@ -444,7 +391,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
-        run.k8s_apps_client_mock.patch_namespaced_deployment.assert_called_once()
+        run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
         assert run.patch_mock.meta["annotations"] == {
             ANNOTATION_LAST_VERSION_CHECK: ANY,
             ANNOTATION_NEXT_VERSION_CHECK: ANY,

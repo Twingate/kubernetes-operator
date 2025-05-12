@@ -13,7 +13,6 @@ from app.utils_k8s import (
     k8s_delete_pod,
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
-    k8s_safe_delete_deployment,
 )
 
 ANNOTATION_LAST_VERSION_CHECK = "twingate.com/last-version-check"
@@ -162,6 +161,41 @@ def delete_pre_deployment_pod_if_exists(
         k8s_delete_pod(namespace, name, kapi=kapi, force=True)
 
 
+def create_or_replace_deployment(
+    body: kopf.Body,
+    namespace: str,
+    connector: TwingateConnectorCRD,
+    tenant_url: str,
+    *,
+    kapi: kubernetes.client.AppsV1Api = None,
+):
+    kapi = kapi or kubernetes.client.AppsV1Api()
+    expected_image = connector.spec.get_image()
+    deployment = get_connector_deployment(connector, tenant_url, expected_image)
+    kopf.adopt(deployment, owner=body, strict=True, forced=True)
+
+    k8s_deployment = k8s_read_namespaced_deployment(
+        namespace, connector.metadata.name, kapi_apps=kapi
+    )
+    if not k8s_deployment:
+        kapi.create_namespaced_deployment(namespace, body=deployment)
+        kopf.info(
+            body,
+            reason="Deployment created",
+            message=f"Created connector deployment {namespace}/{connector.metadata.name} with image {expected_image}",
+        )
+        return
+
+    kapi.replace_namespaced_deployment(
+        connector.metadata.name, namespace, body=deployment
+    )
+    kopf.info(
+        body,
+        reason="Deployment patched",
+        message=f"Patched deployment {namespace}/{connector.metadata.name} successfully",
+    )
+
+
 @kopf.on.resume("twingateconnector")
 def twingate_connector_resume(body, namespace, **_):
     crd = TwingateConnectorCRD(**body)
@@ -224,7 +258,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
 
     updated_connector = client.connector_update(crd.spec)
 
-    k8s_safe_delete_deployment(namespace, crd.metadata.name)
+    create_or_replace_deployment(body, namespace, crd, memo.twingate_settings.full_url)
 
     return success(twingate_id=updated_connector.id)
 
@@ -259,15 +293,26 @@ def twingate_connector_pod_reconciler(
         raise kopf.TemporaryError("TwingateConnector not ready.", delay=1)
 
     crd = TwingateConnectorCRD(**body)
-    kapi_apps = kubernetes.client.AppsV1Api()
 
-    k8s_deployment = k8s_read_namespaced_deployment(namespace, crd.metadata.name)
+    kapi_apps = kubernetes.client.AppsV1Api()
+    k8s_deployment = k8s_read_namespaced_deployment(
+        namespace, crd.metadata.name, kapi_apps=kapi_apps
+    )
     k8s_pod = k8s_deployment.spec.template if k8s_deployment else None
     k8s_pod_image = k8s_pod.spec.containers[0].image if k8s_pod else None
-    expected_image = k8s_pod_image
 
-    if crd.spec.image or not k8s_pod:
-        expected_image = crd.spec.get_image()
+    if crd.spec.image:
+        # If we're on a fixed-image policy, image updates are handled by `twingate_connector_update`.
+        # Here we only check for a drift (someone edited the deployment manually)
+        if k8s_pod_image != crd.spec.image:
+            logger.warning(
+                "Detected a drift between the Deployment image (%s) and the CRD image (%s)",
+                k8s_pod_image,
+                crd.spec.image,
+            )
+            create_or_replace_deployment(
+                body, namespace, crd, memo.twingate_settings.full_url, kapi=kapi_apps
+            )
     elif crd.spec.image_policy:
         now = pendulum.now("UTC").start_of("minute")
         next_check_at = pendulum.parse(
@@ -275,33 +320,12 @@ def twingate_connector_pod_reconciler(
         )
 
         if now >= next_check_at:
-            expected_image = crd.spec.get_image()
             patch.meta["annotations"] = {
                 ANNOTATION_LAST_VERSION_CHECK: now.to_iso8601_string(),
                 ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),
             }
-
-    if k8s_deployment:
-        if k8s_pod_image != expected_image:
-            k8s_deployment.spec.template.spec.containers[0].image = expected_image
-            kapi_apps.patch_namespaced_deployment(
-                meta.name, namespace, body=k8s_deployment
+            create_or_replace_deployment(
+                body, namespace, crd, memo.twingate_settings.full_url, kapi=kapi_apps
             )
-            kopf.info(
-                body,
-                reason="Image updated",
-                message=f"Updated image from {k8s_pod_image} to {expected_image}",
-            )
-    else:
-        deployment = get_connector_deployment(
-            crd, memo.twingate_settings.full_url, expected_image
-        )
-        kopf.adopt(deployment, owner=body, strict=True, forced=True)
-        kapi_apps.create_namespaced_deployment(namespace, body=deployment)
-        kopf.info(
-            body,
-            reason="Deployment created",
-            message=f"Created connector deployment with image {expected_image}",
-        )
 
     return success()

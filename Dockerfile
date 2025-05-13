@@ -42,7 +42,7 @@ COPY poetry.lock pyproject.toml ./
 
 # Install Python dependencies
 # hadolint ignore=DL3013
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR python -m venv "$VIRTUAL_ENV" && \
+RUN python -m venv "$VIRTUAL_ENV" && \
     pip install -U --no-cache-dir pip && \
     poetry install --only main --sync --no-root --compile -n -vvv
 

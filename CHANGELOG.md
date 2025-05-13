@@ -1,6 +1,470 @@
 # CHANGELOG
 
 
+## v0.21.2 (2025-05-13)
+
+### Bug Fixes
+
+- Add permissions for deployments required to run connectors
+  ([`d187a1a`](https://github.com/Twingate/kubernetes-operator/commit/d187a1ab6ba2b0615db22d1a31a325399c7ad23b))
+
+### Chores
+
+- Bump github.com/gruntwork-io/terratest from 0.48.2 to 0.49.0
+  ([#637](https://github.com/Twingate/kubernetes-operator/pull/637),
+  [`1fc33cf`](https://github.com/Twingate/kubernetes-operator/commit/1fc33cf90841266bbe3f4f0c13aa68cf805776e8))
+
+Bumps [github.com/gruntwork-io/terratest](https://github.com/gruntwork-io/terratest) from 0.48.2 to
+  0.49.0. <details> <summary>Release notes</summary> <p><em>Sourced from <a
+  href="https://github.com/gruntwork-io/terratest/releases">github.com/gruntwork-io/terratest's
+  releases</a>.</em></p> <blockquote> <h2>v0.49.0</h2> <h2>Modules affected</h2> <ul>
+  <li><code>terraform</code></li> <li><code>helm</code></li> <li><code>azure</code></li>
+  <li><code>aws</code></li> <li><code>k8s</code></li> <li><code>logger</code></li>
+  <li><code>packer</code></li> </ul> <h2>What's Changed</h2> <ul> <li>feat: Creating a test for
+  TF_LOG by <a href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1512">gruntwork-io/terratest#1512</a></li>
+  <li>feat: handle multiple yaml doc by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1514">gruntwork-io/terratest#1514</a></li>
+  <li>feat: use the new sdk for azure resource group by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1511">gruntwork-io/terratest#1511</a></li>
+  <li>feat: Stop DynamoDB methods with E Failing Immediately by <a
+  href="https://github.com/robmorgan"><code>@​robmorgan</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1507">gruntwork-io/terratest#1507</a></li>
+  <li>feat: Get and Put for ECR repo policies by <a
+  href="https://github.com/felixfriedrich"><code>@​felixfriedrich</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1519">gruntwork-io/terratest#1519</a></li>
+  <li>feat: include --version in helm upgrade by <a
+  href="https://github.com/jijiechen"><code>@​jijiechen</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1532">gruntwork-io/terratest#1532</a></li>
+  <li>feat: add mixed vars support by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1517">gruntwork-io/terratest#1517</a></li>
+  <li>feat: Add helper function for parsing packer-manifest.json by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1546">gruntwork-io/terratest#1546</a></li>
+  <li>feat: Support a s3:putobject by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1525">gruntwork-io/terratest#1525</a></li>
+  <li>feat: capture terraform stdout stderr and exitcode separately by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1530">gruntwork-io/terratest#1530</a></li>
+  <li>feat: add UnmarshalK8SYamlsE by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1533">gruntwork-io/terratest#1533</a></li>
+  <li>feat: add support for extra arguments by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1523">gruntwork-io/terratest#1523</a></li>
+  <li>feat: allow --backend-config to use file path by setting the value to nil by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1539">gruntwork-io/terratest#1539</a></li>
+  <li>feat: Support for ListNamespaces function by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1543">gruntwork-io/terratest#1543</a></li>
+  <li>feat: K8S fix forward to service port by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1547">gruntwork-io/terratest#1547</a></li>
+  <li>fix: add test for duplicate key by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1518">gruntwork-io/terratest#1518</a></li>
+  <li>fix: support custom TG logger settings by <a
+  href="https://github.com/bt-macole"><code>@​bt-macole</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1509">gruntwork-io/terratest#1509</a></li>
+  <li>docs: Improve README for terraform database example module by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1515">gruntwork-io/terratest#1515</a></li>
+  <li>chore: adjust fixture to fix broken tests by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1548">gruntwork-io/terratest#1548</a></li>
+  <li>chore: add RenderTemplateAndGetStdOutErrE &amp; RunHelmCommandAndGetStdOutErrE by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1526">gruntwork-io/terratest#1526</a></li>
+  <li>chore: Update parseListOfMaps to handle non-map data structures by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1529">gruntwork-io/terratest#1529</a></li>
+  <li>chore: add test for literal block by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1535">gruntwork-io/terratest#1535</a></li>
+  <li>chore: Update CODEOWNERS by <a
+  href="https://github.com/james03160927"><code>@​james03160927</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1554">gruntwork-io/terratest#1554</a></li>
+  <li>chore: Adding Terragrunt team to CODEOWNERS by <a
+  href="https://github.com/yhakbar"><code>@​yhakbar</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1513">gruntwork-io/terratest#1513</a></li>
+  <li>chore(deps): Bump nokogiri from 1.16.5 to 1.18.3 in /docs by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1516">gruntwork-io/terratest#1516</a></li>
+  <li>chore(deps): Bump github.com/golang-jwt/jwt/v5 from 5.2.1 to 5.2.2 by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1527">gruntwork-io/terratest#1527</a></li>
+  <li>chore(deps): Bump golang.org/x/crypto from 0.32.0 to 0.35.0 by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1541">gruntwork-io/terratest#1541</a></li>
+  <li>chore(deps): Bump golang.org/x/net from 0.34.0 to 0.38.0 by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1542">gruntwork-io/terratest#1542</a></li>
+  <li>chore(deps): Bump nokogiri from 1.18.3 to 1.18.8 in /docs by <a
+  href="https://github.com/dependabot"><code>@​dependabot</code></a> in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1545">gruntwork-io/terratest#1545</a></li>
+  </ul> <h2>New Contributors</h2> <ul> <li><a
+  href="https://github.com/felixfriedrich"><code>@​felixfriedrich</code></a> made their first
+  contribution in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1519">gruntwork-io/terratest#1519</a></li>
+  <li><a href="https://github.com/jijiechen"><code>@​jijiechen</code></a> made their first
+  contribution in <a
+  href="https://redirect.github.com/gruntwork-io/terratest/pull/1532">gruntwork-io/terratest#1532</a></li>
+  </ul> <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/gruntwork-io/terratest/compare/v0.48.2...v0.49.0">https://github.com/gruntwork-io/terratest/compare/v0.48.2...v0.49.0</a></p>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/8e99d317c0411702eda954f53c6964266696b3a2"><code>8e99d31</code></a>
+  Merge pull request <a
+  href="https://redirect.github.com/gruntwork-io/terratest/issues/1554">#1554</a> from
+  gruntwork-io/james03160927-patch-1</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/8251d7a35b8c77dfa87f4bd9e789d34243bbe14e"><code>8251d7a</code></a>
+  Update CODEOWNERS</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/27d1217095b8858ff9cefe73d1910a990eb3ae2f"><code>27d1217</code></a>
+  Merge pull request <a
+  href="https://redirect.github.com/gruntwork-io/terratest/issues/1546">#1546</a> from
+  gruntwork-io/packer-manifest</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/ecb82cc2d7dd74d5b4b59bc0760f15f18cf0e60c"><code>ecb82cc</code></a>
+  Merge branch 'main' into packer-manifest</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/ba1b46027ed89d9cae58e092508fc5122e98f781"><code>ba1b460</code></a>
+  Merge pull request <a
+  href="https://redirect.github.com/gruntwork-io/terratest/issues/1548">#1548</a> from
+  gruntwork-io/fix-spawnparsers-integration-test</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/a11867f175147e5ca43626677126355511315571"><code>a11867f</code></a>
+  Merge branch 'main' into fix-spawnparsers-integration-test</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/f4dcf2bc78fdba7bc092b1ac1afbcf259cdfa139"><code>f4dcf2b</code></a>
+  Merge pull request <a
+  href="https://redirect.github.com/gruntwork-io/terratest/issues/1547">#1547</a> from
+  gruntwork-io/fix-forward-to-service</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/16c87bdc29a7c2dca94e6e3b3918ef83447d090b"><code>16c87bd</code></a>
+  adjust fixture</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/00b6d28ded52986195480b7f44b6560d90c44560"><code>00b6d28</code></a>
+  fix forward to service port</li> <li><a
+  href="https://github.com/gruntwork-io/terratest/commit/580431ee04db8f1aa74b9c6de38eacb3fb2653d2"><code>580431e</code></a>
+  get artifact id from build name on packer manifest</li> <li>Additional commits viewable in <a
+  href="https://github.com/gruntwork-io/terratest/compare/v0.48.2...v0.49.0">compare view</a></li>
+  </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=github.com/gruntwork-io/terratest&package-manager=go_modules&previous-version=0.48.2&new-version=0.49.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump kopf from 1.37.5 to 1.38.0 ([#639](https://github.com/Twingate/kubernetes-operator/pull/639),
+  [`c5aab19`](https://github.com/Twingate/kubernetes-operator/commit/c5aab1948f6c0a01e6967412dd5bbdb8ac187572))
+
+Bumps [kopf](https://github.com/nolar/kopf) from 1.37.5 to 1.38.0. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/nolar/kopf/releases">kopf's
+  releases</a>.</em></p> <blockquote> <h2>1.38.0</h2> <h2>What's Changed</h2> <ul> <li>Deprecate
+  Python 3.8 &amp; upgrade to Python 3.13 in CI by <a
+  href="https://github.com/nolar"><code>@​nolar</code></a> in <a
+  href="https://redirect.github.com/nolar/kopf/pull/1164">nolar/kopf#1164</a></li> <li>Upgrade MyPy
+  to 1.15.0 by <a href="https://github.com/nolar"><code>@​nolar</code></a> in <a
+  href="https://redirect.github.com/nolar/kopf/pull/1163">nolar/kopf#1163</a></li> <li>Convert to
+  Python 3.9: all the basic syntax as per pyuprade by <a
+  href="https://github.com/nolar"><code>@​nolar</code></a> in <a
+  href="https://redirect.github.com/nolar/kopf/pull/1165">nolar/kopf#1165</a></li> <li>Fix the test
+  failures in Python 3.13 due to not accepting name=… in tests by <a
+  href="https://github.com/nolar"><code>@​nolar</code></a> in <a
+  href="https://redirect.github.com/nolar/kopf/pull/1173">nolar/kopf#1173</a></li> <li>Work around
+  changes in Click 8.2.0 by <a href="https://github.com/nolar"><code>@​nolar</code></a> in <a
+  href="https://redirect.github.com/nolar/kopf/pull/1174">nolar/kopf#1174</a></li> </ul>
+  <h2>Bugfixes</h2> <ul> <li>Re-authenticate if the session is closed by a concurrent request by <a
+  href="https://github.com/nolar"><code>@​nolar</code></a> in <a
+  href="https://redirect.github.com/nolar/kopf/pull/1031">nolar/kopf#1031</a></li> </ul>
+  <p><strong>Full Changelog</strong>: <a
+  href="https://github.com/nolar/kopf/compare/1.37.5...1.38.0">https://github.com/nolar/kopf/compare/1.37.5...1.38.0</a></p>
+  </blockquote> </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/nolar/kopf/commit/ca3e0d0e2d3147c6728f3f01c4c7d2524f654b36"><code>ca3e0d0</code></a>
+  Merge pull request <a href="https://redirect.github.com/nolar/kopf/issues/1175">#1175</a> from
+  nolar/ubuntu-20.04-deprecated</li> <li><a
+  href="https://github.com/nolar/kopf/commit/10ae70f2c813c9641dd0b38b4e44f10d8713a297"><code>10ae70f</code></a>
+  Upgrade to Ubuntu 24.04, since 20.04 is blocked in CI</li> <li><a
+  href="https://github.com/nolar/kopf/commit/3a95e2fcc595229b2d178fa95d805ed71f1a9acb"><code>3a95e2f</code></a>
+  Merge pull request <a href="https://redirect.github.com/nolar/kopf/issues/1031">#1031</a> from
+  nolar/session-closed-in-reauth</li> <li><a
+  href="https://github.com/nolar/kopf/commit/5b9cd719c33453e13850b5704a96698fd257732c"><code>5b9cd71</code></a>
+  Detach the vault from toggles, use conditions for more concurrency safety</li> <li><a
+  href="https://github.com/nolar/kopf/commit/cbdd3e258a06c5c329923ea18fcf88bc55cdedd7"><code>cbdd3e2</code></a>
+  Invalidate the very specific failed credentials, not just any current one by ...</li> <li><a
+  href="https://github.com/nolar/kopf/commit/cfa1218c5def407e01c758eb86d697bb4e498b9c"><code>cfa1218</code></a>
+  Re-authenticate on SSL stream closed the same as on TCP/HTTP session closed</li> <li><a
+  href="https://github.com/nolar/kopf/commit/9e11f7c5a1a76a9674cfe2711b0f5b96785ecfed"><code>9e11f7c</code></a>
+  Re-authenticate if the session is closed by a concurrent request</li> <li><a
+  href="https://github.com/nolar/kopf/commit/0c90af18ccf2fb23da90370fc3f4b456909f766d"><code>0c90af1</code></a>
+  Merge pull request <a href="https://redirect.github.com/nolar/kopf/issues/1174">#1174</a> from
+  nolar/click-8.2.0</li> <li><a
+  href="https://github.com/nolar/kopf/commit/2fc3738d126aae28cb8cdfe2f64b9b4b51d0cfc2"><code>2fc3738</code></a>
+  Use the proper output stream of Click&gt;=8.2.0</li> <li><a
+  href="https://github.com/nolar/kopf/commit/8093937c409e7f106a92dcecec52076010f3fca2"><code>8093937</code></a>
+  Suppress the type warnings for Click&gt;=8.2.0 for CLI choices</li> <li>Additional commits
+  viewable in <a href="https://github.com/nolar/kopf/compare/1.37.5...1.38.0">compare view</a></li>
+  </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=kopf&package-manager=pip&previous-version=1.37.5&new-version=1.38.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Bump ruff from 0.11.8 to 0.11.9 ([#638](https://github.com/Twingate/kubernetes-operator/pull/638),
+  [`4d61918`](https://github.com/Twingate/kubernetes-operator/commit/4d61918dc1452236f9e1e5e0cb23e60c885c4909))
+
+Bumps [ruff](https://github.com/astral-sh/ruff) from 0.11.8 to 0.11.9. <details> <summary>Release
+  notes</summary> <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/releases">ruff's
+  releases</a>.</em></p> <blockquote> <h2>0.11.9</h2> <h2>Release Notes</h2> <h3>Preview
+  features</h3> <ul> <li>Default to latest supported Python version for version-related syntax
+  errors (<a href="https://redirect.github.com/astral-sh/ruff/pull/17529">#17529</a>)</li>
+  <li>Implement deferred annotations for Python 3.14 (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17658">#17658</a>)</li>
+  <li>[<code>airflow</code>] Fix <code>SQLTableCheckOperator</code> typo (<code>AIR302</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17946">#17946</a>)</li>
+  <li>[<code>airflow</code>] Remove
+  <code>airflow.utils.dag_parsing_context.get_parsing_context</code> (<code>AIR301</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17852">#17852</a>)</li>
+  <li>[<code>airflow</code>] Skip attribute check in try catch block (<code>AIR301</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17790">#17790</a>)</li>
+  <li>[<code>flake8-bandit</code>] Mark tuples of string literals as trusted input in
+  <code>S603</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17801">#17801</a>)</li>
+  <li>[<code>isort</code>] Check full module path against project root(s) when categorizing
+  first-party imports (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16565">#16565</a>)</li>
+  <li>[<code>ruff</code>] Add new rule <code>in-empty-collection</code> (<code>RUF060</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16480">#16480</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>Fix missing <code>combine</code> call for <code>lint.typing-extensions</code>
+  setting (<a href="https://redirect.github.com/astral-sh/ruff/pull/17823">#17823</a>)</li>
+  <li>[<code>flake8-async</code>] Fix module name in <code>ASYNC110</code>, <code>ASYNC115</code>,
+  and <code>ASYNC116</code> fixes (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17774">#17774</a>)</li>
+  <li>[<code>pyupgrade</code>] Add spaces between tokens as necessary to avoid syntax errors in
+  <code>UP018</code> autofix (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17648">#17648</a>)</li>
+  <li>[<code>refurb</code>] Fix false positive for float and complex numbers in <code>FURB116</code>
+  (<a href="https://redirect.github.com/astral-sh/ruff/pull/17661">#17661</a>)</li> <li>[parser]
+  Flag single unparenthesized generator expr with trailing comma in arguments. (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17893">#17893</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Add instructions on how to upgrade to a newer Rust version (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17928">#17928</a>)</li> <li>Update code of
+  conduct email address (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17875">#17875</a>)</li> <li>Add fix safety
+  sections to <code>PLC2801</code>, <code>PLR1722</code>, and <code>RUF013</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17825">#17825</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17826">#17826</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17759">#17759</a>)</li> <li>Add link to
+  <code>check-typed-exception</code> from <code>S110</code> and <code>S112</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17786">#17786</a>)</li> </ul> <h3>Other
+  changes</h3> <ul> <li>Allow passing a virtual environment to <code>ruff analyze graph</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17743">#17743</a>)</li> </ul>
+  <h2>Contributors</h2> <ul> <li><a
+  href="https://github.com/AlexWaygood"><code>@​AlexWaygood</code></a></li> <li><a
+  href="https://github.com/BurntSushi"><code>@​BurntSushi</code></a></li> <li><a
+  href="https://github.com/Gankra"><code>@​Gankra</code></a></li> <li><a
+  href="https://github.com/Glyphack"><code>@​Glyphack</code></a></li> <li><a
+  href="https://github.com/InSyncWithFoo"><code>@​InSyncWithFoo</code></a></li> <li><a
+  href="https://github.com/LaBatata101"><code>@​LaBatata101</code></a></li> <li><a
+  href="https://github.com/Lee-W"><code>@​Lee-W</code></a></li> <li><a
+  href="https://github.com/MichaReiser"><code>@​MichaReiser</code></a></li> <li><a
+  href="https://github.com/VascoSch92"><code>@​VascoSch92</code></a></li> <li><a
+  href="https://github.com/abhijeetbodas2001"><code>@​abhijeetbodas2001</code></a></li> <li><a
+  href="https://github.com/carljm"><code>@​carljm</code></a></li> <li><a
+  href="https://github.com/charliermarsh"><code>@​charliermarsh</code></a></li> <li><a
+  href="https://github.com/dcreager"><code>@​dcreager</code></a></li> <li><a
+  href="https://github.com/dhruvmanila"><code>@​dhruvmanila</code></a></li> <li><a
+  href="https://github.com/dylwil3"><code>@​dylwil3</code></a></li> <li><a
+  href="https://github.com/ercbot"><code>@​ercbot</code></a></li> </ul> <!-- raw HTML omitted -->
+  </blockquote> <p>... (truncated)</p> </details> <details> <summary>Changelog</summary>
+  <p><em>Sourced from <a href="https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md">ruff's
+  changelog</a>.</em></p> <blockquote> <h2>0.11.9</h2> <h3>Preview features</h3> <ul> <li>Default to
+  latest supported Python version for version-related syntax errors (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17529">#17529</a>)</li> <li>Implement
+  deferred annotations for Python 3.14 (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17658">#17658</a>)</li>
+  <li>[<code>airflow</code>] Fix <code>SQLTableCheckOperator</code> typo (<code>AIR302</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17946">#17946</a>)</li>
+  <li>[<code>airflow</code>] Remove
+  <code>airflow.utils.dag_parsing_context.get_parsing_context</code> (<code>AIR301</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17852">#17852</a>)</li>
+  <li>[<code>airflow</code>] Skip attribute check in try catch block (<code>AIR301</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17790">#17790</a>)</li>
+  <li>[<code>flake8-bandit</code>] Mark tuples of string literals as trusted input in
+  <code>S603</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17801">#17801</a>)</li>
+  <li>[<code>isort</code>] Check full module path against project root(s) when categorizing
+  first-party imports (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16565">#16565</a>)</li>
+  <li>[<code>ruff</code>] Add new rule <code>in-empty-collection</code> (<code>RUF060</code>) (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/16480">#16480</a>)</li> </ul> <h3>Bug
+  fixes</h3> <ul> <li>Fix missing <code>combine</code> call for <code>lint.typing-extensions</code>
+  setting (<a href="https://redirect.github.com/astral-sh/ruff/pull/17823">#17823</a>)</li>
+  <li>[<code>flake8-async</code>] Fix module name in <code>ASYNC110</code>, <code>ASYNC115</code>,
+  and <code>ASYNC116</code> fixes (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17774">#17774</a>)</li>
+  <li>[<code>pyupgrade</code>] Add spaces between tokens as necessary to avoid syntax errors in
+  <code>UP018</code> autofix (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17648">#17648</a>)</li>
+  <li>[<code>refurb</code>] Fix false positive for float and complex numbers in <code>FURB116</code>
+  (<a href="https://redirect.github.com/astral-sh/ruff/pull/17661">#17661</a>)</li> <li>[parser]
+  Flag single unparenthesized generator expr with trailing comma in arguments. (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17893">#17893</a>)</li> </ul>
+  <h3>Documentation</h3> <ul> <li>Add instructions on how to upgrade to a newer Rust version (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17928">#17928</a>)</li> <li>Update code of
+  conduct email address (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17875">#17875</a>)</li> <li>Add fix safety
+  sections to <code>PLC2801</code>, <code>PLR1722</code>, and <code>RUF013</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17825">#17825</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17826">#17826</a>, <a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17759">#17759</a>)</li> <li>Add link to
+  <code>check-typed-exception</code> from <code>S110</code> and <code>S112</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17786">#17786</a>)</li> </ul> <h3>Other
+  changes</h3> <ul> <li>Allow passing a virtual environment to <code>ruff analyze graph</code> (<a
+  href="https://redirect.github.com/astral-sh/ruff/pull/17743">#17743</a>)</li> </ul> </blockquote>
+  </details> <details> <summary>Commits</summary> <ul> <li><a
+  href="https://github.com/astral-sh/ruff/commit/2370297cde2fa7de4fe98c174e27d7938e92bbdd"><code>2370297</code></a>
+  Bump 0.11.9 (<a href="https://redirect.github.com/astral-sh/ruff/issues/17986">#17986</a>)</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/a137cb18d45236070798f3d03cfce23837eca988"><code>a137cb1</code></a>
+  [ty] Display &quot;All checks passed!&quot; message in green (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17982">#17982</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/03a4d56624c272b74a5a9b2a8581842a0e372af0"><code>03a4d56</code></a>
+  [ty] Change range of <code>revealed-type</code> diagnostic to be the range of the argume...</li>
+  <li><a
+  href="https://github.com/astral-sh/ruff/commit/642eac452dfd24aeb4c1593422a43eae7e70d559"><code>642eac4</code></a>
+  [ty] Recursive protocols (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17929">#17929</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/c1b875799b893be9b3392a99395b7802096ec635"><code>c1b8757</code></a>
+  [ty] CLI reference (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17978">#17978</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/6cd8a49638fb12f4e7984c5c5de0469b1248f9f1"><code>6cd8a49</code></a>
+  [ty] Update salsa (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17964">#17964</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/12ce445ff70306a3886afa530753b8c5d9fc452c"><code>12ce445</code></a>
+  [ty] Document configuration schema (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17950">#17950</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/f46ed8d410ff211bf43ca7e14f93e0f95aa5c76a"><code>f46ed8d</code></a>
+  [ty] Add --config CLI arg (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17697">#17697</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/6c177e2bbed56d0dd6781b90dd91030b7218546d"><code>6c177e2</code></a>
+  [ty] primer updates (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17903">#17903</a>)</li> <li><a
+  href="https://github.com/astral-sh/ruff/commit/3d2485eb1b86a5ddcce8332db9081740daaae0b7"><code>3d2485e</code></a>
+  [ty] fix more ecosystem/fuzzer panics with fixpoint (<a
+  href="https://redirect.github.com/astral-sh/ruff/issues/17758">#17758</a>)</li> <li>Additional
+  commits viewable in <a href="https://github.com/astral-sh/ruff/compare/0.11.8...0.11.9">compare
+  view</a></li> </ul> </details> <br />
+
+[![Dependabot compatibility
+  score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=ruff&package-manager=pip&previous-version=0.11.8&new-version=0.11.9)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)
+
+Dependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can
+  also trigger a rebase manually by commenting `@dependabot rebase`.
+
+[//]: # (dependabot-automerge-start) [//]: # (dependabot-automerge-end)
+
+---
+
+<details> <summary>Dependabot commands and options</summary> <br />
+
+You can trigger Dependabot actions by commenting on this PR: - `@dependabot rebase` will rebase this
+  PR - `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it
+  - `@dependabot merge` will merge this PR after your CI passes on it - `@dependabot squash and
+  merge` will squash and merge this PR after your CI passes on it - `@dependabot cancel merge` will
+  cancel a previously requested merge and block automerging - `@dependabot reopen` will reopen this
+  PR if it is closed - `@dependabot close` will close this PR and stop Dependabot recreating it. You
+  can achieve the same result by closing it manually - `@dependabot show <dependency name> ignore
+  conditions` will show all of the ignore conditions of the specified dependency - `@dependabot
+  ignore this major version` will close this PR and stop Dependabot creating any more for this major
+  version (unless you reopen the PR or upgrade to it yourself) - `@dependabot ignore this minor
+  version` will close this PR and stop Dependabot creating any more for this minor version (unless
+  you reopen the PR or upgrade to it yourself) - `@dependabot ignore this dependency` will close
+  this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or
+  upgrade to it yourself)
+
+</details>
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- Update certifi package version to 2025.4.26 for improved security and compatibility
+  ([`a6e0e37`](https://github.com/Twingate/kubernetes-operator/commit/a6e0e37751f7348b21f45f041f1724d337a33884))
+
+poetry update certifi
+
+- Update pytz package version from 2023.3.post1 to 2025.2 to ensure compatibility and access to the
+  latest features and fixes
+  ([`a1c6fdc`](https://github.com/Twingate/kubernetes-operator/commit/a1c6fdcb81ae9627dccc1f85172d42c6079ae938))
+
+### Testing
+
+- Remove unused `pytest-freezegun` library
+  ([#640](https://github.com/Twingate/kubernetes-operator/pull/640),
+  [`5f08dda`](https://github.com/Twingate/kubernetes-operator/commit/5f08dda0f638b2d36e960ee56003fef2c2fd22e4))
+
+## Changes
+
+Removed the unused `pytest-freezegun` library. In any case, if we ever do need this functionality,
+  we should be using `pendulum`'s testing functions: https://pendulum.eustace.io/docs/#testing
+
+
 ## v0.21.1 (2025-05-08)
 
 ### Bug Fixes

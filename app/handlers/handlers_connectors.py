@@ -56,16 +56,16 @@ def get_connector_deployment(
 
     # fmt: off
     pod_annotations = spec.pod_annotations
-    pod_selector_label = {
+    pod_selector_labels = {
         "app.kubernetes.io/name": "TwingateConnector",
         "app.kubernetes.io/instance": name,
     }
-    pod_labels = spec.pod_labels | pod_selector_label
+    pod_labels = spec.pod_labels | pod_selector_labels
 
     deployment_spec = {
         "replicas": 1,
         "selector": {
-            "matchLabels": pod_selector_label,
+            "matchLabels": pod_selector_labels,
         },
         "strategy": {
             "type": "Recreate",

@@ -192,7 +192,7 @@ def create_or_replace_deployment(
     kopf.info(
         body,
         reason="Deployment patched",
-        message=f"Patched deployment {namespace}/{connector.metadata.name} successfully",
+        message=f"Updated deployment {namespace}/{connector.metadata.name} successfully",
     )
 
 

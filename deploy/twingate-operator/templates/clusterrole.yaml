@@ -27,3 +27,7 @@ rules:
   - apiGroups: ["*"]
     resources: [pods, services, secrets, services/status]
     verbs: [list, watch, patch, get, create, delete]
+
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

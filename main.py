@@ -34,6 +34,7 @@ def startup(
 
     # Fixes issue where operator stops detecting changes (see https://github.com/nolar/kopf/issues/1120)
     settings.watching.server_timeout = 5 * 60
+    settings.watching.client_timeout = 5 * 60 + 1
 
     settings.persistence.finalizer = "twingate.com/finalizer"
     settings.persistence.diffbase_storage = TwingateAnnotationsDiffBaseStorage()

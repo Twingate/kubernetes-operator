@@ -147,14 +147,14 @@ class TestServiceToTwingateResource:
         assert result == expected
 
     def test_kubernetes_resource_type_annotation(
-        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+        self, example_gateway_service_body, k8s_core_client_mock, k8s_tls_secret_mock
     ):
         tls_object_name = "gateway-tls"
         namespace = "default"
-        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
 
         result = service_to_twingate_resource(example_gateway_service_body, namespace)
-        k8s_client_mock.read_namespaced_secret.assert_called_once_with(
+        k8s_core_client_mock.read_namespaced_secret.assert_called_once_with(
             namespace=namespace, name=tls_object_name
         )
 
@@ -194,9 +194,9 @@ class TestServiceToTwingateResource:
             service_to_twingate_resource(example_gateway_service_body, "default")
 
     def test_kubernetes_resource_type_annotation_without_k8s_secret_object(
-        self, example_gateway_service_body, k8s_client_mock
+        self, example_gateway_service_body, k8s_core_client_mock
     ):
-        k8s_client_mock.read_namespaced_secret.return_value = None
+        k8s_core_client_mock.read_namespaced_secret.return_value = None
 
         with pytest.raises(
             kopf.PermanentError,
@@ -205,10 +205,10 @@ class TestServiceToTwingateResource:
             service_to_twingate_resource(example_gateway_service_body, "default")
 
     def test_kubernetes_resource_type_annotation_with_invalid_secret_type(
-        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+        self, example_gateway_service_body, k8s_core_client_mock, k8s_tls_secret_mock
     ):
         k8s_tls_secret_mock.type = "kubernetes.io/token"
-        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
 
         with pytest.raises(
             kopf.PermanentError,
@@ -217,10 +217,10 @@ class TestServiceToTwingateResource:
             service_to_twingate_resource(example_gateway_service_body, "default")
 
     def test_kubernetes_resource_type_annotation_without_ca_cert(
-        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+        self, example_gateway_service_body, k8s_core_client_mock, k8s_tls_secret_mock
     ):
         k8s_tls_secret_mock.data = {}
-        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
 
         with pytest.raises(
             kopf.PermanentError,
@@ -229,12 +229,12 @@ class TestServiceToTwingateResource:
             service_to_twingate_resource(example_gateway_service_body, "default")
 
     def test_kubernetes_resource_type_annotation_with_invalid_ca_cert(
-        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+        self, example_gateway_service_body, k8s_core_client_mock, k8s_tls_secret_mock
     ):
         k8s_tls_secret_mock.data["ca.crt"] = (
             "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tIE1JSUZmakNDQTJhZ0F3SUJBZ0lVQk50IC0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
         )
-        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
 
         with pytest.raises(
             kopf.PermanentError,
@@ -259,14 +259,14 @@ class TestK8sGetTwingateResource:
 
 
 class TestK8sGetTLSSecret:
-    def test_handles_404_returns_none(self, k8s_client_mock):
-        k8s_client_mock.read_namespaced_secret.side_effect = (
+    def test_handles_404_returns_none(self, k8s_core_client_mock):
+        k8s_core_client_mock.read_namespaced_secret.side_effect = (
             kubernetes.client.exceptions.ApiException(status=404)
         )
         assert k8s_get_tls_secret("default", "test") is None
 
-    def test_reraises_non_404_exceptions(self, k8s_client_mock):
-        k8s_client_mock.read_namespaced_secret.side_effect = (
+    def test_reraises_non_404_exceptions(self, k8s_core_client_mock):
+        k8s_core_client_mock.read_namespaced_secret.side_effect = (
             kubernetes.client.exceptions.ApiException(status=500)
         )
         with pytest.raises(kubernetes.client.exceptions.ApiException):

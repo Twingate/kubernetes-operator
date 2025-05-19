@@ -6,10 +6,17 @@ from pytest_factoryboy import register
 from app.api import TwingateAPIClient
 from app.settings import TwingateOperatorSettings
 
-from .factories import ConnectorFactory, ResourceFactory
+from .factories import (
+    BaseResourceFactory,
+    ConnectorFactory,
+    KubernetesResourceFactory,
+    NetworkResourceFactory,
+)
 
 register(ConnectorFactory)
-register(ResourceFactory)
+register(BaseResourceFactory)
+register(NetworkResourceFactory)
+register(KubernetesResourceFactory)
 
 
 @pytest.fixture

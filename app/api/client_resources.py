@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 from typing import Any, Literal
 
@@ -8,7 +9,7 @@ from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
-from app.crds import ProtocolPolicy, ResourceSpec
+from app.crds import ProtocolPolicy, ResourceProxy, ResourceSpec, ResourceType
 
 
 class ResourceAddress(BaseModel):
@@ -63,7 +64,7 @@ class Tag(BaseModel):
     value: str
 
 
-class Resource(BaseModel):
+class BaseResource(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
     id: str
@@ -72,7 +73,6 @@ class Resource(BaseModel):
     updated_at: datetime
     address: ResourceAddress
     is_visible: bool
-    is_browser_shortcut_enabled: bool
     remote_network: ResourceRemoteNetwork
     alias: str | None = None
     security_policy: ResourceSecurityPolicy | None = Field(
@@ -84,7 +84,7 @@ class Resource(BaseModel):
     @staticmethod
     def get_graphql_fragment():
         return """
-            fragment ResourceFields on Resource {
+            fragment BaseResourceFields on Resource {
                 id
                 name
                 createdAt
@@ -95,7 +95,6 @@ class Resource(BaseModel):
                 }
                 alias
                 isVisible
-                isBrowserShortcutEnabled
                 remoteNetwork { id }
                 securityPolicy { id }
                 protocols {
@@ -131,24 +130,19 @@ class Resource(BaseModel):
             and self.address.value == crd.address
             and self.alias == crd.alias
             and self.is_visible == crd.is_visible
-            and self.is_browser_shortcut_enabled == crd.is_browser_shortcut_enabled
             and self_protocols == crd_protocols
             and self.remote_network.id == crd.remote_network_id
             and (self.security_policy and self.security_policy.id)
             == crd.security_policy_id
         )
 
-    def is_matching_labels(self, crd_labels: dict[str, str]) -> bool:
-        return crd_labels == self.to_metadata_labels()
-
-    def to_spec(self, **overrides: Any) -> ResourceSpec:
+    def to_spec_dict(self) -> dict[str, Any]:
         data = self.model_dump(
             include={
                 "id",
                 "name",
                 "alias",
                 "is_visible",
-                "is_browser_shortcut_enabled",
                 "protocols",
                 "tags",
             }
@@ -158,51 +152,199 @@ class Resource(BaseModel):
         data["security_policy_id"] = (
             self.security_policy.id if self.security_policy else None
         )
-        data.update(overrides)
-        return ResourceSpec(**data)
+        return data
+
+    def is_matching_labels(self, crd_labels: dict[str, str]) -> bool:
+        return crd_labels == self.to_metadata_labels()
 
     def to_metadata_labels(self) -> dict[str, str]:
         return {tag.key: tag.value for tag in self.tags}
 
 
+class NetworkResource(BaseResource):
+    is_browser_shortcut_enabled: bool
+
+    @staticmethod
+    def get_graphql_fragment():
+        return (
+            BaseResource.get_graphql_fragment()
+            + """
+            fragment NetworkResourceFields on NetworkResource {
+                ...BaseResourceFields
+                isBrowserShortcutEnabled
+            }
+            """
+        )
+
+    def is_matching_spec(self, crd: ResourceSpec) -> bool:
+        return (
+            super().is_matching_spec(crd)
+            and self.is_browser_shortcut_enabled == crd.is_browser_shortcut_enabled
+        )
+
+    def to_spec(self, **overrides: Any) -> ResourceSpec:
+        data: dict[str, Any] = (
+            {
+                "type": ResourceType.NETWORK,
+                "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
+            }
+            | super().to_spec_dict()
+            | overrides
+        )
+
+        return ResourceSpec(**data)
+
+
+class KubernetesResource(BaseResource):
+    proxy_address: str
+    certificate_authority_cert: str
+
+    @staticmethod
+    def get_graphql_fragment():
+        return (
+            BaseResource.get_graphql_fragment()
+            + """
+            fragment KubernetesResourceFields on KubernetesResource {
+                ...BaseResourceFields
+                proxyAddress
+                certificateAuthorityCert
+            }
+            """
+        )
+
+    def is_matching_spec(self, crd: ResourceSpec) -> bool:
+        return (
+            super().is_matching_spec(crd)
+            and crd.proxy is not None
+            and self.proxy_address == crd.proxy.address
+            and self.certificate_authority_cert == crd.proxy.certificate_authority_cert
+        )
+
+    def to_spec(self, **overrides: Any) -> ResourceSpec:
+        data: dict[str, Any] = (
+            {
+                "type": ResourceType.KUBERNETES,
+                "proxy": ResourceProxy(
+                    address=self.proxy_address,
+                    certificate_authority_cert=base64.b64encode(
+                        self.certificate_authority_cert.encode()
+                    ).decode(),
+                ),
+            }
+            | super().to_spec_dict()
+            | overrides
+        )
+        return ResourceSpec(**data)
+
+
 # fmt:off
 
-_RESOURCE_FRAGMENT = Resource.get_graphql_fragment()
+_NETWORK_RESOURCE_FRAGMENT = NetworkResource.get_graphql_fragment()
+_KUBERNETES_RESOURCE_FRAGMENT = KubernetesResource.get_graphql_fragment()
 
-QUERY_GET_RESOURCE = gql(_RESOURCE_FRAGMENT + """
+QUERY_GET_RESOURCE = gql(BaseResource.get_graphql_fragment() + """
     query GetResource($id: ID!) {
-      resource(id: $id) {
-        ...ResourceFields
-      }
-    }
-"""
-)
-
-MUT_CREATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation CreateResource($name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID, $tags: [TagInput!]) {
-      resourceCreate(
-        name: $name
-        address: $address
-        alias: $alias
-        isVisible: $isVisible
-        isBrowserShortcutEnabled: $isBrowserShortcutEnabled
-        protocols: $protocols
-        remoteNetworkId: $remoteNetworkId
-        securityPolicyId: $securityPolicyId
-        tags: $tags
-      ) {
-        ok
-        error
-        entity {
-          ...ResourceFields
+        resource(id: $id) {
+            __typename
+            ...BaseResourceFields
+            ... on NetworkResource {
+                isBrowserShortcutEnabled
+            }
+            ... on KubernetesResource {
+                proxyAddress
+                certificateAuthorityCert
+            }
         }
-      }
     }
 """
 )
 
-MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
-    mutation UpdateResource($id: ID!, $name: String!, $address: String!, $alias: String, $isVisible: Boolean, $isBrowserShortcutEnabled: Boolean, $protocols: ProtocolsInput, $remoteNetworkId: ID!, $securityPolicyId: ID, $tags: [TagInput!]) {
+# region Resource Create Mutations
+
+MUT_CREATE_RESOURCE = gql(_NETWORK_RESOURCE_FRAGMENT + """
+    mutation CreateNetworkResource(
+        $name: String!
+        $address: String!
+        $alias: String
+        $isVisible: Boolean
+        $isBrowserShortcutEnabled: Boolean
+        $protocols: ProtocolsInput
+        $remoteNetworkId: ID!
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+    ) {
+        resourceCreate(
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            isBrowserShortcutEnabled: $isBrowserShortcutEnabled
+            protocols: $protocols
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+        ) {
+            ok
+            error
+            entity {
+              ...NetworkResourceFields
+            }
+        }
+    }
+"""
+)
+MUT_CREATE_KUBERNETES_RESOURCE = gql(_KUBERNETES_RESOURCE_FRAGMENT + """
+    mutation CreateKubernetesResource(
+        $name: String!
+        $address: String!
+        $alias: String
+        $isVisible: Boolean
+        $protocols: ProtocolsInput
+        $remoteNetworkId: ID!
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+        $proxyAddress: String!
+        $certificateAuthorityCert: String!
+    ) {
+        kubernetesResourceCreate(
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            protocols: $protocols
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+            proxyAddress: $proxyAddress
+            certificateAuthorityCert: $certificateAuthorityCert
+        ) {
+            ok
+            error
+            entity {
+              ...KubernetesResourceFields
+            }
+        }
+    }
+"""
+)
+
+# endregion
+
+# region Resource Update Mutations
+
+MUT_UPDATE_NETWORK_RESOURCE = gql(_NETWORK_RESOURCE_FRAGMENT + """
+    mutation UpdateNetworkResource(
+        $id: ID!
+        $name: String!
+        $address: String!
+        $alias: String
+        $isVisible: Boolean
+        $isBrowserShortcutEnabled: Boolean
+        $protocols: ProtocolsInput
+        $remoteNetworkId: ID!
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+    ) {
         resourceUpdate(
             id: $id,
             name: $name
@@ -218,20 +360,60 @@ MUT_UPDATE_RESOURCE = gql(_RESOURCE_FRAGMENT + """
             ok
             error
             entity {
-                ...ResourceFields
+                ...NetworkResourceFields
+            }
+        }
+    }
+"""
+)
+MUT_UPDATE_KUBERNETES_RESOURCE = gql(_KUBERNETES_RESOURCE_FRAGMENT + """
+    mutation UpdateKubernetesResource(
+        $id: ID!
+        $name: String!
+        $address: String!
+        $alias: String
+        $isVisible: Boolean
+        $protocols: ProtocolsInput
+        $remoteNetworkId: ID!
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+        $proxyAddress: String
+        $certificateAuthorityCert: String
+    ) {
+        kubernetesResourceUpdate(
+            id: $id,
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            protocols: $protocols
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+            proxyAddress: $proxyAddress
+            certificateAuthorityCert: $certificateAuthorityCert
+        ) {
+            ok
+            error
+            entity {
+                ...KubernetesResourceFields
             }
         }
     }
 """
 )
 
+# endregion
+
+
+
 MUT_DELETE_RESOURCE = gql("""
-mutation DeleteResource($id: ID!) {
-    resourceDelete(id: $id) {
-        ok
-        error
+    mutation DeleteResource($id: ID!) {
+        resourceDelete(id: $id) {
+            ok
+            error
+        }
     }
-}
 """
 )
 
@@ -239,17 +421,37 @@ mutation DeleteResource($id: ID!) {
 
 
 class TwingateResourceAPIs:
-    def get_resource(self: TwingateClientProtocol, resource_id: str) -> Resource | None:
+    def get_resource(
+        self: TwingateClientProtocol, resource_id: str
+    ) -> NetworkResource | KubernetesResource | None:
         try:
             result = self.execute_gql(
                 QUERY_GET_RESOURCE, variable_values={"id": resource_id}
             )
-            return Resource(**result["resource"]) if result["resource"] else None
+            if not result["resource"]:
+                return None
+
+            resource_type = result["resource"]["__typename"]
+            match resource_type:
+                case "NetworkResource":
+                    return NetworkResource(**result["resource"])
+                case "KubernetesResource":
+                    return KubernetesResource(**result["resource"])
+                case _:
+                    raise ValueError(f"Invalid Resource Type: {resource_type}")
         except TransportQueryError:
             self.logger.exception("Failed to get resource")
             return None
 
     def resource_create(
+        self: TwingateClientProtocol, resource_type: ResourceType, **graphql_arguments
+    ) -> NetworkResource | KubernetesResource:
+        if resource_type == ResourceType.KUBERNETES:
+            return self.kubernetes_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
+
+        return self.network_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
+
+    def network_resource_create(
         self: TwingateClientProtocol,
         *,
         name: str,
@@ -261,7 +463,7 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         protocols: dict[str, Any],
         tags: list[dict[str, str]],
-    ) -> Resource:
+    ) -> NetworkResource:
         result = self.execute_mutation(
             "resourceCreate",
             MUT_CREATE_RESOURCE,
@@ -277,9 +479,52 @@ class TwingateResourceAPIs:
                 "tags": tags,
             },
         )
-        return Resource(**result["entity"])
+        return NetworkResource(**result["entity"])
+
+    def kubernetes_resource_create(
+        self: TwingateClientProtocol,
+        *,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        protocols: dict[str, Any],
+        tags: list[dict[str, str]],
+        proxy_address: str,
+        certificate_authority_cert: str,
+    ) -> KubernetesResource:
+        result = self.execute_mutation(
+            "kubernetesResourceCreate",
+            MUT_CREATE_KUBERNETES_RESOURCE,
+            variable_values={
+                "name": name,
+                "address": address,
+                "alias": alias,
+                "isVisible": is_visible,
+                "remoteNetworkId": remote_network_id,
+                "securityPolicyId": security_policy_id,
+                "protocols": protocols,
+                "tags": tags,
+                "proxyAddress": proxy_address,
+                "certificateAuthorityCert": certificate_authority_cert,
+            },
+        )
+        return KubernetesResource(**result["entity"])
 
     def resource_update(
+        self: TwingateClientProtocol,
+        id: str,
+        resource_type: ResourceType,
+        **graphql_arguments,
+    ) -> NetworkResource | KubernetesResource | None:
+        if resource_type == ResourceType.KUBERNETES:
+            return self.kubernetes_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
+
+        return self.network_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
+
+    def network_resource_update(
         self: TwingateClientProtocol,
         *,
         id: str,
@@ -292,10 +537,10 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         protocols: dict[str, Any],
         tags: list[dict[str, str]],
-    ) -> Resource | None:
+    ) -> NetworkResource | None:
         result = self.execute_mutation(
             "resourceUpdate",
-            MUT_UPDATE_RESOURCE,
+            MUT_UPDATE_NETWORK_RESOURCE,
             variable_values={
                 "id": id,
                 "name": name,
@@ -309,7 +554,41 @@ class TwingateResourceAPIs:
                 "tags": tags,
             },
         )
-        return Resource(**result["entity"])
+        return NetworkResource(**result["entity"])
+
+    def kubernetes_resource_update(
+        self: TwingateClientProtocol,
+        *,
+        id: str,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        protocols: dict[str, Any],
+        tags: list[dict[str, str]],
+        proxy_address: str,
+        certificate_authority_cert: str,
+    ) -> KubernetesResource | None:
+        result = self.execute_mutation(
+            "kubernetesResourceUpdate",
+            MUT_UPDATE_KUBERNETES_RESOURCE,
+            variable_values={
+                "id": id,
+                "name": name,
+                "address": address,
+                "alias": alias,
+                "isVisible": is_visible,
+                "remoteNetworkId": remote_network_id,
+                "securityPolicyId": security_policy_id,
+                "protocols": protocols,
+                "tags": tags,
+                "proxyAddress": proxy_address,
+                "certificateAuthorityCert": certificate_authority_cert,
+            },
+        )
+        return KubernetesResource(**result["entity"])
 
     def resource_delete(self: TwingateClientProtocol, resource_id: str) -> bool:
         try:

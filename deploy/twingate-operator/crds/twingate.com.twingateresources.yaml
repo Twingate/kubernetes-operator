@@ -19,6 +19,10 @@ spec:
               x-kubernetes-validations:
                 - rule: (self.isBrowserShortcutEnabled && !(self.address.contains('*') || self.address.contains('?'))) || (self.isBrowserShortcutEnabled == false)
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
+                - rule: (self.type == "Network" && !has(self.proxy)) || (self.type == "Kubernetes" && has(self.proxy))
+                  message: "proxy should be set for Kubernetes Resource"
+                - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
+                  message: "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
               required: ["name", "address"]
               properties:
                 id:
@@ -121,6 +125,26 @@ spec:
                   type: boolean
                   default: true
                   description: "syncLabels specifies whether the resource should sync the metadata labels as resource tags in the Twingate client."
+                type:
+                  type: string
+                  description: "The resource type"
+                  default: Network
+                  enum:
+                    - Network
+                    - Kubernetes
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: "Resource type is immutable"
+                proxy:
+                  type: object
+                  required: ["address", "certificateAuthorityCert"]
+                  properties:
+                    address:
+                      type: string
+                      description: "Address of the proxy."
+                    certificateAuthorityCert:
+                      type: string
+                      description: "Base64-encoded certificate of the Certificate Authority issuing the proxy's TLS certificate."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

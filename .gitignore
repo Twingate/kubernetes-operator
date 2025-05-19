@@ -1,5 +1,7 @@
 /.envrc.local
 /deploy/twingate-operator/values.local.yaml
+/deploy/twingate-operator/charts
+
 
 .vscode
 .idea

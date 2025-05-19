@@ -1,5 +1,7 @@
 from typing import Any
 
+from cryptography import x509
+
 
 def to_bool(val: Any) -> bool:
     """Convert "boolean" strings (e.g., from env. vars.) to real booleans.
@@ -37,3 +39,10 @@ def to_bool(val: Any) -> bool:
         # Raised when "val" is not hashable (e.g., lists)
         pass
     raise ValueError(f"Cannot convert value to bool: {val}")
+
+
+def validate_pem_x509_certificate(value: str):
+    try:
+        x509.load_pem_x509_certificate(value.encode())
+    except ValueError as ex:
+        raise ValueError("Invalid certificate") from ex

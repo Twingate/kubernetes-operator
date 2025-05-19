@@ -5,8 +5,12 @@ import kubernetes
 import pytest
 import yaml
 
+from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
+from app.crds import ResourceType
 from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,
+    TLS_OBJECT_ANNOTATION,
+    k8s_get_tls_secret,
     k8s_get_twingate_resource,
     service_to_twingate_resource,
     twingate_service_create,
@@ -45,6 +49,43 @@ def example_service_body():
           name: ssh
     """
     return kopf.Body(yaml.safe_load(yaml_str))
+
+
+@pytest.fixture
+def example_gateway_service_body():
+    yaml_str = """
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: kubernetes-gateway
+      labels:
+        env: dev
+      annotations:
+        resource.twingate.com: "true"
+        resource.twingate.com/type: "Kubernetes"
+        resource.twingate.com/tlsSecret: "gateway-tls"
+        resource.twingate.com/alias: "gateway.default.svc.cluster.local"
+    spec:
+      selector:
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/instance: kubernetes
+      type: ClusterIP
+      ports:
+        - name: https
+          protocol: TCP
+          port: 443
+          targetPort: https
+    """
+    return kopf.Body(yaml.safe_load(yaml_str))
+
+
+@pytest.fixture
+def k8s_tls_secret_mock():
+    return kubernetes.client.V1Secret(
+        type="kubernetes.io/tls",
+        metadata=kubernetes.client.V1ObjectMeta(name="gateway-tls"),
+        data={"ca.crt": BASE64_OF_VALID_CA_CERT},
+    )
 
 
 @pytest.fixture
@@ -91,6 +132,7 @@ class TestServiceToTwingateResource:
             "securityPolicyId": "12345",
             "isVisible": True,
             "syncLabels": True,
+            "type": ResourceType.NETWORK,
         }
 
         if annotation_name_converter is not None:
@@ -104,26 +146,131 @@ class TestServiceToTwingateResource:
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected
 
+    def test_kubernetes_resource_type_annotation(
+        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+    ):
+        tls_object_name = "gateway-tls"
+        namespace = "default"
+        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+
+        result = service_to_twingate_resource(example_gateway_service_body, namespace)
+        k8s_client_mock.read_namespaced_secret.assert_called_once_with(
+            namespace=namespace, name=tls_object_name
+        )
+
+        assert result["spec"] == {
+            "name": "kubernetes-gateway-resource",
+            "address": "kubernetes.default.svc.cluster.local",
+            "alias": "gateway.default.svc.cluster.local",
+            "proxy": {
+                "address": "kubernetes-gateway.default.svc.cluster.local",
+                "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,
+            },
+            "protocols": {
+                "allowIcmp": False,
+                "tcp": {
+                    "policy": "RESTRICTED",
+                    "ports": [{"start": 443, "end": 443}],
+                },
+                "udp": {
+                    "policy": "RESTRICTED",
+                    "ports": [],
+                },
+            },
+            "type": ResourceType.KUBERNETES,
+        }
+
+    def test_kubernetes_resource_type_annotation_without_tls_secret_annotation(
+        self, example_gateway_service_body
+    ):
+        example_gateway_service_body.metadata["annotations"][TLS_OBJECT_ANNOTATION] = (
+            None
+        )
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match="resource.twingate.com/tlsSecret annotation is not provided",
+        ):
+            service_to_twingate_resource(example_gateway_service_body, "default")
+
+    def test_kubernetes_resource_type_annotation_without_k8s_secret_object(
+        self, example_gateway_service_body, k8s_client_mock
+    ):
+        k8s_client_mock.read_namespaced_secret.return_value = None
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match="Kubernetes Secret object: gateway-tls is missing.",
+        ):
+            service_to_twingate_resource(example_gateway_service_body, "default")
+
+    def test_kubernetes_resource_type_annotation_with_invalid_secret_type(
+        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+    ):
+        k8s_tls_secret_mock.type = "kubernetes.io/token"
+        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match="Kubernetes Secret object: gateway-tls type is invalid.",
+        ):
+            service_to_twingate_resource(example_gateway_service_body, "default")
+
+    def test_kubernetes_resource_type_annotation_without_ca_cert(
+        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+    ):
+        k8s_tls_secret_mock.data = {}
+        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match="Kubernetes Secret object: gateway-tls is missing ca.crt.",
+        ):
+            service_to_twingate_resource(example_gateway_service_body, "default")
+
+    def test_kubernetes_resource_type_annotation_with_invalid_ca_cert(
+        self, example_gateway_service_body, k8s_client_mock, k8s_tls_secret_mock
+    ):
+        k8s_tls_secret_mock.data["ca.crt"] = (
+            "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tIE1JSUZmakNDQTJhZ0F3SUJBZ0lVQk50IC0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
+        )
+        k8s_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match="Kubernetes Secret object: gateway-tls ca.crt is invalid.",
+        ):
+            service_to_twingate_resource(example_gateway_service_body, "default")
+
 
 class TestK8sGetTwingateResource:
-    def test_handles_404_returns_none(
-        self,
-        k8s_customobjects_client_mock,
-    ):
+    def test_handles_404_returns_none(self, k8s_customobjects_client_mock):
         k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (
             kubernetes.client.exceptions.ApiException(status=404)
         )
         assert k8s_get_twingate_resource("default", "test") is None
 
-    def test_reraises_non_404_exceptions(
-        self,
-        k8s_customobjects_client_mock,
-    ):
+    def test_reraises_non_404_exceptions(self, k8s_customobjects_client_mock):
         k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (
             kubernetes.client.exceptions.ApiException(status=500)
         )
         with pytest.raises(kubernetes.client.exceptions.ApiException):
             k8s_get_twingate_resource("default", "test")
+
+
+class TestK8sGetTLSSecret:
+    def test_handles_404_returns_none(self, k8s_client_mock):
+        k8s_client_mock.read_namespaced_secret.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=404)
+        )
+        assert k8s_get_tls_secret("default", "test") is None
+
+    def test_reraises_non_404_exceptions(self, k8s_client_mock):
+        k8s_client_mock.read_namespaced_secret.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=500)
+        )
+        with pytest.raises(kubernetes.client.exceptions.ApiException):
+            k8s_get_tls_secret("default", "test")
 
 
 class TestTwingateServiceCreate:

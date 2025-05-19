@@ -97,7 +97,9 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
                 resource.is_matching_spec(crd) and resource.is_matching_labels(labels)
             ):
                 logger.info("Resource %s is out of date, updating...", resource_id)
-                client.resource_update(**crd.to_graphql_arguments(labels=labels))
+                client.resource_update(
+                    resource_type=crd.type, **crd.to_graphql_arguments(labels=labels)
+                )
                 return success(
                     twingate_id=resource.id,
                     created_at=resource.created_at.isoformat(),

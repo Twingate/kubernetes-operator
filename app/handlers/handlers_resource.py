@@ -54,7 +54,7 @@ def twingate_resource_update(labels, spec, diff, status, memo, logger, **kwargs)
     if not crd.id:
         return fail(error="Resource ID is missing in the spec")
 
-    # Check if just "id" was added - means `create` just ran
+    # Check if just "spec.id" was added - means `create` just ran
     if len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id"), None):
         return success(twingate_id=crd.id, message="No update required")
 
@@ -97,10 +97,7 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
                 resource.is_matching_spec(crd) and resource.is_matching_labels(labels)
             ):
                 logger.info("Resource %s is out of date, updating...", resource_id)
-                graphql_arguments = crd.to_graphql_arguments(labels=labels)
-                resource = client.resource_update(
-                    resource_type=crd.type, **graphql_arguments
-                )
+                client.resource_update(**crd.to_graphql_arguments(labels=labels))
                 return success(
                     twingate_id=resource.id,
                     created_at=resource.created_at.isoformat(),

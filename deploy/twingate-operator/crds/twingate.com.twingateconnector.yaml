@@ -72,6 +72,7 @@ spec:
                         enum:
                           - dockerhub
                           - google
+                        default: dockerhub
                       repository:
                         type: string
                         default: twingate/connector
@@ -88,19 +89,19 @@ spec:
                         description: "Allow pre-release versions."
                 containerExtra:
                   type: object
-                  description: "Extra container configuration for the Connector Pod."
+                  description: "Extra container configuration for the Connector Deployment's pod template at `.spec.template.spec.containers`."
                   x-kubernetes-preserve-unknown-fields: true
                 podExtra:
                   type: object
-                  description: "Extra pod configuration for the Connector Pod."
+                  description: "Extra pod configuration to be added to the Connector Deployment's pod template at `.spec.template.spec`"
                   x-kubernetes-preserve-unknown-fields: true
                 podAnnotations:
                   type: object
-                  description: "Extra annotations to add to the Connector Pod."
+                  description: "Extra annotations to add to the Connector Deployment's pod template at `.spec.template.metadata.annotations`."
                   x-kubernetes-preserve-unknown-fields: true
                 podLabels:
                   type: object
-                  description: "Extra labels to add to the Connector Pod."
+                  description: "Extra labels to add to the Connector Deployment's pod template at `.spec.template.metadata.labels`."
                   x-kubernetes-preserve-unknown-fields: true
                 sidecarContainers:
                   type: array

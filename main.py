@@ -33,7 +33,9 @@ def startup(
     logger.info("Operator is starting up...")
 
     # Fixes issue where operator stops detecting changes (see https://github.com/nolar/kopf/issues/1120)
+    settings.watching.connect_timeout = 60
     settings.watching.server_timeout = 5 * 60
+    settings.watching.client_timeout = settings.watching.server_timeout + 1
 
     settings.persistence.finalizer = "twingate.com/finalizer"
     settings.persistence.diffbase_storage = TwingateAnnotationsDiffBaseStorage()
@@ -43,8 +45,8 @@ def startup(
         twingate_operator_settings = TwingateOperatorSettings()
         twingate_operator_settings.update_kopf_watching_settings(settings)
         memo.twingate_settings = twingate_operator_settings
-    except ValidationError:
-        logger.exception("Failed to load settings.")
+    except ValidationError as vexc:
+        raise RuntimeError("Failed to load settings.") from vexc
 
     # Disable health logging
     logging.getLogger("aiohttp.access").setLevel(level=logging.WARNING)

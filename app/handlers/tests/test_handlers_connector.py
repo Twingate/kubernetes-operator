@@ -279,6 +279,55 @@ class TestTwingateConnectorUpdate:
             "success": False,
             "ts": ANY,
         }
+        
+    def test_recreates_connector_if_does_not_exist(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        mock_api_client,
+        mock_create_or_replace_deployment,
+    ):
+        connector, crd = get_connector_and_crd(with_id=True)
+        new_connector = connector
+        new_connector.id = "new-id"
+
+        # Simulate connector not found
+        mock_api_client.connector_update.return_value = None
+        # Simulate connector recreated
+        mock_api_client.connector_create.return_value = new_connector
+        mock_api_client.connector_generate_tokens.return_value = ConnectorTokens(
+            access_token="at",
+            refresh_token="rt",  # nosec
+        )
+
+        run = kopf_handler_runner(
+            twingate_connector_update,
+            crd,
+            MagicMock(),
+            new={},
+            diff=(
+                ("add", ("logLevel",), 3, 7),
+                ("add", ("name",), "before", "after"),
+            ),
+        )
+
+        # Check that it reset the ID and recreated the connector
+        assert run.patch_mock.spec == {"id": None, "id": new_connector.id}
+        mock_api_client.connector_create.assert_called_once()
+        mock_api_client.connector_generate_tokens.assert_called_once_with(new_connector.id)
+        mock_create_or_replace_deployment.assert_called_once()
+        
+        # Verify the secret operations
+        run.k8s_core_client_mock.delete_namespaced_secret.assert_called_once()
+        run.k8s_core_client_mock.create_namespaced_secret.assert_called_once()
+        
+        # Check the result
+        assert run.result == {
+            "success": True, 
+            "twingate_id": new_connector.id, 
+            "message": "Connector was recreated",
+            "ts": ANY
+        }
 
 
 class TestTwingateConnectorDelete:

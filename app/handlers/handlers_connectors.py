@@ -231,7 +231,7 @@ def twingate_connector_create(body, memo, logger, namespace, patch, **_):
 
 
 @kopf.on.update("twingateconnector", field=["spec"])
-def twingate_connector_update(body, memo, logger, new, diff, status, namespace, **_):
+def twingate_connector_update(body, memo, logger, new, diff, status, namespace, patch, **_):
     logger.info(
         "Got TwingateConnector update request: %s. Diff: %s. Status: %s.",
         new,
@@ -257,6 +257,41 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
         return fail(error="Update called before Connector has an ID")
 
     updated_connector = client.connector_update(crd.spec)
+    
+    # If the connector doesn't exist anymore, reset the ID and create it again
+    if updated_connector is None:
+        logger.info(
+            "Connector with id %s no longer exists. Recreating...",
+            crd.spec.id
+        )
+        # Reset the ID in the patch
+        patch.spec["id"] = None
+        
+        # Create a new connector
+        new_connector = client.connector_create(crd.spec)
+        patch.spec["id"] = new_connector.id
+        
+        # Generate tokens for the new connector
+        tokens = client.connector_generate_tokens(new_connector.id)
+        
+        # Create or replace the secret
+        secret = get_connector_secret(tokens.access_token, tokens.refresh_token)
+        kopf.adopt([secret], owner=body, strict=True, forced=True)
+        
+        kapi = kubernetes.client.CoreV1Api()
+        secret_name = crd.metadata.name
+        
+        try:
+            kapi.delete_namespaced_secret(name=secret_name, namespace=namespace)
+        except kubernetes.client.exceptions.ApiException as e:
+            if e.status != 404:  # Only re-raise if not a "not found" error
+                raise
+        
+        kapi.create_namespaced_secret(namespace=namespace, body=secret)
+        
+        create_or_replace_deployment(body, namespace, crd, memo.twingate_settings.full_url)
+        
+        return success(twingate_id=new_connector.id, message="Connector was recreated")
 
     create_or_replace_deployment(body, namespace, crd, memo.twingate_settings.full_url)
 

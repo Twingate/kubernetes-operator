@@ -33,6 +33,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.24.x
+      - name: Build helm dependencies
+        run: helm dependency build ./deploy/twingate-operator
       - name: Run Helm Chart Golden Tests
         run: go test -v ./...
 

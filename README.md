@@ -4,9 +4,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/Twingate/kubernetes-operator/badge.svg?branch=main&t=7BQPrK)](https://coveralls.io/github/Twingate/kubernetes-operator?branch=main)
 [![Dockerhub](https://img.shields.io/badge/dockerhub-images-info.svg?logo=Docker)](https://hub.docker.com/r/twingate/kubernetes-operator)
 
-> [!IMPORTANT]
-> **Beta:** The Twingate K8S Operator is currently in beta
-
 The Twingate Kubernetes Controller is a custom controller designed to automate
 and manage Twingate resources within a Kubernetes environment. It provides
 seamless integration between your Kubernetes clusters and the Twingate Zero

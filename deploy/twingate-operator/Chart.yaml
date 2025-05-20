@@ -10,5 +10,5 @@ sources:
 dependencies:
   - name: gateway
     version: 0.1.0
-    repository: "oci://ghcr.io/twingate/helmcharts/kubernetes-gateway"
+    repository: "oci://ghcr.io/twingate/helmcharts/kubernetes-access-gateway"
     condition: gateway.enabled

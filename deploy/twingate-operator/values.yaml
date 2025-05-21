@@ -27,6 +27,8 @@ kubernetes-access-gateway:
   enabled: false
 #  twingate:
 #    network: "<network slug>"
+#
+#    # Customize the `TwingateResource` to create for operator to sync to Twingate
 #    resource:
 #      enabled: true
 #      extraAnnotations:

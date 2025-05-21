@@ -11,4 +11,4 @@ dependencies:
   - name: kubernetes-access-gateway
     version: 0.1.2
     repository: "oci://ghcr.io/twingate/helmcharts"
-    condition: gateway.enabled
+    condition: kubernetes-access-gateway.enabled

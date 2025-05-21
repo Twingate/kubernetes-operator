@@ -22,7 +22,7 @@ twingateOperator: {}
 #    tag1: value_for_tag1
 #    tag2: value_for_tag2
 
-gateway:
+kubernetes-access-gateway:
   enabled: false
 #  twingate:
 #    network: "<network slug>"

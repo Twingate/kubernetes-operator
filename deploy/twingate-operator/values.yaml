@@ -30,6 +30,7 @@ kubernetes-access-gateway:
 #
 #    # Customize the `TwingateResource` to create for operator to sync to Twingate
 #    resource:
+#      # Enable/disable automatic Twingate Resource creation
 #      enabled: true
 #      extraAnnotations:
 #        # Resource alias is included in the auto-generated TLS cert

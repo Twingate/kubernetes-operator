@@ -60,7 +60,8 @@ def get_connector_deployment(
         "app.kubernetes.io/name": "TwingateConnector",
         "app.kubernetes.io/instance": name,
     }
-    pod_labels = spec.pod_labels | pod_selector_labels
+    # Merge with selector labels having precedence over user-provided labels
+    pod_labels = {**spec.pod_labels, **pod_selector_labels}
 
     deployment_spec = {
         "replicas": 1,

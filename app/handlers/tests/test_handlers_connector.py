@@ -627,7 +627,36 @@ class TestGetConnectorDeployment:
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
         pod_metadata = dep.spec["template"]["metadata"]
 
-        assert pod_metadata["labels"] == labels | {
-            "app.kubernetes.io/name": "TwingateConnector",
-            "app.kubernetes.io/instance": crd.metadata.name,
+        # Selector labels should take precedence over user labels
+        expected_labels = {
+            **labels,
+            **{
+                "app.kubernetes.io/name": "TwingateConnector",
+                "app.kubernetes.io/instance": crd.metadata.name,
+            }
         }
+        assert pod_metadata["labels"] == expected_labels
+
+    def test_pod_labels_with_kubernetes_io(self, get_connector_and_crd, mock_tenant_url, mock_image):
+        """Test that app.kubernetes.io labels don't cause conflicts with selector labels."""
+        labels = {
+            "app.kubernetes.io/name": "test",
+            "app.kubernetes.io/instance": "test-instance",
+            "app.kubernetes.io/part-of": "test-app"
+        }
+        _, crd = get_connector_and_crd(
+            spec_overrides={"pod_labels": labels},
+        )
+
+        dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        pod_metadata = dep.spec["template"]["metadata"]
+        pod_selector = dep.spec["selector"]["matchLabels"]
+
+        # Selector labels should take precedence over user labels
+        assert pod_metadata["labels"]["app.kubernetes.io/name"] == "TwingateConnector"
+        assert pod_metadata["labels"]["app.kubernetes.io/instance"] == crd.metadata.name
+        assert pod_metadata["labels"]["app.kubernetes.io/part-of"] == "test-app"
+        
+        # Selector should match the labels in pod template
+        assert pod_selector["app.kubernetes.io/name"] == pod_metadata["labels"]["app.kubernetes.io/name"]
+        assert pod_selector["app.kubernetes.io/instance"] == pod_metadata["labels"]["app.kubernetes.io/instance"]

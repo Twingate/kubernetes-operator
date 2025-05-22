@@ -156,8 +156,24 @@ def delete_pre_deployment_pod_if_exists(
     namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
 ):
     """Delete the pod if it exists. This is used to delete the old pod that was used before we switched to using Deployment objects."""
+    kapi = kapi or kubernetes.client.CoreV1Api()
     if k8s_read_namespaced_pod(namespace, name, kapi=kapi):
         k8s_delete_pod(namespace, name, kapi=kapi, force=True)
+
+
+def delete_deployment_if_using_old_selector(
+    namespace: str, name: str, kapi_apps: kubernetes.client.AppsV1Api | None = None
+):
+    kapi_apps = kapi_apps or kubernetes.client.AppsV1Api()
+    k8s_deployment = k8s_read_namespaced_deployment(
+        namespace, name, kapi_apps=kapi_apps
+    )
+    if not k8s_deployment:
+        return
+
+    # Check if the deployment is using the old selector, delete it if it is
+    if not k8s_deployment.spec.selector.match_labels.get("connector.twingate.com/name"):
+        kapi_apps.delete_namespaced_deployment(name=name, namespace=namespace)
 
 
 def create_or_replace_deployment(
@@ -199,6 +215,7 @@ def create_or_replace_deployment(
 def twingate_connector_resume(body, namespace, **_):
     crd = TwingateConnectorCRD(**body)
     delete_pre_deployment_pod_if_exists(namespace, crd.metadata.name)
+    delete_deployment_if_using_old_selector(namespace, crd.metadata.name)
     return success(twingate_id=crd.spec.id)
 
 

@@ -304,7 +304,7 @@ def twingate_connector_pod_reconciler(
     if crd.spec.image:
         # If we're on a fixed-image policy, image updates are handled by `twingate_connector_update`.
         # Here we only check for a drift (someone edited the deployment manually)
-        if k8s_pod_image != crd.spec.image:
+        if k8s_pod_image != str(crd.spec.image):
             logger.warning(
                 "Detected a drift between the Deployment image (%s) and the CRD image (%s)",
                 k8s_pod_image,

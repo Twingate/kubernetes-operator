@@ -378,7 +378,7 @@ class TestTwingateConnectorPodReconciler_Image:
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.create_namespaced_deployment.assert_called_once()
 
-    def test_deployment_update(
+    def test_deployment_update_if_drift(
         self,
         get_connector_and_crd,
         kopf_handler_runner,
@@ -392,6 +392,31 @@ class TestTwingateConnectorPodReconciler_Image:
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
+
+    def test_deployment_no_update_if_no_drift(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_core_client_mock,
+        k8s_apps_client_mock,
+    ):
+        connector, crd = get_connector_and_crd(
+            status={"twingate_connector_create": {"success": True}}, with_id=True
+        )
+
+        container_mock = MagicMock()
+        container_mock.image = "twingate/connector:1"
+
+        k8s_deployment_mock = MagicMock()
+        k8s_deployment_mock.spec.template.spec.containers = [container_mock]
+
+        k8s_apps_client_mock.read_namespaced_deployment.return_value = (
+            k8s_deployment_mock
+        )
+
+        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        assert run.result == {"success": True, "ts": ANY}
+        run.k8s_apps_client_mock.replace_namespaced_deployment.assert_not_called()
 
 
 class TestTwingateConnectorPodReconciler_ImagePolicy:

@@ -57,8 +57,7 @@ def get_connector_deployment(
     # fmt: off
     pod_annotations = spec.pod_annotations
     pod_selector_labels = {
-        "app.kubernetes.io/name": "TwingateConnector",
-        "app.kubernetes.io/instance": name,
+        "connector.twingate.com/name": name,
     }
     pod_labels = spec.pod_labels | pod_selector_labels
 

@@ -22,30 +22,30 @@ spec:
   podAnnotations:
     some/annotation: "some-value"
 ---
-#apiVersion: twingate.com/v1beta
-#kind: TwingateConnector
-#metadata:
-#  name: my-connector-auto-updating-image
-#  labels:
-#    app.kubernetes.io/name: test
-#spec:
-#  # Sets policy to check once a day at 00:00 (UTC) for a new version of the image based on
-#  # the version specifier "^1.0.0". If a new version is found, it will be deployed.
-#  # Version specifier uses NPM spec: https://github.com/npm/node-semver#ranges
-#  imagePolicy:
-#    provider: "dockerhub"
-#    schedule: "0 0 * * *"
-#    repository: twingate/connector
-#    version: "^1.0.0"
-#  containerExtra:
-#    resources:
-#      requests:
-#        cpu: 314m
-#        memory: 128Mi
-#      limits:
-#        cpu: 500m
-#        memory: 128Mi
-#  podExtra: {}
-#  podLabels: {}
-#  podAnnotations:
-#    some/annotation: "some-value"
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: my-connector-auto-updating-image
+  labels:
+    app.kubernetes.io/name: test
+spec:
+  # Sets policy to check once a day at 00:00 (UTC) for a new version of the image based on
+  # the version specifier "^1.0.0". If a new version is found, it will be deployed.
+  # Version specifier uses NPM spec: https://github.com/npm/node-semver#ranges
+  imagePolicy:
+    provider: "dockerhub"
+    schedule: "0 0 * * *"
+    repository: twingate/connector
+    version: "^1.0.0"
+  containerExtra:
+    resources:
+      requests:
+        cpu: 314m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  podExtra: {}
+  podLabels: {}
+  podAnnotations:
+    some/annotation: "some-value"

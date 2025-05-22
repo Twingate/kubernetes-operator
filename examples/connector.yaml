@@ -2,6 +2,8 @@ apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
   name: my-connector-fixed-image
+  labels:
+    app.kubernetes.io/name: test
 spec:
   # Sets policy to use the image "twingate/connector:latest" and never update it.
   image:
@@ -24,6 +26,8 @@ apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
   name: my-connector-auto-updating-image
+  labels:
+    app.kubernetes.io/name: test
 spec:
   # Sets policy to check once a day at 00:00 (UTC) for a new version of the image based on
   # the version specifier "^1.0.0". If a new version is found, it will be deployed.

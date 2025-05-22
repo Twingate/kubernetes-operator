@@ -95,6 +95,60 @@ class TestTwingateConnectorResume:
             "ts": ANY,
         }
 
+    def test_resume_deletes_old_deployments(
+        self, get_connector_and_crd, kopf_handler_runner, k8s_apps_client_mock
+    ):
+        connector, crd = get_connector_and_crd(
+            with_id=True, status={"twingate_connector_create": {"success": True}}
+        )
+
+        old_deployment = MagicMock()
+        old_deployment.spec.selector.match_labels = {
+            "app.kubernetes.io/name": "TwingateConnector"
+        }
+        k8s_apps_client_mock.read_namespaced_deployment.return_value = old_deployment
+
+        run = kopf_handler_runner(
+            twingate_connector_resume,
+            crd,
+            MagicMock(),
+            new={},
+            diff={},
+        )
+        k8s_apps_client_mock.delete_namespaced_deployment.assert_called_once()
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
+
+    def test_resume_doesnt_delete_new_deployments(
+        self, get_connector_and_crd, kopf_handler_runner, k8s_apps_client_mock
+    ):
+        connector, crd = get_connector_and_crd(
+            with_id=True, status={"twingate_connector_create": {"success": True}}
+        )
+
+        old_deployment = MagicMock()
+        old_deployment.spec.selector.match_labels = {
+            "connector.twingate.com/name": "TwingateConnector"
+        }
+        k8s_apps_client_mock.read_namespaced_deployment.return_value = old_deployment
+
+        run = kopf_handler_runner(
+            twingate_connector_resume,
+            crd,
+            MagicMock(),
+            new={},
+            diff={},
+        )
+        k8s_apps_client_mock.delete_namespaced_deployment.assert_not_called()
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+        }
+
 
 class TestTwingateConnectorCreate:
     def test_connector_provisioning(
@@ -653,6 +707,5 @@ class TestGetConnectorDeployment:
         pod_metadata = dep.spec["template"]["metadata"]
 
         assert pod_metadata["labels"] == labels | {
-            "app.kubernetes.io/name": "TwingateConnector",
-            "app.kubernetes.io/instance": crd.metadata.name,
+            "connector.twingate.com/name": crd.metadata.name,
         }

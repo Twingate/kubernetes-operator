@@ -707,6 +707,6 @@ class TestGetConnectorDeployment:
         pod_metadata = dep.spec["template"]["metadata"]
 
         assert pod_metadata["labels"] == labels | {
-            "app.kubernetes.io/name": "TwingateConnector",
-            "app.kubernetes.io/instance": crd.metadata.name,
+            "connector.twingate.com/name": crd.metadata.name,
+            "env": "test",
         }

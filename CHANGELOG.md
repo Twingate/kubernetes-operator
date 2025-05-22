@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## Unreleased
+
+### Bug Fixes
+
+- Fix issue with app.kubernetes.io labels in TwingateConnector
+  ([#651](https://github.com/Twingate/kubernetes-operator/issues/651))
+
 ## v0.22.0 (2025-05-19)
 
 ### Bug Fixes

@@ -708,5 +708,4 @@ class TestGetConnectorDeployment:
 
         assert pod_metadata["labels"] == labels | {
             "connector.twingate.com/name": crd.metadata.name,
-            "env": "test",
         }

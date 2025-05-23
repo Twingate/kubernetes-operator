@@ -20,6 +20,8 @@ def test_connector_flows(run_kopf, random_name_generator):
         kind: TwingateConnector
         metadata:
             name: {connector_name}
+            labels:
+              app.kubernetes.io/name: test
         spec:
             name: {connector_name}
             logLevel: 7
@@ -88,6 +90,8 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
         kind: TwingateConnector
         metadata:
             name: {connector_name}
+            labels:
+              app.kubernetes.io/name: test
         spec:
             name: {connector_name}
             hasStatusNotificationsEnabled: false
@@ -136,6 +140,8 @@ def test_connector_flows_deployment_gone_while_operator_down(
         kind: TwingateConnector
         metadata:
             name: {connector_name}
+            labels:
+              app.kubernetes.io/name: test
         spec:
             name: {connector_name}
             hasStatusNotificationsEnabled: false

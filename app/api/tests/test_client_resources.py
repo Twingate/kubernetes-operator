@@ -1,11 +1,13 @@
+from unittest.mock import MagicMock
+
 import orjson as json
 import pytest
 import responses
 from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
-from app.api.client_resources import Resource
-from app.crds import ResourceSpec
+from app.api.client_resources import BaseResource, NetworkResource
+from app.crds import ResourceSpec, ResourceType
 
 
 @pytest.fixture
@@ -17,7 +19,6 @@ def mock_resource_data():
         "updatedAt": "2021-08-18T15:00:00.000Z",
         "alias": "my-k8s-resource",
         "isVisible": True,
-        "isBrowserShortcutEnabled": False,
         "address": {"type": "DNS", "value": "my-k8s-resource.default.cluster.local"},
         "remoteNetwork": {"id": "rn1"},
         "securityPolicy": {"id": "sp1"},
@@ -25,9 +26,9 @@ def mock_resource_data():
     }
 
 
-class TestResourceModel:
+class TestBaseResourceModel:
     def test_construction(self, mock_resource_data):
-        r = Resource(**mock_resource_data)
+        r = BaseResource(**mock_resource_data)
         for key in ["id", "name", "alias"]:
             assert getattr(r, key) == mock_resource_data[key], f"Failed for key: {key}"
 
@@ -36,14 +37,14 @@ class TestResourceModel:
 
     def test_construction_succeeds_with_no_security_policy(self, mock_resource_data):
         mock_resource_data["securityPolicy"] = None
-        r = Resource(**mock_resource_data)
+        r = BaseResource(**mock_resource_data)
         for key in ["id", "name", "alias"]:
             assert getattr(r, key) == mock_resource_data[key], f"Failed for key: {key}"
 
     def test_construction_ignores_extra_params(self, mock_resource_data):
         mock_resource_data["extra"] = "extra"
 
-        r = Resource(**mock_resource_data)
+        r = BaseResource(**mock_resource_data)
         for key in ["id", "name", "alias"]:
             assert getattr(r, key) == mock_resource_data[key], f"Failed for key: {key}"
 
@@ -53,24 +54,34 @@ class TestResourceModel:
     def test_construction_fails_on_missing_params(self, mock_resource_data):
         del mock_resource_data["name"]
         with pytest.raises(ValidationError):
-            Resource(**mock_resource_data)
+            BaseResource(**mock_resource_data)
 
     def test_construction_fails_on_invalid_address_type(self, mock_resource_data):
         mock_resource_data["address"]["type"] = "invalid"
         with pytest.raises(ValidationError):
-            Resource(**mock_resource_data)
+            BaseResource(**mock_resource_data)
 
-    def test_is_matching_spec(self, resource_factory):
-        r = resource_factory()
-        crd = r.to_spec()
-        assert r.is_matching_spec(crd)
+    def test_is_matching_labels(self, mock_resource_data):
+        r = BaseResource(**mock_resource_data)
+        crd_labels = {"env": "dev"}
 
-        r1 = Resource(**r.model_dump())
-        r1.alias = r.alias + "1"
-        assert not r1.is_matching_spec(crd)
+        assert r.is_matching_labels(crd_labels)
+
+
+class TestNetworkResourceModel:
+    def test_is_matching_spec(self, network_resource_factory):
+        resource = network_resource_factory()
+        crd = resource.to_spec()
+        assert resource.is_matching_spec(crd)
+
+        updated_resource = NetworkResource(**resource.model_dump())
+        updated_resource.is_browser_shortcut_enabled = (
+            not updated_resource.is_browser_shortcut_enabled
+        )
+        assert not updated_resource.is_matching_spec(crd)
 
     def test_is_matching_case_protocols(self):
-        resource = Resource(
+        resource = NetworkResource(
             **{  # noqa: PIE804
                 "id": "UmVzb3VyY2U6MTI3NTIxMw==",
                 "name": "My K8S Resource",
@@ -112,18 +123,25 @@ class TestResourceModel:
 
 
 class TestResourceFactory:
-    def test_name_is_used_for_address(self, resource_factory):
-        r = resource_factory()
+    def test_name_is_used_for_address(self, base_resource_factory):
+        r = base_resource_factory()
         assert r.name in r.address.value
 
 
 class TestTwingateResourceAPIs:
-    def test_get_resource_with_valid_id_succeeds(
-        self, test_url, api_client, resource_factory, mocked_responses
+    def test_get_network_resource_with_valid_id_succeeds(
+        self, test_url, api_client, network_resource_factory, mocked_responses
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
 
-        success_response = json.dumps({"data": {"resource": resource.model_dump()}})
+        success_response = json.dumps(
+            {
+                "data": {
+                    "resource": resource.model_dump()
+                    | {"__typename": "NetworkResource"}
+                }
+            }
+        )
 
         mocked_responses.post(
             test_url,
@@ -138,10 +156,64 @@ class TestTwingateResourceAPIs:
         result = api_client.get_resource(resource.id)
         assert result == resource
 
-    def test_get_resource_with_invalid_id_returns_none(
-        self, test_url, api_client, resource_factory, mocked_responses
+    def test_get_kubernetes_resource(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
     ):
-        resource = resource_factory()
+        resource = kubernetes_resource_factory()
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "resource": resource.model_dump()
+                    | {"__typename": "KubernetesResource"}
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": resource.id}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.get_resource(resource.id)
+        assert result == resource
+
+    def test_get_invalid_resource(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
+    ):
+        resource = kubernetes_resource_factory()
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "resource": resource.model_dump()
+                    | {"__typename": "InvalidResource"}
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": resource.id}}, strict_match=False
+                )
+            ],
+        )
+        with pytest.raises(ValueError, match="Invalid Resource Type: InvalidResource"):
+            api_client.get_resource(resource.id)
+
+    def test_get_resource_with_invalid_id_returns_none(
+        self, test_url, api_client, network_resource_factory, mocked_responses
+    ):
+        resource = network_resource_factory()
 
         failed_response = """
         {
@@ -162,10 +234,65 @@ class TestTwingateResourceAPIs:
         result = api_client.get_resource(resource.id)
         assert result is None
 
-    def test_resource_create(
-        self, test_url, api_client, resource_factory, mocked_responses
+    def test_resource_create_with_network_type(self, api_client):
+        api_client.network_resource_create = MagicMock()
+        api_client.kubernetes_resource_create = MagicMock()
+
+        api_client.resource_create(resource_type=ResourceType.NETWORK, mock_argument=1)
+
+        api_client.network_resource_create.assert_called_once_with(mock_argument=1)
+        api_client.kubernetes_resource_create.assert_not_called()
+
+    def test_resource_create_with_kubernetes_type(self, api_client):
+        api_client.network_resource_create = MagicMock()
+        api_client.kubernetes_resource_create = MagicMock()
+
+        api_client.resource_create(
+            resource_type=ResourceType.KUBERNETES, mock_argument=1
+        )
+
+        api_client.kubernetes_resource_create.assert_called_once_with(mock_argument=1)
+        api_client.network_resource_create.assert_not_called()
+
+    def test_resource_create_failure(
+        self, test_url, api_client, network_resource_factory, mocked_responses
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
+        crd = resource.to_spec(id=None)
+        success_response = json.dumps(
+            {"data": {"resourceCreate": {"ok": False, "error": "some error"}}}
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": crd.model_dump(
+                            exclude=["id", "sync_labels", "type", "proxy"],
+                            by_alias=True,
+                        )
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+        with pytest.raises(
+            GraphQLMutationError, match="resourceCreate mutation failed."
+        ):
+            api_client.resource_create(
+                resource_type=ResourceType.NETWORK,
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), exclude={"id"}
+                ),
+            )
+
+    def test_network_resource_create(
+        self, test_url, api_client, network_resource_factory, mocked_responses
+    ):
+        resource = network_resource_factory()
         crd = resource.to_spec(id=None)
         success_response = json.dumps(
             {
@@ -186,7 +313,8 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels"], by_alias=True
+                            exclude=["id", "sync_labels", "type", "proxy"],
+                            by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
                     },
@@ -194,20 +322,27 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        result = api_client.resource_create(
+        result = api_client.network_resource_create(
             **crd.to_graphql_arguments(
                 labels=resource.to_metadata_labels(), exclude={"id"}
-            )
+            ),
         )
         assert result == resource
 
-    def test_resource_create_failure(
-        self, test_url, api_client, resource_factory, mocked_responses
+    def test_kubernetes_resource_create(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
     ):
-        resource = resource_factory()
+        resource = kubernetes_resource_factory()
         crd = resource.to_spec(id=None)
         success_response = json.dumps(
-            {"data": {"resourceCreate": {"ok": False, "error": "some error"}}}
+            {
+                "data": {
+                    "kubernetesResourceCreate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
         )
 
         mocked_responses.post(
@@ -218,26 +353,58 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels"], by_alias=True
+                            exclude={
+                                "id",
+                                "is_browser_shortcut_enabled",
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                            },
+                            by_alias=True,
                         )
+                        | {"tags": [tag.model_dump() for tag in resource.tags]}
                     },
                     strict_match=False,
                 )
             ],
         )
-        with pytest.raises(
-            GraphQLMutationError, match="resourceCreate mutation failed."
-        ):
-            api_client.resource_create(
-                **crd.to_graphql_arguments(
-                    labels=resource.to_metadata_labels(), exclude={"id"}
-                )
+        result = api_client.kubernetes_resource_create(
+            **crd.to_graphql_arguments(
+                labels=resource.to_metadata_labels(), exclude={"id"}
             )
+        )
+        assert result == resource
 
-    def test_resource_update(
-        self, test_url, api_client, resource_factory, mocked_responses
+    def test_resource_update_with_network_type(self, api_client):
+        api_client.network_resource_update = MagicMock()
+        api_client.kubernetes_resource_update = MagicMock()
+
+        api_client.resource_update(
+            id="1", resource_type=ResourceType.NETWORK, mock_argument=1
+        )
+
+        api_client.network_resource_update.assert_called_once_with(
+            id="1", mock_argument=1
+        )
+        api_client.kubernetes_resource_update.assert_not_called()
+
+    def test_resource_update_with_kubernetes_type(self, api_client):
+        api_client.network_resource_update = MagicMock()
+        api_client.kubernetes_resource_update = MagicMock()
+
+        api_client.resource_update(
+            id="1", resource_type=ResourceType.KUBERNETES, mock_argument=1
+        )
+
+        api_client.kubernetes_resource_update.assert_called_once_with(
+            id="1", mock_argument=1
+        )
+        api_client.network_resource_update.assert_not_called()
+
+    def test_network_resource_update(
+        self, test_url, api_client, network_resource_factory, mocked_responses
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
         crd = resource.to_spec()
         success_response = json.dumps(
             {
@@ -258,7 +425,7 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["sync_labels"], by_alias=True
+                            exclude=["sync_labels", "type", "proxy"], by_alias=True
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
                     },
@@ -266,7 +433,52 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        result = api_client.resource_update(
+        result = api_client.network_resource_update(
+            **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+        )
+        assert result == resource
+
+    def test_kubernetes_resource_update(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
+    ):
+        resource = kubernetes_resource_factory()
+        crd = resource.to_spec()
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "kubernetesResourceUpdate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": crd.model_dump(
+                            exclude={
+                                "is_browser_shortcut_enabled",
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                            },
+                            by_alias=True,
+                        )
+                        | {"tags": [tag.model_dump() for tag in resource.tags]}
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+
+        result = api_client.kubernetes_resource_update(
             **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
         )
         assert result == resource

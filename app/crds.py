@@ -1,13 +1,14 @@
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
-from enum import Enum
-from typing import Any
+from enum import Enum, StrEnum
+from typing import Any, cast
 
 import kubernetes.client
 import pendulum
 from croniter import croniter
 from pydantic import (
+    Base64Str,
     BaseModel,
     ConfigDict,
     Field,
@@ -113,6 +114,20 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
+class ResourceProxy(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    address: str
+    certificate_authority_cert: Base64Str
+
+
+class ResourceType(StrEnum):
+    NETWORK = "Network"
+    KUBERNETES = "Kubernetes"
+
+
 class ResourceSpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
@@ -130,6 +145,8 @@ class ResourceSpec(BaseModel):
     is_browser_shortcut_enabled: bool = True
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
     sync_labels: bool = True
+    type: ResourceType = ResourceType.NETWORK
+    proxy: ResourceProxy | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -147,13 +164,35 @@ class ResourceSpec(BaseModel):
         self, *, labels: dict[str, str], exclude: set[str] | None = None
     ) -> dict[str, Any]:
         exclude = exclude or set()
-        return {
-            **self.model_dump(exclude=exclude | {"sync_labels"}),
-            "protocols": self.protocols.model_dump(by_alias=True),
-            "tags": [{"key": key, "value": value} for key, value in labels.items()]
-            if self.sync_labels
-            else [],
+        default_exclude_fields = {
+            "is_browser_shortcut_enabled",
+            "sync_labels",
+            "proxy",
+            "type",
         }
+        graphql_args = {
+            **self.model_dump(exclude=exclude | default_exclude_fields),
+            "protocols": self.protocols.model_dump(by_alias=True),
+            "tags": (
+                [{"key": key, "value": value} for key, value in labels.items()]
+                if self.sync_labels
+                else []
+            ),
+        }
+
+        match self.type:
+            case ResourceType.NETWORK:
+                graphql_args |= {
+                    "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
+                }
+            case ResourceType.KUBERNETES:
+                resource_proxy = cast(ResourceProxy, self.proxy)
+                graphql_args |= {
+                    "proxy_address": resource_proxy.address,
+                    "certificate_authority_cert": resource_proxy.certificate_authority_cert,
+                }
+
+        return graphql_args
 
 
 class TwingateResourceCRD(BaseK8sModel):

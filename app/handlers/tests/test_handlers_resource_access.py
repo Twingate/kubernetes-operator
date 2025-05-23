@@ -125,8 +125,10 @@ class TestGetPrincipalId:
 
 
 class TestResourceAccessChangeHandler:
-    def test_create_success(self, resource_factory, kopf_info_mock, mock_api_client):
-        resource = resource_factory()
+    def test_create_success(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
 
         resource_access_spec = {
@@ -202,8 +204,8 @@ class TestResourceAccessChangeHandler:
                 message="Resource default/invalid not found",
             )
 
-    def test_create_resource_no_id(self, resource_factory, mock_api_client):
-        resource = resource_factory()
+    def test_create_resource_no_id(self, network_resource_factory, mock_api_client):
+        resource = network_resource_factory()
         resource_spec = resource.to_spec(id=None)
 
         resource_access_spec = {
@@ -237,8 +239,10 @@ class TestResourceAccessChangeHandler:
                 status={},
             )
 
-    def test_create_graphql_error_returns_it(self, resource_factory, mock_api_client):
-        resource = resource_factory()
+    def test_create_graphql_error_returns_it(
+        self, network_resource_factory, mock_api_client
+    ):
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
 
         resource_access_spec = {
@@ -284,8 +288,8 @@ class TestResourceAccessChangeHandler:
 
 
 class TestResourceAccessDelete:
-    def test_delete_success(self, resource_factory, mock_api_client):
-        resource = resource_factory()
+    def test_delete_success(self, network_resource_factory, mock_api_client):
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
 
         resource_access_spec = {
@@ -347,9 +351,9 @@ class TestResourceAccessDelete:
         mock_api_client.resource_access_remove.assert_not_called()
 
     def test_delete_success_without_calling_api_if_create_handler_never_ran(
-        self, resource_factory, mock_api_client
+        self, network_resource_factory, mock_api_client
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
 
         resource_access_spec = {

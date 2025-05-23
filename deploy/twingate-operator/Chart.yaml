@@ -7,3 +7,8 @@ appVersion: latest  # This value is set by CI
 home: https://twingate.com
 sources:
   - https://github.com/Twingate/kubernetes-operator
+dependencies:
+  - name: kubernetes-access-gateway
+    version: 0.1.2
+    repository: "oci://ghcr.io/twingate/helmcharts"
+    condition: kubernetes-access-gateway.enabled

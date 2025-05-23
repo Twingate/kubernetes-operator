@@ -6,9 +6,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pytest_factoryboy import register
 
-from app.api.tests.factories import ConnectorFactory, ResourceFactory
+from app.api.tests.factories import (
+    ConnectorFactory,
+    KubernetesResourceFactory,
+    NetworkResourceFactory,
+)
 
-register(ResourceFactory)
+register(NetworkResourceFactory)
+register(KubernetesResourceFactory)
 register(ConnectorFactory)
 
 

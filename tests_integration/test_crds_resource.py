@@ -2,7 +2,11 @@ import subprocess
 
 import pytest
 
-from tests_integration.utils import kubectl_create, kubectl_delete
+from tests_integration.utils import (
+    kubectl_apply,
+    kubectl_create,
+    kubectl_delete,
+)
 
 
 def test_browser_shortcut_false_allows_wildcard_address(unique_resource_name):
@@ -329,3 +333,108 @@ def test_protocols_udp_restricted_port_values_start_must_be_lte_end(
 
     stderr = ex.value.stderr.decode()
     assert "Start port value must be less or equal to end port value" in stderr
+
+
+def test_resource_type_is_immutable(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My K8S Resource
+          address: "foo.default.cluster.local"
+          type: Network
+        """
+    )
+    assert result.returncode == 0
+
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_apply(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              type: Kubernetes
+              proxy:
+                address: "my-proxy.default.cluster.local"
+                certificateAuthorityCert: "base64-encoded-cert"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "Resource type is immutable" in stderr
+
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_network_resource_cannot_have_proxy_object(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              type: Network
+              proxy:
+                address: "my-proxy.default.cluster.local"
+                certificateAuthorityCert: "base64-encoded-cert"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "proxy should be set for Kubernetes Resource" in stderr
+
+
+def test_kubernetes_resource_must_have_proxy_object(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              type: Kubernetes
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "proxy should be set for Kubernetes Resource" in stderr
+
+
+def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              isBrowserShortcutEnabled: true
+              type: Kubernetes
+              proxy:
+                address: "my-proxy.default.cluster.local"
+                certificateAuthorityCert: "base64-encoded-cert"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
+        in stderr
+    )

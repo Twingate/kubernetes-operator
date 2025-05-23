@@ -1,11 +1,13 @@
+import base64
 from collections.abc import Callable
 
 import kopf
 import kubernetes
 from kopf import Body
 
+from app.crds import ResourceType
 from app.handlers import success
-from app.utils import to_bool
+from app.utils import to_bool, validate_pem_x509_certificate
 
 
 def k8s_get_twingate_resource(
@@ -22,6 +24,40 @@ def k8s_get_twingate_resource(
         raise
 
 
+def k8s_get_tls_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | None:
+    try:
+        return kubernetes.client.CoreV1Api().read_namespaced_secret(
+            name=name, namespace=namespace
+        )
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            return None
+
+        raise
+
+
+def get_ca_cert(tls_secret: kubernetes.client.V1Secret) -> str:
+    tls_secret_name = tls_secret.metadata.name
+    if tls_secret.type != "kubernetes.io/tls":
+        raise kopf.PermanentError(
+            f"Kubernetes Secret object: {tls_secret_name} type is invalid."
+        )
+
+    if not (ca_cert := tls_secret.data.get("ca.crt")):
+        raise kopf.PermanentError(
+            f"Kubernetes Secret object: {tls_secret_name} is missing ca.crt."
+        )
+
+    try:
+        validate_pem_x509_certificate(base64.b64decode(ca_cert).decode())
+    except ValueError as ex:
+        raise kopf.PermanentError(
+            f"Kubernetes Secret object: {tls_secret_name} ca.crt is invalid."
+        ) from ex
+
+    return ca_cert
+
+
 ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("name", str),
     ("alias", str),
@@ -29,7 +65,9 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("securityPolicyId", str),
     ("isVisible", to_bool),
     ("syncLabels", to_bool),
+    ("type", str),
 ]
+TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
 
 
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
@@ -57,6 +95,25 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             result["spec"][key] = convert_f(value)
         if value := meta.annotations.get(f"resource.twingate.com/{key}"):
             result["spec"][key] = convert_f(value)
+
+    if result["spec"].get("type") == ResourceType.KUBERNETES:
+        if not (tls_secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
+            raise kopf.PermanentError(
+                f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
+            )
+
+        if not (tls_secret := k8s_get_tls_secret(namespace, tls_secret_name)):
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {tls_secret_name} is missing."
+            )
+
+        result["spec"] |= {
+            "address": f"kubernetes.{namespace}.svc.cluster.local",
+            "proxy": {
+                "address": f"{service_name}.{namespace}.svc.cluster.local",
+                "certificateAuthorityCert": get_ca_cert(tls_secret),
+            },
+        }
 
     protocols: dict = {
         "allowIcmp": False,

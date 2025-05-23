@@ -22,6 +22,19 @@ twingateOperator: {}
 #    tag1: value_for_tag1
 #    tag2: value_for_tag2
 
+# Twingate Kubernetes Access is currently in beta. Sign up for early access at https://www.twingate.com/product/kubernetes-access.
+kubernetes-access-gateway:
+  enabled: false
+#  twingate:
+#    network: "<network slug>"
+#
+#    # Customize the `TwingateResource` to create for operator to sync to Twingate
+#    resource:
+#      # Enable/disable automatic Twingate Resource creation
+#      enabled: true
+#      extraAnnotations:
+#        # Resource alias is included in the auto-generated TLS cert
+#        resource.twingate.com/alias: "myk8s.int"
 
 image:
   repository: twingate/kubernetes-operator

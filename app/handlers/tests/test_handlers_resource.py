@@ -2,7 +2,8 @@ from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
-from app.crds import ResourceSpec
+from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
+from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_resource import (
     twingate_resource_create,
     twingate_resource_delete,
@@ -59,15 +60,15 @@ def mock_memo_with_default_resource_tags():
 
 
 class TestResourceCreateHandler:
-    def test_create(
+    def test_create_network_resource(
         self,
-        resource_factory,
+        network_resource_factory,
         kopf_info_mock,
         mock_api_client,
         mock_k8s_metadata,
         mock_memo_with_default_resource_tags,
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
         resource_spec = resource.to_spec(id=None)
         spec = resource_spec.model_dump(by_alias=True)
 
@@ -95,11 +96,56 @@ class TestResourceCreateHandler:
 
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
+            resource_type=ResourceType.NETWORK,
             **resource_spec.to_graphql_arguments(
                 labels={"managed_by": "test", "env": "dev"},
                 exclude={"id"},
-            )
+            ),
         )
+        kopf_info_mock.assert_called_once_with(
+            "", reason="Success", message=f"Created on Twingate as {resource.id}"
+        )
+        assert patch_mock.spec == {"id": resource.id}
+
+    def test_create_kubernetes_resource(
+        self,
+        kubernetes_resource_factory,
+        kopf_info_mock,
+        mock_api_client,
+        mock_k8s_metadata,
+        mock_memo,
+    ):
+        resource = kubernetes_resource_factory()
+        resource_spec = resource.to_spec(id=None)
+        spec = resource_spec.model_dump(by_alias=True)
+
+        logger_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        mock_api_client.resource_create.return_value = resource
+
+        result = twingate_resource_create(
+            body="",
+            labels=mock_k8s_metadata["labels"],
+            spec=spec,
+            memo=mock_memo,
+            logger=logger_mock,
+            patch=patch_mock,
+        )
+        assert result == {
+            "success": True,
+            "twingate_id": resource.id,
+            "created_at": ANY,
+            "updated_at": ANY,
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_create.assert_called_once_with(
+            resource_type=ResourceType.KUBERNETES,
+            **resource_spec.to_graphql_arguments(labels={"env": "dev"}, exclude={"id"}),
+        )
+        mock_api_client.resource_update.assert_not_called()
         kopf_info_mock.assert_called_once_with(
             "", reason="Success", message=f"Created on Twingate as {resource.id}"
         )
@@ -107,13 +153,13 @@ class TestResourceCreateHandler:
 
     def test_when_id_is_specified_update_instead_of_create(
         self,
-        resource_factory,
+        network_resource_factory,
         kopf_info_mock,
         mock_api_client,
         mock_k8s_metadata,
         mock_memo,
     ):
-        resource = resource_factory(id="pre-existing-id")
+        resource = network_resource_factory(id="pre-existing-id")
         resource_spec = resource.to_spec()
 
         spec = resource_spec.model_dump(by_alias=True)
@@ -142,7 +188,8 @@ class TestResourceCreateHandler:
         }
 
         mock_api_client.resource_update.assert_called_once_with(
-            **resource_spec.to_graphql_arguments(labels={"env": "dev"}, exclude={"id"})
+            resource_type=ResourceType.NETWORK,
+            **resource_spec.to_graphql_arguments(labels={"env": "dev"}),
         )
         mock_api_client.resource_create.assert_not_called()
 
@@ -150,9 +197,50 @@ class TestResourceCreateHandler:
             "", reason="Success", message=f"Imported {resource.id}"
         )
 
+    def test_update_resource_when_id_is_specified(
+        self,
+        kubernetes_resource_factory,
+        kopf_info_mock,
+        mock_api_client,
+        mock_k8s_metadata,
+        mock_memo,
+    ):
+        resource = kubernetes_resource_factory(id="existing-id")
+        resource_spec = resource.to_spec()
+        spec = resource_spec.model_dump(by_alias=True)
+
+        logger_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        mock_api_client.resource_update.return_value = resource
+
+        result = twingate_resource_create(
+            body="",
+            labels=mock_k8s_metadata["labels"],
+            spec=spec,
+            memo=mock_memo,
+            logger=logger_mock,
+            patch=patch_mock,
+        )
+        assert result == {
+            "success": True,
+            "twingate_id": resource.id,
+            "created_at": ANY,
+            "updated_at": ANY,
+            "message": ANY,
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_update.assert_called_once_with(
+            resource_type=ResourceType.KUBERNETES,
+            **resource_spec.to_graphql_arguments(labels={"env": "dev"}),
+        )
+        mock_api_client.resource_create.assert_not_called()
+
 
 class TestResourceUpdateHandler:
-    def test_update(
+    def test_update_network_resource(
         self,
         mock_api_client,
         mock_k8s_metadata,
@@ -163,6 +251,7 @@ class TestResourceUpdateHandler:
             "id": rid,
             "address": "my.default.cluster.local",
             "name": "new-name",
+            "type": ResourceType.NETWORK,
         }
         diff = (("change", ("spec", "name"), "My K8S Resource", "new-name"),)
         status = {
@@ -197,11 +286,53 @@ class TestResourceUpdateHandler:
         }
 
         mock_api_client.resource_update.assert_called_once_with(
+            resource_type=ResourceType.NETWORK,
             **new_resource_spec.to_graphql_arguments(
                 labels={"managed_by": "test", "env": "dev"}
-            )
+            ),
         )
         assert patch_mock.spec == {}
+
+    def test_update_kubernetes_resource(
+        self, mock_api_client, mock_k8s_metadata, mock_memo
+    ):
+        rid = "UmVzb3VyY2U6OTMxODE3"
+        spec = new = {
+            "id": rid,
+            "address": "my.default.cluster.local",
+            "name": "new-name",
+            "type": ResourceType.KUBERNETES,
+            "proxy": {
+                "address": "proxy.default.cluster.local",
+                "certificate_authority_cert": BASE64_OF_VALID_CA_CERT,
+            },
+        }
+        diff = (("change", ("spec", "name"), "My K8S Resource", "new-name"),)
+        new_resource_spec = ResourceSpec(**new)
+        mock_api_client.resource_update.return_value = MagicMock(id=rid)
+
+        logger_mock = MagicMock()
+        status_mock = MagicMock()
+        result = twingate_resource_update(
+            labels=mock_k8s_metadata["labels"],
+            spec=spec,
+            diff=diff,
+            status=status_mock,
+            memo=mock_memo,
+            logger=logger_mock,
+        )
+
+        assert result == {
+            "success": True,
+            "twingate_id": rid,
+            "created_at": ANY,
+            "updated_at": ANY,
+            "ts": ANY,
+        }
+        mock_api_client.resource_update.assert_called_once_with(
+            resource_type=ResourceType.KUBERNETES,
+            **new_resource_spec.to_graphql_arguments(labels={"env": "dev"}),
+        )
 
     def test_update_called_without_id_fails(self, mock_api_client, mock_k8s_metadata):
         spec = {
@@ -310,9 +441,9 @@ class TestResourceDeleteHandler:
 
 class TestResourceSyncTimer:
     def test_sync_when_resource_exists_and_doesnt_need_update(
-        self, resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
+        self, network_resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
         mock_k8s_metadata["labels"] = resource.to_metadata_labels()
         status = {
@@ -342,9 +473,9 @@ class TestResourceSyncTimer:
         assert patch_mock.spec == {}
 
     def test_sync_when_resource_exists_and_spec_requires_update(
-        self, resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
+        self, network_resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
         mock_k8s_metadata["labels"] = resource.to_metadata_labels()
         status = {
@@ -373,18 +504,19 @@ class TestResourceSyncTimer:
         )
 
         mock_api_client.resource_update.assert_called_once_with(
-            **resource_spec.to_graphql_arguments(labels=resource.to_metadata_labels())
+            resource_type=ResourceType.NETWORK,
+            **resource_spec.to_graphql_arguments(labels=resource.to_metadata_labels()),
         )
         assert patch_mock.spec == {}
 
     def test_sync_when_resource_exists_and_label_requires_update(
         self,
-        resource_factory,
+        network_resource_factory,
         mock_api_client,
         mock_k8s_metadata,
         mock_memo_with_default_resource_tags,
     ):
-        resource = resource_factory()
+        resource = network_resource_factory()
         resource_spec = resource.to_spec()
         mock_k8s_metadata["labels"] = {"env": "dev"} | resource.to_metadata_labels()
         status = {
@@ -410,21 +542,22 @@ class TestResourceSyncTimer:
         )
 
         mock_api_client.resource_update.assert_called_once_with(
+            resource_type=ResourceType.NETWORK,
             **resource_spec.to_graphql_arguments(
                 labels={"managed_by": "test", "env": "dev"}
                 | resource.to_metadata_labels()
-            )
+            ),
         )
         assert patch_mock.spec == {}
 
     def test_sync_when_resource_doesnt_exists_recreate_it(
         self,
-        resource_factory,
+        kubernetes_resource_factory,
         mock_api_client,
         mock_k8s_metadata,
         mock_memo_with_default_resource_tags,
     ):
-        resource = resource_factory()
+        resource = kubernetes_resource_factory()
         resource_spec = resource.to_spec()
         status = {
             "twingate_resource_create": {
@@ -452,10 +585,11 @@ class TestResourceSyncTimer:
 
         mock_api_client.resource_update.assert_not_called()
         mock_api_client.resource_create.assert_called_once_with(
+            resource_type=ResourceType.KUBERNETES,
             **resource_spec.to_graphql_arguments(
                 labels={"managed_by": "test", "env": "dev"},
                 exclude={"id"},
-            )
+            ),
         )
 
         assert patch_mock.spec == {"id": resource.id}

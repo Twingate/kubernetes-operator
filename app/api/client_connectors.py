@@ -137,18 +137,28 @@ class TwingateConnectorAPI:
 
     def connector_update(
         self: TwingateClientProtocol, connector: ConnectorSpec
-    ) -> Connector:
-        result = self.execute_mutation(
-            "connectorUpdate",
-            MUT_UPDATE_CONNECTOR,
-            variable_values={
-                "id": connector.id,
-                "name": connector.name,
-                "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
-            },
-        )
+    ) -> Connector | None:
+        try:
+            result = self.execute_mutation(
+                "connectorUpdate",
+                MUT_UPDATE_CONNECTOR,
+                variable_values={
+                    "id": connector.id,
+                    "name": connector.name,
+                    "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
+                },
+            )
 
-        return Connector(**result["entity"])
+            return Connector(**result["entity"])
+        except GraphQLMutationError as gql_err:
+            if "does not exist" in gql_err.error:
+                self.logger.warning(
+                    "Connector with id %s does not exist. It may have been deleted.",
+                    connector.id,
+                )
+                return None
+
+            raise
 
     def connector_generate_tokens(
         self: TwingateClientProtocol, connector_id: str

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import orjson as json
 import pytest
 import responses
+from gql.transport.exceptions import TransportQueryError
 from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
@@ -210,7 +211,7 @@ class TestTwingateResourceAPIs:
         with pytest.raises(ValueError, match="Invalid Resource Type: InvalidResource"):
             api_client.get_resource(resource.id)
 
-    def test_get_resource_with_invalid_id_returns_none(
+    def test_get_resource_with_invalid_b64_id_raises(
         self, test_url, api_client, network_resource_factory, mocked_responses
     ):
         resource = network_resource_factory()
@@ -231,8 +232,8 @@ class TestTwingateResourceAPIs:
         """
 
         mocked_responses.post(test_url, status=200, body=failed_response)
-        result = api_client.get_resource(resource.id)
-        assert result is None
+        with pytest.raises(TransportQueryError):
+            api_client.get_resource(resource.id)
 
     def test_resource_create_with_network_type(self, api_client):
         api_client.network_resource_create = MagicMock()

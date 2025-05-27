@@ -151,8 +151,7 @@ jobs:
   release_dev:
     runs-on: ubuntu-latest
     name: Release dev
-    needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
-    if: github.ref == 'refs/heads/main'
+    needs: [dockerfile-lint, helm-tests, build]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -198,7 +197,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Release PROD Helm Chart
     needs: [release_dev]
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:

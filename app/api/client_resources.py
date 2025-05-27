@@ -441,7 +441,7 @@ class TwingateResourceAPIs:
                     raise ValueError(f"Invalid Resource Type: {resource_type}")
         except TransportQueryError:
             self.logger.exception("Failed to get resource")
-            return None
+            raise
 
     def resource_create(
         self: TwingateClientProtocol, resource_type: ResourceType, **graphql_arguments

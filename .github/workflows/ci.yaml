@@ -219,7 +219,7 @@ jobs:
 
       - name: Set env vars
         run: |
-          echo "CHART_VERSION=$(poetry version -s)-dev" >> $GITHUB_ENV
+          echo "CHART_VERSION=$(poetry version -s)-dev.${{ github.run_id }}" >> $GITHUB_ENV
 
       - name: Helm Publish (Github)
         env:

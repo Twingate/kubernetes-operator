@@ -151,7 +151,7 @@ jobs:
   release_dev:
     runs-on: ubuntu-latest
     name: Release dev
-    needs: [dockerfile-lint, helm-tests, build]
+    needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
     if: github.ref == 'refs/heads/chore/dev-helm-oci'
     steps:
       - uses: actions/checkout@v4

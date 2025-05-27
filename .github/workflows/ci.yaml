@@ -219,13 +219,12 @@ jobs:
 
       - name: Set env vars
         run: |
-          echo "CHART_VERSION=$(poetry version -s)" >> $GITHUB_ENV
+          echo "CHART_VERSION=$(poetry version -s)-dev" >> $GITHUB_ENV
 
       - name: Helm Publish (Github)
         env:
           REGISTRY: ghcr.io
         run: |
-          export $CHART_VERSION=$(poetry run semantic-release version --print)-dev
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $CHART_VERSION
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts

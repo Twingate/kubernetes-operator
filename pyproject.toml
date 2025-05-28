@@ -168,7 +168,7 @@ version_toml = [
 ]
 
 [tool.semantic_release.branches.main]
-match = "(main|master|chore/dev-helm-oci)"
+match = "(main|master)"
 prerelease = false
 
 [tool.semantic_release.changelog]

@@ -6,6 +6,10 @@ on:
     branches:
       - 'main'
 
+permissions:
+  contents: read
+  packages: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -156,6 +160,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref }}
+          fetch-tags: true
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
@@ -172,7 +178,7 @@ jobs:
       - name: Set DEV release version
         run: |
           poetry install --with build -n
-          poetry version $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
+          poetry version $(poetry run semantic-release --strict --verbose version --print)-dev.${{ github.run_id }}
           poetry version -s
 
       - name: Login to Docker Hub
@@ -193,3 +199,42 @@ jobs:
       - run: make multiarch-image-build-push-dev
         env:
           DOCKER_BUILDX_CACHE: --cache-to type=gha,mode=max --cache-from type=gha
+
+  release_dev_helm:
+    runs-on: ubuntu-latest
+    name: Release DEV Helm Chart
+    needs: [release_dev]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-tags: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - uses: azure/setup-helm@v4.3.0
+      - uses: chrisdickinson/setup-yq@latest
+
+      - name: Set env vars
+        run: |
+          poetry install --with build -n
+          echo "CHART_VERSION=$(poetry run semantic-release --strict --verbose version --print)-dev.${{ github.run_id }}" >> $GITHUB_ENV
+
+      - name: Helm Publish (Github)
+        env:
+          REGISTRY: ghcr.io
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
+          helm dependency build ./deploy/twingate-operator
+          helm package deploy/twingate-operator --version $CHART_VERSION --app-version $CHART_VERSION
+          helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts

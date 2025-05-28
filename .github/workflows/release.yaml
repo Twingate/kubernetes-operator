@@ -83,6 +83,7 @@ jobs:
           REGISTRY: ghcr.io
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
+          helm dependency build ./deploy/twingate-operator
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $CHART_VERSION
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts
 

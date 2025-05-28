@@ -198,7 +198,7 @@ jobs:
   release_dev_helm:
     runs-on: ubuntu-latest
     name: Release PROD Helm Chart
-    needs: [release_dev]
+    needs: []
     steps:
       - uses: actions/checkout@v4
         with:
@@ -229,5 +229,6 @@ jobs:
           REGISTRY: ghcr.io
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u twingate --password-stdin $REGISTRY
+          helm dependency build ./deploy/twingate-operator
           helm package deploy/twingate-operator --version $CHART_VERSION --app-version $CHART_VERSION
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts

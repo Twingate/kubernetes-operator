@@ -197,7 +197,7 @@ jobs:
 
   release_dev_helm:
     runs-on: ubuntu-latest
-    name: Release PROD Helm Chart
+    name: Release DEV Helm Chart
     needs: [release_dev]
     steps:
       - uses: actions/checkout@v4

@@ -156,6 +156,8 @@ jobs:
       - uses: actions/checkout@v4
         # with:
         #   fetch-depth: 0
+        with:
+          ref: ${{ github.head_ref }}
 
       - uses: actions/setup-python@v5
         with:
@@ -201,6 +203,8 @@ jobs:
       - uses: actions/checkout@v4
         # with:
         #   fetch-depth: 0
+        with:
+          ref: ${{ github.head_ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}

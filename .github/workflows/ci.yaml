@@ -151,7 +151,7 @@ jobs:
   release_dev:
     runs-on: ubuntu-latest
     name: Release dev
-    needs: [dockerfile-lint, helm-tests, build, e2e-tests, unit-tests]
+    needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
     steps:
       - uses: actions/checkout@v4
         with:

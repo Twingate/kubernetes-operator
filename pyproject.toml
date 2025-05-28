@@ -168,14 +168,8 @@ version_toml = [
 ]
 
 [tool.semantic_release.branches.main]
-match = "(main|master)"
+match = "(main|master|chore/dev-helm-oci)"
 prerelease = false
-
-[tool.semantic_release.branches.notmain]
-match = "^(?!main$)(?!master$).+"
-prerelease = true
-prerelease_token = "dev"
-
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = [

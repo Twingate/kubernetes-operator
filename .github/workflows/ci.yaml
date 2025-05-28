@@ -154,8 +154,8 @@ jobs:
     needs: [dockerfile-lint, helm-tests, build]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        # with:
+        #   fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -171,7 +171,7 @@ jobs:
       - name: Set DEV release version
         run: |
           poetry install --with build -n
-          poetry version $(poetry run semantic-release version --print)-dev.${{ github.run_id }}
+          poetry version $(poetry run semantic-release --strict --verbose version --print)-dev.${{ github.run_id }}
           poetry version -s
 
       - name: Login to Docker Hub
@@ -199,8 +199,8 @@ jobs:
     needs: [release_dev]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        # with:
+        #   fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -218,7 +218,7 @@ jobs:
       - name: Set env vars
         run: |
           poetry install --with build -n
-          echo "CHART_VERSION=$(poetry version -s)-dev.${{ github.run_id }}" >> $GITHUB_ENV
+          echo "CHART_VERSION=$(poetry run semantic-release --strict --verbose version --print)-dev.${{ github.run_id }}" >> $GITHUB_ENV
 
       - name: Helm Publish (Github)
         env:

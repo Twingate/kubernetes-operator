@@ -154,10 +154,9 @@ jobs:
     needs: [dockerfile-lint, helm-tests, build]
     steps:
       - uses: actions/checkout@v4
-        # with:
-        #   fetch-depth: 0
         with:
           ref: ${{ github.head_ref }}
+          fetch-tags: true
 
       - uses: actions/setup-python@v5
         with:
@@ -201,10 +200,9 @@ jobs:
     needs: [release_dev]
     steps:
       - uses: actions/checkout@v4
-        # with:
-        #   fetch-depth: 0
         with:
           ref: ${{ github.head_ref }}
+          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}

@@ -151,7 +151,7 @@ jobs:
   release_dev:
     runs-on: ubuntu-latest
     name: Release dev
-    needs: [dockerfile-lint, helm-tests, build]
+    needs: [dockerfile-lint, helm-tests, build, e2e-tests, unit-tests]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -198,7 +198,7 @@ jobs:
   release_dev_helm:
     runs-on: ubuntu-latest
     name: Release PROD Helm Chart
-    needs: []
+    needs: [release_dev]
     steps:
       - uses: actions/checkout@v4
         with:

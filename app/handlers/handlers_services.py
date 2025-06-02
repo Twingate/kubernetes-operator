@@ -94,7 +94,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
     status = service_body.status
-    service_name = service_body.meta.name
+    service_name = service_body.meta.name or ""
     resource_object_name = f"{service_name}-resource"
 
     result: dict = {
@@ -129,7 +129,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             )
 
         if spec["type"] == ServiceType.LOAD_BALANCER:
-            validate_load_balancer_status(status, meta.name)
+            validate_load_balancer_status(status, service_name)
 
         result["spec"] |= {
             "address": f"kubernetes.{namespace}.svc.cluster.local",

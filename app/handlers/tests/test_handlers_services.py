@@ -64,7 +64,7 @@ def example_gateway_service_body():
         resource.twingate.com: "true"
         resource.twingate.com/type: "Kubernetes"
         resource.twingate.com/tlsSecret: "gateway-tls"
-        resource.twingate.com/alias: "gateway.default.svc.cluster.local"
+        resource.twingate.com/alias: "alias.int"
     spec:
       selector:
         app.kubernetes.io/name: gateway
@@ -150,7 +150,7 @@ class TestServiceToTwingateResource:
         self, example_gateway_service_body, k8s_core_client_mock, k8s_tls_secret_mock
     ):
         tls_object_name = "gateway-tls"
-        namespace = "default"
+        namespace = "custom-namespace"
         k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
 
         result = service_to_twingate_resource(example_gateway_service_body, namespace)
@@ -161,9 +161,9 @@ class TestServiceToTwingateResource:
         assert result["spec"] == {
             "name": "kubernetes-gateway-resource",
             "address": "kubernetes.default.svc.cluster.local",
-            "alias": "gateway.default.svc.cluster.local",
+            "alias": "alias.int",
             "proxy": {
-                "address": "kubernetes-gateway.default.svc.cluster.local",
+                "address": "kubernetes-gateway.custom-namespace.svc.cluster.local",
                 "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,
             },
             "protocols": {

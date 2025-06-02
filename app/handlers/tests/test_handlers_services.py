@@ -345,10 +345,10 @@ class TestServiceToTwingateResource:
             {},
             {"loadBalancer": {}},
             {"loadBalancer": {"ingress": []}},
-            {"loadBalancer": {"ingress": [{"ip": "1.1.1.1"}]}},
+            {"loadBalancer": {"ingress": [{"ip": None}]}},
         ],
     )
-    def test_retry_load_balancer_ip_is_not_ready(
+    def test_kubernetes_resource_when_load_balancer_ip_is_not_ready(
         self,
         example_load_balancer_gateway_service_body,
         kopf_handler_runner,

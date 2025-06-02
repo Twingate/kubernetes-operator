@@ -1,9 +1,10 @@
 import base64
 from collections.abc import Callable
+from enum import StrEnum
 
 import kopf
 import kubernetes
-from kopf import Body
+from kopf import Body, Status
 
 from app.crds import ResourceType
 from app.handlers import success
@@ -70,9 +71,29 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
 TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
 
 
+def validate_load_balancer_status(status: Status, service_name: str) -> None:
+    if not (ingress := status.get("loadBalancer", {}).get("ingress")):
+        raise kopf.TemporaryError(
+            f"Kubernetes Service: {service_name} LoadBalancer IP is not ready.",
+            delay=30,
+        )
+
+    if not ingress[0].get("ip"):
+        raise kopf.TemporaryError(
+            f"Kubernetes Service: {service_name} LoadBalancer IP is not ready.",
+            delay=30,
+        )
+
+
+class ServiceType(StrEnum):
+    CLUSTER_IP = "ClusterIP"
+    LOAD_BALANCER = "LoadBalancer"
+
+
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
+    status = service_body.status
     service_name = service_body.meta.name
     resource_object_name = f"{service_name}-resource"
 
@@ -107,10 +128,17 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"Kubernetes Secret object: {tls_secret_name} is missing."
             )
 
+        if spec["type"] == ServiceType.LOAD_BALANCER:
+            validate_load_balancer_status(status, meta.name)
+
         result["spec"] |= {
             "address": f"kubernetes.{namespace}.svc.cluster.local",
             "proxy": {
-                "address": f"{service_name}.{namespace}.svc.cluster.local",
+                "address": (
+                    status["loadBalancer"]["ingress"][0]["ip"]
+                    if spec["type"] == ServiceType.LOAD_BALANCER
+                    else f"{service_name}.{namespace}.svc.cluster.local"
+                ),
                 "certificateAuthorityCert": get_ca_cert(tls_secret),
             },
         }
@@ -140,7 +168,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
 @kopf.on.create("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.update("service", annotations={"resource.twingate.com": "true"})
 def twingate_service_create(body, spec, namespace, meta, logger, **_):
-    logger.info("twingate_service_create: %s", spec)
+    logger.info("twingate_service_create: %s", body)
 
     resource_subobject = service_to_twingate_resource(body, namespace)
     kopf.adopt(resource_subobject)

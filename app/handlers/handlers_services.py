@@ -108,7 +108,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             )
 
         result["spec"] |= {
-            "address": f"kubernetes.default.svc.cluster.local",
+            "address": "kubernetes.default.svc.cluster.local",
             "proxy": {
                 "address": f"{service_name}.{namespace}.svc.cluster.local",
                 "certificateAuthorityCert": get_ca_cert(tls_secret),

@@ -2211,14 +2211,14 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
 name = "pytest-datadir"
-version = "1.7.0"
+version = "1.7.1"
 description = "pytest plugin for test data directories and files"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
-    {file = "pytest_datadir-1.7.0-py3-none-any.whl", hash = "sha256:9dfb14e082a9e9c41b178ca35c3553266d54554f80d7941ed926957d8303c3e9"},
-    {file = "pytest_datadir-1.7.0.tar.gz", hash = "sha256:6f4948e50ad0e3c558e58752cf79ec5946334a7b21c86d569a3b94a0b3bb4527"},
+    {file = "pytest_datadir-1.7.1-py3-none-any.whl", hash = "sha256:12372417ff2cec4db8aecaf6b6fac119db91515f17e81c7926220e342148e3b4"},
+    {file = "pytest_datadir-1.7.1.tar.gz", hash = "sha256:367b4cd34b6ca3151317db310ab688ef9a28a9ec15e1e7d6696f4737b5f14bd8"},
 ]
 
 [package.dependencies]
@@ -3097,4 +3097,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "2a40dcf30e3170fe409d556b88637e365ee8faa785ba070239c6a8abce4abe44"
+content-hash = "3de876b61e4458cd356bb3420750115cde392fb66cec2f5904375227dc33a003"

@@ -71,7 +71,7 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
 TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
 
 
-def validate_load_balancer_status(status: Status, service_name: str) -> None:
+def validate_load_balancer_status(status: Status, service_name: str | None) -> None:
     if not (ingress := status.get("loadBalancer", {}).get("ingress")):
         raise kopf.TemporaryError(
             f"Kubernetes Service: {service_name} LoadBalancer IP is not ready.",
@@ -94,7 +94,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
     status = service_body.status
-    service_name = service_body.meta.name or ""
+    service_name = service_body.meta.name
     resource_object_name = f"{service_name}-resource"
 
     result: dict = {

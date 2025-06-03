@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import kopf
 import kubernetes
@@ -355,12 +355,16 @@ class TestServiceToTwingateResource:
         k8s_customobjects_client_mock,
         status,
     ):
-        # ruff: noqa: SLF001
-        example_load_balancer_gateway_service_body._status = status
-
-        with pytest.raises(
-            kopf.TemporaryError,
-            match="Kubernetes Service: kubernetes-gateway LoadBalancer IP is not ready.",
+        with (
+            patch(
+                "kopf._cogs.structs.bodies.Body.status",
+                new_callable=PropertyMock,
+                return_value=status,
+            ),
+            pytest.raises(
+                kopf.TemporaryError,
+                match="Kubernetes Service: kubernetes-gateway LoadBalancer IP is not ready.",
+            ),
         ):
             service_to_twingate_resource(
                 example_load_balancer_gateway_service_body, "default"

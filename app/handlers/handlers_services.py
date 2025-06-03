@@ -133,7 +133,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             validate_load_balancer_status(status, service_name)
 
         result["spec"] |= {
-            "address": f"kubernetes.{namespace}.svc.cluster.local",
+            "address": "kubernetes.default.svc.cluster.local",
             "proxy": {
                 "address": (
                     status["loadBalancer"]["ingress"][0]["ip"]

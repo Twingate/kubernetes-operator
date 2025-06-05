@@ -439,9 +439,6 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
-        mock_dep = MagicMock()
-        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
-
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
@@ -464,9 +461,6 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             annotations={ANNOTATION_NEXT_VERSION_CHECK: "2000-01-01T00:00:00Z"},
             with_id=True,
         )
-
-        mock_dep = MagicMock()
-        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
@@ -497,13 +491,35 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
 
         mock_dep = MagicMock()
         mock_dep.spec.template.containers = [mock_container]
-        k8s_apps_client_mock.read_namespaced_pod.return_value = mock_dep
+        k8s_apps_client_mock.read_namespaced_deployment.return_value = mock_dep
 
         run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
         assert run.result == {"success": True, "ts": ANY}
         assert run.patch_mock.meta == {}
         run.k8s_apps_client_mock.patch_namespaced_deployment.assert_not_called()
         mock_get_image.assert_not_called()
+
+    def test_creates_deployment_if_doesnt_exist(
+        self,
+        get_connector_and_crd,
+        kopf_handler_runner,
+        k8s_apps_client_mock,
+        mock_get_image,
+    ):
+        now = pendulum.now("UTC").start_of("minute")
+        connector, crd = get_connector_and_crd(
+            spec_overrides=dict(image_policy=ConnectorImagePolicy()),
+            status={"twingate_connector_create": {"success": True}},
+            annotations={ANNOTATION_NEXT_VERSION_CHECK: str(now.add(minutes=1))},
+            with_id=True,
+        )
+
+        # Deployment doesnt exist, so we expect it to be created
+        k8s_apps_client_mock.read_namespaced_deployment.return_value = None
+
+        kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+
+        k8s_apps_client_mock.create_namespaced_deployment.assert_called_once()
 
 
 class TestGetConnectorDeployment:

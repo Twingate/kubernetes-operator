@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v0.22.2 (2025-06-05)
+
+### Bug Fixes
+
+- Pod to Deployment migration doesnt work with imagePolicy
+  ([#674](https://github.com/Twingate/kubernetes-operator/pull/674),
+  [`9fe1c07`](https://github.com/Twingate/kubernetes-operator/commit/9fe1c078a38375765efb64110f4aef24860f0c0b))
+
+## Related Tickets & Documents
+
+Fixes #673
+
+## Changes
+
+When upgrading connectors from `Pod` to `Deployment`, the code path using `imagePolicy` was missing
+  a check - it would only check the deployment when the policy's `schedule` is triggered which is
+  usually daily or longer. This change fixes `twingate_connector_pod_reconciler` to recreate the
+  deployment if it doesnt exist, regardless of the `schedule` value
+
+### Chores
+
+- Allow hotfix releases
+  ([`342cf35`](https://github.com/Twingate/kubernetes-operator/commit/342cf35d4177330759dc2565c6d54fb1c1f9834c))
+
+
 ## v0.22.1 (2025-05-23)
 
 ### Bug Fixes

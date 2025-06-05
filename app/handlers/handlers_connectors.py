@@ -335,7 +335,7 @@ def twingate_connector_pod_reconciler(
             meta.annotations.get(ANNOTATION_NEXT_VERSION_CHECK, "0001-01-01 00:00:00")
         )
 
-        if now >= next_check_at:
+        if now >= next_check_at or not k8s_deployment:
             patch.meta["annotations"] = {
                 ANNOTATION_LAST_VERSION_CHECK: now.to_iso8601_string(),
                 ANNOTATION_NEXT_VERSION_CHECK: crd.spec.image_policy.get_next_date_iso8601(),

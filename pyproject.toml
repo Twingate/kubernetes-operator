@@ -166,7 +166,7 @@ version_toml = [
 ]
 
 [tool.semantic_release.branches.main]
-match = "(main|master)"
+match = "(main|master|hotfix/.*)"
 prerelease = false
 
 [tool.semantic_release.changelog]

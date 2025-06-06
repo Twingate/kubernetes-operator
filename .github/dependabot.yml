@@ -29,6 +29,10 @@ updates:
       time: "13:00"
     commit-message:
       prefix: "chore: "
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+        versions: ["*-*"] # This pattern catches prerelease versions with hyphens
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

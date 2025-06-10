@@ -93,7 +93,7 @@ def example_load_balancer_gateway_service_body():
         resource.twingate.com: "true"
         resource.twingate.com/type: "Kubernetes"
         resource.twingate.com/tlsSecret: "gateway-tls"
-        resource.twingate.com/alias: "gateway.default.svc.cluster.local"
+        resource.twingate.com/alias: "alias.int"
     spec:
       selector:
         app.kubernetes.io/name: gateway

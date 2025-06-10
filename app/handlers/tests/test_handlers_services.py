@@ -320,7 +320,7 @@ class TestServiceToTwingateResource:
         assert result["spec"] == {
             "name": "kubernetes-gateway-resource",
             "address": "kubernetes.default.svc.cluster.local",
-            "alias": "gateway.default.svc.cluster.local",
+            "alias": "alias.int",
             "proxy": {
                 "address": "10.0.0.1",
                 "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,

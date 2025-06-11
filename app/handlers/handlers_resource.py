@@ -54,6 +54,14 @@ def twingate_resource_update(labels, spec, diff, status, memo, logger, **kwargs)
     if not crd.id:
         return fail(error="Resource ID is missing in the spec")
 
+    # We only care about `spec` or `labels` changes
+    changed_fields = [".".join(d[1]) for d in diff]
+    is_spec_changed = any(cf.startswith("spec.") for cf in changed_fields)
+    is_labels_changed = any(cf.startswith("metadata.labels.") for cf in changed_fields)
+    if not (is_spec_changed or is_labels_changed):
+        logger.info("No relevant changes detected, skipping update.")
+        return success(twingate_id=crd.id, message="No update required")
+
     # Check if just "spec.id" was added - means `create` just ran
     if len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id"), None):
         return success(twingate_id=crd.id, message="No update required")

@@ -266,6 +266,42 @@ class TestResourceUpdateHandler:
         mock_api_client.resource_update.assert_not_called()
         assert patch_mock.spec == {}
 
+    def test_annotation_update_does_nothing(self, mock_api_client, mock_k8s_metadata):
+        rid = "UmVzb3VyY2U6OTMxODE3"
+        spec = {
+            "id": rid,
+            "address": "my.default.cluster.local",
+            "name": "new-name",
+        }
+        diff = (("add", ("metadata", "annotations", "foo"), None, "bar"),)
+        status = {
+            "twingate_resource_create": {
+                "twingate_id": rid,
+                "created_at": "2023-09-27T04:02:55.249011+00:00",
+                "updated_at": "2023-09-27T04:02:55.249035+00:00",
+            }
+        }
+
+        mock_api_client.resource_update.return_value = MagicMock(id=rid)
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        result = twingate_resource_update(
+            mock_k8s_metadata["labels"], spec, diff, status, memo_mock, logger_mock
+        )
+        assert result == {
+            "success": True,
+            "twingate_id": rid,
+            "message": "No update required",
+            "ts": ANY,
+        }
+
+        mock_api_client.resource_update.assert_not_called()
+        assert patch_mock.spec == {}
+
 
 class TestResourceDeleteHandler:
     def test_delete(self, mock_api_client):

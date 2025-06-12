@@ -4,6 +4,7 @@ import kopf
 import kubernetes
 import pytest
 import yaml
+from kopf._core.intents.causes import Reason
 
 from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
 from app.crds import ResourceType
@@ -413,6 +414,7 @@ class TestTwingateServiceCreate:
             "default",
             example_service_body.metadata,
             MagicMock(),
+            Reason.CREATE,
         )
 
         k8s_customobjects_client_mock.patch_namespaced_custom_object.assert_not_called()
@@ -463,6 +465,7 @@ class TestTwingateServiceCreate:
             "default",
             example_service_body.metadata,
             MagicMock(),
+            Reason.UPDATE,
         )
 
         k8s_customobjects_client_mock.replace_namespaced_custom_object.assert_called_once_with(

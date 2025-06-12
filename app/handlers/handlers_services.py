@@ -167,7 +167,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
 @kopf.on.resume("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.create("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.update("service", annotations={"resource.twingate.com": "true"})
-def twingate_service_create(body, spec, namespace, meta, logger, **_):
+def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
     logger.info("twingate_service_create: %s", body)
 
     resource_subobject = service_to_twingate_resource(body, namespace)
@@ -195,17 +195,21 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
             resource_object_name,
             existing_resource_object,
         )
+        kopf.info(
+            body,
+            reason=f"twingate_service_create ({reason.value})",
+            message=f"Updated TwingateResource {resource_object_name}",
+        )
     else:
         api_response = kapi.create_namespaced_custom_object(
             "twingate.com", "v1beta", namespace, "twingateresources", resource_subobject
         )
         logger.info("create_namespaced_custom_object response: %s", api_response)
-
-    kopf.info(
-        body,
-        reason="twingate_service_create",
-        message=f"Created TwingateResource {resource_object_name}",
-    )
+        kopf.info(
+            body,
+            reason=f"twingate_service_create ({reason.value})",
+            message=f"Created TwingateResource {resource_object_name}",
+        )
 
 
 @kopf.on.update("service", annotations={"resource.twingate.com": "false"})

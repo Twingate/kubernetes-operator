@@ -236,6 +236,7 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
             reason="twingate_service_annotation_removed",
             message=f"Deleted TwingateResource {resource_object_name}",
         )
+        return
 
     kopf.info(
         body,

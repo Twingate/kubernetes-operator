@@ -17,10 +17,10 @@ orjson = "^3.10.18"
 pendulum = "^3.1.0"
 pydantic = "^2.11.5"
 pydantic-settings = "^2.9.1"
-requests = "^2.32.3"
+requests = "^2.32.4"
 semantic-version = "^2.10.0"
 tenacity = "^9.1.2"
-cryptography = "^45.0.3"
+cryptography = "^45.0.4"
 
 [tool.poetry.group.dev]
 optional = true
@@ -42,7 +42,7 @@ responses = "^0.25.7"
 ruff = "^0.11.13"
 syrupy = "^4.9.1"
 types-croniter = "^6.0.0.20250411"
-types-requests = "^2.32.0.20250602"
+types-requests = "^2.32.4.20250611"
 types-pyyaml = "^6.0.12.20250516"
 [tool.poetry.group.build]
 optional = true

@@ -8,7 +8,6 @@ import kubernetes
 from kopf import Body, Status
 
 from app.crds import ResourceType
-from app.handlers import success
 from app.utils import to_bool, validate_pem_x509_certificate
 
 
@@ -202,8 +201,10 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
         )
         logger.info("create_namespaced_custom_object response: %s", api_response)
 
-    return success(
-        message=f"Created TwingateResource {resource_subobject['spec']['name']}"
+    kopf.info(
+        body,
+        reason="twingate_service_create",
+        message=f"Created TwingateResource {resource_object_name}",
     )
 
 
@@ -226,6 +227,14 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
             "twingateresources",
             resource_object_name,
         )
-        return success(message=f"Deleted TwingateResource {resource_object_name}")
+        kopf.info(
+            body,
+            reason="twingate_service_annotation_removed",
+            message=f"Deleted TwingateResource {resource_object_name}",
+        )
 
-    return success(message=f"TwingateResource {resource_object_name} does not exist")
+    kopf.info(
+        body,
+        reason="twingate_service_annotation_removed",
+        message=f"TwingateResource {resource_object_name} does not exist",
+    )

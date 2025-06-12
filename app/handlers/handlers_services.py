@@ -8,7 +8,6 @@ import kubernetes
 from kopf import Body, Status
 
 from app.crds import ResourceType
-from app.handlers import success
 from app.utils import to_bool, validate_pem_x509_certificate
 
 
@@ -168,7 +167,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
 @kopf.on.resume("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.create("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.update("service", annotations={"resource.twingate.com": "true"})
-def twingate_service_create(body, spec, namespace, meta, logger, **_):
+def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
     logger.info("twingate_service_create: %s", body)
 
     resource_subobject = service_to_twingate_resource(body, namespace)
@@ -196,15 +195,21 @@ def twingate_service_create(body, spec, namespace, meta, logger, **_):
             resource_object_name,
             existing_resource_object,
         )
+        kopf.info(
+            body,
+            reason=f"twingate_service_create ({reason.value})",
+            message=f"Updated TwingateResource {resource_object_name}",
+        )
     else:
         api_response = kapi.create_namespaced_custom_object(
             "twingate.com", "v1beta", namespace, "twingateresources", resource_subobject
         )
         logger.info("create_namespaced_custom_object response: %s", api_response)
-
-    return success(
-        message=f"Created TwingateResource {resource_subobject['spec']['name']}"
-    )
+        kopf.info(
+            body,
+            reason=f"twingate_service_create ({reason.value})",
+            message=f"Created TwingateResource {resource_object_name}",
+        )
 
 
 @kopf.on.update("service", annotations={"resource.twingate.com": "false"})
@@ -226,6 +231,15 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
             "twingateresources",
             resource_object_name,
         )
-        return success(message=f"Deleted TwingateResource {resource_object_name}")
+        kopf.info(
+            body,
+            reason="twingate_service_annotation_removed",
+            message=f"Deleted TwingateResource {resource_object_name}",
+        )
+        return
 
-    return success(message=f"TwingateResource {resource_object_name} does not exist")
+    kopf.info(
+        body,
+        reason="twingate_service_annotation_removed",
+        message=f"TwingateResource {resource_object_name} does not exist",
+    )

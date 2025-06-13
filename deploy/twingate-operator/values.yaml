@@ -36,6 +36,19 @@ kubernetes-access-gateway:
 #        # Resource alias is included in the auto-generated TLS cert
 #        resource.twingate.com/alias: "myk8s.int"
 
+connectors:
+  enabled: false
+  count: 2
+  specExtra:
+    containerExtra:
+      resources:
+        requests:
+          cpu: 314m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 128Mi
+
 image:
   repository: twingate/kubernetes-operator
   # This sets the pull policy for images.

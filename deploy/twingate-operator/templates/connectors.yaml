@@ -1,0 +1,18 @@
+{{- if .Values.connectors.enabled }}
+{{- $count := .Values.connectors.count | int }}
+{{- $specExtra := .Values.connectors.specExtra | default dict }}
+{{- if not $count }}
+{{- fail "connectors.count must be greater than 0" }}
+{{- end -}}
+{{- range $i := until $count }}
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: twingate-connector-{{ $i }}
+spec:
+  imagePolicy:
+    schedule: "{{ $i }} 0 * * *"
+{{- toYaml $specExtra | nindent 2 }}
+---
+{{- end -}}
+{{- end -}}

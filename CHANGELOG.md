@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.22.3 (2025-06-13)
+
+### Bug Fixes
+
+- Only call resource update when spec\labels update
+  ([#681](https://github.com/Twingate/kubernetes-operator/pull/681),
+  [`2aed040`](https://github.com/Twingate/kubernetes-operator/commit/2aed040380b8cbc9f32e945f71150d7683ab1442))
+
+## Changes
+
+Optimize `twingate_resource_update` so that it doesnt call API to update the resource unless there
+  was a change in `spec` o `metadata.labels`
+
+
 ## v0.22.2 (2025-06-05)
 
 ### Bug Fixes

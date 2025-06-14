@@ -177,7 +177,45 @@ metadata:
   name: twingate-connector-1
 spec:
   imagePolicy:
-    schedule: "1 0 * * *"
+    schedule: "2 0 * * *"
+  containerExtra:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 314m
+        memory: 128Mi
+  podAnnotations:
+    some/annotation: some-value
+---
+# Source: twingate-operator/templates/connectors.yaml
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: twingate-connector-2
+spec:
+  imagePolicy:
+    schedule: "4 0 * * *"
+  containerExtra:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 314m
+        memory: 128Mi
+  podAnnotations:
+    some/annotation: some-value
+---
+# Source: twingate-operator/templates/connectors.yaml
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: twingate-connector-3
+spec:
+  imagePolicy:
+    schedule: "6 0 * * *"
   containerExtra:
     resources:
       limits:

@@ -4,7 +4,8 @@ twingateOperator:
   remoteNetworkId: "<remote network id>"
 connectors:
   enabled: true
-  count: 2
+  count: 4
+  schedule: "{{ mul .i 2 }} 0 * * *"
   specExtra:
     podAnnotations:
       some/annotation: "some-value"

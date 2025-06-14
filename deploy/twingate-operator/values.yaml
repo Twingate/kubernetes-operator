@@ -39,6 +39,7 @@ kubernetes-access-gateway:
 connectors:
   enabled: false
   count: 2
+  schedule: "{{ .i }} 0 * * *"
   specExtra:
     containerExtra:
       resources:

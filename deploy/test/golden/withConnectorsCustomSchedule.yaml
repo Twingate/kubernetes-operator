@@ -5,6 +5,7 @@ twingateOperator:
 connectors:
   enabled: true
   count: 4
+  name: "my-connector-{{ mul .i 2 }}"
   schedule: "{{ mul .i 2 }} 0 * * *"
   specExtra:
     podAnnotations:

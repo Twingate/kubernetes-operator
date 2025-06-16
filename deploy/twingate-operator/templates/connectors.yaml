@@ -4,14 +4,17 @@
 {{- fail "connectors.count must be greater than 0" }}
 {{- end -}}
 {{- $schedule := .Values.connectors.schedule | default "{{ .i }} 0 * * *" }}
+{{- $nameTemplate := .Values.connectors.name | default "twingate-connector-{{ .i }}" }}
 {{- $specExtra := .Values.connectors.specExtra | default dict }}
 {{- range $i := until $count }}
 {{- $ctx := dict "i" $i }}
+{{- $name := tpl $nameTemplate $ctx }}
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
-  name: twingate-connector-{{ $i }}
+  name: {{ $name }}
 spec:
+  name: {{ $name }}
   imagePolicy:
     schedule: {{ tpl $schedule $ctx | quote }}
 {{- toYaml $specExtra | nindent 2 }}

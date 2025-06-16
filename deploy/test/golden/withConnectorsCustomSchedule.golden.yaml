@@ -155,8 +155,9 @@ spec:
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
-  name: twingate-connector-0
+  name: my-connector-0
 spec:
+  name: my-connector-0
   imagePolicy:
     schedule: "0 0 * * *"
   containerExtra:
@@ -174,8 +175,9 @@ spec:
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
-  name: twingate-connector-1
+  name: my-connector-2
 spec:
+  name: my-connector-2
   imagePolicy:
     schedule: "2 0 * * *"
   containerExtra:
@@ -193,8 +195,9 @@ spec:
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
-  name: twingate-connector-2
+  name: my-connector-4
 spec:
+  name: my-connector-4
   imagePolicy:
     schedule: "4 0 * * *"
   containerExtra:
@@ -212,8 +215,9 @@ spec:
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
-  name: twingate-connector-3
+  name: my-connector-6
 spec:
+  name: my-connector-6
   imagePolicy:
     schedule: "6 0 * * *"
   containerExtra:

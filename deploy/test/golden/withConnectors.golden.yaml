@@ -157,6 +157,7 @@ kind: TwingateConnector
 metadata:
   name: twingate-connector-0
 spec:
+  name: twingate-connector-0
   imagePolicy:
     schedule: "0 0 * * *"
   containerExtra:
@@ -176,6 +177,7 @@ kind: TwingateConnector
 metadata:
   name: twingate-connector-1
 spec:
+  name: twingate-connector-1
   imagePolicy:
     schedule: "1 0 * * *"
   containerExtra:

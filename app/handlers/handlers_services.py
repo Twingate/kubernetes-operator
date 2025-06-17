@@ -71,18 +71,22 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
 TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
 
 
-def validate_load_balancer_status(status: Status, service_name: str) -> None:
+def get_load_balancer_address(status: Status, service_name: str) -> str:
     if not (ingress := status.get("loadBalancer", {}).get("ingress")):
         raise kopf.TemporaryError(
-            f"Kubernetes Service: {service_name} LoadBalancer IP is not ready.",
+            f"Kubernetes Service: {service_name} LoadBalancer is not ready.",
             delay=30,
         )
 
-    if not ingress[0].get("ip"):
+    ip = ingress[0].get("ip")
+    hostname = ingress[0].get("hostname")
+    if not ip and not hostname:
         raise kopf.TemporaryError(
-            f"Kubernetes Service: {service_name} LoadBalancer IP is not ready.",
+            f"Kubernetes Service: {service_name} LoadBalancer is not ready.",
             delay=30,
         )
+
+    return ip or hostname
 
 
 class ServiceType(StrEnum):
@@ -128,14 +132,11 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"Kubernetes Secret object: {tls_secret_name} is missing."
             )
 
-        if spec["type"] == ServiceType.LOAD_BALANCER:
-            validate_load_balancer_status(status, service_name)
-
         result["spec"] |= {
             "address": "kubernetes.default.svc.cluster.local",
             "proxy": {
                 "address": (
-                    status["loadBalancer"]["ingress"][0]["ip"]
+                    get_load_balancer_address(status, service_name)
                     if spec["type"] == ServiceType.LOAD_BALANCER
                     else f"{service_name}.{namespace}.svc.cluster.local"
                 ),

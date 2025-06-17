@@ -383,7 +383,7 @@ class TestServiceToTwingateResource:
             ),
             pytest.raises(
                 kopf.TemporaryError,
-                match="Kubernetes Service: kubernetes-gateway LoadBalancer IP is not ready.",
+                match="Kubernetes Service: kubernetes-gateway LoadBalancer is not ready.",
             ),
         ):
             service_to_twingate_resource(

@@ -1,4 +1,4 @@
-# ruff: noqa: F403,F403
+# ruff: noqa: F403
 from .handlers_connectors import *
 from .handlers_groups import *
 from .handlers_resource import *

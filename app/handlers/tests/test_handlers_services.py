@@ -301,19 +301,37 @@ class TestServiceToTwingateResource:
                 example_cluster_ip_gateway_service_body, "default"
             )
 
+    @pytest.mark.parametrize(
+        ("status", "expected"),
+        [
+            ({"loadBalancer": {"ingress": [{"ip": "1.2.3.4"}]}}, "1.2.3.4"),
+            (
+                {"loadBalancer": {"ingress": [{"hostname": "gateway.hostname.int"}]}},
+                "gateway.hostname.int",
+            ),
+        ],
+    )
     def test_kubernetes_resource_with_load_balancer_service_type(
         self,
         example_load_balancer_gateway_service_body,
         k8s_core_client_mock,
         k8s_tls_secret_mock,
+        status,
+        expected,
     ):
         tls_object_name = "gateway-tls"
         namespace = "default"
         k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
 
-        result = service_to_twingate_resource(
-            example_load_balancer_gateway_service_body, namespace
-        )
+        with patch(
+            "kopf._cogs.structs.bodies.Body.status",
+            new_callable=PropertyMock,
+            return_value=status,
+        ):
+            result = service_to_twingate_resource(
+                example_load_balancer_gateway_service_body, namespace
+            )
+
         k8s_core_client_mock.read_namespaced_secret.assert_called_once_with(
             namespace=namespace, name=tls_object_name
         )
@@ -323,7 +341,7 @@ class TestServiceToTwingateResource:
             "address": "kubernetes.default.svc.cluster.local",
             "alias": "alias.int",
             "proxy": {
-                "address": "10.0.0.1",
+                "address": expected,
                 "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,
             },
             "protocols": {
@@ -347,6 +365,7 @@ class TestServiceToTwingateResource:
             {"loadBalancer": {}},
             {"loadBalancer": {"ingress": []}},
             {"loadBalancer": {"ingress": [{"ip": None}]}},
+            {"loadBalancer": {"ingress": [{"hostname": None}]}},
         ],
     )
     def test_kubernetes_resource_when_load_balancer_ip_is_not_ready(
@@ -364,7 +383,7 @@ class TestServiceToTwingateResource:
             ),
             pytest.raises(
                 kopf.TemporaryError,
-                match="Kubernetes Service: kubernetes-gateway LoadBalancer IP is not ready.",
+                match="Kubernetes Service: kubernetes-gateway LoadBalancer is not ready.",
             ),
         ):
             service_to_twingate_resource(

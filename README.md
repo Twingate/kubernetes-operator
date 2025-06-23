@@ -62,6 +62,14 @@ helm upgrade twop oci://ghcr.io/twingate/helmcharts/twingate-operator --install 
    helm upgrade twop ./deploy/twingate-operator --install --wait -f ./deploy/twingate-operator/values.local.yaml
    ```
 
+### Upgrading Chart
+
+With Helm v3, CRDs created by this chart are not updated by default
+and should be manually updated.
+Consult also the [Helm Documentation on CRDs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions).
+
+_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
+
 ## Changelog
 
 See [CHANGELOG](./CHANGELOG.md)

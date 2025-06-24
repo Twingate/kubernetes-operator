@@ -68,7 +68,7 @@ With Helm v3, CRDs created by this chart are not updated by default
 and should be manually updated.
 Consult also the [Helm Documentation on CRDs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions).
 
-_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
+See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation.
 
 ## Changelog
 

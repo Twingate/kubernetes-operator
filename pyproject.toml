@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.23.0"
+version = "0.23.1"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
@@ -172,6 +172,7 @@ match = "(main|master)"
 prerelease = false
 
 [tool.semantic_release.changelog]
+mode = "init"
 exclude_commit_patterns = [
     "chore: Bumps*",
     "Co-authored-by:*"

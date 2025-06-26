@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.23.0 (2025-06-25)
+
+### :rocket: Privileged Access for Kubernetes
+
+This release supports the _beta_ release of _Privileged Access for Kubernetes_  (Sign up for early access [here](https://www.twingate.com/product/kubernetes-access)) - to use it make sure you update to the operator's latest CRDs (See [note in README](https://github.com/Twingate/kubernetes-operator?tab=readme-ov-file#upgrading-chart)).
+
+### New Features
+
+- [`1b76b4e`](https://github.com/Twingate/kubernetes-operator/commit/1b76b4ed0d587c919ed5b5458b4bcd379593a2b1) - Support using `LoadBalancer` service hostname as proxy address *(PR #690 by @clement0010)*
+- [`c231b4d`](https://github.com/Twingate/kubernetes-operator/commit/c231b4d6c37a22604722d617535f25f4d411a02f) - Support creating `LoadBalancer` Service type for Kubernetes Resource *(PR #668 by @clement0010)*
+- [`9c4cc0a`](https://github.com/Twingate/kubernetes-operator/commit/9c4cc0a6318f05a92f015134bfb07e49f0fbd15a) - Support for Twingate Kubernetes Access Gateway *(PR #648 by @ekampf)*
+
+### Bug Fixes
+- [`d94c820`](https://github.com/Twingate/kubernetes-operator/commit/d94c820a1ccc66b91f5639da26ce100ee34a3c74) - Can’t patch status of Service objects *(PR #685 by @ekampf)*
+- [`86efe82`](https://github.com/Twingate/kubernetes-operator/commit/86efe82b48b326b28fa492322c673e8ed5794663) - Only call resource update when spec\labels update *(PR #681 by @ekampf)*
+- [`59d57d7`](https://github.com/Twingate/kubernetes-operator/commit/59d57d7a100756b951a193a36a83bec7446cff88) - Pod to Deployment migration doesnt work with imagePolicy *(PR #674 by @ekampf)*
+  - :arrow_lower_right: *fixes issue #673 opened by @rlafferty*
+- [`d122c09`](https://github.com/Twingate/kubernetes-operator/commit/d122c09a07fc145418f53b0d81cadc579b4d1c20) - Always use `kubernetes.default.svc.cluster.local` as the address of a k8s resource *(PR #670 by @minhtule)*
+- [`b174ec9`](https://github.com/Twingate/kubernetes-operator/commit/b174ec91da9969d421e370b26aaf58923686aa3d) - allow_zero_version should be true *(PR #664 by @ekampf)*
+- [`6cea8b0`](https://github.com/Twingate/kubernetes-operator/commit/6cea8b02b5ab1685c51a8454b0a5936df5b20c43) - Get resource should only return None if not found *(PR #662 by @ekampf)*
 
 ## v0.22.1 (2025-05-23)
 

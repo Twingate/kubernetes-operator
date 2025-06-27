@@ -12,6 +12,21 @@ def unique_access_name(sequential_number, ci_run_number):
     kubectl_delete("tacc", unique_name)
 
 
+def test_spec_is_required(unique_access_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: {unique_access_name}
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec: Required value" in stderr
+
+
 def test_have_to_specify_resourceRef():
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(

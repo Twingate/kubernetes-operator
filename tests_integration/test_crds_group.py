@@ -19,6 +19,19 @@ def test_success(unique_resource_name):
     kubectl_delete("tgg", unique_resource_name)
 
 
+def test_spec_is_required(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateGroup
+            metadata:
+              name: {unique_resource_name}
+        """)
+
+    stderr = ex.value.stderr.decode()
+    assert "spec: Required value" in stderr
+
+
 def test_name_required(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(f"""

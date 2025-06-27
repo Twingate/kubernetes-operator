@@ -12,6 +12,7 @@ spec:
         openAPIV3Schema:
           type: object
           description: "TwingateConnector represents a Connector in Twingate."
+          required: ["spec"]
           properties:
             spec:
               type: object

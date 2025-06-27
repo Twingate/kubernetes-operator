@@ -12,6 +12,7 @@ spec:
         openAPIV3Schema:
           type: object
           description: "TwingateResource represents a resource in Twingate."
+          required: ["spec"]
           properties:
             spec:
               type: object

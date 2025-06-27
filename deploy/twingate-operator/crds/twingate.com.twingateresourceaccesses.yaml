@@ -12,6 +12,7 @@ spec:
         openAPIV3Schema:
           type: object
           description: "TwingateResourceAccess represents a resource access policy in Twingate. It allows to configure an access between a Resource and a Principal which is either a Group or a ServiceAccount."
+          required: ["spec"]
           properties:
             spec:
               type: object

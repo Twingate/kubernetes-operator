@@ -162,6 +162,20 @@
               "network": "my-network",
               "remoteNetworkId": "UmVtb3RlTmV0d29yazo5Njc0OTU="
             }]
+        },
+        "rbac": {
+            "type": "object",
+            "title": "The rbac Schema",
+            "properties": {
+                "createAggregateClusterRoles": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "Create RBAC aggregate cluster roles - adding Twingate CRD permissions to the Kubernetes default view/edit/admin roles."
+                }
+            },
+            "examples": [{
+                "createAggregateClusterRoles": true
+            }]
         }
     }
 }

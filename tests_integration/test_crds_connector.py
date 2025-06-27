@@ -12,6 +12,20 @@ def unique_connector_name(sequential_number, ci_run_number):
 
 
 class TestConnectorCRD:
+    def test_spec_is_required(self, unique_connector_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "spec: Required value" in stderr
+
     def test_no_image_or_imagepolicy(self, unique_connector_name):
         result = kubectl_create(
             f"""

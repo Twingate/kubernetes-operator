@@ -9,6 +9,21 @@ from tests_integration.utils import (
 )
 
 
+def test_spec_is_required(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec: Required value" in stderr
+
+
 def test_browser_shortcut_false_allows_wildcard_address(unique_resource_name):
     result = kubectl_create(
         f"""

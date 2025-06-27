@@ -1,0 +1,28 @@
+{{- if .Values.rbac.createAggregateClusterRoles }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "twingate-operator.fullname" . }}-crd-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    {{- include "twingate-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["twingate.com"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "twingate-operator.fullname" . }}-crd-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    {{- include "twingate-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["twingate.com"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+{{- end }}

@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v0.24.0 (2025-06-30)
+
+### Chores
+
+- Bump ncipollo/release-action from 1.16.0 to 1.18.0
+  ([#707](https://github.com/Twingate/kubernetes-operator/pull/707),
+  [`4a95181`](https://github.com/Twingate/kubernetes-operator/commit/4a95181e6f73f8ecff427b329295d63284a9178f))
+
+- Bump python-semantic-release from 10.1.0 to 10.2.0
+  ([#708](https://github.com/Twingate/kubernetes-operator/pull/708),
+  [`225e022`](https://github.com/Twingate/kubernetes-operator/commit/225e022ef21544ca310f318e9d45cae1bb4365bc))
+
+- Bump ruff from 0.12.0 to 0.12.1 ([#705](https://github.com/Twingate/kubernetes-operator/pull/705),
+  [`2fe6d32`](https://github.com/Twingate/kubernetes-operator/commit/2fe6d32710a88b3d918df0fa4ffcaa8fead78b36))
+
+- Update asdf to Python 3.12.11
+  ([`5090d12`](https://github.com/Twingate/kubernetes-operator/commit/5090d12b78a4a6e93a4f796152b8f9715cb53284))
+
+### Features
+
+- Create aggregate cluster roles ([#706](https://github.com/Twingate/kubernetes-operator/pull/706),
+  [`f9dfca0`](https://github.com/Twingate/kubernetes-operator/commit/f9dfca00adb857e83677a2ac8a2b546e7202fc64))
+
+- Improve validation - ‘spec’ is always required
+  ([#704](https://github.com/Twingate/kubernetes-operator/pull/704),
+  [`be00936`](https://github.com/Twingate/kubernetes-operator/commit/be009365012285fa7ab7541d79777909d5a0dff1))
+
+
 ## v0.23.1 (2025-06-26)
 
 ### Chores

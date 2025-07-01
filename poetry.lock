@@ -2231,14 +2231,14 @@ testing = ["pytest", "tox"]
 
 [[package]]
 name = "pytest-factoryboy"
-version = "2.8.0"
+version = "2.8.1"
 description = "Factory Boy support for pytest."
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "pytest_factoryboy-2.8.0-py3-none-any.whl", hash = "sha256:f858b865a14a3da3dbb5a7640f95c407a3de6e374e5614a3d05429ed23b63b08"},
-    {file = "pytest_factoryboy-2.8.0.tar.gz", hash = "sha256:bef3d1b087b20ff3b13b7c6ebcb8c13531b0eafa11fc47d7641600b2437dea7e"},
+    {file = "pytest_factoryboy-2.8.1-py3-none-any.whl", hash = "sha256:91c762cb236bf34b11efdf2e54bafae33114488235621e8b2c4bd9fd77838784"},
+    {file = "pytest_factoryboy-2.8.1.tar.gz", hash = "sha256:2221d48b31b8b8ccaa739c6a162fb50a43a4de6dff6043f249d2807a3462548d"},
 ]
 
 [package.dependencies]
@@ -3098,4 +3098,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "747b49e052c0b89543ccdea5e8f39751cfeb012a0462f3e709fcb4b3754a1f66"
+content-hash = "97c071d813e313c3b05918bc0a21a6835d4af5bad601f4cefea6328da9f1a76a"

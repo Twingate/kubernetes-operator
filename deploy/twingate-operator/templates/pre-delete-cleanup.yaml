@@ -22,8 +22,6 @@ spec:
             - /bin/sh
             - -c
             - |
-              kubectl get svc -n {{ .Release.Namespace }} -o json \
-              | jq -r '.items[] | select(.metadata.annotations["resource.twingate.com"] == "true") | .metadata.name' \
-              | xargs -r kubectl delete svc -n {{ .Release.Namespace }}
+              kubectl delete svc -n {{ .Release.Namespace }} {{ include "gateway.fullname" (index .Subcharts "kubernetes-access-gateway") }}
       restartPolicy: Never
 {{- end }}

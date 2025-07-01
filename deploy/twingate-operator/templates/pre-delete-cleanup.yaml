@@ -1,0 +1,29 @@
+{{- if index .Values "kubernetes-access-gateway" "enabled" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "twingate-operator.fullname" . }}-pre-delete-cleanup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "twingate-operator.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      serviceAccountName: {{ include "twingate-operator.serviceAccountName" . }}
+      containers:
+        - name: cleanup
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              kubectl get svc -n {{ .Release.Namespace }} -o json \
+              | jq -r '.items[] | select(.metadata.annotations["resource.twingate.com"] == "true") | .metadata.name' \
+              | xargs -r kubectl delete svc -n {{ .Release.Namespace }}
+      restartPolicy: Never
+{{- end }}

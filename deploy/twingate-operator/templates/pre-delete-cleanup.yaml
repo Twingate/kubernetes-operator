@@ -1,4 +1,5 @@
 {{- if index .Values "kubernetes-access-gateway" "enabled" }}
+{{- $kubernetesAccessGatewayName := include "gateway.fullname" (index .Subcharts "kubernetes-access-gateway") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -22,6 +23,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              kubectl delete svc -n {{ .Release.Namespace }} {{ include "gateway.fullname" (index .Subcharts "kubernetes-access-gateway") }}
+              kubectl delete svc --wait -n {{ .Release.Namespace }} {{ $kubernetesAccessGatewayName }}
+              kubectl wait --for=delete -n {{ .Release.Namespace }} twingateresource/{{ $kubernetesAccessGatewayName }}-resource
       restartPolicy: Never
 {{- end }}

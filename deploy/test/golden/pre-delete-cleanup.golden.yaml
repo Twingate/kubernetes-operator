@@ -345,5 +345,5 @@ spec:
             - /bin/sh
             - -c
             - |
-              kubectl delete svc --cascade=foreground --timeout=30s -n default test-kubernetes-access-gateway
+              kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n default test-kubernetes-access-gateway
       restartPolicy: Never

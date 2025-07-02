@@ -23,7 +23,6 @@ spec:
             - /bin/sh
             - -c
             - |
-              kubectl delete svc --wait -n {{ .Release.Namespace }} {{ $kubernetesAccessGatewayName }}
-              kubectl wait --for=delete -n {{ .Release.Namespace }} twingateresource/{{ $kubernetesAccessGatewayName }}-resource
+              kubectl delete svc --cascade=foreground --timeout=30s -n {{ .Release.Namespace }} {{ $kubernetesAccessGatewayName }}
       restartPolicy: Never
 {{- end }}

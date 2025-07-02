@@ -345,6 +345,5 @@ spec:
             - /bin/sh
             - -c
             - |
-              kubectl delete svc --wait -n default test-kubernetes-access-gateway
-              kubectl wait --for=delete -n default twingateresource/test-kubernetes-access-gateway-resource
+              kubectl delete svc --cascade=foreground --timeout=30s -n default test-kubernetes-access-gateway
       restartPolicy: Never

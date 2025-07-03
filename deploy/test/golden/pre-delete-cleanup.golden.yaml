@@ -1,0 +1,349 @@
+---
+# Source: twingate-operator/charts/kubernetes-access-gateway/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-kubernetes-access-gateway
+  labels:
+    helm.sh/chart: kubernetes-access-gateway-0.5.1
+    app.kubernetes.io/name: kubernetes-access-gateway
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.5.1"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: twingate-operator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-twingate-operator
+  namespace: default
+  labels:
+    helm.sh/chart: twingate-operator-major.minor.patch-test
+    app.kubernetes.io/name: twingate-operator
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: twingate-operator/charts/kubernetes-access-gateway/templates/tls-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-kubernetes-access-gateway-tls
+type: kubernetes.io/tls
+data:
+  tls.crt: PHRscyBjZXJ0Pg==
+  tls.key: PHRscyBrZXk+
+  ca.crt: PGNhIGNlcnQ+
+---
+# Source: twingate-operator/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-twingate-operator
+  namespace: default
+  labels:
+    helm.sh/chart: twingate-operator-major.minor.patch-test
+    app.kubernetes.io/name: twingate-operator
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+data:
+  TWINGATE_API_KEY: PGFwaSBrZXk+
+---
+# Source: twingate-operator/charts/kubernetes-access-gateway/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: test-kubernetes-access-gateway-cluster-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - users
+      - groups
+      - serviceaccounts
+    verbs:
+      - impersonate
+---
+# Source: twingate-operator/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: test-twingate-operator-role-cluster
+rules:
+  # Framework: runtime observation of namespaces & CRDs (addition/deletion).
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [list, watch]
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [list, watch]
+  - apiGroups: ["", "events.k8s.io"]
+    resources: [events]
+    verbs: ['*']
+
+  # Framework: admission webhook configuration management.
+  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
+    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
+    verbs: [create, patch]
+
+  # Application
+  - apiGroups: [twingate.com]
+    resources: ["*"]
+    verbs: [ "*" ]
+
+  - apiGroups: ["*"]
+    resources: [pods, services, secrets, services/status]
+    verbs: [list, watch, patch, get, create, delete]
+
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# Source: twingate-operator/charts/kubernetes-access-gateway/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: test-kubernetes-access-gateway-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: test-kubernetes-access-gateway-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: test-kubernetes-access-gateway
+    namespace: default
+---
+# Source: twingate-operator/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: test-twingate-operator-rolebinding-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: test-twingate-operator-role-cluster
+subjects:
+  - kind: ServiceAccount
+    name: test-twingate-operator
+    namespace: default
+---
+# Source: twingate-operator/charts/kubernetes-access-gateway/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-kubernetes-access-gateway
+  labels:
+    helm.sh/chart: kubernetes-access-gateway-0.5.1
+    app.kubernetes.io/name: kubernetes-access-gateway
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.5.1"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - name: https
+      port: 443
+      targetPort: https
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: kubernetes-access-gateway
+    app.kubernetes.io/instance: test
+---
+# Source: twingate-operator/charts/kubernetes-access-gateway/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kubernetes-access-gateway
+  labels:
+    helm.sh/chart: kubernetes-access-gateway-0.5.1
+    app.kubernetes.io/name: kubernetes-access-gateway
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.5.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubernetes-access-gateway
+      app.kubernetes.io/instance: test
+  template:
+    metadata:
+      annotations:
+        checksum/tlsAlternativeNames: eee78e4712e57977935ceb9ebfdb354aa33c85ca4dbb490001827f64259b6b8d
+      labels:
+        helm.sh/chart: kubernetes-access-gateway-0.5.1
+        app.kubernetes.io/name: kubernetes-access-gateway
+        app.kubernetes.io/instance: test
+        app.kubernetes.io/version: "0.5.1"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: test-kubernetes-access-gateway
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: kubernetes-access-gateway
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          imagePullPolicy: IfNotPresent
+          image: "twingate/kubernetes-access-gateway:0.5.1"
+          env:
+            - name: TWINGATE_NETWORK
+              value: <network slug>
+            - name: TWINGATE_HOST
+              value: twingate.com
+            - name: TWINGATE_PORT
+              value: "8443"
+            - name: TWINGATE_METRICSPORT
+              value: "9090"
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {}
+          volumeMounts:
+            - name: tls-secret-volume
+              mountPath: /etc/tls-secret-volume
+              readOnly: true
+      volumes:
+        - name: tls-secret-volume
+          secret:
+            secretName: test-kubernetes-access-gateway-tls
+---
+# Source: twingate-operator/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-twingate-operator
+  namespace: default
+  labels:
+    helm.sh/chart: twingate-operator-major.minor.patch-test
+    app.kubernetes.io/name: twingate-operator
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twingate-operator
+      app.kubernetes.io/instance: test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twingate-operator
+        app.kubernetes.io/instance: test
+    spec:
+      serviceAccountName: test-twingate-operator
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: twingate-operator
+        securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+        image: "twingate/kubernetes-operator:latest"
+        imagePullPolicy: IfNotPresent
+        command:
+          - kopf
+          - run
+          - ./main.py
+          - "-A"
+          - "--standalone"
+          - "--liveness=http://0.0.0.0:8080/healthz"
+          - "--log-format=full"
+        env:
+          - name: TWINGATE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: test-twingate-operator
+                key: TWINGATE_API_KEY
+          - name: TWINGATE_NETWORK
+            value: <network slug>
+          - name: TWINGATE_HOST
+            value: twingate.com
+          - name: TWINGATE_DEFAULT_RESOURCE_TAGS
+            value: "{}"
+          - name: TWINGATE_REMOTE_NETWORK_ID
+            value: <remote network id>
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+        resources:
+            {}
+---
+# Source: twingate-operator/templates/pre-delete-cleanup.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-twingate-operator-pre-delete-cleanup
+  namespace: default
+  labels:
+    helm.sh/chart: twingate-operator-major.minor.patch-test
+    app.kubernetes.io/name: twingate-operator
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      serviceAccountName: test-twingate-operator
+      containers:
+        - name: cleanup
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n default test-kubernetes-access-gateway
+      restartPolicy: Never

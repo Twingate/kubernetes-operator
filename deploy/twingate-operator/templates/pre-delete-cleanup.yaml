@@ -24,5 +24,17 @@ spec:
             - -c
             - |
               kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n {{ .Release.Namespace }} {{ $kubernetesAccessGatewayName }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       restartPolicy: Never
 {{- end }}

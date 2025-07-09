@@ -1,0 +1,10 @@
+twingateOperator:
+  apiKey: "<api key>"
+  network: "<network slug>"
+  remoteNetworkId: "<remote network id>"
+connectors:
+  enabled: true
+  count: 2
+  specExtra:
+    podAnnotations:
+      some/annotation: "some-value"

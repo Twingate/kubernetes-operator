@@ -1,6 +1,43 @@
 # CHANGELOG
 
 
+## v0.25.0 (2025-07-09)
+
+### Chores
+
+- Bump bandit from 1.8.5 to 1.8.6 ([#715](https://github.com/Twingate/kubernetes-operator/pull/715),
+  [`b6a9a45`](https://github.com/Twingate/kubernetes-operator/commit/b6a9a45398aa46388ed89ac5083cd418122f51a9))
+
+- Bump cryptography from 45.0.4 to 45.0.5
+  ([#712](https://github.com/Twingate/kubernetes-operator/pull/712),
+  [`520b72c`](https://github.com/Twingate/kubernetes-operator/commit/520b72c4c5bbd5f192bb67561698b83a5618c01a))
+
+- Bump kubernetes-access-gateway from 0.5.1 to 0.6.0 in /deploy/twingate-operator
+  ([#716](https://github.com/Twingate/kubernetes-operator/pull/716),
+  [`8cd749a`](https://github.com/Twingate/kubernetes-operator/commit/8cd749a4e45c668ede4eb13f865e7f35b4d2bf2b))
+
+- Bump pytest-factoryboy from 2.7.0 to 2.8.0
+  ([#709](https://github.com/Twingate/kubernetes-operator/pull/709),
+  [`8711110`](https://github.com/Twingate/kubernetes-operator/commit/87111101f541ce35a2df1ac8a745b1e171e22b7c))
+
+- Bump pytest-factoryboy from 2.8.0 to 2.8.1
+  ([#711](https://github.com/Twingate/kubernetes-operator/pull/711),
+  [`62714ce`](https://github.com/Twingate/kubernetes-operator/commit/62714ce0e6003140614a47440fbd5eead0f6d9c9))
+
+- Bump ruff from 0.12.1 to 0.12.2 ([#713](https://github.com/Twingate/kubernetes-operator/pull/713),
+  [`61e0655`](https://github.com/Twingate/kubernetes-operator/commit/61e065533c23993afd4ead5b05b4bc9914900244))
+
+### Features
+
+- Add `nodeSelector`, `tolerations` and `affinity` to `pre-delete-cleanup` job template
+  ([#714](https://github.com/Twingate/kubernetes-operator/pull/714),
+  [`e6ce90b`](https://github.com/Twingate/kubernetes-operator/commit/e6ce90b01e78c3312b3f63aa35b7cff02e3c6217))
+
+- Delete Kubernetes Access Gateway k8s Service object before removing operator
+  ([#710](https://github.com/Twingate/kubernetes-operator/pull/710),
+  [`2d89df1`](https://github.com/Twingate/kubernetes-operator/commit/2d89df10c110e396ff44bb02a8a7b58abaabc0b9))
+
+
 ## v0.24.0 (2025-06-30)
 
 ### Chores

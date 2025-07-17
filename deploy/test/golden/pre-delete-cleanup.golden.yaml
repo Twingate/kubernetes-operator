@@ -5,10 +5,10 @@ kind: ServiceAccount
 metadata:
   name: test-kubernetes-access-gateway
   labels:
-    helm.sh/chart: kubernetes-access-gateway-0.6.0
+    helm.sh/chart: kubernetes-access-gateway-0.7.0
     app.kubernetes.io/name: kubernetes-access-gateway
     app.kubernetes.io/instance: test
-    app.kubernetes.io/version: "0.6.0"
+    app.kubernetes.io/version: "0.7.0"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: twingate-operator/templates/serviceaccount.yaml
@@ -134,10 +134,10 @@ kind: Service
 metadata:
   name: test-kubernetes-access-gateway
   labels:
-    helm.sh/chart: kubernetes-access-gateway-0.6.0
+    helm.sh/chart: kubernetes-access-gateway-0.7.0
     app.kubernetes.io/name: kubernetes-access-gateway
     app.kubernetes.io/instance: test
-    app.kubernetes.io/version: "0.6.0"
+    app.kubernetes.io/version: "0.7.0"
     app.kubernetes.io/managed-by: Helm
   annotations:
 spec:
@@ -157,10 +157,10 @@ kind: Deployment
 metadata:
   name: test-kubernetes-access-gateway
   labels:
-    helm.sh/chart: kubernetes-access-gateway-0.6.0
+    helm.sh/chart: kubernetes-access-gateway-0.7.0
     app.kubernetes.io/name: kubernetes-access-gateway
     app.kubernetes.io/instance: test
-    app.kubernetes.io/version: "0.6.0"
+    app.kubernetes.io/version: "0.7.0"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -173,10 +173,10 @@ spec:
       annotations:
         checksum/tlsAlternativeNames: eee78e4712e57977935ceb9ebfdb354aa33c85ca4dbb490001827f64259b6b8d
       labels:
-        helm.sh/chart: kubernetes-access-gateway-0.6.0
+        helm.sh/chart: kubernetes-access-gateway-0.7.0
         app.kubernetes.io/name: kubernetes-access-gateway
         app.kubernetes.io/instance: test
-        app.kubernetes.io/version: "0.6.0"
+        app.kubernetes.io/version: "0.7.0"
         app.kubernetes.io/managed-by: Helm
     spec:
       serviceAccountName: test-kubernetes-access-gateway
@@ -194,7 +194,7 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
           imagePullPolicy: IfNotPresent
-          image: "twingate/kubernetes-access-gateway:0.6.0"
+          image: "twingate/kubernetes-access-gateway:0.7.0"
           env:
             - name: TWINGATE_NETWORK
               value: <network slug>

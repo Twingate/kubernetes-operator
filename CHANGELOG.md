@@ -1,6 +1,29 @@
 # CHANGELOG
 
 
+## v0.25.1 (2025-07-17)
+
+### Chores
+
+- Bump aiohttp from 3.10.11 to 3.12.14
+  ([#721](https://github.com/Twingate/kubernetes-operator/pull/721),
+  [`9f33fa6`](https://github.com/Twingate/kubernetes-operator/commit/9f33fa6dd815f11414151dc6507fd11a4f5ca044))
+
+- Bump kubernetes-access-gateway from 0.6.0 to 0.7.0 in /deploy/twingate-operator
+  ([#725](https://github.com/Twingate/kubernetes-operator/pull/725),
+  [`71e5259`](https://github.com/Twingate/kubernetes-operator/commit/71e5259963c686d3b28f9ef195c7663940fcefe7))
+
+- Bump mypy from 1.16.1 to 1.17.0 ([#722](https://github.com/Twingate/kubernetes-operator/pull/722),
+  [`18229bb`](https://github.com/Twingate/kubernetes-operator/commit/18229bb3851d52863ca8917479c99192299ef8ea))
+
+- Bump orjson from 3.10.18 to 3.11.0
+  ([#723](https://github.com/Twingate/kubernetes-operator/pull/723),
+  [`393d410`](https://github.com/Twingate/kubernetes-operator/commit/393d410fd3b7f828c26979cc001446725e141d27))
+
+- Bump ruff from 0.12.2 to 0.12.3 ([#720](https://github.com/Twingate/kubernetes-operator/pull/720),
+  [`7bfe88b`](https://github.com/Twingate/kubernetes-operator/commit/7bfe88bd0ed6f25c7630a9a58af53d562195d6dd))
+
+
 ## v0.25.0 (2025-07-09)
 
 ### Chores

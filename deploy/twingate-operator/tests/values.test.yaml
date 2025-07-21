@@ -69,8 +69,8 @@ affinity: {}
 priorityClassName: "myPriorityClass"
 
 extraEnvVars:
- - name: FOO
-   value: bar
+  - name: FOO
+    value: bar
 
 rbac:
   createAggregateClusterRoles: false

@@ -1,0 +1,12 @@
+suite: Pre-delete Cleanup
+templates:
+  - pre-delete-cleanup.yaml
+values:
+  - values.test.yaml
+tests:
+  - it: should enable pre-delete cleanup job
+    set:
+      kubernetes-access-gateway:
+        enabled: true
+    asserts:
+      - matchSnapshot: {}

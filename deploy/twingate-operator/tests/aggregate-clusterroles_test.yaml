@@ -1,0 +1,12 @@
+suite: Aggregate Cluster Roles
+templates:
+  - aggregate-clusterroles.yaml
+values:
+  - values.test.yaml
+tests:
+  - it: should enable aggregate cluster roles
+    set:
+      rbac:
+        createAggregateClusterRoles: true
+    asserts:
+      - matchSnapshot: {}

@@ -1,7 +1,0 @@
-twingateOperator:
-  apiKey: "<api key>"
-  network: "<network slug>"
-  remoteNetworkId: "<remote network id>"
-  existingRemoteNetworkIdSecret:
-    name: my-secret
-    key: MY_TWINGATE_REMOTE_NETWORK_ID

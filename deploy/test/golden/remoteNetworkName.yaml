@@ -1,4 +1,0 @@
-twingateOperator:
-  apiKey: "<api key>"
-  network: "<network slug>"
-  remoteNetworkName: "<remote network name>"

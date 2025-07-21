@@ -1,5 +1,0 @@
-error while running command: exit status 1; Error: values don't meet the specifications of the schema(s) in the following chart(s):
-twingate-operator:
-- twingateOperator: Must validate one and only one schema (oneOf)
-- twingateOperator: Must validate all the schemas (allOf)
-

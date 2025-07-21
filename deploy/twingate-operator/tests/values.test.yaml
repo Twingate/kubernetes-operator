@@ -1,0 +1,76 @@
+# Default values for twingate-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Required: you have to specify `network` and
+#  - either `apiKey` or `existingAPIKeySecret`
+#  - either `remoteNetworkId`, `remoteNetworkName` or `existingRemoteNetworkIdSecret`
+twingateOperator:
+  apiKey: "<api key>"
+  network: "<network slug>"
+  remoteNetworkId: "<remote network id>"
+  logFormat: "plain"
+  logVerbosity: "verbose"
+  defaultResourceTags:
+    cluster: "test-cluster"
+    owner: "eran"
+
+kubernetes-access-gateway:
+  enabled: false
+
+image:
+  repository: twingate/kubernetes-operator
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  foo: "bar"
+
+podLabels:
+  foo: "bar"
+
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  runAsUser: 1000
+
+resources:
+   limits:
+     cpu: 100m
+     memory: 128Mi
+   requests:
+     cpu: 100m
+     memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+priorityClassName: "myPriorityClass"
+
+extraEnvVars:
+ - name: FOO
+   value: bar
+
+rbac:
+  createAggregateClusterRoles: false

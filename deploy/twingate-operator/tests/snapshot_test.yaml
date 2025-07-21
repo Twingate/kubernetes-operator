@@ -1,0 +1,7 @@
+suite: Snapshot
+tests:
+  - it: should render
+    values:
+      - values.test.yaml
+    asserts:
+      - matchSnapshot: {}

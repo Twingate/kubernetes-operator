@@ -1,0 +1,78 @@
+suite: Deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: should use `existingAPIKeySecret`
+    set:
+      twingateOperator:
+        network: "<network slug>"
+        existingAPIKeySecret:
+          name: api-key-secret
+          key: TWINGATE_API_KEY
+        remoteNetworkId: "<remote network id>"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: api-key-secret
+                key: TWINGATE_API_KEY
+  - it: should use `existingRemoteNetworkIdSecret`
+    set:
+      twingateOperator:
+        apiKey: "<api key>"
+        network: "<network slug>"
+        existingRemoteNetworkIdSecret:
+          name: remote-network-id-secret
+          key: TWINGATE_REMOTE_NETWORK_ID
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_REMOTE_NETWORK_ID
+            valueFrom:
+              secretKeyRef:
+                name: remote-network-id-secret
+                key: TWINGATE_REMOTE_NETWORK_ID
+  - it: should use `remoteNetworkName`
+    set:
+      twingateOperator:
+        apiKey: "<api key>"
+        network: "<network slug>"
+        remoteNetworkName: "<remote network name>"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_REMOTE_NETWORK_NAME
+            value: "<remote network name>"
+  - it: should require `network`
+    set:
+      twingateOperator:
+        apiKey: "<api key>"
+        remoteNetworkId: "<remote network id>"
+    asserts:
+      - failedTemplate:
+          errorPattern: "network is required"
+  - it: should require Remote Network
+    set:
+      twingateOperator:
+        apiKey: "<api key>"
+        network: "<network slug>"
+    asserts:
+      - failedTemplate:
+          errorPattern: "remoteNetworkId is required"
+  - it: should not allow multiple remote network definitions
+    set:
+      twingateOperator:
+        apiKey: "<api key>"
+        network: "<network slug>"
+        remoteNetworkId: "<remote network id>"
+        existingRemoteNetworkIdSecret:
+          name: my-secret
+          key: MY_TWINGATE_REMOTE_NETWORK_ID
+    asserts:
+      - failedTemplate:
+          errorPattern: "twingateOperator: Must validate one and only one schema (oneOf)"

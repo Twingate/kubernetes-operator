@@ -1,4 +1,6 @@
 suite: Snapshot
+excludeTemplates:
+  - NOTES.txt # NOTES.txt is empty
 tests:
   - it: should render
     values:

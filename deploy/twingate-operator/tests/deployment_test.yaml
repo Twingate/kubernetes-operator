@@ -56,6 +56,14 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "network is required"
+  - it: should require `apiKey`
+    set:
+      twingateOperator:
+        network: "<network slug>"
+        remoteNetworkId: "<remote network id>"
+    asserts:
+      - failedTemplate:
+          errorPattern: "apiKey is required"
   - it: should require Remote Network
     set:
       twingateOperator:

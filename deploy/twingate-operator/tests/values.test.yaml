@@ -1,10 +1,3 @@
-# Default values for twingate-operator.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
-# Required: you have to specify `network` and
-#  - either `apiKey` or `existingAPIKeySecret`
-#  - either `remoteNetworkId`, `remoteNetworkName` or `existingRemoteNetworkIdSecret`
 twingateOperator:
   apiKey: "<api key>"
   network: "<network slug>"

@@ -34,8 +34,8 @@ should enable pre-delete cleanup job when Kubernetes Access Gateway is enabled:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: kubernetes-access-gateway
-        app.kubernetes.io/version: 0.7.0
-        helm.sh/chart: kubernetes-access-gateway-0.7.0
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: kubernetes-access-gateway-1.0.0
       name: RELEASE-NAME-kubernetes-access-gateway
     spec:
       replicas: 1
@@ -51,8 +51,8 @@ should enable pre-delete cleanup job when Kubernetes Access Gateway is enabled:
             app.kubernetes.io/instance: RELEASE-NAME
             app.kubernetes.io/managed-by: Helm
             app.kubernetes.io/name: kubernetes-access-gateway
-            app.kubernetes.io/version: 0.7.0
-            helm.sh/chart: kubernetes-access-gateway-0.7.0
+            app.kubernetes.io/version: 1.0.0
+            helm.sh/chart: kubernetes-access-gateway-1.0.0
         spec:
           containers:
             - env:
@@ -64,7 +64,7 @@ should enable pre-delete cleanup job when Kubernetes Access Gateway is enabled:
                   value: "8443"
                 - name: TWINGATE_METRICSPORT
                   value: "9090"
-              image: twingate/kubernetes-access-gateway:0.7.0
+              image: twingate/kubernetes-access-gateway:1.0.0
               imagePullPolicy: IfNotPresent
               livenessProbe:
                 httpGet:
@@ -118,8 +118,8 @@ should enable pre-delete cleanup job when Kubernetes Access Gateway is enabled:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: kubernetes-access-gateway
-        app.kubernetes.io/version: 0.7.0
-        helm.sh/chart: kubernetes-access-gateway-0.7.0
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: kubernetes-access-gateway-1.0.0
       name: RELEASE-NAME-kubernetes-access-gateway
     spec:
       ports:
@@ -139,8 +139,8 @@ should enable pre-delete cleanup job when Kubernetes Access Gateway is enabled:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: kubernetes-access-gateway
-        app.kubernetes.io/version: 0.7.0
-        helm.sh/chart: kubernetes-access-gateway-0.7.0
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: kubernetes-access-gateway-1.0.0
       name: RELEASE-NAME-kubernetes-access-gateway
   6: |
     apiVersion: v1
@@ -163,8 +163,8 @@ should enable pre-delete cleanup job when Kubernetes Access Gateway is enabled:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: twingate-operator
-        app.kubernetes.io/version: latest
-        helm.sh/chart: twingate-operator-0.1.13
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: twingate-operator-1.0.0
       name: RELEASE-NAME-twingate-operator-pre-delete-cleanup
       namespace: NAMESPACE
     spec:

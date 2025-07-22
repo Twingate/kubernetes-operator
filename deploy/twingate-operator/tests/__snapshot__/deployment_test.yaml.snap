@@ -1,4 +1,4 @@
-should set optional values:
+should use optional values:
   1: |
     apiVersion: apps/v1
     kind: Deployment

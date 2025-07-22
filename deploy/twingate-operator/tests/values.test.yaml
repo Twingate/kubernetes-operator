@@ -16,7 +16,8 @@ image:
   pullPolicy: IfNotPresent
   tag: ""
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: my-pull-secret
 
 nameOverride: ""
 fullnameOverride: ""
@@ -53,11 +54,14 @@ resources:
      cpu: 100m
      memory: 128Mi
 
-nodeSelector: {}
+nodeSelector:
+  foo: "bar"
 
-tolerations: []
+tolerations:
+  - foo: "bar"
 
-affinity: {}
+affinity:
+  foo: "bar"
 
 priorityClassName: "myPriorityClass"
 

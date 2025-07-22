@@ -84,3 +84,8 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "twingateOperator: Must validate one and only one schema (oneOf)"
+  - it: should use optional values
+    values:
+      - values.test.yaml
+    asserts:
+      - matchSnapshot: {}

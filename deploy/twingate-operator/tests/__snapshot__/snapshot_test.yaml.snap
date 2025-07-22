@@ -102,12 +102,9 @@ should render:
         type: Recreate
       template:
         metadata:
-          annotations:
-            foo: bar
           labels:
             app.kubernetes.io/instance: RELEASE-NAME
             app.kubernetes.io/name: twingate-operator
-            foo: bar
         spec:
           containers:
             - command:
@@ -117,8 +114,7 @@ should render:
                 - -A
                 - --standalone
                 - --liveness=http://0.0.0.0:8080/healthz
-                - --log-format=plain
-                - --verbose
+                - --log-format=full
               env:
                 - name: TWINGATE_API_KEY
                   valueFrom:
@@ -130,11 +126,9 @@ should render:
                 - name: TWINGATE_HOST
                   value: twingate.com
                 - name: TWINGATE_DEFAULT_RESOURCE_TAGS
-                  value: '{"cluster":"test-cluster","owner":"eran"}'
+                  value: '{}'
                 - name: TWINGATE_REMOTE_NETWORK_ID
                   value: <remote network id>
-                - name: FOO
-                  value: bar
               image: twingate/kubernetes-operator:latest
               imagePullPolicy: IfNotPresent
               livenessProbe:
@@ -146,13 +140,7 @@ should render:
                 httpGet:
                   path: /healthz
                   port: 8080
-              resources:
-                limits:
-                  cpu: 100m
-                  memory: 128Mi
-                requests:
-                  cpu: 100m
-                  memory: 128Mi
+              resources: {}
               securityContext:
                 allowPrivilegeEscalation: false
                 capabilities:
@@ -161,7 +149,6 @@ should render:
                 readOnlyRootFilesystem: true
                 runAsNonRoot: true
                 runAsUser: 1000
-          priorityClassName: myPriorityClass
           securityContext:
             seccompProfile:
               type: RuntimeDefault

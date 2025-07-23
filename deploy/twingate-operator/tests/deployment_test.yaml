@@ -84,8 +84,57 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "twingateOperator: Must validate one and only one schema (oneOf)"
-  - it: should use optional values
-    values:
-      - values.test.yaml
+  - it: should use `logFormat`
+    set:
+      twingateOperator:
+        network: "<network slug>"
+        apiKey: "<api key>"
+        remoteNetworkId: "<remote network id>"
+        logFormat: "plain"
     asserts:
-      - matchSnapshot: {}
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content:
+            --log-format=plain
+  - it: should use `logVerbosity`
+    set:
+      twingateOperator:
+        network: "<network slug>"
+        apiKey: "<api key>"
+        remoteNetworkId: "<remote network id>"
+        logVerbosity: "verbose"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content:
+            --verbose
+  - it: should use `defaultResourceTags`
+    set:
+      twingateOperator:
+        network: "<network slug>"
+        apiKey: "<api key>"
+        remoteNetworkId: "<remote network id>"
+        defaultResourceTags:
+          cluster: "test-cluster"
+          owner: "eran"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_DEFAULT_RESOURCE_TAGS
+            value: '{"cluster":"test-cluster","owner":"eran"}'
+  - it: should use `extraEnvVars`
+    set:
+      twingateOperator:
+        network: "<network slug>"
+        apiKey: "<api key>"
+        remoteNetworkId: "<remote network id>"
+      extraEnvVars:
+        - name: FOO
+          value: bar
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FOO
+            value: "bar"

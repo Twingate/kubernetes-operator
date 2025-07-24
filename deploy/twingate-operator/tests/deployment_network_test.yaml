@@ -1,0 +1,22 @@
+suite: Deployment
+templates:
+  - deployment.yaml
+set:
+  twingateOperator:
+    apiKey: <api key>
+    remoteNetworkId: <remote network id>
+tests:
+  - it: should require `network`
+    asserts:
+      - failedTemplate:
+          errorPattern: network is required
+  - it: should use `network`
+    set:
+      twingateOperator:
+        network: <network slug>
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_NETWORK
+            value: <network slug>

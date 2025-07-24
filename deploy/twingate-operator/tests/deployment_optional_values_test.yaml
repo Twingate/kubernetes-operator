@@ -1,0 +1,105 @@
+suite: Deployment
+templates:
+  - deployment.yaml
+set:
+  twingateOperator:
+    network: <network slug>
+    apiKey: <api key>
+    remoteNetworkId: <remote network id>
+tests:
+  - it: should use `logFormat`
+    set:
+      twingateOperator:
+        logFormat: plain
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content:
+            --log-format=plain
+  - it: should use `logVerbosity`
+    set:
+      twingateOperator:
+        logVerbosity: verbose
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content:
+            --verbose
+  - it: should use `defaultResourceTags`
+    set:
+      twingateOperator:
+        defaultResourceTags:
+          cluster: test-cluster
+          owner: eran
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_DEFAULT_RESOURCE_TAGS
+            value: '{"cluster":"test-cluster","owner":"eran"}'
+  - it: should use `imagePullSecrets`
+    set:
+      imagePullSecrets:
+        - my-image-pull-secret
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0]
+          value: my-image-pull-secret
+  - it: should use `podAnnotations`
+    set:
+      podAnnotations:
+        foo: bar
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations.foo
+          value: bar
+  - it: should use `podLabels`
+    set:
+      podLabels:
+        foo: bar
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.foo
+          value: bar
+  - it: should use `nodeSelector`
+    set:
+      nodeSelector:
+        foo: bar
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.foo
+          value: bar
+  - it: should use `affinity`
+    set:
+      affinity:
+        foo: bar
+    asserts:
+      - equal:
+          path: spec.template.spec.affinity.foo
+          value: bar
+  - it: should use `podLabels`
+    set:
+      tolerations:
+        - foo: bar
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations[0].foo
+          value: bar
+  - it: should use `priorityClassName`
+    set:
+      priorityClassName: myPriorityClass
+    asserts:
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: myPriorityClass
+  - it: should use `extraEnvVars`
+    set:
+      extraEnvVars:
+        - name: FOO
+          value: bar
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FOO
+            value: bar

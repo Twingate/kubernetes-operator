@@ -86,7 +86,7 @@ tests:
       - equal:
           path: spec.template.spec.affinity.foo
           value: bar
-  - it: should use `podLabels`
+  - it: should use `tolerations`
     set:
       tolerations:
         - foo: bar

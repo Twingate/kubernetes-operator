@@ -3,9 +3,9 @@ excludeTemplates:
   - NOTES.txt # NOTES.txt is empty
 set:
   twingateOperator:
-    network: "<network slug>"
-    apiKey: "<api key>"
-    remoteNetworkId: "<remote network id>"
+    network: <network slug>
+    apiKey: <api key>
+    remoteNetworkId: <remote network id>
 tests:
   - it: should render
     asserts:

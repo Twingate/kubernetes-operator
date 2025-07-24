@@ -61,6 +61,15 @@ tests:
       - equal:
           path: spec.template.metadata.labels.foo
           value: bar
+  - it: should use `resources`
+    set:
+      resources:
+         limits:
+           cpu: 100m
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 100m
   - it: should use `nodeSelector`
     set:
       nodeSelector:

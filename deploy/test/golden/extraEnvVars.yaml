@@ -1,9 +1,0 @@
-twingateOperator:
-  apiKey: "<api key>"
-  network: "<network slug>"
-  remoteNetworkId: "<remote network id>"
-
-
-extraEnvVars:
-  - name: FOO
-    value: BAR

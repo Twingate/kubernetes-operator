@@ -1,0 +1,37 @@
+should enable pre-delete cleanup job:
+  1: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      annotations:
+        helm.sh/hook: pre-delete
+        helm.sh/hook-delete-policy: hook-succeeded
+      labels:
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: twingate-operator
+        app.kubernetes.io/version: latest
+        helm.sh/chart: twingate-operator-0.1.13
+      name: RELEASE-NAME-twingate-operator-pre-delete-cleanup
+      namespace: NAMESPACE
+    spec:
+      template:
+        spec:
+          containers:
+            - command:
+                - /bin/sh
+                - -c
+                - |
+                  kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n NAMESPACE RELEASE-NAME-kubernetes-access-gateway
+              image: bitnami/kubectl:latest
+              name: cleanup
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                runAsUser: 1000
+          restartPolicy: Never
+          serviceAccountName: RELEASE-NAME-twingate-operator

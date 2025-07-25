@@ -21,7 +21,6 @@ repos:
         exclude: >
           (?x)^(
             deploy/twingate-operator/templates/.*|
-            deploy/test/golden/.*|
           )$
       - id: debug-statements
       - id: destroyed-symlinks

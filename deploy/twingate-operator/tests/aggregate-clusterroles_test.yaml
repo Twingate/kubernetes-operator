@@ -1,0 +1,15 @@
+suite: Aggregate Cluster Roles
+templates:
+  - aggregate-clusterroles.yaml
+set:
+  twingateOperator:
+    network: <network slug>
+    apiKey: <api key>
+    remoteNetworkId: <remote network id>
+tests:
+  - it: should enable aggregate cluster roles
+    set:
+      rbac:
+        createAggregateClusterRoles: true
+    asserts:
+      - matchSnapshot: {}

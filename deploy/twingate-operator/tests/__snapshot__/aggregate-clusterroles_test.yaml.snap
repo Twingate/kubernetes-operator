@@ -1,0 +1,50 @@
+should enable aggregate cluster roles:
+  1: |
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      labels:
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: twingate-operator
+        app.kubernetes.io/version: latest
+        helm.sh/chart: twingate-operator-0.1.13
+        rbac.authorization.k8s.io/aggregate-to-admin: "true"
+        rbac.authorization.k8s.io/aggregate-to-edit: "true"
+        rbac.authorization.k8s.io/aggregate-to-view: "true"
+      name: RELEASE-NAME-twingate-operator-crd-view
+    rules:
+      - apiGroups:
+          - twingate.com
+        resources:
+          - '*'
+        verbs:
+          - get
+          - list
+          - watch
+  2: |
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      labels:
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: twingate-operator
+        app.kubernetes.io/version: latest
+        helm.sh/chart: twingate-operator-0.1.13
+        rbac.authorization.k8s.io/aggregate-to-admin: "true"
+        rbac.authorization.k8s.io/aggregate-to-edit: "true"
+      name: RELEASE-NAME-twingate-operator-crd-edit
+    rules:
+      - apiGroups:
+          - twingate.com
+        resources:
+          - '*'
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete

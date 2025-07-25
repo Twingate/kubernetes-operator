@@ -69,6 +69,16 @@ test-cov: ##@tests Runs all tests with coverage
 test-int: ##@tests Runs integration tests
 	poetry run pytest  -m "integration" -vv -l -x
 
+.PHONY: test-helm
+test-helm: ##@test Run helm-unittest
+	@echo "Running Helm unittest"
+	helm unittest deploy/twingate-operator
+
+.PHONY: test-helm-and-update-snapshots
+test-helm-and-update-snapshots: ##@test Run helm-unittest and also update the test snapshots
+	@echo "Running Helm unittest and update test snapshots"
+	helm unittest deploy/twingate-operator -u
+
 .PHONY: report-to-coveralls
 report-to-coveralls:
 	poetry run coveralls

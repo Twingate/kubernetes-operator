@@ -15,13 +15,6 @@ updates:
       time: "13:00"
     commit-message:
       prefix: "chore: "
-  - package-ecosystem: gomod
-    directory: "/"
-    schedule:
-      interval: daily
-      time: "13:00"
-    commit-message:
-      prefix: "chore: "
   - package-ecosystem: helm
     directory: "deploy/twingate-operator"
     schedule:

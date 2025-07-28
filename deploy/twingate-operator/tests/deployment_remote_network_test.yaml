@@ -1,0 +1,47 @@
+suite: Deployment Remote Network
+templates:
+  - deployment.yaml
+set:
+  twingateOperator:
+    apiKey: <api key>
+    network: <network slug>
+tests:
+  - it: should require Remote Network
+    asserts:
+      - failedTemplate:
+          errorPattern: remoteNetworkId is required
+  - it: should use `existingRemoteNetworkIdSecret`
+    set:
+      twingateOperator:
+        existingRemoteNetworkIdSecret:
+          name: remote-network-id-secret
+          key: TWINGATE_REMOTE_NETWORK_ID
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_REMOTE_NETWORK_ID
+            valueFrom:
+              secretKeyRef:
+                name: remote-network-id-secret
+                key: TWINGATE_REMOTE_NETWORK_ID
+  - it: should use `remoteNetworkName`
+    set:
+      twingateOperator:
+        remoteNetworkName: <remote network name>
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_REMOTE_NETWORK_NAME
+            value: <remote network name>
+  - it: should not allow multiple remote network definitions
+    set:
+      twingateOperator:
+        remoteNetworkId: <remote network id>
+        existingRemoteNetworkIdSecret:
+          name: my-secret
+          key: MY_TWINGATE_REMOTE_NETWORK_ID
+    asserts:
+      - failedTemplate:
+          errorPattern: "twingateOperator: Must validate one and only one schema (oneOf)"

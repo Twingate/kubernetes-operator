@@ -1,0 +1,27 @@
+suite: Deployment API Key
+templates:
+  - deployment.yaml
+set:
+  twingateOperator:
+    network: <network slug>
+    remoteNetworkId: <remote network id>
+tests:
+  - it: should require `apiKey`
+    asserts:
+      - failedTemplate:
+          errorPattern: apiKey is required
+  - it: should use `existingAPIKeySecret`
+    set:
+      twingateOperator:
+        existingAPIKeySecret:
+          name: api-key-secret
+          key: TWINGATE_API_KEY
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TWINGATE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: api-key-secret
+                key: TWINGATE_API_KEY

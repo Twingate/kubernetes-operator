@@ -88,6 +88,8 @@ jobs:
           helm push twingate-operator-$CHART_VERSION.tgz oci://$REGISTRY/twingate/helmcharts
 
   release_prod:
+    permissions:
+      contents: read
     name: Release PROD
     runs-on: ubuntu-latest
     needs: [create_release]

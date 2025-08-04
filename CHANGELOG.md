@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.25.2 (2025-08-04)
+
+### Chores
+
+- Bump kubernetes-access-gateway from 0.7.0 to 0.8.0 in /deploy/twingate-operator
+  ([#736](https://github.com/Twingate/kubernetes-operator/pull/736),
+  [`5568b45`](https://github.com/Twingate/kubernetes-operator/commit/5568b45810b2c42bd15c15ee296c57a1f41bd27e))
+
+- Bump mypy from 1.17.0 to 1.17.1 ([#734](https://github.com/Twingate/kubernetes-operator/pull/734),
+  [`01f604c`](https://github.com/Twingate/kubernetes-operator/commit/01f604c6d176b3071292139ef054e9f0c0c77151))
+
+- Bump orjson from 3.11.0 to 3.11.1
+  ([#731](https://github.com/Twingate/kubernetes-operator/pull/731),
+  [`f8556c6`](https://github.com/Twingate/kubernetes-operator/commit/f8556c670ca0615b337c03a7164e7a2626d2f2c2))
+
+- Bump pytest-datadir from 1.7.2 to 1.8.0
+  ([#735](https://github.com/Twingate/kubernetes-operator/pull/735),
+  [`268ae03`](https://github.com/Twingate/kubernetes-operator/commit/268ae03bc9803515a3f9b04c742de2cc74d543da))
+
+- Bump ruff from 0.12.3 to 0.12.4 ([#726](https://github.com/Twingate/kubernetes-operator/pull/726),
+  [`b2c920e`](https://github.com/Twingate/kubernetes-operator/commit/b2c920e11309a7f01d9e29c7ddc45120453e5dd3))
+
+- Bump ruff from 0.12.4 to 0.12.5 ([#729](https://github.com/Twingate/kubernetes-operator/pull/729),
+  [`2b69d61`](https://github.com/Twingate/kubernetes-operator/commit/2b69d6106f9e7cdf2fcc44873e5a05ef5bcf96a1))
+
+- Bump ruff from 0.12.5 to 0.12.7 ([#733](https://github.com/Twingate/kubernetes-operator/pull/733),
+  [`e6aba93`](https://github.com/Twingate/kubernetes-operator/commit/e6aba93f624e3e8bd2895d9057d453c83de6b20d))
+
+- Remove Go modules file ([#730](https://github.com/Twingate/kubernetes-operator/pull/730),
+  [`05c064a`](https://github.com/Twingate/kubernetes-operator/commit/05c064ae3388167e8cf385b01060a117c65aad23))
+
+- Replace golden test with `helm unittest`
+  ([#728](https://github.com/Twingate/kubernetes-operator/pull/728),
+  [`f764b1b`](https://github.com/Twingate/kubernetes-operator/commit/f764b1b970643d1a362e07a0bc24ce6789fae6fb))
+
+- Update dependabot.yml to remove Go which doesnt exist anymore
+  ([`fbd6078`](https://github.com/Twingate/kubernetes-operator/commit/fbd607818148c1ac7e68c38cae6e2a102735eb39))
+
+
 ## v0.25.1 (2025-07-17)
 
 ### Chores

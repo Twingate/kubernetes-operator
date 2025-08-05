@@ -41,17 +41,20 @@ tests:
     set:
       twingateOperator:
         namespaces:
-          - "foo"
-          - "bar"
+          - foo
+          - bar
     asserts:
-      - contains:
+      - equal:
           path: spec.template.spec.containers[0].command
-          content:
-            --namespace=foo
-      - contains:
-          path: spec.template.spec.containers[0].command
-          content:
-            --namespace=bar
+          value:
+            - kopf
+            - run
+            - ./main.py
+            - --namespace=foo
+            - --namespace=bar
+            - --standalone
+            - --liveness=http://0.0.0.0:8080/healthz
+            - --log-format=full
   - it: should use `imagePullSecrets`
     set:
       imagePullSecrets:

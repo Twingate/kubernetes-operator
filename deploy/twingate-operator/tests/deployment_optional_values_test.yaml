@@ -37,6 +37,21 @@ tests:
           content:
             name: TWINGATE_DEFAULT_RESOURCE_TAGS
             value: '{"cluster":"test-cluster","owner":"eran"}'
+  - it: should use `namespaces`
+    set:
+      twingateOperator:
+        namespaces:
+          - "foo"
+          - "bar"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content:
+            --namespace=foo
+      - contains:
+          path: spec.template.spec.containers[0].command
+          content:
+            --namespace=bar
   - it: should use `imagePullSecrets`
     set:
       imagePullSecrets:

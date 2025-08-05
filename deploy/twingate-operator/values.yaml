@@ -22,6 +22,22 @@ twingateOperator: {}
 #    tag1: value_for_tag1
 #    tag2: value_for_tag2
 
+## Restrict operator to monitor resources in specific namespaces. You should either:
+## 1. Specify a list of namespaces:
+## namespaces: ["foo-dev", "foo-stg"]
+## 2. Use globs to match multiple namespaces:
+## namespaces: ["*-dev", "*-stg"]
+## 3. Use negation to include all namespaces except those excluded:
+## namespaces: ["!*-test"]
+## 4. Use multiple globs can be used in one pattern:
+## namespaces: ["foo-*,!*-test"]
+
+## Caveat: Globs in separate array elements are evaluated independently, and the final list of namespaces is the union of all globs' results.
+## i.e., `namespaces: ["foo-*", "!*-test"]` is not the same as `namespaces: ["foo-*,!*-test"]`
+
+## For more information on using multiple globs, see: https://kopf.readthedocs.io/en/stable/scopes
+#  namespaces: []
+
 # Twingate Kubernetes Access is currently in beta. Sign up for early access at https://www.twingate.com/product/kubernetes-access.
 kubernetes-access-gateway:
   enabled: false

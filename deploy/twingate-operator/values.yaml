@@ -29,11 +29,12 @@ twingateOperator: {}
 ## namespaces: ["*-dev", "*-stg"]
 ## 3. Use negation to include all namespaces except those excluded:
 ## namespaces: ["!*-test"]
-## 4. Use multiple globs can be used in one pattern:
+## 4. Use multiple globs in one pattern:
 ## namespaces: ["foo-*,!*-test"]
 
-## Caveat: Globs in separate array elements are evaluated independently, and the final list of namespaces is the union of all globs' results.
-## i.e., `namespaces: ["foo-*", "!*-test"]` is not the same as `namespaces: ["foo-*,!*-test"]`
+## Note: Each glob pattern in separate array elements is evaluated independently, creating a union of results.
+## This differs from comma-separated patterns within a single element.
+## For example, `namespaces: ["foo-*", "!*-test"]` is not the same as `namespaces: ["foo-*,!*-test"]`
 
 ## For more information on using multiple globs, see: https://kopf.readthedocs.io/en/stable/scopes
 #  namespaces: []

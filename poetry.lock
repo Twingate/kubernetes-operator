@@ -2361,14 +2361,14 @@ files = [
 
 [[package]]
 name = "python-semantic-release"
-version = "10.2.0"
+version = "10.3.1"
 description = "Automatic Semantic Versioning for Python projects"
 optional = false
 python-versions = ">=3.8"
 groups = ["build"]
 files = [
-    {file = "python_semantic_release-10.2.0-py3-none-any.whl", hash = "sha256:88ebe464bd15edf9793715212257fc3d04baafea10a6362bc78d69892418ce88"},
-    {file = "python_semantic_release-10.2.0.tar.gz", hash = "sha256:b5b34482f3e5fbda77ea4e8e25100d69efd92aa868d821ac7772be2d2ad2794a"},
+    {file = "python_semantic_release-10.3.1-py3-none-any.whl", hash = "sha256:b2677018e761dfbfdf5758eeee6b09963e136d67c43059f12f9bc6c441fcbf13"},
+    {file = "python_semantic_release-10.3.1.tar.gz", hash = "sha256:16003292315ee29b6ad424fad9745946422cf965e19649269c4e2fb8271cb267"},
 ]
 
 [package.dependencies]
@@ -3112,4 +3112,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "726c6e743e8a8850f01f71fa9bb16dce7b67a1e0461165fde3aaafc1170b6cba"
+content-hash = "a591a1714170700fa3fd415044bf85f660def55488d7e1d67cf3fd8ccc7cd36f"

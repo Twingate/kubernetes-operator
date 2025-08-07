@@ -2,9 +2,26 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Required: you have to specify `network` and
+# Twingate operator configurations
+#
+# **Required**: you have to specify `network` and
 #  - either `apiKey` or `existingAPIKeySecret`
 #  - either `remoteNetworkId`, `remoteNetworkName` or `existingRemoteNetworkIdSecret`
+#
+# **Restricting Operator to Specific Namespaces**
+# Use the `namespaces` property to restrict operator to monitor resources only in specific namespaces.
+# You can either:
+#  1. Specify a list of namespaces: ["foo-dev", "foo-stg"]
+#  2. Use globs to match multiple namespaces: ["*-dev", "*-stg"]
+#  3. Use negation to include all namespaces except those excluded: ["!kube-*"]
+#  4. Use multiple globs in one pattern: ["foo-*,!*-test"]
+#
+# Default value is an empty list (`[]`) which means operator will monitor or all namespaces.
+#
+# *Note:* Defining glob patterns as a separate array elements is different from defining
+# comma-separated patterns within a single element.
+# For example, `namespaces: ["foo-*", "!*-test"]` is not the same as `namespaces: ["foo-*,!*-test"]`
+# `namespaces: ["foo-*", "!*-test"]` will evaluate each glob pattern independently and combine the results.
 twingateOperator: {}
 #  apiKey: "<api key>"
 #  existingAPIKeySecret:
@@ -16,22 +33,13 @@ twingateOperator: {}
 #    name: my-secret
 #    key: TWINGATE_REMOTE_NETWORK_ID
 #  remoteNetworkName: "<remote network name>"
+#  namespaces: []
 #  logFormat: "plain|full|json"
 #  logVerbosity: "quiet|verbose|debug"
 #  defaultResourceTags:
 #    tag1: value_for_tag1
 #    tag2: value_for_tag2
 
-#  Restrict operator to monitor resources in specific namespaces. You should either:
-#  1. Specify a list of namespaces: ["foo-dev", "foo-stg"]
-#  2. Use globs to match multiple namespaces: ["*-dev", "*-stg"]
-#  3. Use negation to include all namespaces except those excluded: ["!kube-*"]
-#  4. Use multiple globs in one pattern: ["foo-*,!*-test"]
-#
-#  Note: Defining glob patterns as a separate array elements is different from defining comma-separated patterns within a single element.
-#  For example, `namespaces: ["foo-*", "!*-test"]` is not the same as `namespaces: ["foo-*,!*-test"]`
-#  `namespaces: ["foo-*", "!*-test"]` will evaluate each glob pattern independently and combine the results.
-namespaces: []
 
 # Twingate Kubernetes Access is currently in beta. Sign up for early access at https://www.twingate.com/product/kubernetes-access.
 kubernetes-access-gateway:

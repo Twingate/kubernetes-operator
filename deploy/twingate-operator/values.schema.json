@@ -161,7 +161,7 @@
                     "description": "Array of namespaces to monitor by the operator",
                     "items": { "type": "string" },
                     "default": []
-        }
+                }
             },
             "examples": [{
               "apiKey": "sdlkwdlsknsldknsldkcnm",

@@ -111,7 +111,7 @@ should render:
                 - kopf
                 - run
                 - ./main.py
-                - -A
+                - --all-namespaces
                 - --standalone
                 - --liveness=http://0.0.0.0:8080/healthz
                 - --log-format=full

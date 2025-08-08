@@ -37,6 +37,24 @@ tests:
           content:
             name: TWINGATE_DEFAULT_RESOURCE_TAGS
             value: '{"cluster":"test-cluster","owner":"eran"}'
+  - it: should use `namespaces`
+    set:
+      twingateOperator:
+        namespaces:
+          - foo
+          - bar
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value:
+            - kopf
+            - run
+            - ./main.py
+            - --namespace=foo
+            - --namespace=bar
+            - --standalone
+            - --liveness=http://0.0.0.0:8080/healthz
+            - --log-format=full
   - it: should use `imagePullSecrets`
     set:
       imagePullSecrets:

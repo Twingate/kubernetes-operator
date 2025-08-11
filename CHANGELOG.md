@@ -1,6 +1,40 @@
 # CHANGELOG
 
 
+## v0.26.0 (2025-08-11)
+
+### Chores
+
+- Bump cryptography from 45.0.5 to 45.0.6
+  ([#741](https://github.com/Twingate/kubernetes-operator/pull/741),
+  [`20a4f73`](https://github.com/Twingate/kubernetes-operator/commit/20a4f73b0fea862f6a60e267c99d027e71aadc83))
+
+- Bump kubernetes-access-gateway from 0.8.0 to 0.9.0 in /deploy/twingate-operator
+  ([#744](https://github.com/Twingate/kubernetes-operator/pull/744),
+  [`4917013`](https://github.com/Twingate/kubernetes-operator/commit/4917013a36b390d44c13dec0f98e87695acdccac))
+
+- Bump python-semantic-release from 10.2.0 to 10.3.1
+  ([#740](https://github.com/Twingate/kubernetes-operator/pull/740),
+  [`012c52d`](https://github.com/Twingate/kubernetes-operator/commit/012c52d403e036968da6fd6558395c7e771a4bfc))
+
+- Bump ruff from 0.12.7 to 0.12.8 ([#742](https://github.com/Twingate/kubernetes-operator/pull/742),
+  [`28ffa43`](https://github.com/Twingate/kubernetes-operator/commit/28ffa43b54dbb2f0a1844d252fb280263e4fd481))
+
+- Bump types-croniter from 6.0.0.20250626 to 6.0.0.20250809
+  ([#743](https://github.com/Twingate/kubernetes-operator/pull/743),
+  [`051735f`](https://github.com/Twingate/kubernetes-operator/commit/051735fb76c996d9f826efc2397411e4e3cc74fd))
+
+- Github Action workflow permissions
+  ([#737](https://github.com/Twingate/kubernetes-operator/pull/737),
+  [`c5b5b31`](https://github.com/Twingate/kubernetes-operator/commit/c5b5b31a85efb26a65c90a6e0c79f4e0e38cd4f7))
+
+### Features
+
+- Allow scoping Operator installation on specific namespaces
+  ([#738](https://github.com/Twingate/kubernetes-operator/pull/738),
+  [`22f2b77`](https://github.com/Twingate/kubernetes-operator/commit/22f2b77f1f62ebbbab85bacfa3e56bd234321709))
+
+
 ## v0.25.2 (2025-08-04)
 
 ### Chores

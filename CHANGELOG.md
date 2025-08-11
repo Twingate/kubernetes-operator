@@ -24,6 +24,9 @@
   ([#743](https://github.com/Twingate/kubernetes-operator/pull/743),
   [`051735f`](https://github.com/Twingate/kubernetes-operator/commit/051735fb76c996d9f826efc2397411e4e3cc74fd))
 
+- Fix permissions for Release action
+  ([`f42c65a`](https://github.com/Twingate/kubernetes-operator/commit/f42c65ac4fe02503595466d012117eed3314aed8))
+
 - Github Action workflow permissions
   ([#737](https://github.com/Twingate/kubernetes-operator/pull/737),
   [`c5b5b31`](https://github.com/Twingate/kubernetes-operator/commit/c5b5b31a85efb26a65c90a6e0c79f4e0e38cd4f7))

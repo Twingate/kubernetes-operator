@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.25.1"
+version = "0.26.0"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
@@ -20,7 +20,7 @@ pydantic-settings = "^2.10.1"
 requests = "^2.32.4"
 semantic-version = "^2.10.0"
 tenacity = "^9.1.2"
-cryptography = "^45.0.5"
+cryptography = "^45.0.6"
 
 [tool.poetry.group.dev]
 optional = true
@@ -29,26 +29,26 @@ optional = true
 bandit = "^1.8.6"
 coveralls = "^4.0.1"
 factory-boy = "^3.3.3"
-mypy = "^1.17.0"
-pre-commit = "^4.2.0"
+mypy = "^1.17.1"
+pre-commit = "^4.3.0"
 pytest = "^8.3.5"
 pytest-cov = "^6.2.1"
-pytest-datadir = "^1.7.2"
+pytest-datadir = "^1.8.0"
 pytest-factoryboy = "^2.8.1"
 pytest-randomly = "^3.16.0"
 pytest-sugar = "^1.0.0"
 pyupgrade = "^3.20.0"
-responses = "^0.25.7"
-ruff = "^0.12.5"
+responses = "^0.25.8"
+ruff = "^0.12.8"
 syrupy = "^4.9.1"
-types-croniter = "^6.0.0.20250626"
-types-requests = "^2.32.4.20250611"
-types-pyyaml = "^6.0.12.20250516"
+types-croniter = "^6.0.0.20250809"
+types-requests = "^2.32.4.20250809"
+types-pyyaml = "^6.0.12.20250809"
 [tool.poetry.group.build]
 optional = true
 
 [tool.poetry.group.build.dependencies]
-python-semantic-release = "^10.2.0"
+python-semantic-release = "^10.3.1"
 
 [build-system]
 requires = ["poetry-core"]

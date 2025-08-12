@@ -155,6 +155,12 @@
                     "additionalProperties": {
                         "type": "string"
                     }
+                },
+                "namespaces": {
+                    "type": "array",
+                    "description": "Array of namespaces to monitor by the operator",
+                    "items": { "type": "string" },
+                    "default": []
                 }
             },
             "examples": [{

@@ -45,7 +45,13 @@ spec:
           - kopf
           - run
           - ./main.py
-          - "-A"
+          {{- with .Values.twingateOperator.namespaces  }}
+          {{- range . }}
+          - "--namespace={{ . }}"
+          {{- end }}
+          {{- else }}
+          - "--all-namespaces"
+          {{- end }}
           - "--standalone"
           - "--liveness=http://0.0.0.0:8080/healthz"
           - "--log-format={{ $logFormat }}"

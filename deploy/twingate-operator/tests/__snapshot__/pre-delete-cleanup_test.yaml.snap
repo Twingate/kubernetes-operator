@@ -34,4 +34,7 @@ should enable pre-delete cleanup job:
                 runAsNonRoot: true
                 runAsUser: 1000
           restartPolicy: Never
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
           serviceAccountName: RELEASE-NAME-twingate-operator

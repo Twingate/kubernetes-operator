@@ -116,17 +116,13 @@ Located in `app/crds.py`, these Pydantic models define the structure of Twingate
 
 ### Getting Started
 
-1. **Environment Setup**:
+Before performing any operations in this project, you MUST:
 
-   ```bash
-   # Install dependencies
-   poetry install
+1. Run `kubectx -c` to check the current Kubernetes context
+2. Verify the output is exactly `minikube`
+3. If the context is not `minikube`, STOP and inform the user
 
-   # Set up pre-commit hooks
-   poetry run pre-commit install
-   ```
-
-2. **Local Development**:
+#### Local Development
 
    ```bash
    # Run the operator locally (requires kubeconfig)

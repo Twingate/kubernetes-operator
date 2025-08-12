@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Danger
         uses: danger/danger-js@13.0.4
         if: github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]'

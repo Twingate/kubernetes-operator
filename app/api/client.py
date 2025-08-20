@@ -1,11 +1,10 @@
 import logging
-from typing import Any
 
 import requests
-from gql import Client
+from gql import Client, GraphQLRequest
 from gql.transport.exceptions import TransportAlreadyConnected
 from gql.transport.requests import RequestsHTTPTransport
-from graphql import DocumentNode, print_ast
+from graphql import print_ast
 from requests.adapters import HTTPAdapter, Retry
 
 from app import typedefs
@@ -103,27 +102,20 @@ class TwingateAPIClient(
     def logger(self) -> typedefs.Logger:
         return self._logger
 
-    def execute_gql(
-        self, document: DocumentNode, variable_values: dict[str, Any] | None = None
-    ):
+    def execute_gql(self, query: GraphQLRequest):
         self.logger.info(
             "Calling Twingate API",
             extra={
-                "query": print_ast(document),
-                "variables": variable_values,
+                "query": print_ast(query.document),
+                "variables": query.variable_values,
             },
         )
-        result = self.client.execute(document, variable_values=variable_values)
+        result = self.client.execute(query)
         self.logger.info("Twingate API Result: %s", result)
         return result
 
-    def execute_mutation(
-        self,
-        name: str,
-        document: DocumentNode,
-        variable_values: dict[str, Any] | None = None,
-    ):
-        result = self.execute_gql(document, variable_values=variable_values)
+    def execute_mutation(self, name: str, mutation: GraphQLRequest):
+        result = self.execute_gql(mutation)
         data = result[name]
         if not data["ok"]:
             raise GraphQLMutationError(name, data.get("error"))

@@ -10,7 +10,7 @@ package-mode = false
 python = ">=3.11,<3.13"
 croniter = "^6.0.0"
 google-cloud-artifact-registry = "^1.16.1"
-gql = {version = "~=3.5.3", extras = ["requests"]}
+gql = {version = "~=4.0.0", extras = ["requests"]}
 kopf = "^1.38.0"
 kubernetes = "^33.1.0"
 orjson = "^3.11.2"

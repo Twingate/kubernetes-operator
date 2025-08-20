@@ -1,10 +1,9 @@
-from gql import gql
+from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 
 from app.api.protocol import TwingateClientProtocol
 
-QUERY_GET_SA_ID_BY_NAME = gql(
-    """
+QUERY_GET_SA_ID_BY_NAME = """
     query GetServiceAccountByName($name: String!) {
       serviceAccounts(filter: {name: {eq: $name}}) {
         edges {
@@ -16,7 +15,6 @@ QUERY_GET_SA_ID_BY_NAME = gql(
       }
     }
 """
-)
 
 
 class TwingateServiceAccountAPIs:
@@ -25,7 +23,10 @@ class TwingateServiceAccountAPIs:
     ) -> str | None:
         try:
             result = self.execute_gql(
-                QUERY_GET_SA_ID_BY_NAME, variable_values={"name": service_account_name}
+                GraphQLRequest(
+                    QUERY_GET_SA_ID_BY_NAME,
+                    variable_values={"name": service_account_name},
+                )
             )
             return result["serviceAccounts"]["edges"][0]["node"]["id"]
         except (TransportQueryError, IndexError, KeyError):

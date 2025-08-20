@@ -1,6 +1,6 @@
-from typing import Any, Protocol
+from typing import Protocol
 
-from graphql import DocumentNode
+from gql import GraphQLRequest
 
 from app import typedefs
 from app.settings import TwingateOperatorSettings
@@ -12,17 +12,10 @@ class TwingateClientProtocol(Protocol):
         """Returns a logger instance."""
         ...
 
-    def execute_gql(
-        self, document: DocumentNode, variable_values: dict[str, Any] | None = None
-    ):  # pragma: no cover
+    def execute_gql(self, query: GraphQLRequest):  # pragma: no cover
         ...
 
-    def execute_mutation(
-        self,
-        name: str,
-        document: DocumentNode,
-        variable_values: dict[str, Any] | None = None,
-    ):  # pragma: no cover
+    def execute_mutation(self, name: str, mutation: GraphQLRequest):  # pragma: no cover
         ...
 
     @property

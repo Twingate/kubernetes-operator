@@ -1,4 +1,4 @@
-from gql import gql
+from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,23 +15,23 @@ class AccessInput(BaseModel):
 
 # fmt:off
 
-MUT_RESOURCE_ADD_ACCESS = gql( """
+MUT_RESOURCE_ADD_ACCESS = """
     mutation ResourceAccessAdd($resourceId: ID!, $access: [AccessInput!]!) {
       resourceAccessAdd(resourceId: $resourceId, access: $access) {
         ok
         error
       }
     }
-""")
+"""
 
-MUT_RESOURCE_REMOVE_ACCESS = gql("""
+MUT_RESOURCE_REMOVE_ACCESS = """
     mutation ResourceAccessRemove($resourceId: ID!, $principalId: ID!) {
       resourceAccessRemove(resourceId: $resourceId, principalIds: [$principalId]) {
         ok
         error
       }
     }
-""")
+"""
 
 # fmt:on
 
@@ -49,8 +49,10 @@ class TwingateResourceAccessAPIs:
         access_list = [access.model_dump(by_alias=True)]
         result = self.execute_mutation(
             "resourceAccessAdd",
-            MUT_RESOURCE_ADD_ACCESS,
-            variable_values={"resourceId": resource_id, "access": access_list},
+            GraphQLRequest(
+                MUT_RESOURCE_ADD_ACCESS,
+                variable_values={"resourceId": resource_id, "access": access_list},
+            ),
         )
         return result["ok"]
 
@@ -60,11 +62,13 @@ class TwingateResourceAccessAPIs:
         try:
             result = self.execute_mutation(
                 "resourceAccessRemove",
-                MUT_RESOURCE_REMOVE_ACCESS,
-                variable_values={
-                    "resourceId": resource_id,
-                    "principalId": principal_id,
-                },
+                GraphQLRequest(
+                    MUT_RESOURCE_REMOVE_ACCESS,
+                    variable_values={
+                        "resourceId": resource_id,
+                        "principalId": principal_id,
+                    },
+                ),
             )
             return result["ok"]
         except GraphQLMutationError as gql_err:

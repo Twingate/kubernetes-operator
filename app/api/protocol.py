@@ -12,10 +12,10 @@ class TwingateClientProtocol(Protocol):
         """Returns a logger instance."""
         ...
 
-    def execute_gql(self, document: GraphQLRequest):  # pragma: no cover
+    def execute_gql(self, query: GraphQLRequest):  # pragma: no cover
         ...
 
-    def execute_mutation(self, name: str, document: GraphQLRequest):  # pragma: no cover
+    def execute_mutation(self, name: str, mutation: GraphQLRequest):  # pragma: no cover
         ...
 
     @property

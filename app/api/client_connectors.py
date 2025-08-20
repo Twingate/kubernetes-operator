@@ -1,4 +1,4 @@
-from gql import gql
+from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -39,7 +39,7 @@ class Connector(BaseModel):
 
 _CONNECTOR_FRAGMENT = Connector.get_graphql_fragment()
 
-QUERY_GET_CONNECTOR = gql(
+QUERY_GET_CONNECTOR = (
     _CONNECTOR_FRAGMENT
     + """
     query GetConnector($id: ID!) {
@@ -50,61 +50,57 @@ QUERY_GET_CONNECTOR = gql(
 """
 )
 
-MUT_CREATE_CONNECTOR = gql(
+MUT_CREATE_CONNECTOR = (
     _CONNECTOR_FRAGMENT
     + """
-mutation CreateConnector($name: String, $hasStatusNotificationsEnabled: Boolean!, $remoteNetworkId: ID!) {
-  connectorCreate(name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled, remoteNetworkId: $remoteNetworkId) {
-    ok
-    error
-    entity {
-      ...ConnectorFields
-    }
-  }
-}
-"""
-)
-
-MUT_UPDATE_CONNECTOR = gql(
-    _CONNECTOR_FRAGMENT
-    + """
-mutation UpdateConnector($id: ID!, $name: String!, $hasStatusNotificationsEnabled: Boolean!) {
-  connectorUpdate(id: $id, name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled) {
-    ok
-    error
-    entity {
-      ...ConnectorFields
-    }
-  }
-}
-"""
-)
-
-MUT_CONNECTOR_GENERATE_TOKENS = gql(
-    """
-mutation GenerateConnectorTokens($connectorId: ID!) {
-    connectorGenerateTokens(connectorId: $connectorId) {
+    mutation CreateConnector($name: String, $hasStatusNotificationsEnabled: Boolean!, $remoteNetworkId: ID!) {
+      connectorCreate(name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled, remoteNetworkId: $remoteNetworkId) {
         ok
         error
-        connectorTokens {
-            accessToken
-            refreshToken
+        entity {
+          ...ConnectorFields
+        }
+      }
+    }
+"""
+)
+
+MUT_UPDATE_CONNECTOR = (
+    _CONNECTOR_FRAGMENT
+    + """
+    mutation UpdateConnector($id: ID!, $name: String!, $hasStatusNotificationsEnabled: Boolean!) {
+      connectorUpdate(id: $id, name: $name, hasStatusNotificationsEnabled: $hasStatusNotificationsEnabled) {
+        ok
+        error
+        entity {
+          ...ConnectorFields
+        }
+      }
+    }
+"""
+)
+
+MUT_CONNECTOR_GENERATE_TOKENS = """
+    mutation GenerateConnectorTokens($connectorId: ID!) {
+        connectorGenerateTokens(connectorId: $connectorId) {
+            ok
+            error
+            connectorTokens {
+                accessToken
+                refreshToken
+            }
         }
     }
-}
 """
-)
 
-MUT_DELETE_CONNECTOR = gql(
-    """
-mutation DeleteConnector($id: ID!) {
-    connectorDelete(id: $id) {
-        ok
-        error
+MUT_DELETE_CONNECTOR = """
+    mutation DeleteConnector($id: ID!) {
+        connectorDelete(id: $id) {
+            ok
+            error
+        }
     }
-}
 """
-)
 
 
 class TwingateConnectorAPI:
@@ -113,7 +109,9 @@ class TwingateConnectorAPI:
     ) -> Connector | None:
         try:
             result = self.execute_gql(
-                QUERY_GET_CONNECTOR, variable_values={"id": connector_id}
+                GraphQLRequest(
+                    QUERY_GET_CONNECTOR, variable_values={"id": connector_id}
+                )
             )
             return Connector(**result["connector"]) if result["connector"] else None
         except TransportQueryError:
@@ -125,12 +123,14 @@ class TwingateConnectorAPI:
     ) -> Connector:
         result = self.execute_mutation(
             "connectorCreate",
-            MUT_CREATE_CONNECTOR,
-            variable_values={
-                "name": connector.name,
-                "remoteNetworkId": connector.remote_network_id,
-                "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
-            },
+            GraphQLRequest(
+                MUT_CREATE_CONNECTOR,
+                variable_values={
+                    "name": connector.name,
+                    "remoteNetworkId": connector.remote_network_id,
+                    "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
+                },
+            ),
         )
 
         return Connector(**result["entity"])
@@ -140,12 +140,14 @@ class TwingateConnectorAPI:
     ) -> Connector:
         result = self.execute_mutation(
             "connectorUpdate",
-            MUT_UPDATE_CONNECTOR,
-            variable_values={
-                "id": connector.id,
-                "name": connector.name,
-                "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
-            },
+            GraphQLRequest(
+                MUT_UPDATE_CONNECTOR,
+                variable_values={
+                    "id": connector.id,
+                    "name": connector.name,
+                    "hasStatusNotificationsEnabled": connector.has_status_notifications_enabled,
+                },
+            ),
         )
 
         return Connector(**result["entity"])
@@ -155,8 +157,10 @@ class TwingateConnectorAPI:
     ) -> ConnectorTokens:
         result = self.execute_mutation(
             "connectorGenerateTokens",
-            MUT_CONNECTOR_GENERATE_TOKENS,
-            variable_values={"connectorId": connector_id},
+            GraphQLRequest(
+                MUT_CONNECTOR_GENERATE_TOKENS,
+                variable_values={"connectorId": connector_id},
+            ),
         )
 
         tokens = result["connectorTokens"]
@@ -166,8 +170,10 @@ class TwingateConnectorAPI:
         try:
             result = self.execute_mutation(
                 "connectorDelete",
-                MUT_DELETE_CONNECTOR,
-                variable_values={"id": connector_id},
+                GraphQLRequest(
+                    MUT_DELETE_CONNECTOR,
+                    variable_values={"id": connector_id},
+                ),
             )
             return bool(result["ok"])
         except GraphQLMutationError as gql_err:

@@ -1,4 +1,4 @@
-from gql import gql
+from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel
 
@@ -21,7 +21,7 @@ class RemoteNetwork(BaseModel):
 
 _RN_FRAGMENT = RemoteNetwork.get_graphql_fragment()
 
-QUERY_GET_RN_BY_NAME = gql(
+QUERY_GET_RN_BY_NAME = (
     _RN_FRAGMENT
     + """
     query GetRemoteNetworkByName($name: String!) {
@@ -39,7 +39,7 @@ class TwingateRemoteNetworksAPIs:
     ) -> RemoteNetwork | None:
         try:
             result = self.execute_gql(
-                QUERY_GET_RN_BY_NAME, variable_values={"name": name}
+                GraphQLRequest(QUERY_GET_RN_BY_NAME, variable_values={"name": name})
             )
             return RemoteNetwork(**result["rn"]) if result["rn"] else None
         except TransportQueryError:

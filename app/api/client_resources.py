@@ -2,7 +2,7 @@ import base64
 from datetime import datetime
 from typing import Any, Literal
 
-from gql import gql
+from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
@@ -242,7 +242,7 @@ class KubernetesResource(BaseResource):
 _NETWORK_RESOURCE_FRAGMENT = NetworkResource.get_graphql_fragment()
 _KUBERNETES_RESOURCE_FRAGMENT = KubernetesResource.get_graphql_fragment()
 
-QUERY_GET_RESOURCE = gql(BaseResource.get_graphql_fragment() + """
+QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
     query GetResource($id: ID!) {
         resource(id: $id) {
             __typename
@@ -257,11 +257,10 @@ QUERY_GET_RESOURCE = gql(BaseResource.get_graphql_fragment() + """
         }
     }
 """
-)
 
 # region Resource Create Mutations
 
-MUT_CREATE_RESOURCE = gql(_NETWORK_RESOURCE_FRAGMENT + """
+MUT_CREATE_RESOURCE = _NETWORK_RESOURCE_FRAGMENT + """
     mutation CreateNetworkResource(
         $name: String!
         $address: String!
@@ -292,8 +291,8 @@ MUT_CREATE_RESOURCE = gql(_NETWORK_RESOURCE_FRAGMENT + """
         }
     }
 """
-)
-MUT_CREATE_KUBERNETES_RESOURCE = gql(_KUBERNETES_RESOURCE_FRAGMENT + """
+
+MUT_CREATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
     mutation CreateKubernetesResource(
         $name: String!
         $address: String!
@@ -326,13 +325,13 @@ MUT_CREATE_KUBERNETES_RESOURCE = gql(_KUBERNETES_RESOURCE_FRAGMENT + """
         }
     }
 """
-)
+
 
 # endregion
 
 # region Resource Update Mutations
 
-MUT_UPDATE_NETWORK_RESOURCE = gql(_NETWORK_RESOURCE_FRAGMENT + """
+MUT_UPDATE_NETWORK_RESOURCE = _NETWORK_RESOURCE_FRAGMENT + """
     mutation UpdateNetworkResource(
         $id: ID!
         $name: String!
@@ -365,8 +364,8 @@ MUT_UPDATE_NETWORK_RESOURCE = gql(_NETWORK_RESOURCE_FRAGMENT + """
         }
     }
 """
-)
-MUT_UPDATE_KUBERNETES_RESOURCE = gql(_KUBERNETES_RESOURCE_FRAGMENT + """
+
+MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
     mutation UpdateKubernetesResource(
         $id: ID!
         $name: String!
@@ -401,13 +400,12 @@ MUT_UPDATE_KUBERNETES_RESOURCE = gql(_KUBERNETES_RESOURCE_FRAGMENT + """
         }
     }
 """
-)
 
 # endregion
 
 
 
-MUT_DELETE_RESOURCE = gql("""
+MUT_DELETE_RESOURCE = """
     mutation DeleteResource($id: ID!) {
         resourceDelete(id: $id) {
             ok
@@ -415,7 +413,7 @@ MUT_DELETE_RESOURCE = gql("""
         }
     }
 """
-)
+
 
 # fmt:on
 
@@ -426,7 +424,7 @@ class TwingateResourceAPIs:
     ) -> NetworkResource | KubernetesResource | None:
         try:
             result = self.execute_gql(
-                QUERY_GET_RESOURCE, variable_values={"id": resource_id}
+                GraphQLRequest(QUERY_GET_RESOURCE, variable_values={"id": resource_id})
             )
             if not result["resource"]:
                 return None
@@ -466,18 +464,20 @@ class TwingateResourceAPIs:
     ) -> NetworkResource:
         result = self.execute_mutation(
             "resourceCreate",
-            MUT_CREATE_RESOURCE,
-            variable_values={
-                "name": name,
-                "address": address,
-                "alias": alias,
-                "isVisible": is_visible,
-                "isBrowserShortcutEnabled": is_browser_shortcut_enabled,
-                "remoteNetworkId": remote_network_id,
-                "securityPolicyId": security_policy_id,
-                "protocols": protocols,
-                "tags": tags,
-            },
+            GraphQLRequest(
+                MUT_CREATE_RESOURCE,
+                variable_values={
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "isBrowserShortcutEnabled": is_browser_shortcut_enabled,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "protocols": protocols,
+                    "tags": tags,
+                },
+            ),
         )
         return NetworkResource(**result["entity"])
 
@@ -497,19 +497,21 @@ class TwingateResourceAPIs:
     ) -> KubernetesResource:
         result = self.execute_mutation(
             "kubernetesResourceCreate",
-            MUT_CREATE_KUBERNETES_RESOURCE,
-            variable_values={
-                "name": name,
-                "address": address,
-                "alias": alias,
-                "isVisible": is_visible,
-                "remoteNetworkId": remote_network_id,
-                "securityPolicyId": security_policy_id,
-                "protocols": protocols,
-                "tags": tags,
-                "proxyAddress": proxy_address,
-                "certificateAuthorityCert": certificate_authority_cert,
-            },
+            GraphQLRequest(
+                MUT_CREATE_KUBERNETES_RESOURCE,
+                variable_values={
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "protocols": protocols,
+                    "tags": tags,
+                    "proxyAddress": proxy_address,
+                    "certificateAuthorityCert": certificate_authority_cert,
+                },
+            ),
         )
         return KubernetesResource(**result["entity"])
 
@@ -540,19 +542,21 @@ class TwingateResourceAPIs:
     ) -> NetworkResource | None:
         result = self.execute_mutation(
             "resourceUpdate",
-            MUT_UPDATE_NETWORK_RESOURCE,
-            variable_values={
-                "id": id,
-                "name": name,
-                "address": address,
-                "alias": alias,
-                "isVisible": is_visible,
-                "isBrowserShortcutEnabled": is_browser_shortcut_enabled,
-                "remoteNetworkId": remote_network_id,
-                "securityPolicyId": security_policy_id,
-                "protocols": protocols,
-                "tags": tags,
-            },
+            GraphQLRequest(
+                MUT_UPDATE_NETWORK_RESOURCE,
+                variable_values={
+                    "id": id,
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "isBrowserShortcutEnabled": is_browser_shortcut_enabled,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "protocols": protocols,
+                    "tags": tags,
+                },
+            ),
         )
         return NetworkResource(**result["entity"])
 
@@ -573,20 +577,22 @@ class TwingateResourceAPIs:
     ) -> KubernetesResource | None:
         result = self.execute_mutation(
             "kubernetesResourceUpdate",
-            MUT_UPDATE_KUBERNETES_RESOURCE,
-            variable_values={
-                "id": id,
-                "name": name,
-                "address": address,
-                "alias": alias,
-                "isVisible": is_visible,
-                "remoteNetworkId": remote_network_id,
-                "securityPolicyId": security_policy_id,
-                "protocols": protocols,
-                "tags": tags,
-                "proxyAddress": proxy_address,
-                "certificateAuthorityCert": certificate_authority_cert,
-            },
+            GraphQLRequest(
+                MUT_UPDATE_KUBERNETES_RESOURCE,
+                variable_values={
+                    "id": id,
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "protocols": protocols,
+                    "tags": tags,
+                    "proxyAddress": proxy_address,
+                    "certificateAuthorityCert": certificate_authority_cert,
+                },
+            ),
         )
         return KubernetesResource(**result["entity"])
 
@@ -594,8 +600,10 @@ class TwingateResourceAPIs:
         try:
             result = self.execute_mutation(
                 "resourceDelete",
-                MUT_DELETE_RESOURCE,
-                variable_values={"id": resource_id},
+                GraphQLRequest(
+                    MUT_DELETE_RESOURCE,
+                    variable_values={"id": resource_id},
+                ),
             )
 
             return bool(result["ok"])

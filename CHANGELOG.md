@@ -1,6 +1,37 @@
 # CHANGELOG
 
 
+## v0.26.1 (2025-08-12)
+
+### Bug Fixes
+
+- Add `securityContext` and `priorityClassName` to cleanup pod
+  ([#750](https://github.com/Twingate/kubernetes-operator/pull/750),
+  [`563e71c`](https://github.com/Twingate/kubernetes-operator/commit/563e71ca21a7a530a6d6f64e564cc351ee43f78f))
+
+### Chores
+
+- Bump actions/checkout from 4 to 5
+  ([#749](https://github.com/Twingate/kubernetes-operator/pull/749),
+  [`c644163`](https://github.com/Twingate/kubernetes-operator/commit/c6441637bd6a65c19aa74a8c70ba55c2d673a21b))
+
+- Bump pre-commit from 4.2.0 to 4.3.0
+  ([#748](https://github.com/Twingate/kubernetes-operator/pull/748),
+  [`05913eb`](https://github.com/Twingate/kubernetes-operator/commit/05913eb86faf7e48dd81bcddedea130e183044fd))
+
+- Bump responses from 0.25.7 to 0.25.8
+  ([#746](https://github.com/Twingate/kubernetes-operator/pull/746),
+  [`c727463`](https://github.com/Twingate/kubernetes-operator/commit/c7274639d3a48501fe25469c931897d6ea0cda87))
+
+- Bump types-pyyaml from 6.0.12.20250516 to 6.0.12.20250809
+  ([#745](https://github.com/Twingate/kubernetes-operator/pull/745),
+  [`d0dcb6e`](https://github.com/Twingate/kubernetes-operator/commit/d0dcb6ef860affcd1c70d03e3c866e6862d35d92))
+
+- Bump types-requests from 2.32.4.20250611 to 2.32.4.20250809
+  ([#747](https://github.com/Twingate/kubernetes-operator/pull/747),
+  [`7586e60`](https://github.com/Twingate/kubernetes-operator/commit/7586e60c9316f817d30070b8659592e08b5a9b4a))
+
+
 ## v0.26.0 (2025-08-11)
 
 ### Chores

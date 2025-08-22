@@ -14,7 +14,7 @@ jobs:
     name: Validate PR title follows Conventional Commits
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - uses: amannn/action-semantic-pull-request@v6
         if: github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

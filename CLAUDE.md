@@ -192,7 +192,15 @@ Before performing any operations in this project, you MUST:
 #### API Client Development
 
 - Follow the pattern in existing `client_*.py` files
-- Use GraphQL fragments for reusable query parts
+- Use GraphQL fragments for reusable query parts (see `app/api/client_resource.py` for examples, e.g.:
+  ```python
+  RESOURCE_FRAGMENT = """
+    fragment ResourceFields on Resource {
+      id
+      name
+      type
+    }
+  """
 - Implement proper error handling and retries
 - Add comprehensive unit tests with mocked responses
 

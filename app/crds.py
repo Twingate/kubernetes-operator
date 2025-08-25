@@ -2,12 +2,13 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum, StrEnum
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import kubernetes.client
 import pendulum
 from croniter import croniter
 from pydantic import (
+    AfterValidator,
     Base64Str,
     BaseModel,
     ConfigDict,
@@ -120,7 +121,9 @@ class ResourceProxy(BaseModel):
     )
 
     address: str
-    certificate_authority_cert: Base64Str
+    certificate_authority_cert: Annotated[
+        Base64Str, AfterValidator(lambda v: v.strip())
+    ]
 
 
 class ResourceType(StrEnum):

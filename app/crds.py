@@ -8,11 +8,11 @@ import kubernetes.client
 import pendulum
 from croniter import croniter
 from pydantic import (
+    AfterValidator,
     Base64Str,
     BaseModel,
     ConfigDict,
     Field,
-    StringConstraints,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -122,7 +122,7 @@ class ResourceProxy(BaseModel):
 
     address: str
     certificate_authority_cert: Annotated[
-        Base64Str, StringConstraints(strip_whitespace=True)
+        Base64Str, AfterValidator(lambda v: v.strip())
     ]
 
 

@@ -2,7 +2,7 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum, StrEnum
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import kubernetes.client
 import pendulum
@@ -12,6 +12,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StringConstraints,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -120,7 +121,9 @@ class ResourceProxy(BaseModel):
     )
 
     address: str
-    certificate_authority_cert: Base64Str
+    certificate_authority_cert: Annotated[
+        Base64Str, StringConstraints(strip_whitespace=True)
+    ]
 
 
 class ResourceType(StrEnum):

@@ -7,7 +7,8 @@ from gql.transport.exceptions import TransportQueryError
 from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
-from app.api.client_resources import BaseResource, NetworkResource
+from app.api.client_resources import BaseResource, KubernetesResource, NetworkResource
+from app.api.tests.factories import VALID_CA_CERT_1
 from app.crds import ResourceSpec, ResourceType
 
 
@@ -121,6 +122,24 @@ class TestNetworkResourceModel:
         )
 
         assert resource.is_matching_spec(crd)
+
+    @pytest.mark.parametrize(
+        ("field", "updated_value"),
+        [
+            ("proxy_address", "proxy.kubernetes.cluster.local"),
+            ("certificate_authority_cert", VALID_CA_CERT_1),
+        ],
+    )
+    def test_is_matching_spec_with_kubernetes_resource(
+        self, kubernetes_resource_factory, field, updated_value
+    ):
+        resource = kubernetes_resource_factory()
+        crd = resource.to_spec()
+        assert resource.is_matching_spec(crd)
+
+        updated_resource = KubernetesResource(**resource.model_dump())
+        setattr(updated_resource, field, updated_value)
+        assert not updated_resource.is_matching_spec(crd)
 
 
 class TestResourceFactory:

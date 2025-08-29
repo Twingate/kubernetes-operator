@@ -1,3 +1,5 @@
+import base64
+
 import pytest
 
 from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
@@ -335,3 +337,25 @@ def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
     graphql_arguments = resource_spec.to_graphql_arguments(labels={"key": "value"})
 
     assert graphql_arguments["tags"] == []
+
+
+@pytest.mark.parametrize(
+    "certificate_authority_cert",
+    [
+        ("\n" + VALID_CA_CERT + "\n"),
+        ("\r\n" + VALID_CA_CERT + "\r\n"),
+        ("  " + VALID_CA_CERT + "  "),
+    ],
+)
+def test_resource_proxy_certificate_authority_cert_should_trim_whitespace(
+    sample_kubernetes_resource_object, certificate_authority_cert
+):
+    sample_kubernetes_resource_object["spec"]["proxy"]["certificate_authority_cert"] = (
+        base64.b64encode(certificate_authority_cert.encode()).decode()
+    )
+
+    resource_spec = ResourceSpec(
+        **sample_kubernetes_resource_object["spec"],
+    )
+
+    assert resource_spec.proxy.certificate_authority_cert == VALID_CA_CERT

@@ -1,6 +1,6 @@
 dependencies:
 - name: kubernetes-access-gateway
   repository: oci://ghcr.io/twingate/helmcharts
-  version: 0.9.0
-digest: sha256:546664e23b1646af051f93d634e835a1c42d2d56609ec6ee2975a296a42a93f9
-generated: "2025-08-11T17:58:40.042063401Z"
+  version: 0.10.0
+digest: sha256:7819eee88fa4ff84b2310446b0f6631153895ac32ad448ec68f081d19df0d2bd
+generated: "2025-08-29T16:26:39.587394325Z"

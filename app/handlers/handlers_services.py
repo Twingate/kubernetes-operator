@@ -213,8 +213,13 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
         )
 
 
-@kopf.on.update("service", annotations={"resource.twingate.com": "false"})
-@kopf.on.update("service", annotations={"resource.twingate.com": kopf.ABSENT})
+# Use Tuple for the field to properly escape dots in the annotation key.
+@kopf.on.update(
+    "service", field=("metadata", "annotations", "twingate.com/resource"), old="true"
+)
+@kopf.on.update(
+    "service", field=("metadata", "annotations", "resource.twingate.com"), old="true"
+)
 def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_):
     logger.info("twingate_service_annotation_removed: %s", spec)
 

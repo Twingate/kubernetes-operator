@@ -1,6 +1,81 @@
 # CHANGELOG
 
 
+## v0.26.2 (2025-09-02)
+
+### Bug Fixes
+
+- Operator now does not add annotations to unrelated services
+  ([#760](https://github.com/Twingate/kubernetes-operator/pull/760),
+  [`3a0a5ea`](https://github.com/Twingate/kubernetes-operator/commit/3a0a5ea2d7ed7906f67270d7d32e47f2f4b268c3))
+
+- Trim `ResourceProxy.certificate_authority_cert` empty whitespace
+  ([#761](https://github.com/Twingate/kubernetes-operator/pull/761),
+  [`13a0c3f`](https://github.com/Twingate/kubernetes-operator/commit/13a0c3feb5bf8f33cb6ccc64a47a0bddf7bd9653))
+
+### Chores
+
+- Bump amannn/action-semantic-pull-request from 5 to 6
+  ([#752](https://github.com/Twingate/kubernetes-operator/pull/752),
+  [`52075b5`](https://github.com/Twingate/kubernetes-operator/commit/52075b592861690de7e5162051598429a634d5a2))
+
+- Bump cryptography from 45.0.6 to 45.0.7
+  ([#766](https://github.com/Twingate/kubernetes-operator/pull/766),
+  [`6cbd095`](https://github.com/Twingate/kubernetes-operator/commit/6cbd095414437d2ad114f4473af39e577314163b))
+
+- Bump gql from 3.5.3 to 4.0.0 ([#754](https://github.com/Twingate/kubernetes-operator/pull/754),
+  [`b9ef473`](https://github.com/Twingate/kubernetes-operator/commit/b9ef473b086c1827db2af119370101923a0fd851))
+
+- Bump kubernetes-access-gateway from 0.9.0 to 0.10.0 in /deploy/twingate-operator
+  ([#765](https://github.com/Twingate/kubernetes-operator/pull/765),
+  [`f2cb151`](https://github.com/Twingate/kubernetes-operator/commit/f2cb15182eae6c1dfda8e71b6029ad55fd075345))
+
+- Bump orjson from 3.11.1 to 3.11.2
+  ([#751](https://github.com/Twingate/kubernetes-operator/pull/751),
+  [`6917493`](https://github.com/Twingate/kubernetes-operator/commit/6917493e8984cc09262cf4694dac30875fff0d34))
+
+- Bump orjson from 3.11.2 to 3.11.3
+  ([#763](https://github.com/Twingate/kubernetes-operator/pull/763),
+  [`cc012ae`](https://github.com/Twingate/kubernetes-operator/commit/cc012aec235f7d9e0486403110b9f72c4b09471c))
+
+- Bump pytest-sugar from 1.0.0 to 1.1.0
+  ([#755](https://github.com/Twingate/kubernetes-operator/pull/755),
+  [`4a34f17`](https://github.com/Twingate/kubernetes-operator/commit/4a34f17ed4a95a6c644228af4dc7049d71d7207a))
+
+- Bump pytest-sugar from 1.1.0 to 1.1.1
+  ([#762](https://github.com/Twingate/kubernetes-operator/pull/762),
+  [`a6c5803`](https://github.com/Twingate/kubernetes-operator/commit/a6c5803f6fafa8607b5e744ad8e34c949a01544b))
+
+- Bump requests from 2.32.4 to 2.32.5
+  ([#756](https://github.com/Twingate/kubernetes-operator/pull/756),
+  [`5583e9b`](https://github.com/Twingate/kubernetes-operator/commit/5583e9b923930dabdc65a0dfa749212b17ae25ad))
+
+- Bump ruff from 0.12.10 to 0.12.11
+  ([#764](https://github.com/Twingate/kubernetes-operator/pull/764),
+  [`4cf3f6b`](https://github.com/Twingate/kubernetes-operator/commit/4cf3f6b9661b078dfa10c57e24dd1d25a908ec41))
+
+- Bump ruff from 0.12.8 to 0.12.9 ([#753](https://github.com/Twingate/kubernetes-operator/pull/753),
+  [`da90dd9`](https://github.com/Twingate/kubernetes-operator/commit/da90dd95338949c9dfdf4ffe5f73ab19affb77bd))
+
+- Bump ruff from 0.12.9 to 0.12.10
+  ([#758](https://github.com/Twingate/kubernetes-operator/pull/758),
+  [`435f15f`](https://github.com/Twingate/kubernetes-operator/commit/435f15f8210d6e5ff69c15fd2d6c0116edebb6b7))
+
+- Bump types-pyyaml from 6.0.12.20250809 to 6.0.12.20250822
+  ([#757](https://github.com/Twingate/kubernetes-operator/pull/757),
+  [`b1e1f87`](https://github.com/Twingate/kubernetes-operator/commit/b1e1f87d85d515d240db1edafba485ea63c1bf09))
+
+- GoLang no longer required for development
+  ([`132308e`](https://github.com/Twingate/kubernetes-operator/commit/132308ec4f3de13bdb8d32c5142fabadcfc20cfa))
+
+- Replace bitnami/kubectl image with rancher's
+  ([#768](https://github.com/Twingate/kubernetes-operator/pull/768),
+  [`7e80231`](https://github.com/Twingate/kubernetes-operator/commit/7e80231055c1ed166b084915ffa41b839772c65f))
+
+- Upgrade Poetry to 2.1.4 ([#759](https://github.com/Twingate/kubernetes-operator/pull/759),
+  [`5728aff`](https://github.com/Twingate/kubernetes-operator/commit/5728aff0733c8d84f60886b247d147af1ff3d4c1))
+
+
 ## v0.26.1 (2025-08-12)
 
 ### Bug Fixes

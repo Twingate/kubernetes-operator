@@ -23,7 +23,7 @@ spec:
         - name: cleanup
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: bitnami/kubectl:latest
+          image: rancher/kubectl:v1.34.0
           command:
             - /bin/sh
             - -c

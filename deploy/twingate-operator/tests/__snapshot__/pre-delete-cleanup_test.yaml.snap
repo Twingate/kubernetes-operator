@@ -23,7 +23,7 @@ should enable pre-delete cleanup job:
                 - -c
                 - |
                   kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n NAMESPACE RELEASE-NAME-kubernetes-access-gateway
-              image: bitnami/kubectl:latest
+              image: rancher/kubectl:v1.34.0
               name: cleanup
               securityContext:
                 allowPrivilegeEscalation: false

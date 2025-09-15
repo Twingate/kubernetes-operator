@@ -42,7 +42,7 @@ responses = "^0.25.8"
 ruff = "^0.12.12"
 syrupy = "^4.9.1"
 types-croniter = "^6.0.0.20250809"
-types-requests = "^2.32.4.20250809"
+types-requests = "^2.32.4.20250913"
 types-pyyaml = "^6.0.12.20250822"
 [tool.poetry.group.build]
 optional = true

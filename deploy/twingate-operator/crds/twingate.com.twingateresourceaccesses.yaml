@@ -18,11 +18,11 @@ spec:
               type: object
               description: "TwingateResourceAccessSpec defines the desired state of TwingateResourceAccess"
               oneOf:
-                - properties:
+                - properties: null
                   required: ["resourceRef", "principalId"]
-                - properties:
+                - properties: null
                   required: ["resourceRef", "principalExternalRef"]
-                - properties:
+                - properties: null
                   required: ["resourceRef", "groupRef"]
               properties:
                 principalId:

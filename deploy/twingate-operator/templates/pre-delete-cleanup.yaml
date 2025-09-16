@@ -25,10 +25,15 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: rancher/kubectl:v1.34.0
           command:
-            - /bin/sh
-            - -c
-            - |
-              kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n {{ .Release.Namespace }} {{ $kubernetesAccessGatewayName }}
+            - kubectl
+            - delete
+            - svc
+            - --cascade=foreground
+            - --timeout=30s
+            - --ignore-not-found
+            - -n
+            - {{ .Release.Namespace }}
+            - {{ $kubernetesAccessGatewayName }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

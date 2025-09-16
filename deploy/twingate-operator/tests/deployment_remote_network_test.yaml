@@ -9,7 +9,7 @@ tests:
   - it: should require Remote Network
     asserts:
       - failedTemplate:
-          errorPattern: remoteNetworkId is required
+          errorPattern: missing property 'remoteNetworkId'
   - it: should use `existingRemoteNetworkIdSecret`
     set:
       twingateOperator:
@@ -44,4 +44,4 @@ tests:
           key: MY_TWINGATE_REMOTE_NETWORK_ID
     asserts:
       - failedTemplate:
-          errorPattern: "twingateOperator: Must validate one and only one schema (oneOf)"
+          errorPattern: "'oneOf' failed, subschemas 0, 2 matched"

@@ -24,5 +24,5 @@ def test_get_provider_valid_value(value, repo, expected):
 
 
 def test_get_provider_with_invalid_value_raises():
-    with pytest.raises(ValueError, match="Invalid provider_name"):
+    with pytest.raises(ValueError, match=r"Invalid provider_name"):
         get_provider("invalid")

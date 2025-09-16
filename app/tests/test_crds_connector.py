@@ -109,7 +109,7 @@ def test_deserialization_imagepolicy_fails_on_invalid_version_specifier(
     sample_connector_object_imagepolicy,
 ):
     sample_connector_object_imagepolicy["spec"]["imagePolicy"]["version"] = "invalid"
-    with pytest.raises(ValueError, match="Invalid version specifier"):
+    with pytest.raises(ValueError, match=r"Invalid version specifier"):
         TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 
 
@@ -117,7 +117,7 @@ def test_deserialization_fails_on_invalid_schedule(sample_connector_object_image
     sample_connector_object_imagepolicy["spec"]["imagePolicy"]["schedule"] = (
         "100 2 * * *"
     )
-    with pytest.raises(ValueError, match="Invalid schedule value"):
+    with pytest.raises(ValueError, match=r"Invalid schedule value"):
         TwingateConnectorCRD(**sample_connector_object_imagepolicy)
 
 
@@ -163,7 +163,7 @@ def test_spec_get_image_w_imagepolicy_raises_if_no_match(
             "app.version_policy_providers.DockerhubVersionPolicyProvider.get_all_tags",
             return_value=["1.0.0", "latest"],
         ),
-        pytest.raises(ValueError, match="Could not find valid tag for"),
+        pytest.raises(ValueError, match=r"Could not find valid tag for"),
     ):
         crd.spec.get_image()
 

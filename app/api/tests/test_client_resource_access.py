@@ -87,7 +87,7 @@ class TestResourceAccessAPIs:
         )
 
         with pytest.raises(
-            GraphQLMutationError, match="resourceAccessAdd mutation failed."
+            GraphQLMutationError, match=r"resourceAccessAdd mutation failed."
         ):
             api_client.resource_access_add(
                 resource_id=resource_id,
@@ -219,7 +219,7 @@ class TestResourceAccessAPIs:
         )
 
         with pytest.raises(
-            GraphQLMutationError, match="resourceAccessRemove mutation failed."
+            GraphQLMutationError, match=r"resourceAccessRemove mutation failed."
         ):
             api_client.resource_access_remove(
                 resource_id=resource_id, principal_id=principal_id

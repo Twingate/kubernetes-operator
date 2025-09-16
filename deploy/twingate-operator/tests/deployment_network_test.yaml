@@ -9,4 +9,4 @@ tests:
   - it: should require `network`
     asserts:
       - failedTemplate:
-          errorPattern: network is required
+          errorPattern: missing property 'network'

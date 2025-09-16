@@ -9,7 +9,7 @@ tests:
   - it: should require `apiKey`
     asserts:
       - failedTemplate:
-          errorPattern: apiKey is required
+          errorPattern: missing property 'apiKey'
   - it: should use `existingAPIKeySecret`
     set:
       twingateOperator:

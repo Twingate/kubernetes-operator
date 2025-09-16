@@ -19,10 +19,15 @@ should enable pre-delete cleanup job:
         spec:
           containers:
             - command:
-                - /bin/sh
-                - -c
-                - |
-                  kubectl delete svc --cascade=foreground --timeout=30s --ignore-not-found -n NAMESPACE RELEASE-NAME-kubernetes-access-gateway
+                - kubectl
+                - delete
+                - svc
+                - --cascade=foreground
+                - --timeout=30s
+                - --ignore-not-found
+                - -n
+                - NAMESPACE
+                - RELEASE-NAME-kubernetes-access-gateway
               image: rancher/kubectl:v1.34.0
               name: cleanup
               securityContext:

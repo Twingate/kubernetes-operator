@@ -34,7 +34,7 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = None
         with pytest.raises(
-            ValueError, match="Missing principal_id or principal_external_ref"
+            ValueError, match=r"Missing principal_id or principal_external_ref"
         ):
             get_principal_id(access_crd, None, MagicMock())
 
@@ -94,7 +94,7 @@ class TestGetPrincipalId:
         mock_api_client.get_service_account_id.return_value = None
 
         with pytest.raises(
-            ValueError, match="Principal serviceAccount sa-name not found"
+            ValueError, match=r"Principal serviceAccount sa-name not found"
         ):
             get_principal_id(access_crd, None, mock_api_client)
 
@@ -106,7 +106,7 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref.type = "invalid"
         access_crd.principal_external_ref.name = "sa-name"
 
-        with pytest.raises(ValueError, match="Unknown principal type: invalid"):
+        with pytest.raises(ValueError, match=r"Unknown principal type: invalid"):
             get_principal_id(access_crd, None, mock_api_client)
 
     def test_from_external_ref_uses_created_status_principal_id(self):

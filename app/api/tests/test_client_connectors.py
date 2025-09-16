@@ -115,7 +115,7 @@ class TestTwingateConnectorAPI:
             ],
         )
         with pytest.raises(
-            GraphQLMutationError, match="connectorCreate mutation failed."
+            GraphQLMutationError, match=r"connectorCreate mutation failed."
         ):
             api_client.connector_create(connector_spec)
 
@@ -284,6 +284,6 @@ class TestTwingateConnectorAPI:
             ],
         )
         with pytest.raises(
-            GraphQLMutationError, match="connectorDelete mutation failed."
+            GraphQLMutationError, match=r"connectorDelete mutation failed."
         ):
             api_client.connector_delete("some-id")

@@ -27,12 +27,12 @@ def test_init_valid_repository():
 
 
 def test_init_invalid_repository():
-    with pytest.raises(ValueError, match="Invalid image name: invalid"):
+    with pytest.raises(ValueError, match=r"Invalid image name: invalid"):
         GoogleVersionPolicyProvider(repository="invalid")
 
 
 def test_init_none_repository():
-    with pytest.raises(ValueError, match="Must specify 'repository'"):
+    with pytest.raises(ValueError, match=r"Must specify 'repository'"):
         GoogleVersionPolicyProvider(repository=None)
 
 

@@ -227,7 +227,7 @@ class TestTwingateResourceAPIs:
                 )
             ],
         )
-        with pytest.raises(ValueError, match="Invalid Resource Type: InvalidResource"):
+        with pytest.raises(ValueError, match=r"Invalid Resource Type: InvalidResource"):
             api_client.get_resource(resource.id)
 
     def test_get_resource_with_invalid_b64_id_raises(
@@ -300,7 +300,7 @@ class TestTwingateResourceAPIs:
             ],
         )
         with pytest.raises(
-            GraphQLMutationError, match="resourceCreate mutation failed."
+            GraphQLMutationError, match=r"resourceCreate mutation failed."
         ):
             api_client.resource_create(
                 resource_type=ResourceType.NETWORK,
@@ -602,6 +602,6 @@ class TestTwingateResourceAPIs:
             ],
         )
         with pytest.raises(
-            GraphQLMutationError, match="resourceDelete mutation failed."
+            GraphQLMutationError, match=r"resourceDelete mutation failed."
         ):
             api_client.resource_delete("some-id")

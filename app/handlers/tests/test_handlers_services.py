@@ -229,7 +229,7 @@ class TestServiceToTwingateResource:
 
         with pytest.raises(
             kopf.PermanentError,
-            match="resource.twingate.com/tlsSecret annotation is not provided",
+            match=r"resource.twingate.com/tlsSecret annotation is not provided",
         ):
             service_to_twingate_resource(
                 example_cluster_ip_gateway_service_body, "default"
@@ -242,7 +242,7 @@ class TestServiceToTwingateResource:
 
         with pytest.raises(
             kopf.PermanentError,
-            match="Kubernetes Secret object: gateway-tls is missing.",
+            match=r"Kubernetes Secret object: gateway-tls is missing.",
         ):
             service_to_twingate_resource(
                 example_cluster_ip_gateway_service_body, "default"
@@ -259,7 +259,7 @@ class TestServiceToTwingateResource:
 
         with pytest.raises(
             kopf.PermanentError,
-            match="Kubernetes Secret object: gateway-tls type is invalid.",
+            match=r"Kubernetes Secret object: gateway-tls type is invalid.",
         ):
             service_to_twingate_resource(
                 example_cluster_ip_gateway_service_body, "default"
@@ -276,7 +276,7 @@ class TestServiceToTwingateResource:
 
         with pytest.raises(
             kopf.PermanentError,
-            match="Kubernetes Secret object: gateway-tls is missing ca.crt.",
+            match=r"Kubernetes Secret object: gateway-tls is missing ca.crt.",
         ):
             service_to_twingate_resource(
                 example_cluster_ip_gateway_service_body, "default"
@@ -295,7 +295,7 @@ class TestServiceToTwingateResource:
 
         with pytest.raises(
             kopf.PermanentError,
-            match="Kubernetes Secret object: gateway-tls ca.crt is invalid.",
+            match=r"Kubernetes Secret object: gateway-tls ca.crt is invalid.",
         ):
             service_to_twingate_resource(
                 example_cluster_ip_gateway_service_body, "default"
@@ -383,7 +383,7 @@ class TestServiceToTwingateResource:
             ),
             pytest.raises(
                 kopf.TemporaryError,
-                match="Kubernetes Service: kubernetes-gateway LoadBalancer is not ready.",
+                match=r"Kubernetes Service: kubernetes-gateway LoadBalancer is not ready.",
             ),
         ):
             service_to_twingate_resource(

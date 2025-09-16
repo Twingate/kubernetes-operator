@@ -339,7 +339,7 @@ class TestTwingateConnectorDelete:
     def test_twingate_connector_delete_deletes_connector(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
         kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
@@ -348,14 +348,14 @@ class TestTwingateConnectorDelete:
     def test_twingate_connector_delete_without_status_does_nothing(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):
-        connector, crd = get_connector_and_crd()
+        _connector, crd = get_connector_and_crd()
         kopf_handler_runner(twingate_connector_delete, crd, MagicMock())
         mock_api_client.connector_delete.assert_not_called()
 
     def test_twingate_connector_pod_reconciler_raises_if_ran_before_create(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client
     ):
-        connector, crd = get_connector_and_crd()
+        _connector, crd = get_connector_and_crd()
         with pytest.raises(kopf.TemporaryError):
             kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
 
@@ -368,7 +368,7 @@ class TestTwingateConnectorPodReconciler_Image:
         k8s_core_client_mock,
         k8s_apps_client_mock,
     ):
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
@@ -385,7 +385,7 @@ class TestTwingateConnectorPodReconciler_Image:
         k8s_core_client_mock,
         k8s_apps_client_mock,
     ):
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
@@ -400,7 +400,7 @@ class TestTwingateConnectorPodReconciler_Image:
         k8s_core_client_mock,
         k8s_apps_client_mock,
     ):
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
@@ -433,7 +433,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         k8s_apps_client_mock,
         mock_get_image,
     ):
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             spec_overrides=dict(image_policy=ConnectorImagePolicy()),
             status={"twingate_connector_create": {"success": True}},
             with_id=True,
@@ -455,7 +455,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         k8s_apps_client_mock,
         mock_get_image,
     ):
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             spec_overrides=dict(image_policy=ConnectorImagePolicy()),
             status={"twingate_connector_create": {"success": True}},
             annotations={ANNOTATION_NEXT_VERSION_CHECK: "2000-01-01T00:00:00Z"},
@@ -479,7 +479,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         mock_get_image,
     ):
         now = pendulum.now("UTC").start_of("minute")
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             spec_overrides=dict(image_policy=ConnectorImagePolicy()),
             status={"twingate_connector_create": {"success": True}},
             annotations={ANNOTATION_NEXT_VERSION_CHECK: str(now.add(minutes=1))},
@@ -507,7 +507,7 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         mock_get_image,
     ):
         now = pendulum.now("UTC").start_of("minute")
-        connector, crd = get_connector_and_crd(
+        _connector, crd = get_connector_and_crd(
             spec_overrides=dict(image_policy=ConnectorImagePolicy()),
             status={"twingate_connector_create": {"success": True}},
             annotations={ANNOTATION_NEXT_VERSION_CHECK: str(now.add(minutes=1))},

@@ -192,7 +192,7 @@ def test_deserialization(sample_network_resource_object):
 
 
 def test_is_browser_shortcut_enabled_disallowed_on_wildcard_resource():
-    with pytest.raises(ValueError, match="isBrowserShortcutEnabled"):
+    with pytest.raises(ValueError, match=r"isBrowserShortcutEnabled"):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",
             kind="TwingateResource",
@@ -206,7 +206,7 @@ def test_is_browser_shortcut_enabled_disallowed_on_wildcard_resource():
 
 
 def test_resourceprotocols_validation():
-    with pytest.raises(ValueError, match="ports can't be set"):
+    with pytest.raises(ValueError, match=r"ports can't be set"):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",
             kind="TwingateResource",
@@ -222,7 +222,9 @@ def test_resourceprotocols_validation():
 
 
 def test_resourceprotocol_ports_validation():
-    with pytest.raises(ValueError, match="Input should be less than or equal to 65535"):
+    with pytest.raises(
+        ValueError, match=r"Input should be less than or equal to 65535"
+    ):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",
             kind="TwingateResource",
@@ -239,7 +241,7 @@ def test_resourceprotocol_ports_validation():
             },
         )
 
-    with pytest.raises(ValueError, match="Input should be greater than or equal to 1"):
+    with pytest.raises(ValueError, match=r"Input should be greater than or equal to 1"):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",
             kind="TwingateResource",
@@ -254,7 +256,7 @@ def test_resourceprotocol_ports_validation():
         )
 
     with pytest.raises(
-        ValueError, match="Start port value must be less or equal to end port value"
+        ValueError, match=r"Start port value must be less or equal to end port value"
     ):
         TwingateResourceCRD(
             apiVersion="twingate.com/v1",

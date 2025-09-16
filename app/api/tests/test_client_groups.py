@@ -97,7 +97,7 @@ class TestTwingateGroupsAPIs:
                 )
             ],
         )
-        with pytest.raises(GraphQLMutationError, match="groupCreate mutation failed."):
+        with pytest.raises(GraphQLMutationError, match=r"groupCreate mutation failed."):
             api_client.group_create(GroupSpec(name=name))
 
     def test_group_update(self, test_url, api_client, mocked_responses):
@@ -151,7 +151,7 @@ class TestTwingateGroupsAPIs:
                 )
             ],
         )
-        with pytest.raises(GraphQLMutationError, match="groupUpdate mutation failed."):
+        with pytest.raises(GraphQLMutationError, match=r"groupUpdate mutation failed."):
             api_client.group_update(GroupSpec(id="test-id", name=name))
 
     def test_group_delete(self, test_url, api_client, mocked_responses):
@@ -225,5 +225,5 @@ class TestTwingateGroupsAPIs:
                 )
             ],
         )
-        with pytest.raises(GraphQLMutationError, match="groupDelete mutation failed."):
+        with pytest.raises(GraphQLMutationError, match=r"groupDelete mutation failed."):
             api_client.group_delete("some-id")

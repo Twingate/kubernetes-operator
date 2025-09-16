@@ -369,7 +369,7 @@ def test_deserialization_with_no_target_ref_fails_validation():
             "resourceRef": {"name": "foo", "namespace": "default"},
         },
     }
-    with pytest.raises(ValueError, match="Missing principal"):
+    with pytest.raises(ValueError, match=r"Missing principal"):
         TwingateResourceAccessCRD(**data)
 
 

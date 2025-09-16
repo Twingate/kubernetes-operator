@@ -7,7 +7,7 @@ from app.utils import to_bool, validate_pem_x509_certificate
 class TestToBool:
     def test_unhashable(self):
         """Fails if value is unhashable."""
-        with pytest.raises(ValueError, match="Cannot convert value to bool"):
+        with pytest.raises(ValueError, match=r"Cannot convert value to bool"):
             to_bool([])
 
     def test_truthy(self):
@@ -31,20 +31,20 @@ class TestValidatePemX509Certificate:
             pytest.fail("Failed to validate valid cert")
 
     def test_invalid_cert(self):
-        with pytest.raises(ValueError, match="Invalid certificate"):
+        with pytest.raises(ValueError, match=r"Invalid certificate"):
             validate_pem_x509_certificate(BASE64_OF_VALID_CA_CERT)
 
-        with pytest.raises(ValueError, match="Invalid certificate"):
+        with pytest.raises(ValueError, match=r"Invalid certificate"):
             validate_pem_x509_certificate(
                 VALID_CA_CERT[len("-----BEGIN CERTIFICATE-----") :]
             )
 
-        with pytest.raises(ValueError, match="Invalid certificate"):
+        with pytest.raises(ValueError, match=r"Invalid certificate"):
             validate_pem_x509_certificate(
                 VALID_CA_CERT[: -len("-----END CERTIFICATE-----")]
             )
 
-        with pytest.raises(ValueError, match="Invalid certificate"):
+        with pytest.raises(ValueError, match=r"Invalid certificate"):
             validate_pem_x509_certificate(
                 """-----BEGIN CERTIFICATE-----
                 MIIFfjCCA2agAwIBAgIUBNt

@@ -1,6 +1,85 @@
 # CHANGELOG
 
 
+## v0.26.3 (2025-09-17)
+
+### Bug Fixes
+
+- Fix `pre-delete-cleanup` job ([#788](https://github.com/Twingate/kubernetes-operator/pull/788),
+  [`2b0bcaa`](https://github.com/Twingate/kubernetes-operator/commit/2b0bcaa711fed52d9090bc8a4671bee679d4d084))
+
+- Update CRD schema to set properties to null for oneOf conditions to ensure proper validation
+  ([#789](https://github.com/Twingate/kubernetes-operator/pull/789),
+  [`685e7eb`](https://github.com/Twingate/kubernetes-operator/commit/685e7eb2c4e23ae65f95a33d032d46616b9ed5f2))
+
+### Chores
+
+- Bump actions/setup-python from 5 to 6
+  ([#772](https://github.com/Twingate/kubernetes-operator/pull/772),
+  [`d321bf3`](https://github.com/Twingate/kubernetes-operator/commit/d321bf33b92f5f4d3ec46fad0045f8cb9422e5e9))
+
+- Bump actions/stale from 9 to 10 ([#771](https://github.com/Twingate/kubernetes-operator/pull/771),
+  [`7c8cbec`](https://github.com/Twingate/kubernetes-operator/commit/7c8cbec5d72df75aef38bfe623abd1e6e61e341e))
+
+- Bump hadolint/hadolint-action from 3.1.0 to 3.2.0
+  ([#773](https://github.com/Twingate/kubernetes-operator/pull/773),
+  [`d93b5c1`](https://github.com/Twingate/kubernetes-operator/commit/d93b5c11946c5663050ddafe5ba1c5a185285a3d))
+
+- Bump mypy from 1.17.1 to 1.18.1 ([#781](https://github.com/Twingate/kubernetes-operator/pull/781),
+  [`d300a21`](https://github.com/Twingate/kubernetes-operator/commit/d300a21f1f5338e61cfc4e639f0ad7abcfedd3be))
+
+- Bump ncipollo/release-action from 1.18.0 to 1.20.0
+  ([#770](https://github.com/Twingate/kubernetes-operator/pull/770),
+  [`64b89bb`](https://github.com/Twingate/kubernetes-operator/commit/64b89bb8b2ca388944ff838478f18900414c3da2))
+
+- Bump pydantic from 2.11.7 to 2.11.9
+  ([#782](https://github.com/Twingate/kubernetes-operator/pull/782),
+  [`92d52ad`](https://github.com/Twingate/kubernetes-operator/commit/92d52ad8db63b7fce5ca06f2e866a7d533d9cd02))
+
+- Bump pytest from 8.3.5 to 8.4.2 ([#775](https://github.com/Twingate/kubernetes-operator/pull/775),
+  [`0666dc1`](https://github.com/Twingate/kubernetes-operator/commit/0666dc16cdcabd1cfca1ec89f8477a3082b3cf99))
+
+- Bump pytest-cov from 6.2.1 to 6.3.0
+  ([#776](https://github.com/Twingate/kubernetes-operator/pull/776),
+  [`24db1e9`](https://github.com/Twingate/kubernetes-operator/commit/24db1e90ab32a922ad88899a330b06bf0f0886d4))
+
+- Bump pytest-cov from 6.3.0 to 7.0.0
+  ([#778](https://github.com/Twingate/kubernetes-operator/pull/778),
+  [`3fc7b24`](https://github.com/Twingate/kubernetes-operator/commit/3fc7b24cd9f61fc8fa4ffc9a316b806638b90a7a))
+
+- Bump pytest-randomly from 3.16.0 to 4.0.1
+  ([#784](https://github.com/Twingate/kubernetes-operator/pull/784),
+  [`c82c921`](https://github.com/Twingate/kubernetes-operator/commit/c82c9216f4ee7266815e7e53b127393915a7851f))
+
+- Bump python-semantic-release from 10.3.1 to 10.4.0
+  ([#777](https://github.com/Twingate/kubernetes-operator/pull/777),
+  [`e547571`](https://github.com/Twingate/kubernetes-operator/commit/e547571cafd21ee3867eebeadeac2d762a7eb386))
+
+- Bump python-semantic-release from 10.4.0 to 10.4.1
+  ([#785](https://github.com/Twingate/kubernetes-operator/pull/785),
+  [`eb7043d`](https://github.com/Twingate/kubernetes-operator/commit/eb7043de2ebb7d0e48473ae5397fc0ebd70542ec))
+
+- Bump ruff from 0.12.11 to 0.12.12
+  ([#774](https://github.com/Twingate/kubernetes-operator/pull/774),
+  [`68a2de4`](https://github.com/Twingate/kubernetes-operator/commit/68a2de460c8e111260ed4756a0fc96a476f2d6db))
+
+- Bump ruff from 0.12.12 to 0.13.0
+  ([#780](https://github.com/Twingate/kubernetes-operator/pull/780),
+  [`e83ae77`](https://github.com/Twingate/kubernetes-operator/commit/e83ae776f2a05d518499392b873aac8bf63d2bca))
+
+- Bump types-pyyaml from 6.0.12.20250822 to 6.0.12.20250915
+  ([#786](https://github.com/Twingate/kubernetes-operator/pull/786),
+  [`c96c185`](https://github.com/Twingate/kubernetes-operator/commit/c96c185b4bd8e53ba7a9dff263984c799d3b0c1c))
+
+- Bump types-requests from 2.32.4.20250809 to 2.32.4.20250913
+  ([#783](https://github.com/Twingate/kubernetes-operator/pull/783),
+  [`08ac280`](https://github.com/Twingate/kubernetes-operator/commit/08ac280fdc32c9a31beb391b20bf403435eb8c64))
+
+- Upgrade helm and fix helm unit tests
+  ([#790](https://github.com/Twingate/kubernetes-operator/pull/790),
+  [`253d155`](https://github.com/Twingate/kubernetes-operator/commit/253d15531749ac24c94a553d8256c7b4bb9b3b00))
+
+
 ## v0.26.2 (2025-09-02)
 
 ### Bug Fixes

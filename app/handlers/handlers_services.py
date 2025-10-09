@@ -8,7 +8,6 @@ from kopf import Body, Status
 
 from app.crds import ResourceType
 from app.utils import to_bool
-from app.utils_k8s import get_ca_cert, k8s_get_secret
 
 
 def k8s_get_twingate_resource(
@@ -93,11 +92,6 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
             )
 
-        if not (secret := k8s_get_secret(namespace, secret_name)):
-            raise kopf.PermanentError(
-                f"Kubernetes Secret object: {secret_name} is missing."
-            )
-
         result["spec"] |= {
             "address": "kubernetes.default.svc.cluster.local",
             "proxy": {
@@ -106,7 +100,10 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                     if spec["type"] == ServiceType.LOAD_BALANCER
                     else f"{service_name}.{namespace}.svc.cluster.local"
                 ),
-                "certificateAuthorityCert": get_ca_cert(secret),
+                "certificateAuthorityCertSecretRef": {
+                    "name": tls_secret_name,
+                    "namespace": namespace,
+                },
             },
         }
 

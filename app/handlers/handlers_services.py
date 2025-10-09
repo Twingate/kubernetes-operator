@@ -1,4 +1,3 @@
-import base64
 from collections.abc import Callable
 from enum import StrEnum
 from typing import cast
@@ -8,7 +7,8 @@ import kubernetes
 from kopf import Body, Status
 
 from app.crds import ResourceType
-from app.utils import to_bool, validate_pem_x509_certificate
+from app.utils import to_bool
+from app.utils_k8s import get_ca_cert, k8s_get_tls_secret
 
 
 def k8s_get_twingate_resource(
@@ -23,40 +23,6 @@ def k8s_get_twingate_resource(
         if ex.status == 404:
             return None
         raise
-
-
-def k8s_get_tls_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | None:
-    try:
-        return kubernetes.client.CoreV1Api().read_namespaced_secret(
-            name=name, namespace=namespace
-        )
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status == 404:
-            return None
-
-        raise
-
-
-def get_ca_cert(tls_secret: kubernetes.client.V1Secret) -> str:
-    tls_secret_name = tls_secret.metadata.name
-    if tls_secret.type != "kubernetes.io/tls":
-        raise kopf.PermanentError(
-            f"Kubernetes Secret object: {tls_secret_name} type is invalid."
-        )
-
-    if not (ca_cert := tls_secret.data.get("ca.crt")):
-        raise kopf.PermanentError(
-            f"Kubernetes Secret object: {tls_secret_name} is missing ca.crt."
-        )
-
-    try:
-        validate_pem_x509_certificate(base64.b64decode(ca_cert).decode())
-    except ValueError as ex:
-        raise kopf.PermanentError(
-            f"Kubernetes Secret object: {tls_secret_name} ca.crt is invalid."
-        ) from ex
-
-    return ca_cert
 
 
 ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [

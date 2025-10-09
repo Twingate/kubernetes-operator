@@ -138,7 +138,10 @@ spec:
                       message: "Resource type is immutable"
                 proxy:
                   type: object
-                  required: ["address", "certificateAuthorityCert"]
+                  required: ["address"]
+                  oneOf:
+                    - required: ["certificateAuthorityCertSecretRef"]
+                    - required: ["certificateAuthorityCert"]
                   properties:
                     address:
                       type: string
@@ -146,6 +149,17 @@ spec:
                     certificateAuthorityCert:
                       type: string
                       description: "Base64-encoded certificate of the Certificate Authority issuing the proxy's TLS certificate."
+                    certificateAuthorityCertSecretRef:
+                      type: object
+                      required: ["name"]
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the Secret object containing the certificate of the Certificate Authority issuing the proxy's TLS certificate."
+                        namespace:
+                          type: string
+                          default: default
+                          description: "Namespace of the Secret object."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

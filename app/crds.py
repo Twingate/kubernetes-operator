@@ -1,9 +1,11 @@
+import base64
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum, StrEnum
 from typing import Annotated, Any, cast
 
+import kopf
 import kubernetes.client
 import pendulum
 from croniter import croniter
@@ -21,6 +23,7 @@ from pydantic.alias_generators import to_camel
 from semantic_version import NpmSpec
 
 from app.settings import get_settings
+from app.utils_k8s import get_ca_cert, k8s_get_tls_secret
 from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
@@ -122,8 +125,19 @@ class ResourceProxy(BaseModel):
 
     address: str
     certificate_authority_cert: Annotated[
-        Base64Str, AfterValidator(lambda v: v.strip())
-    ]
+        Base64Str | None, AfterValidator(lambda v: v.strip() if v is not None else None)
+    ] = None
+    certificate_authority_cert_secret_ref: _KubernetesObjectRef | None = None
+
+    def get_certificate_authority_cert(self) -> str | None:
+        if secret_ref := self.certificate_authority_cert_secret_ref:
+            tls_secret = k8s_get_tls_secret(secret_ref.namespace, secret_ref.name)
+            if not tls_secret:
+                return None
+
+            return base64.b64decode(get_ca_cert(tls_secret)).decode()
+
+        return self.certificate_authority_cert
 
 
 class ResourceType(StrEnum):
@@ -190,9 +204,14 @@ class ResourceSpec(BaseModel):
                 }
             case ResourceType.KUBERNETES:
                 resource_proxy = cast(ResourceProxy, self.proxy)
+                ca_cert = resource_proxy.get_certificate_authority_cert()
+                if ca_cert is None:
+                    raise kopf.PermanentError(
+                        "Certificate authority cert is not found for Kubernetes Resource type"
+                    )
                 graphql_args |= {
                     "proxy_address": resource_proxy.address,
-                    "certificate_authority_cert": resource_proxy.certificate_authority_cert,
+                    "certificate_authority_cert": ca_cert,
                 }
 
         return graphql_args

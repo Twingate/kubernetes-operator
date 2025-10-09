@@ -1,9 +1,18 @@
 import base64
+from unittest.mock import patch
 
+import kopf
 import pytest
 
 from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
-from app.crds import ResourceSpec, ResourceType, TwingateResourceCRD
+from app.crds import (
+    ResourceProxy,
+    ResourceSpec,
+    ResourceType,
+    TwingateResourceCRD,
+    _KubernetesObjectRef,
+)
+from app.utils_k8s import get_ca_cert
 
 
 @pytest.fixture
@@ -275,6 +284,31 @@ def test_resourceprotocol_ports_validation():
         )
 
 
+def test_resource_proxy_get_certificate_authority_cert_without_secret_ref():
+    proxy = ResourceProxy(
+        address="proxy.default.cluster.local",
+        certificate_authority_cert=BASE64_OF_VALID_CA_CERT,
+        certificate_authority_cert_secret_ref=None,
+    )
+
+    assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
+
+
+def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
+    k8s_core_client_mock, k8s_tls_secret_mock
+):
+    proxy = ResourceProxy(
+        address="proxy.default.cluster.local",
+        certificate_authority_cert_secret_ref=_KubernetesObjectRef(name="gateway-tls"),
+        certificate_authority_cert=None,
+    )
+    k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+
+    with patch("app.crds.get_ca_cert", wraps=get_ca_cert) as get_ca_cert_mock:
+        assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
+        get_ca_cert_mock.assert_called_once_with(k8s_tls_secret_mock)
+
+
 def test_network_resource_spec_to_graphql_arguments(sample_network_resource_object):
     resource_spec = ResourceSpec(
         **sample_network_resource_object["spec"],
@@ -328,6 +362,21 @@ def test_kubernetes_resource_spec_to_graphql_arguments(
         "proxy_address": "proxy.default.cluster.local",
         "certificate_authority_cert": VALID_CA_CERT,
     }
+
+
+def test_kubernetes_resource_spec_to_graphql_arguments_when_certificate_authority_cert_not_found(
+    sample_kubernetes_resource_object,
+):
+    sample_kubernetes_resource_object["spec"]["proxy"]["certificate_authority_cert"] = (
+        None
+    )
+    resource_spec = ResourceSpec(**sample_kubernetes_resource_object["spec"])
+
+    with pytest.raises(
+        kopf.PermanentError,
+        match="Certificate authority cert is not found for Kubernetes Resource type",
+    ):
+        resource_spec.to_graphql_arguments(labels={"key": "value"})
 
 
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(

@@ -101,7 +101,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                     else f"{service_name}.{namespace}.svc.cluster.local"
                 ),
                 "certificateAuthorityCertSecretRef": {
-                    "name": tls_secret_name,
+                    "name": secret_name,
                     "namespace": namespace,
                 },
             },

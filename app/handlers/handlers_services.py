@@ -8,7 +8,7 @@ from kopf import Body, Status
 
 from app.crds import ResourceType
 from app.utils import to_bool
-from app.utils_k8s import get_ca_cert, k8s_get_tls_secret
+from app.utils_k8s import get_ca_cert, k8s_get_secret
 
 
 def k8s_get_twingate_resource(
@@ -93,7 +93,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
             )
 
-        if not (tls_secret := k8s_get_tls_secret(namespace, tls_secret_name)):
+        if not (tls_secret := k8s_get_secret(namespace, tls_secret_name)):
             raise kopf.PermanentError(
                 f"Kubernetes Secret object: {tls_secret_name} is missing."
             )

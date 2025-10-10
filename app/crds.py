@@ -23,7 +23,7 @@ from pydantic.alias_generators import to_camel
 from semantic_version import NpmSpec
 
 from app.settings import get_settings
-from app.utils_k8s import get_ca_cert, k8s_get_tls_secret
+from app.utils_k8s import get_ca_cert, k8s_get_secret
 from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
@@ -131,7 +131,7 @@ class ResourceProxy(BaseModel):
 
     def get_certificate_authority_cert(self) -> str | None:
         if secret_ref := self.certificate_authority_cert_secret_ref:
-            tls_secret = k8s_get_tls_secret(secret_ref.namespace, secret_ref.name)
+            tls_secret = k8s_get_secret(secret_ref.namespace, secret_ref.name)
             if not tls_secret:
                 return None
 

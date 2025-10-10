@@ -6,7 +6,7 @@ from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
 from app.utils_k8s import (
     get_ca_cert,
     k8s_delete_pod,
-    k8s_get_tls_secret,
+    k8s_get_secret,
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
 )
@@ -67,14 +67,14 @@ class TestK8sGetTLSSecret:
         k8s_core_client_mock.read_namespaced_secret.side_effect = (
             kubernetes.client.exceptions.ApiException(status=404)
         )
-        assert k8s_get_tls_secret("default", "test") is None
+        assert k8s_get_secret("default", "test") is None
 
     def test_reraises_non_404_exceptions(self, k8s_core_client_mock):
         k8s_core_client_mock.read_namespaced_secret.side_effect = (
             kubernetes.client.exceptions.ApiException(status=500)
         )
         with pytest.raises(kubernetes.client.exceptions.ApiException):
-            k8s_get_tls_secret("default", "test")
+            k8s_get_secret("default", "test")
 
 
 class TestGetCACert:

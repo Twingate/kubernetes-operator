@@ -47,7 +47,7 @@ def k8s_read_namespaced_deployment(
         raise
 
 
-def k8s_get_tls_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | None:
+def k8s_get_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | None:
     try:
         return kubernetes.client.CoreV1Api().read_namespaced_secret(
             name=name, namespace=namespace

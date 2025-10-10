@@ -131,11 +131,11 @@ class ResourceProxy(BaseModel):
 
     def get_certificate_authority_cert(self) -> str | None:
         if secret_ref := self.certificate_authority_cert_secret_ref:
-            tls_secret = k8s_get_secret(secret_ref.namespace, secret_ref.name)
-            if not tls_secret:
+            secret = k8s_get_secret(secret_ref.namespace, secret_ref.name)
+            if not secret:
                 return None
 
-            return base64.b64decode(get_ca_cert(tls_secret)).decode()
+            return base64.b64decode(get_ca_cert(secret)).decode()
 
         return self.certificate_authority_cert
 

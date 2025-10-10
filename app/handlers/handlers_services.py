@@ -88,14 +88,14 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             result["spec"][key] = convert_f(value)
 
     if result["spec"].get("type") == ResourceType.KUBERNETES:
-        if not (tls_secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
+        if not (secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
             raise kopf.PermanentError(
                 f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
             )
 
-        if not (tls_secret := k8s_get_secret(namespace, tls_secret_name)):
+        if not (secret := k8s_get_secret(namespace, secret_name)):
             raise kopf.PermanentError(
-                f"Kubernetes Secret object: {tls_secret_name} is missing."
+                f"Kubernetes Secret object: {secret_name} is missing."
             )
 
         result["spec"] |= {
@@ -106,7 +106,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                     if spec["type"] == ServiceType.LOAD_BALANCER
                     else f"{service_name}.{namespace}.svc.cluster.local"
                 ),
-                "certificateAuthorityCert": get_ca_cert(tls_secret),
+                "certificateAuthorityCert": get_ca_cert(secret),
             },
         }
 

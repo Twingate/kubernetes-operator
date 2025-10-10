@@ -59,9 +59,9 @@ def k8s_get_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | No
         raise
 
 
-def get_ca_cert(tls_secret: kubernetes.client.V1Secret) -> str:
-    secret_name = tls_secret.metadata.name
-    if not (ca_cert := tls_secret.data.get("ca.crt")):
+def get_ca_cert(secret: kubernetes.client.V1Secret) -> str:
+    secret_name = secret.metadata.name
+    if not (ca_cert := secret.data.get("ca.crt")):
         raise kopf.PermanentError(
             f"Kubernetes Secret object: {secret_name} is missing ca.crt."
         )

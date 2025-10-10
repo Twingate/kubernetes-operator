@@ -78,29 +78,20 @@ class TestK8sGetTLSSecret:
 
 
 class TestGetCACert:
-    def test_get_ca_cert(self, k8s_tls_secret_mock):
-        assert get_ca_cert(k8s_tls_secret_mock) == BASE64_OF_VALID_CA_CERT
+    def test_get_ca_cert(self, k8s_secret_mock):
+        assert get_ca_cert(k8s_secret_mock) == BASE64_OF_VALID_CA_CERT
 
-    def test_get_ca_cert_with_invalid_secret_type(self, k8s_tls_secret_mock):
-        k8s_tls_secret_mock.type = "kubernetes.io/token"
-
-        with pytest.raises(
-            kopf.PermanentError,
-            match=r"Kubernetes Secret object: gateway-tls type is invalid.",
-        ):
-            get_ca_cert(k8s_tls_secret_mock)
-
-    def test_get_ca_cert_with_missing_ca_cert(self, k8s_tls_secret_mock):
-        k8s_tls_secret_mock.data = {}
+    def test_get_ca_cert_with_missing_ca_cert(self, k8s_secret_mock):
+        k8s_secret_mock.data = {}
 
         with pytest.raises(
             kopf.PermanentError,
             match=r"Kubernetes Secret object: gateway-tls is missing ca.crt.",
         ):
-            get_ca_cert(k8s_tls_secret_mock)
+            get_ca_cert(k8s_secret_mock)
 
-    def test_get_ca_cert_with_invalid_ca_cert(self, k8s_tls_secret_mock):
-        k8s_tls_secret_mock.data["ca.crt"] = (
+    def test_get_ca_cert_with_invalid_ca_cert(self, k8s_secret_mock):
+        k8s_secret_mock.data["ca.crt"] = (
             "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tIE1JSUZmakNDQTJhZ0F3SUJBZ0lVQk50IC0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
         )
 
@@ -108,4 +99,4 @@ class TestGetCACert:
             kopf.PermanentError,
             match=r"Kubernetes Secret object: gateway-tls ca.crt is invalid.",
         ):
-            get_ca_cert(k8s_tls_secret_mock)
+            get_ca_cert(k8s_secret_mock)

@@ -176,11 +176,11 @@ class TestServiceToTwingateResource:
         self,
         example_cluster_ip_gateway_service_body,
         k8s_core_client_mock,
-        k8s_tls_secret_mock,
+        k8s_secret_mock,
     ):
         tls_object_name = "gateway-tls"
         namespace = "custom-namespace"
-        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
         with patch(
             "app.handlers.handlers_services.get_ca_cert", wraps=get_ca_cert
@@ -189,7 +189,7 @@ class TestServiceToTwingateResource:
                 example_cluster_ip_gateway_service_body, namespace
             )
 
-        get_ca_cert_mock.assert_called_once_with(k8s_tls_secret_mock)
+        get_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
         k8s_core_client_mock.read_namespaced_secret.assert_called_once_with(
             namespace=namespace, name=tls_object_name
         )
@@ -258,13 +258,13 @@ class TestServiceToTwingateResource:
         self,
         example_load_balancer_gateway_service_body,
         k8s_core_client_mock,
-        k8s_tls_secret_mock,
+        k8s_secret_mock,
         status,
         expected,
     ):
         tls_object_name = "gateway-tls"
         namespace = "default"
-        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
         with patch(
             "kopf._cogs.structs.bodies.Body.status",

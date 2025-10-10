@@ -60,22 +60,17 @@ def k8s_get_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | No
 
 
 def get_ca_cert(tls_secret: kubernetes.client.V1Secret) -> str:
-    tls_secret_name = tls_secret.metadata.name
-    if tls_secret.type != "kubernetes.io/tls":
-        raise kopf.PermanentError(
-            f"Kubernetes Secret object: {tls_secret_name} type is invalid."
-        )
-
+    secret_name = tls_secret.metadata.name
     if not (ca_cert := tls_secret.data.get("ca.crt")):
         raise kopf.PermanentError(
-            f"Kubernetes Secret object: {tls_secret_name} is missing ca.crt."
+            f"Kubernetes Secret object: {secret_name} is missing ca.crt."
         )
 
     try:
         validate_pem_x509_certificate(base64.b64decode(ca_cert).decode())
     except ValueError as ex:
         raise kopf.PermanentError(
-            f"Kubernetes Secret object: {tls_secret_name} ca.crt is invalid."
+            f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
         ) from ex
 
     return ca_cert

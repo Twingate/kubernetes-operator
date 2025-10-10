@@ -44,7 +44,7 @@ def k8s_apps_client_mock():
 
 
 @pytest.fixture
-def k8s_tls_secret_mock():
+def k8s_secret_mock():
     return kubernetes.client.V1Secret(
         type="kubernetes.io/tls",
         metadata=kubernetes.client.V1ObjectMeta(name="gateway-tls"),

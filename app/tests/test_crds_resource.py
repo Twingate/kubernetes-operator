@@ -295,18 +295,18 @@ def test_resource_proxy_get_certificate_authority_cert_without_secret_ref():
 
 
 def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
-    k8s_core_client_mock, k8s_tls_secret_mock
+    k8s_core_client_mock, k8s_secret_mock
 ):
     proxy = ResourceProxy(
         address="proxy.default.cluster.local",
         certificate_authority_cert_secret_ref=_KubernetesObjectRef(name="gateway-tls"),
         certificate_authority_cert=None,
     )
-    k8s_core_client_mock.read_namespaced_secret.return_value = k8s_tls_secret_mock
+    k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
     with patch("app.crds.get_ca_cert", wraps=get_ca_cert) as get_ca_cert_mock:
         assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
-        get_ca_cert_mock.assert_called_once_with(k8s_tls_secret_mock)
+        get_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
 
 
 def test_network_resource_spec_to_graphql_arguments(sample_network_resource_object):

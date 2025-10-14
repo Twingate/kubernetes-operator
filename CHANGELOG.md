@@ -1,6 +1,72 @@
 # CHANGELOG
 
 
+## v0.26.4 (2025-10-14)
+
+### Chores
+
+- Bump cryptography from 45.0.7 to 46.0.1
+  ([#791](https://github.com/Twingate/kubernetes-operator/pull/791),
+  [`4ba9d0a`](https://github.com/Twingate/kubernetes-operator/commit/4ba9d0ac40eaa283846d535fa58ac740157d6999))
+
+- Bump cryptography from 46.0.1 to 46.0.2
+  ([#801](https://github.com/Twingate/kubernetes-operator/pull/801),
+  [`fc8fdd8`](https://github.com/Twingate/kubernetes-operator/commit/fc8fdd8398f1eb674c4db59e4cbaaf44745407ee))
+
+- Bump hadolint/hadolint-action from 3.2.0 to 3.3.0
+  ([#796](https://github.com/Twingate/kubernetes-operator/pull/796),
+  [`cbd7460`](https://github.com/Twingate/kubernetes-operator/commit/cbd74606486bffd377376ba5513de90801aa9408))
+
+- Bump kubernetes from 33.1.0 to 34.1.0
+  ([#800](https://github.com/Twingate/kubernetes-operator/pull/800),
+  [`47b7329`](https://github.com/Twingate/kubernetes-operator/commit/47b73299b271b20b2e307542b9c7069d6e38a229))
+
+- Bump kubernetes-access-gateway from 0.10.0 to 0.10.1 in /deploy/twingate-operator
+  ([#811](https://github.com/Twingate/kubernetes-operator/pull/811),
+  [`01728e5`](https://github.com/Twingate/kubernetes-operator/commit/01728e561ff2d60f9825d78642046e2d5e47a45b))
+
+- Bump mypy from 1.18.1 to 1.18.2 ([#794](https://github.com/Twingate/kubernetes-operator/pull/794),
+  [`4846803`](https://github.com/Twingate/kubernetes-operator/commit/4846803c76c3437bc1864f04927be320fffbe72d))
+
+- Bump pydantic from 2.11.10 to 2.12.0
+  ([#805](https://github.com/Twingate/kubernetes-operator/pull/805),
+  [`a5699d6`](https://github.com/Twingate/kubernetes-operator/commit/a5699d65611c6dda427e72129c85685cf8be2ac0))
+
+- Bump pydantic from 2.11.9 to 2.11.10
+  ([#803](https://github.com/Twingate/kubernetes-operator/pull/803),
+  [`c714bdc`](https://github.com/Twingate/kubernetes-operator/commit/c714bdce7379398af23b2af88fade7c551952bea))
+
+- Bump pydantic from 2.12.0 to 2.12.1
+  ([#810](https://github.com/Twingate/kubernetes-operator/pull/810),
+  [`8c1b0c7`](https://github.com/Twingate/kubernetes-operator/commit/8c1b0c7d44438df14393754a7fa4231e94c77bca))
+
+- Bump pydantic-settings from 2.10.1 to 2.11.0
+  ([#797](https://github.com/Twingate/kubernetes-operator/pull/797),
+  [`71a17c0`](https://github.com/Twingate/kubernetes-operator/commit/71a17c0eef97319a337e9ee759535de48680f363))
+
+- Bump pyupgrade from 3.20.0 to 3.21.0
+  ([#809](https://github.com/Twingate/kubernetes-operator/pull/809),
+  [`be5c327`](https://github.com/Twingate/kubernetes-operator/commit/be5c327b150499217c06ffa998461363ff2e3013))
+
+- Bump ruff from 0.13.0 to 0.13.1 ([#793](https://github.com/Twingate/kubernetes-operator/pull/793),
+  [`3877370`](https://github.com/Twingate/kubernetes-operator/commit/3877370f6c5e2c6463e47cf847d9c0c3c13ac8a3))
+
+- Bump ruff from 0.13.1 to 0.13.2 ([#798](https://github.com/Twingate/kubernetes-operator/pull/798),
+  [`65957fa`](https://github.com/Twingate/kubernetes-operator/commit/65957fa343390024e56b4dc1431c3d218ee1d48f))
+
+- Bump ruff from 0.13.2 to 0.13.3 ([#802](https://github.com/Twingate/kubernetes-operator/pull/802),
+  [`88331fe`](https://github.com/Twingate/kubernetes-operator/commit/88331fe3685a772c9d88aeb5263a83ce4e66dbf8))
+
+- Bump ruff from 0.13.3 to 0.14.0 ([#806](https://github.com/Twingate/kubernetes-operator/pull/806),
+  [`8542681`](https://github.com/Twingate/kubernetes-operator/commit/854268163d9955df5844f9bb0753fa148c58b3b1))
+
+- Bump syrupy from 4.9.1 to 5.0.0 ([#799](https://github.com/Twingate/kubernetes-operator/pull/799),
+  [`c639ac1`](https://github.com/Twingate/kubernetes-operator/commit/c639ac1328b024ec3b8697b7eb83502be7563e7d))
+
+- Upgrade Poetry to 2.2.1 ([#804](https://github.com/Twingate/kubernetes-operator/pull/804),
+  [`96098a7`](https://github.com/Twingate/kubernetes-operator/commit/96098a776f2159d4a8150456c5fe3061d56f4d5f))
+
+
 ## v0.26.3 (2025-09-17)
 
 ### Bug Fixes

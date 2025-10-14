@@ -40,6 +40,10 @@
   ([#810](https://github.com/Twingate/kubernetes-operator/pull/810),
   [`8c1b0c7`](https://github.com/Twingate/kubernetes-operator/commit/8c1b0c7d44438df14393754a7fa4231e94c77bca))
 
+- Bump pydantic from 2.12.1 to 2.12.2
+  ([#812](https://github.com/Twingate/kubernetes-operator/pull/812),
+  [`318d603`](https://github.com/Twingate/kubernetes-operator/commit/318d603f650c3cb6c33e1aa1a5af9f4716ce38ca))
+
 - Bump pydantic-settings from 2.10.1 to 2.11.0
   ([#797](https://github.com/Twingate/kubernetes-operator/pull/797),
   [`71a17c0`](https://github.com/Twingate/kubernetes-operator/commit/71a17c0eef97319a337e9ee759535de48680f363))

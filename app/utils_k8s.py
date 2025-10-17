@@ -1,4 +1,9 @@
+import base64
+
+import kopf
 import kubernetes
+
+from app.utils import validate_pem_x509_certificate
 
 
 def k8s_read_namespaced_pod(
@@ -40,3 +45,32 @@ def k8s_read_namespaced_deployment(
         if ex.status == 404:
             return None
         raise
+
+
+def k8s_get_secret(namespace: str, name: str) -> kubernetes.client.V1Secret | None:
+    try:
+        return kubernetes.client.CoreV1Api().read_namespaced_secret(
+            name=name, namespace=namespace
+        )
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            return None
+
+        raise
+
+
+def get_ca_cert(secret: kubernetes.client.V1Secret) -> str:
+    secret_name = secret.metadata.name
+    if not (ca_cert := secret.data.get("ca.crt")):
+        raise kopf.PermanentError(
+            f"Kubernetes Secret object: {secret_name} is missing ca.crt."
+        )
+
+    try:
+        validate_pem_x509_certificate(base64.b64decode(ca_cert).decode())
+    except ValueError as ex:
+        raise kopf.PermanentError(
+            f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
+        ) from ex
+
+    return ca_cert

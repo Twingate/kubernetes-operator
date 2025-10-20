@@ -23,7 +23,8 @@ from pydantic.alias_generators import to_camel
 from semantic_version import NpmSpec
 
 from app.settings import get_settings
-from app.utils_k8s import get_ca_cert, k8s_get_secret
+from app.utils import validate_pem_x509_certificate
+from app.utils_k8s import k8s_read_namespaced_secret
 from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
@@ -131,13 +132,33 @@ class ResourceProxy(BaseModel):
 
     def get_certificate_authority_cert(self) -> str | None:
         if secret_ref := self.certificate_authority_cert_secret_ref:
-            secret = k8s_get_secret(secret_ref.namespace, secret_ref.name)
-            if not secret:
-                return None
+            if secret := k8s_read_namespaced_secret(
+                secret_ref.namespace, secret_ref.name
+            ):
+                return self.read_certificate_authority_cert_from_secret(secret)
 
-            return base64.b64decode(get_ca_cert(secret)).decode()
+            return None
 
         return self.certificate_authority_cert
+
+    @staticmethod
+    def read_certificate_authority_cert_from_secret(
+        secret: kubernetes.client.V1Secret,
+    ) -> str:
+        secret_name = secret.metadata.name
+        if not (ca_cert := secret.data.get("ca.crt")):
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} is missing ca.crt."
+            )
+
+        try:
+            ca_cert = base64.b64decode(ca_cert).decode()
+            validate_pem_x509_certificate(ca_cert)
+            return ca_cert
+        except ValueError as ex:
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
+            ) from ex
 
 
 class ResourceType(StrEnum):

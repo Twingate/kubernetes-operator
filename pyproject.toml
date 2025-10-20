@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.26.3"
+version = "0.26.4"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
@@ -9,18 +9,18 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 croniter = "^6.0.0"
-google-cloud-artifact-registry = "^1.16.1"
+google-cloud-artifact-registry = "^1.17.0"
 gql = {version = "~=4.0.0", extras = ["requests"]}
 kopf = "^1.38.0"
 kubernetes = "^34.1.0"
 orjson = "^3.11.3"
 pendulum = "^3.1.0"
-pydantic = "^2.12.0"
+pydantic = "^2.12.2"
 pydantic-settings = "^2.11.0"
 requests = "^2.32.5"
 semantic-version = "^2.10.0"
 tenacity = "^9.1.2"
-cryptography = "^46.0.2"
+cryptography = "^46.0.3"
 
 [tool.poetry.group.dev]
 optional = true
@@ -37,9 +37,9 @@ pytest-datadir = "^1.8.0"
 pytest-factoryboy = "^2.8.1"
 pytest-randomly = "^4.0.1"
 pytest-sugar = "^1.1.1"
-pyupgrade = "^3.20.0"
+pyupgrade = "^3.21.0"
 responses = "^0.25.8"
-ruff = "^0.14.0"
+ruff = "^0.14.1"
 syrupy = "^5.0.0"
 types-croniter = "^6.0.0.20250809"
 types-requests = "^2.32.4.20250913"

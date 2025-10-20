@@ -12,7 +12,6 @@ from app.crds import (
     TwingateResourceCRD,
     _KubernetesObjectRef,
 )
-from app.utils_k8s import get_ca_cert
 
 
 @pytest.fixture
@@ -304,9 +303,12 @@ def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
     )
     k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
-    with patch("app.crds.get_ca_cert", wraps=get_ca_cert) as get_ca_cert_mock:
+    with patch(
+        "app.crds.ResourceProxy.read_certificate_authority_cert_from_secret",
+        wraps=proxy.read_certificate_authority_cert_from_secret,
+    ) as read_ca_cert_mock:
         assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
-        get_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
+        read_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
 
 
 def test_network_resource_spec_to_graphql_arguments(sample_network_resource_object):
@@ -410,3 +412,31 @@ def test_resource_proxy_certificate_authority_cert_should_trim_whitespace(
     )
 
     assert resource_spec.proxy.certificate_authority_cert == VALID_CA_CERT
+
+
+class TestResourceProxyReadCACertFromSecret:
+    def test_read_ca_cert_from_secret(self, k8s_secret_mock):
+        assert (
+            ResourceProxy.read_certificate_authority_cert_from_secret(k8s_secret_mock)
+            == VALID_CA_CERT
+        )
+
+    def test_read_ca_cert_from_secret_with_missing_ca_cert(self, k8s_secret_mock):
+        k8s_secret_mock.data = {}
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"Kubernetes Secret object: gateway-tls is missing ca.crt.",
+        ):
+            ResourceProxy.read_certificate_authority_cert_from_secret(k8s_secret_mock)
+
+    def test_read_ca_cert_from_secret_with_invalid_ca_cert(self, k8s_secret_mock):
+        k8s_secret_mock.data["ca.crt"] = (
+            "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tIE1JSUZmakNDQTJhZ0F3SUJBZ0lVQk50IC0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
+        )
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"Kubernetes Secret object: gateway-tls ca.crt is invalid.",
+        ):
+            ResourceProxy.read_certificate_authority_cert_from_secret(k8s_secret_mock)

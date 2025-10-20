@@ -7,7 +7,7 @@ import yaml
 from kopf._core.intents.causes import Reason
 
 from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
-from app.crds import ResourceType
+from app.crds import ResourceProxy, ResourceType
 from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,
     TLS_OBJECT_ANNOTATION,
@@ -15,7 +15,6 @@ from app.handlers.handlers_services import (
     service_to_twingate_resource,
     twingate_service_create,
 )
-from app.utils_k8s import get_ca_cert
 
 # Ignore the fact we use _cogs here
 
@@ -183,13 +182,14 @@ class TestServiceToTwingateResource:
         k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
         with patch(
-            "app.handlers.handlers_services.get_ca_cert", wraps=get_ca_cert
-        ) as get_ca_cert_mock:
+            "app.handlers.handlers_services.ResourceProxy.read_certificate_authority_cert_from_secret",
+            wraps=ResourceProxy.read_certificate_authority_cert_from_secret,
+        ) as read_ca_cert_mock:
             result = service_to_twingate_resource(
                 example_cluster_ip_gateway_service_body, namespace
             )
 
-        get_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
+        read_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
         k8s_core_client_mock.read_namespaced_secret.assert_called_once_with(
             namespace=namespace, name=tls_object_name
         )

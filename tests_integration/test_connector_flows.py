@@ -96,7 +96,7 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
             name: {connector_name}
             hasStatusNotificationsEnabled: false
             image:
-                tag: "1.74.0"
+                tag: "1.77.0"
     """
     wait_for_deployment = functools.partial(
         kubectl_wait_deployment_available,

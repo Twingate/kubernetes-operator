@@ -12,6 +12,8 @@ from tests_integration.utils import (
     kubectl_wait_to_exist,
 )
 
+CONNECTOR_VERSION = "1.77.0"
+
 
 def test_connector_flows(run_kopf, random_name_generator):
     connector_name = random_name_generator("t")
@@ -96,7 +98,7 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
             name: {connector_name}
             hasStatusNotificationsEnabled: false
             image:
-                tag: "1.77.0"
+                tag: {CONNECTOR_VERSION}
     """
     wait_for_deployment = functools.partial(
         kubectl_wait_deployment_available,
@@ -146,7 +148,7 @@ def test_connector_flows_deployment_gone_while_operator_down(
             name: {connector_name}
             hasStatusNotificationsEnabled: false
             image:
-                tag: "1.63.0"
+                tag: {CONNECTOR_VERSION}
     """
 
     wait_for_deployment = functools.partial(

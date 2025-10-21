@@ -96,7 +96,7 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
             name: {connector_name}
             hasStatusNotificationsEnabled: false
             image:
-                tag: "1.74.0"
+                tag: "1.77.0"
     """
     wait_for_deployment = functools.partial(
         kubectl_wait_deployment_available,
@@ -120,7 +120,7 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
 
         # Change image tag
         # kubectl patch tc/test-connector-image-local -p '{"spec": {"image": {"tag": "1.63.0"}}}' --type=merge
-        kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.75.0"}}})
+        kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.78.0"}}})
         time.sleep(5)
         wait_for_deployment()
 
@@ -146,7 +146,7 @@ def test_connector_flows_deployment_gone_while_operator_down(
             name: {connector_name}
             hasStatusNotificationsEnabled: false
             image:
-                tag: "1.63.0"
+                tag: "1.77.0"
     """
 
     wait_for_deployment = functools.partial(

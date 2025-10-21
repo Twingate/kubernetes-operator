@@ -146,7 +146,7 @@ def test_connector_flows_deployment_gone_while_operator_down(
             name: {connector_name}
             hasStatusNotificationsEnabled: false
             image:
-                tag: "1.63.0"
+                tag: "1.77.0"
     """
 
     wait_for_deployment = functools.partial(

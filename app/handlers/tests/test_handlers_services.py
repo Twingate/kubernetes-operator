@@ -6,8 +6,7 @@ import pytest
 import yaml
 from kopf._core.intents.causes import Reason
 
-from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
-from app.crds import ResourceProxy, ResourceType
+from app.crds import ResourceType
 from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,
     TLS_OBJECT_ANNOTATION,
@@ -172,26 +171,13 @@ class TestServiceToTwingateResource:
         assert result == expected
 
     def test_kubernetes_resource_type_annotation(
-        self,
-        example_cluster_ip_gateway_service_body,
-        k8s_core_client_mock,
-        k8s_secret_mock,
+        self, example_cluster_ip_gateway_service_body
     ):
         tls_object_name = "gateway-tls"
         namespace = "custom-namespace"
-        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
-        with patch(
-            "app.handlers.handlers_services.ResourceProxy.read_certificate_authority_cert_from_secret",
-            wraps=ResourceProxy.read_certificate_authority_cert_from_secret,
-        ) as read_ca_cert_mock:
-            result = service_to_twingate_resource(
-                example_cluster_ip_gateway_service_body, namespace
-            )
-
-        read_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
-        k8s_core_client_mock.read_namespaced_secret.assert_called_once_with(
-            namespace=namespace, name=tls_object_name
+        result = service_to_twingate_resource(
+            example_cluster_ip_gateway_service_body, namespace
         )
 
         assert result["spec"] == {
@@ -200,7 +186,10 @@ class TestServiceToTwingateResource:
             "alias": "alias.int",
             "proxy": {
                 "address": "kubernetes-gateway.custom-namespace.svc.cluster.local",
-                "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,
+                "certificateAuthorityCertSecretRef": {
+                    "name": tls_object_name,
+                    "namespace": namespace,
+                },
             },
             "protocols": {
                 "allowIcmp": False,
@@ -231,19 +220,6 @@ class TestServiceToTwingateResource:
                 example_cluster_ip_gateway_service_body, "default"
             )
 
-    def test_kubernetes_resource_type_annotation_without_k8s_secret_object(
-        self, example_cluster_ip_gateway_service_body, k8s_core_client_mock
-    ):
-        k8s_core_client_mock.read_namespaced_secret.return_value = None
-
-        with pytest.raises(
-            kopf.PermanentError,
-            match=r"Kubernetes Secret object: gateway-tls is missing.",
-        ):
-            service_to_twingate_resource(
-                example_cluster_ip_gateway_service_body, "default"
-            )
-
     @pytest.mark.parametrize(
         ("status", "expected"),
         [
@@ -255,16 +231,10 @@ class TestServiceToTwingateResource:
         ],
     )
     def test_kubernetes_resource_with_load_balancer_service_type(
-        self,
-        example_load_balancer_gateway_service_body,
-        k8s_core_client_mock,
-        k8s_secret_mock,
-        status,
-        expected,
+        self, example_load_balancer_gateway_service_body, status, expected
     ):
         tls_object_name = "gateway-tls"
         namespace = "default"
-        k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
 
         with patch(
             "kopf._cogs.structs.bodies.Body.status",
@@ -275,17 +245,16 @@ class TestServiceToTwingateResource:
                 example_load_balancer_gateway_service_body, namespace
             )
 
-        k8s_core_client_mock.read_namespaced_secret.assert_called_once_with(
-            namespace=namespace, name=tls_object_name
-        )
-
         assert result["spec"] == {
             "name": "kubernetes-gateway-resource",
             "address": "kubernetes.default.svc.cluster.local",
             "alias": "alias.int",
             "proxy": {
                 "address": expected,
-                "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,
+                "certificateAuthorityCertSecretRef": {
+                    "name": tls_object_name,
+                    "namespace": namespace,
+                },
             },
             "protocols": {
                 "allowIcmp": False,

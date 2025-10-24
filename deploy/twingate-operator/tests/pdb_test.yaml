@@ -20,7 +20,6 @@ tests:
       pdb:
         create: true
         minAvailable: 1
-        maxUnavailable: ""
     asserts:
       - hasDocuments:
           count: 1
@@ -36,7 +35,6 @@ tests:
     set:
       pdb:
         create: true
-        minAvailable: ""
         maxUnavailable: "25%"
     asserts:
       - hasDocuments:

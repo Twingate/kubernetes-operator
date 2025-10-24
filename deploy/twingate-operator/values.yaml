@@ -130,7 +130,7 @@ extraEnvVars: []
 pdb:
   create: false
   # minAvailable: 1
-  # maxUnavailable: 
+  # maxUnavailable:
 
 rbac:
   ## Create ClusterRoles that extend the existing view, edit and admin ClusterRoles to interact with Twingate's CRDs

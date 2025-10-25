@@ -40,3 +40,17 @@ def k8s_read_namespaced_deployment(
         if ex.status == 404:
             return None
         raise
+
+
+def k8s_read_namespaced_secret(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+) -> kubernetes.client.V1Secret | None:
+    try:
+        kapi = kapi or kubernetes.client.CoreV1Api()
+
+        return kapi.read_namespaced_secret(name=name, namespace=namespace)
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            return None
+
+        raise

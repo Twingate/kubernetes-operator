@@ -19,6 +19,12 @@ def assert_log_message_starts_with(logs, message):
     )
 
 
+def assert_log_message_contains(logs, message):
+    assert any(message in log["message"] for log in logs), (
+        f"Could not find log message containing '{message}'"
+    )
+
+
 def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         f"{KUBECTL_COMMAND} {command}",

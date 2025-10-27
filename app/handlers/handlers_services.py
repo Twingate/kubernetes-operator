@@ -132,14 +132,15 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"Kubernetes Secret object: {tls_secret_name} is missing."
             )
 
+        host = (
+            get_load_balancer_address(status, service_name)
+            if spec["type"] == ServiceType.LOAD_BALANCER
+            else f"{service_name}.{namespace}.svc.cluster.local"
+        )
         result["spec"] |= {
             "address": "kubernetes.default.svc.cluster.local",
             "proxy": {
-                "address": (
-                    get_load_balancer_address(status, service_name)
-                    if spec["type"] == ServiceType.LOAD_BALANCER
-                    else f"{service_name}.{namespace}.svc.cluster.local"
-                ),
+                "address": f"{host}:443",
                 "certificateAuthorityCert": get_ca_cert(tls_secret),
             },
         }

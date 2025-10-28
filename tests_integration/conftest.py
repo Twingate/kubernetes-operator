@@ -56,7 +56,11 @@ def random_name_generator(ci_run_number):
 def run_kopf(kopf_runner_args, kopf_settings):
     @contextmanager
     def inner(
-        *, enable_connector_reconciler=True, enable_group_reconciler=True, cleanup=True
+        *,
+        enable_connector_reconciler=True,
+        enable_group_reconciler=True,
+        enable_resource_reconciler=True,
+        cleanup=True,
     ):
         env = {}
         if enable_connector_reconciler:
@@ -66,6 +70,12 @@ def run_kopf(kopf_runner_args, kopf_settings):
         if enable_group_reconciler:
             env["GROUP_RECONCILER_INTERVAL"] = "1"
             env["GROUP_RECONCILER_INIT_DELAY"] = "1"
+            env["GROUP_RECONCILER_IDLE"] = "1"
+
+        if enable_resource_reconciler:
+            env["RESOURCE_RECONCILER_INTERVAL"] = "1"
+            env["RESOURCE_RECONCILER_INIT_DELAY"] = "1"
+            env["RESOURCE_RECONCILER_IDLE"] = "1"
 
         with KopfRunner(
             kopf_runner_args,

@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 
 import kopf
@@ -90,8 +91,16 @@ def twingate_resource_delete(spec, status, memo, logger, **kwargs):
         client.resource_delete(resource_id)
 
 
+RESOURCE_RECONCILER_INTERVAL = int(os.environ.get("RESOURCE_RECONCILER_INTERVAL", timedelta(hours=10).seconds))  # fmt: skip
+RESOURCE_RECONCILER_INIT_DELAY = int(os.environ.get("RESOURCE_RECONCILER_INIT_DELAY", 60))  # fmt: skip
+RESOURCE_RECONCILER_IDLE = int(os.environ.get("RESOURCE_RECONCILER_IDLE", 60))  # fmt: skip
+
+
 @kopf.timer(
-    "twingateresource", interval=timedelta(hours=10).seconds, initial_delay=60, idle=60
+    "twingateresource",
+    interval=RESOURCE_RECONCILER_INTERVAL,
+    initial_delay=RESOURCE_RECONCILER_INIT_DELAY,
+    idle=RESOURCE_RECONCILER_IDLE,
 )
 def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
     crd = ResourceSpec(**spec)
@@ -101,30 +110,29 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         if resource := client.get_resource(resource_id):
             logger.info("Got resource %s", resource)
-            if not (
-                resource.is_matching_spec(crd) and resource.is_matching_labels(labels)
-            ):
-                logger.info("Resource %s is out of date, updating...", resource_id)
-                client.resource_update(
-                    resource_type=crd.type, **crd.to_graphql_arguments(labels=labels)
-                )
-                return success(
-                    twingate_id=resource.id,
-                    created_at=resource.created_at.isoformat(),
-                    updated_at=resource.updated_at.isoformat(),
-                )
-        else:
-            # Resource was deleted, recreate it
-            logger.info("Resource %s was deleted, recreating...", resource_id)
-            graphql_arguments = crd.to_graphql_arguments(labels=labels, exclude={"id"})
-            resource = client.resource_create(
-                resource_type=crd.type, **graphql_arguments
+            if resource.is_matching_spec(crd) and resource.is_matching_labels(labels):
+                return success(twingate_id=resource_id, message="No update required")
+
+            logger.info("Resource %s is out of date, updating...", resource_id)
+            client.resource_update(
+                resource_type=crd.type, **crd.to_graphql_arguments(labels=labels)
             )
-            patch.spec["id"] = resource.id
+
             return success(
                 twingate_id=resource.id,
                 created_at=resource.created_at.isoformat(),
                 updated_at=resource.updated_at.isoformat(),
             )
+
+        # Resource was deleted, recreate it
+        logger.info("Resource %s was deleted, recreating...", resource_id)
+        graphql_arguments = crd.to_graphql_arguments(labels=labels, exclude={"id"})
+        resource = client.resource_create(resource_type=crd.type, **graphql_arguments)
+        patch.spec["id"] = resource.id
+        return success(
+            twingate_id=resource.id,
+            created_at=resource.created_at.isoformat(),
+            updated_at=resource.updated_at.isoformat(),
+        )
 
     return None

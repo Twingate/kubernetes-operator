@@ -1,4 +1,3 @@
-import base64
 from collections.abc import Callable
 from enum import StrEnum
 from typing import cast
@@ -7,9 +6,8 @@ import kopf
 import kubernetes
 from kopf import Body, Status
 
-from app.crds import ResourceProxy, ResourceType
+from app.crds import ResourceType
 from app.utils import to_bool
-from app.utils_k8s import k8s_read_namespaced_secret
 
 
 def k8s_get_twingate_resource(
@@ -94,11 +92,6 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
             )
 
-        if not (secret := k8s_read_namespaced_secret(namespace, secret_name)):
-            raise kopf.PermanentError(
-                f"Kubernetes Secret object: {secret_name} is missing."
-            )
-
         result["spec"] |= {
             "address": "kubernetes.default.svc.cluster.local",
             "proxy": {
@@ -107,11 +100,10 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                     if spec["type"] == ServiceType.LOAD_BALANCER
                     else f"{service_name}.{namespace}.svc.cluster.local"
                 ),
-                "certificateAuthorityCert": base64.b64encode(
-                    ResourceProxy.read_certificate_authority_cert_from_secret(
-                        secret
-                    ).encode()
-                ).decode(),
+                "certificateAuthorityCertSecretRef": {
+                    "name": secret_name,
+                    "namespace": namespace,
+                },
             },
         }
 

@@ -67,7 +67,7 @@ test-cov: ##@tests Runs all tests with coverage
 
 .PHONY: test-int
 test-int: ##@tests Runs integration tests
-	poetry run pytest ./tests_integration -m "integration" -vv -l -x
+	poetry run pytest  -m "integration" -vv -l -x
 
 .PHONY: test-helm
 test-helm: ##@test Run helm-unittest

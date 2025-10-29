@@ -56,7 +56,7 @@ def random_name_generator(ci_run_number):
 @pytest.fixture
 def run_kopf(kopf_runner_args, kopf_settings):
     def unload_operator_modules():
-        modules_names_to_unload = [m for m in sys.modules if m.startswith("app.")]
+        modules_names_to_unload = [m for m in list(sys.modules.keys()) if m.startswith("app.")]
         for module_to_unload in modules_names_to_unload:
             del sys.modules[module_to_unload]
 

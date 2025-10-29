@@ -1,6 +1,7 @@
 import os
 import random
 import string
+import sys
 import time
 import uuid
 from contextlib import contextmanager
@@ -54,10 +55,17 @@ def random_name_generator(ci_run_number):
 
 @pytest.fixture
 def run_kopf(kopf_runner_args, kopf_settings):
+    def unload_operator_modules():
+        modules_names_to_unload = [m for m in sys.modules if m.startswith("app.")]
+        for module_to_unload in modules_names_to_unload:
+            del sys.modules[module_to_unload]
+
     @contextmanager
     def inner(
         *, enable_connector_reconciler=True, enable_group_reconciler=True, cleanup=True
     ):
+        unload_operator_modules()
+
         env = {}
         if enable_connector_reconciler:
             env["CONNECTOR_RECONCILER_INTERVAL"] = "1"

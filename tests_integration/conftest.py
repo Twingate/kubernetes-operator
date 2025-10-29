@@ -4,7 +4,7 @@ import string
 import sys
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import kopf
 import pytest
@@ -56,9 +56,11 @@ def random_name_generator(ci_run_number):
 @pytest.fixture
 def run_kopf(kopf_runner_args, kopf_settings):
     def unload_operator_modules():
-        modules_names_to_unload = [m for m in list(sys.modules.keys()) if m.startswith("app.")]
+        sys_modules = list(sys.modules.keys())
+        modules_names_to_unload = [m for m in sys_modules if m.startswith("app.")]
         for module_to_unload in modules_names_to_unload:
-            del sys.modules[module_to_unload]
+            with suppress(KeyError):
+                del sys.modules[module_to_unload]
 
     @contextmanager
     def inner(

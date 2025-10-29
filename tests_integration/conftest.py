@@ -4,7 +4,7 @@ import string
 import sys
 import time
 import uuid
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 
 import kopf
 import pytest
@@ -59,8 +59,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
         sys_modules = list(sys.modules.keys())
         modules_names_to_unload = [m for m in sys_modules if m.startswith("app.")]
         for module_to_unload in modules_names_to_unload:
-            with suppress(KeyError):
-                del sys.modules[module_to_unload]
+            del sys.modules[module_to_unload]
 
     @contextmanager
     def inner(

@@ -61,6 +61,8 @@ def run_kopf(kopf_runner_args, kopf_settings):
         for module_to_unload in modules_names_to_unload:
             del sys.modules[module_to_unload]
 
+        kopf.set_default_registry(None)
+
     @contextmanager
     def inner(
         *,

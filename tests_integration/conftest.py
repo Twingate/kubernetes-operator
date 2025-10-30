@@ -61,9 +61,15 @@ def run_kopf(kopf_runner_args, kopf_settings):
         for module_to_unload in modules_names_to_unload:
             del sys.modules[module_to_unload]
 
+        kopf.set_default_registry(None)
+
     @contextmanager
     def inner(
-        *, enable_connector_reconciler=True, enable_group_reconciler=True, cleanup=True
+        *,
+        enable_connector_reconciler=False,
+        enable_group_reconciler=False,
+        enable_resource_reconciler=False,
+        cleanup=True,
     ):
         unload_operator_modules()
 
@@ -75,6 +81,11 @@ def run_kopf(kopf_runner_args, kopf_settings):
         if enable_group_reconciler:
             env["GROUP_RECONCILER_INTERVAL"] = "1"
             env["GROUP_RECONCILER_INIT_DELAY"] = "1"
+
+        if enable_resource_reconciler:
+            env["RESOURCE_RECONCILER_INTERVAL"] = "1"
+            env["RESOURCE_RECONCILER_INIT_DELAY"] = "1"
+            env["RESOURCE_RECONCILER_IDLE"] = "5"
 
         with KopfRunner(
             kopf_runner_args,

@@ -2,6 +2,7 @@ import base64
 from datetime import datetime
 from typing import Any, Literal
 
+from cryptography import x509
 from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict, Field
@@ -212,12 +213,16 @@ class KubernetesResource(BaseResource):
             """
         )
 
+    @property
+    def x509_ca_cert(self) -> x509.Certificate:
+        return x509.load_pem_x509_certificate(self.certificate_authority_cert.encode())
+
     def is_matching_spec(self, crd: ResourceSpec) -> bool:
         return (
             super().is_matching_spec(crd)
             and crd.proxy is not None
             and self.proxy_address == crd.proxy.address
-            and self.certificate_authority_cert == crd.proxy.certificate_authority_cert
+            and self.x509_ca_cert == crd.proxy.x509_ca_cert
         )
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:

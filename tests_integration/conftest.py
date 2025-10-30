@@ -68,7 +68,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
         *,
         enable_connector_reconciler=True,
         enable_group_reconciler=True,
-        enable_resource_reconciler=True,
+        enable_resource_reconciler=False,
         cleanup=True,
     ):
         unload_operator_modules()

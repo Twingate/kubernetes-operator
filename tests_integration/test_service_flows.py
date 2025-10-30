@@ -440,7 +440,9 @@ def test_service_flows_with_kubernetes_resource(run_kopf, random_name_generator)
     """
 
     with run_kopf(
-        enable_connector_reconciler=False, enable_group_reconciler=False
+        enable_connector_reconciler=False,
+        enable_group_reconciler=False,
+        enable_resource_reconciler=True,
     ) as runner:
         kubectl_create(SECRET_OBJ)
         kubectl_create(SERVICE_OBJ)

@@ -66,8 +66,8 @@ def run_kopf(kopf_runner_args, kopf_settings):
     @contextmanager
     def inner(
         *,
-        enable_connector_reconciler=True,
-        enable_group_reconciler=True,
+        enable_connector_reconciler=False,
+        enable_group_reconciler=False,
         enable_resource_reconciler=False,
         cleanup=True,
     ):
@@ -81,7 +81,6 @@ def run_kopf(kopf_runner_args, kopf_settings):
         if enable_group_reconciler:
             env["GROUP_RECONCILER_INTERVAL"] = "1"
             env["GROUP_RECONCILER_INIT_DELAY"] = "1"
-            env["GROUP_RECONCILER_IDLE"] = "5"
 
         if enable_resource_reconciler:
             env["RESOURCE_RECONCILER_INTERVAL"] = "1"

@@ -81,10 +81,12 @@ def run_kopf(kopf_runner_args, kopf_settings):
         if enable_group_reconciler:
             env["GROUP_RECONCILER_INTERVAL"] = "1"
             env["GROUP_RECONCILER_INIT_DELAY"] = "1"
+            env["GROUP_RECONCILER_IDLE"] = "5"
 
         if enable_resource_reconciler:
             env["RESOURCE_RECONCILER_INTERVAL"] = "1"
             env["RESOURCE_RECONCILER_INIT_DELAY"] = "1"
+            env["RESOURCE_RECONCILER_IDLE"] = "5"
 
         with KopfRunner(
             kopf_runner_args,

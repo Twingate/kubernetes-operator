@@ -1,9 +1,11 @@
+import base64
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum, StrEnum
 from typing import Annotated, Any, cast
 
+import kopf
 import kubernetes.client
 import pendulum
 from croniter import croniter
@@ -21,6 +23,8 @@ from pydantic.alias_generators import to_camel
 from semantic_version import NpmSpec
 
 from app.settings import get_settings
+from app.utils import validate_pem_x509_certificate
+from app.utils_k8s import k8s_read_namespaced_secret
 from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
@@ -122,8 +126,39 @@ class ResourceProxy(BaseModel):
 
     address: str
     certificate_authority_cert: Annotated[
-        Base64Str, AfterValidator(lambda v: v.strip())
-    ]
+        Base64Str | None, AfterValidator(lambda v: v.strip() if v is not None else None)
+    ] = None
+    certificate_authority_cert_secret_ref: _KubernetesObjectRef | None = None
+
+    def get_certificate_authority_cert(self) -> str | None:
+        if secret_ref := self.certificate_authority_cert_secret_ref:
+            if secret := k8s_read_namespaced_secret(
+                secret_ref.namespace, secret_ref.name
+            ):
+                return self.read_certificate_authority_cert_from_secret(secret)
+
+            return None
+
+        return self.certificate_authority_cert
+
+    @staticmethod
+    def read_certificate_authority_cert_from_secret(
+        secret: kubernetes.client.V1Secret,
+    ) -> str:
+        secret_name = secret.metadata.name
+        if not (ca_cert := secret.data.get("ca.crt")):
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} is missing ca.crt."
+            )
+
+        try:
+            ca_cert = base64.b64decode(ca_cert).decode()
+            validate_pem_x509_certificate(ca_cert)
+            return ca_cert
+        except ValueError as ex:
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
+            ) from ex
 
 
 class ResourceType(StrEnum):
@@ -190,9 +225,14 @@ class ResourceSpec(BaseModel):
                 }
             case ResourceType.KUBERNETES:
                 resource_proxy = cast(ResourceProxy, self.proxy)
+                ca_cert = resource_proxy.get_certificate_authority_cert()
+                if ca_cert is None:
+                    raise kopf.PermanentError(
+                        "Certificate authority cert is not found for Kubernetes Resource type"
+                    )
                 graphql_args |= {
                     "proxy_address": resource_proxy.address,
-                    "certificate_authority_cert": resource_proxy.certificate_authority_cert,
+                    "certificate_authority_cert": ca_cert,
                 }
 
         return graphql_args

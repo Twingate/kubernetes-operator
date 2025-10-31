@@ -1,6 +1,68 @@
 # CHANGELOG
 
 
+## v0.27.0 (2025-10-31)
+
+### Bug Fixes
+
+- Fix the reconciliation logic for Kubernetes resource
+  ([#822](https://github.com/Twingate/kubernetes-operator/pull/822),
+  [`ae6a3f2`](https://github.com/Twingate/kubernetes-operator/commit/ae6a3f2dd29c3ea9a15aba0a3efa2577bd579939))
+
+### Chores
+
+- Bump cryptography from 46.0.2 to 46.0.3
+  ([#813](https://github.com/Twingate/kubernetes-operator/pull/813),
+  [`ae57895`](https://github.com/Twingate/kubernetes-operator/commit/ae578951388e3819f6e7b0440aa8958b895a8ba5))
+
+- Bump google-cloud-artifact-registry from 1.16.1 to 1.17.0
+  ([#815](https://github.com/Twingate/kubernetes-operator/pull/815),
+  [`30457a8`](https://github.com/Twingate/kubernetes-operator/commit/30457a848091a640744257e9541cdd0150062c88))
+
+- Bump orjson from 3.11.3 to 3.11.4
+  ([#821](https://github.com/Twingate/kubernetes-operator/pull/821),
+  [`a63a66c`](https://github.com/Twingate/kubernetes-operator/commit/a63a66c9918a2dc4f69e9e4238744799722e54d9))
+
+- Bump pydantic from 2.12.2 to 2.12.3
+  ([#816](https://github.com/Twingate/kubernetes-operator/pull/816),
+  [`df35e22`](https://github.com/Twingate/kubernetes-operator/commit/df35e22af5375f263e6ea0a89c269b7744602386))
+
+- Bump ruff from 0.14.0 to 0.14.1 ([#814](https://github.com/Twingate/kubernetes-operator/pull/814),
+  [`854d2b6`](https://github.com/Twingate/kubernetes-operator/commit/854d2b698410b5d511bf5a2396311d4aabd64727))
+
+- Bump ruff from 0.14.1 to 0.14.2 ([#819](https://github.com/Twingate/kubernetes-operator/pull/819),
+  [`6ccc14d`](https://github.com/Twingate/kubernetes-operator/commit/6ccc14dbca00eab9f3100e89038d3516a54b9c2e))
+
+- Bump ruff from 0.14.2 to 0.14.3 ([#824](https://github.com/Twingate/kubernetes-operator/pull/824),
+  [`f596ac6`](https://github.com/Twingate/kubernetes-operator/commit/f596ac6695c3107e53fcef50226f28f0c8fc605c))
+
+- Update the connector version in integration test
+  ([#818](https://github.com/Twingate/kubernetes-operator/pull/818),
+  [`2f0e742`](https://github.com/Twingate/kubernetes-operator/commit/2f0e74239e432fe66d7734cbc2d53b5c2d826192))
+
+- Update the connector version used in a test
+  ([#817](https://github.com/Twingate/kubernetes-operator/pull/817),
+  [`8d89ee8`](https://github.com/Twingate/kubernetes-operator/commit/8d89ee8ae1c6db6e7d927bc29fa59782fb822b7a))
+
+- Upgrade .tools-version to latest Python v3.12.12
+  ([`6f2e517`](https://github.com/Twingate/kubernetes-operator/commit/6f2e517d91d2c102ae04865f2c1cf9ea95593661))
+
+### Features
+
+- Add PodDisruptionBudget twingate operator
+  ([#820](https://github.com/Twingate/kubernetes-operator/pull/820),
+  [`2cfb4e0`](https://github.com/Twingate/kubernetes-operator/commit/2cfb4e0c7df080550fcfddf02d4cdf28c4d6e604))
+
+### Testing
+
+- Add timestamps and loglevel to pytest logs
+  ([`12b7224`](https://github.com/Twingate/kubernetes-operator/commit/12b72241336890c97f9272889f6f21b91e08783c))
+
+- Fix environment for integration tests
+  ([#823](https://github.com/Twingate/kubernetes-operator/pull/823),
+  [`22fa6c2`](https://github.com/Twingate/kubernetes-operator/commit/22fa6c21ffa095e498770ad0ea6c24a39b7dfc0d))
+
+
 ## v0.26.4 (2025-10-14)
 
 ### Chores

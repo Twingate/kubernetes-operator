@@ -70,7 +70,7 @@ spec:
             value: {{ .Values.twingateOperator.host | default "twingate.com" }}
           {{- if .Values.twingateOperator.defaultResourceTags }}
           - name: TWINGATE_DEFAULT_RESOURCE_TAGS
-            value: {{ .Values.twingateOperator.defaultResourceTags | default dict | toJson | quote }}
+            value: {{ .Values.twingateOperator.defaultResourceTags | toJson | quote }}
           {{- end }}
           {{- if .Values.twingateOperator.existingRemoteNetworkIdSecret }}
           - name: TWINGATE_REMOTE_NETWORK_ID

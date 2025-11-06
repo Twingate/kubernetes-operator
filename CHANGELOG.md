@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.27.1 (2025-11-06)
+
+### Bug Fixes
+
+- Don't set `TWINGATE_DEFAULT_RESOURCE_TAGS` envvar when not provided
+  ([#826](https://github.com/Twingate/kubernetes-operator/pull/826),
+  [`7a134f1`](https://github.com/Twingate/kubernetes-operator/commit/7a134f1e600ddc72ff5850aa76ead99a562b3988))
+
+### Chores
+
+- Bump danger/danger-js from 13.0.4 to 13.0.5
+  ([#825](https://github.com/Twingate/kubernetes-operator/pull/825),
+  [`61e618e`](https://github.com/Twingate/kubernetes-operator/commit/61e618ee2355ac684b907e460bf8f71bae660752))
+
+- Bump pydantic from 2.12.3 to 2.12.4
+  ([#827](https://github.com/Twingate/kubernetes-operator/pull/827),
+  [`c884733`](https://github.com/Twingate/kubernetes-operator/commit/c884733c621eecc3820df5e070f0379b3b7b8f42))
+
+
 ## v0.27.0 (2025-10-31)
 
 ### Bug Fixes

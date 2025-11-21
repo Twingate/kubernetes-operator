@@ -24,7 +24,7 @@ jobs:
     name: Dockerfile lint
     steps:
       - run: echo "github ref is ${{ github.head_ref }} ${{ github.base_ref }}"
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
@@ -32,7 +32,7 @@ jobs:
   helm-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: azure/setup-helm@v4
       - name: Install helm-unittest plugin
         run: helm plugin install https://github.com/helm-unittest/helm-unittest
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Unit tests
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Integration tests
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Image Build
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -157,7 +157,7 @@ jobs:
     needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           fetch-tags: true
@@ -205,7 +205,7 @@ jobs:
     needs: [release_dev]
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           fetch-tags: true

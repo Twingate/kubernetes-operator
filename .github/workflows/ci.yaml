@@ -34,6 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: azure/setup-helm@v4
+        with:
+          version: 'v3.19.2'
       - name: Install helm-unittest plugin
         run: helm plugin install https://github.com/helm-unittest/helm-unittest
       - name: Build helm dependencies
@@ -221,7 +223,9 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - uses: azure/setup-helm@v4.3.0
+      - uses: azure/setup-helm@v4
+        with:
+          version: 'v3.19.2'
       - uses: chrisdickinson/setup-yq@latest
 
       - name: Set env vars

@@ -13,7 +13,7 @@ google-cloud-artifact-registry = "^1.18.0"
 gql = {version = "~=4.0.0", extras = ["requests"]}
 kopf = "^1.38.0"
 kubernetes = "^34.1.0"
-orjson = "^3.11.4"
+orjson = "^3.11.5"
 pendulum = "^3.1.0"
 pydantic = "^2.12.5"
 pydantic-settings = "^2.12.0"

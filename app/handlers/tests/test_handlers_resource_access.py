@@ -286,6 +286,28 @@ class TestResourceAccessChangeHandler:
         )
         assert patch_mock.metadata["ownerReferences"] == []
 
+    def test_skip_reconciler(self):
+        with (
+            patch(
+                "app.handlers.handlers_resource_access.ENABLE_RESOURCE_ACCESS_RECONCILER",
+                "false",
+            ),
+            patch(
+                "app.handlers.handlers_resource_access.twingate_resource_access_change",
+            ) as twingate_resource_access_change_mock,
+        ):
+            result = twingate_resource_access_sync(
+                body={},
+                spec={},
+                memo={},
+                logger={},
+                patch={},
+                status={},
+            )
+            assert result is None
+
+        twingate_resource_access_change_mock.assert_not_called()
+
 
 class TestResourceAccessDelete:
     def test_delete_success(self, network_resource_factory, mock_api_client):

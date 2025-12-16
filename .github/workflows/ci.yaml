@@ -37,7 +37,7 @@ jobs:
         with:
           version: 'v3.19.2'
       - name: Install helm-unittest plugin
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
       - name: Build helm dependencies
         run: helm dependency build ./deploy/twingate-operator
       - name: Run tests

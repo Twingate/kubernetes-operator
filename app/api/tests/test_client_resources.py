@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 import orjson as json
 import pytest
 import responses
-from cryptography import x509
 from gql.transport.exceptions import TransportQueryError
 from pydantic_core._pydantic_core import ValidationError
 
@@ -126,7 +125,7 @@ class TestBaseResourceModel:
 
 
 class TestNetworkResourceModel:
-    def test_get_spec_diff_no_diff(self, network_resource_factory):
+    def test_get_spec_diff_when_no_diff(self, network_resource_factory):
         resource = network_resource_factory()
         crd = resource.to_spec()
 
@@ -185,28 +184,27 @@ class TestNetworkResourceModel:
 
 
 class TestKubernetesResourceModel:
-    def test_get_spec_diff_no_diff(self, kubernetes_resource_factory):
+    def test_get_spec_diff_when_no_diff(self, kubernetes_resource_factory):
         resource = kubernetes_resource_factory()
         crd = resource.to_spec()
 
         assert resource.get_spec_diff(crd) == {}
 
-    def test_get_spec_diff_with_kubernetes_resource(self, kubernetes_resource_factory):
+    def test_get_spec_diff_with_resource_proxy(self, kubernetes_resource_factory):
         resource = kubernetes_resource_factory()
-        crd = resource.to_spec(
-            proxy=ResourceProxy(
-                address="proxy.kubernetes.cluster.local",
-                certificate_authority_cert=base64.b64encode(
-                    VALID_CA_CERT_1.encode()
-                ).decode(),
-            )
+        crd_proxy = ResourceProxy(
+            address="proxy.kubernetes.cluster.local",
+            certificate_authority_cert=base64.b64encode(
+                VALID_CA_CERT_1.encode()
+            ).decode(),
         )
+        crd = resource.to_spec(proxy=crd_proxy)
 
         assert resource.get_spec_diff(crd) == {
             "proxy_address": (resource.proxy_address, "proxy.kubernetes.cluster.local"),
             "certificate_authority_cert": (
                 resource.x509_ca_cert,
-                x509.load_pem_x509_certificate(VALID_CA_CERT_1.encode()),
+                crd_proxy.x509_ca_cert,
             ),
         }
 

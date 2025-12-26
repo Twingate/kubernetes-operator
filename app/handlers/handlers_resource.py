@@ -110,10 +110,11 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         if resource := client.get_resource(resource_id):
             logger.info("Got resource %s", resource)
-            if resource.is_matching_spec(crd) and resource.is_matching_labels(labels):
+            diff = resource.get_spec_diff(crd) | resource.get_labels_diff(labels)
+            if not diff:
                 return success(twingate_id=resource_id, message="No update required")
 
-            logger.info("Resource %s is out of date, updating...", resource_id)
+            logger.info("Resource %s is out of date. Diff: %s", resource_id, diff)
             client.resource_update(
                 resource_type=crd.type, **crd.to_graphql_arguments(labels=labels)
             )

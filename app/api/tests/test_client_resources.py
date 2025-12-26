@@ -1,15 +1,22 @@
+import base64
 from unittest.mock import MagicMock
 
 import orjson as json
 import pytest
 import responses
+from cryptography import x509
 from gql.transport.exceptions import TransportQueryError
 from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
-from app.api.client_resources import BaseResource, KubernetesResource, NetworkResource
+from app.api.client_resources import (
+    BaseResource,
+    NetworkResource,
+    ResourceProtocol,
+    ResourceProtocols,
+)
 from app.api.tests.factories import VALID_CA_CERT, VALID_CA_CERT_1
-from app.crds import ResourceSpec, ResourceType
+from app.crds import ProtocolPolicy, ResourceProxy, ResourceSpec, ResourceType
 
 
 @pytest.fixture
@@ -63,24 +70,77 @@ class TestBaseResourceModel:
         with pytest.raises(ValidationError):
             BaseResource(**mock_resource_data)
 
-    def test_is_matching_labels(self, mock_resource_data):
+    def test_get_spec_diff_with_no_diff(self, mock_resource_data):
+        resource = BaseResource(**mock_resource_data)
+        crd = ResourceSpec(**resource.to_spec_dict())
+
+        assert resource.get_spec_diff(crd) == {}
+
+    def test_get_spec_diff(self, mock_resource_data):
+        resource = BaseResource(**mock_resource_data)
+        crd_protocols = ResourceProtocols(
+            tcp=ResourceProtocol(policy=ProtocolPolicy.RESTRICTED)
+        ).model_dump()
+        crd = ResourceSpec(
+            name="new-name",
+            address="new-address.internal",
+            is_visible=False,
+            alias="new-alias.internal",
+            protocols=crd_protocols,
+            remote_network_id="new-rn-id",
+            security_policy_id="new-sp-id",
+        )
+
+        assert resource.get_spec_diff(crd) == {
+            "name": ("My K8S Resource", "new-name"),
+            "address": (
+                "my-k8s-resource.default.cluster.local",
+                "new-address.internal",
+            ),
+            "is_visible": (True, False),
+            "alias": ("my-k8s-resource", "new-alias.internal"),
+            "protocols": (resource.protocols.model_dump(), crd_protocols),
+            "remote_network_id": ("rn1", "new-rn-id"),
+            "security_policy_id": ("sp1", "new-sp-id"),
+        }
+
+    def test_get_spec_diff_with_empty_security_policy(self, mock_resource_data):
+        resource = BaseResource(**mock_resource_data)
+        crd = ResourceSpec(**resource.to_spec_dict() | {"security_policy_id": None})
+
+        assert resource.get_spec_diff(crd) == {
+            "security_policy_id": (resource.security_policy.id, None)
+        }
+
+    def test_get_labels_diff(self, mock_resource_data):
         r = BaseResource(**mock_resource_data)
         crd_labels = {"env": "dev"}
 
-        assert r.is_matching_labels(crd_labels)
+        assert r.get_labels_diff(crd_labels) == {}
+
+        updated_crd_labels = {"env": "prod"}
+
+        assert r.get_labels_diff(updated_crd_labels) == {
+            "tags": (crd_labels, updated_crd_labels)
+        }
 
 
 class TestNetworkResourceModel:
-    def test_is_matching_spec(self, network_resource_factory):
+    def test_get_spec_diff_no_diff(self, network_resource_factory):
         resource = network_resource_factory()
         crd = resource.to_spec()
-        assert resource.is_matching_spec(crd)
 
-        updated_resource = NetworkResource(**resource.model_dump())
-        updated_resource.is_browser_shortcut_enabled = (
-            not updated_resource.is_browser_shortcut_enabled
-        )
-        assert not updated_resource.is_matching_spec(crd)
+        assert resource.get_spec_diff(crd) == {}
+
+    def test_get_spec_diff_with_is_browser_shortcut_enabled(
+        self, network_resource_factory
+    ):
+        resource = network_resource_factory(is_browser_shortcut_enabled=False)
+        crd = resource.to_spec(is_browser_shortcut_enabled=True)
+
+        assert resource.get_spec_diff(crd) == {
+            "is_browser_shortcut_enabled": (False, True)
+        }
 
     def test_is_matching_case_protocols(self):
         resource = NetworkResource(
@@ -121,29 +181,45 @@ class TestNetworkResourceModel:
             }
         )
 
-        assert resource.is_matching_spec(crd)
+        assert resource.get_spec_diff(crd) == {}
 
 
 class TestKubernetesResourceModel:
-    @pytest.mark.parametrize(
-        ("field", "updated_value"),
-        [
-            ("proxy_address", "proxy.kubernetes.cluster.local"),
-            ("certificate_authority_cert", VALID_CA_CERT_1),
-        ],
-    )
-    def test_is_matching_spec_with_kubernetes_resource(
-        self, kubernetes_resource_factory, field, updated_value
-    ):
+    def test_get_spec_diff_no_diff(self, kubernetes_resource_factory):
         resource = kubernetes_resource_factory()
         crd = resource.to_spec()
-        assert resource.is_matching_spec(crd)
 
-        updated_resource = KubernetesResource(**resource.model_dump())
-        setattr(updated_resource, field, updated_value)
-        assert not updated_resource.is_matching_spec(crd)
+        assert resource.get_spec_diff(crd) == {}
 
-    def test_is_matching_spec_with_equivalent_certificate(
+    def test_get_spec_diff_with_kubernetes_resource(self, kubernetes_resource_factory):
+        resource = kubernetes_resource_factory()
+        crd = resource.to_spec(
+            proxy=ResourceProxy(
+                address="proxy.kubernetes.cluster.local",
+                certificate_authority_cert=base64.b64encode(
+                    VALID_CA_CERT_1.encode()
+                ).decode(),
+            )
+        )
+
+        assert resource.get_spec_diff(crd) == {
+            "proxy_address": (resource.proxy_address, "proxy.kubernetes.cluster.local"),
+            "certificate_authority_cert": (
+                resource.x509_ca_cert,
+                x509.load_pem_x509_certificate(VALID_CA_CERT_1.encode()),
+            ),
+        }
+
+    def test_get_spec_diff_with_empty_proxy(self, kubernetes_resource_factory):
+        resource = kubernetes_resource_factory()
+        crd = resource.to_spec(proxy=None)
+
+        assert resource.get_spec_diff(crd) == {
+            "proxy_address": (resource.proxy_address, None),
+            "certificate_authority_cert": (resource.x509_ca_cert, None),
+        }
+
+    def test_get_spec_diff_with_equivalent_certificate(
         self, kubernetes_resource_factory
     ):
         resource = kubernetes_resource_factory(certificate_authority_cert=VALID_CA_CERT)
@@ -152,7 +228,7 @@ class TestKubernetesResourceModel:
         # This x509 cert is the same as VALID_CA_CERT but formatted differently in PEM.
         resource.certificate_authority_cert = "-----BEGIN CERTIFICATE-----\nMIIFfzCCA2egAwIBAgIVALoOJAoSP1m81BQ3DAjRHcYXrLR8MA0GCSqGSIb3DQEB\nCwUAMHcxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDTzEQMA4GA1UEBxMHQm91bGRl\ncjESMBAGA1UEChMJSnVtcENsb3VkMRkwFwYDVQQLExBKdW1wQ2xvdWRTQU1MSWRQ\nMRowGAYDVQQDExFKdW1wQ2xvdWRTQU1MVXNlcjAeFw0yMTExMjkwMTAyMTRaFw0y\nNjExMjkwMTAyMTRaMHcxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDTzEQMA4GA1UE\nBxMHQm91bGRlcjESMBAGA1UEChMJSnVtcENsb3VkMRkwFwYDVQQLExBKdW1wQ2xv\ndWRTQU1MSWRQMRowGAYDVQQDExFKdW1wQ2xvdWRTQU1MVXNlcjCCAiIwDQYJKoZI\nhvcNAQEBBQADggIPADCCAgoCggIBALc6KJOG3Nm02vHfvoaWkr0sR94HOVwiK79j\ndxP4saCi5hL7Fj2EnEmz73BH/BxBFQ/uHcRjMO9uLn6WRcT2P8WDMtyUuBSIUL4l\nLxoTOm0/37qrYYAHfbYJuPWAbvIxne2Ns0iXYFkgHSZ6DudZ37SSdXnPBuR6caey\nmbovrCHPbETb3SpgcVMuuuG1XhCTN0lZ/xrpB1G8HqL37xVCmJAzmBmUgYpu9+zH\n1uBPwUoWa8THelXrp2CUZ3mtwo0uKnfyXJcJyC5rJv0RLo4oJRetU3miTF7/trcX\nMhXGsosM/U/a5sn79Eh3vx+BJCDdrJte5z0WCCR+FcLYtE9iweWpIKh98746rUoS\n4rMHpUae0Ns6eSpU+OwImMw6oUCHO8+x1gkcVBG2tfD0mv7TIdW5ib6M9L9T63L1\n5qeke9APPcpG0vG5IxeGbClRcjE4usiTg+iK8+ACT7h2htScSGlPsI3Dbln9D4LX\nRKNHCcyBcpVOHI06Z0D0hK7yclpiuILSHaTTCPl38xwUNFlJDqXjUvzLxM1sWzeb\nt4It3g886MkS4l0wZgaYHxmcmCdlJvyPqV8txgQZYBY3jT7EjgPFox4kLMVKA+jA\nzf9sHTh7zQnOgRE32rhj2NUAK3hBbHv1aOeUlhxSLDle7X6lXGxxHCvA3l1Npmo5\nA1OZhMBFAgMBAAGjAjAAMA0GCSqGSIb3DQEBCwUAA4ICAQCUIop2TSQJzsRhgwOG\nYkbpAblSjkNQ5TBZfrrZoFYOMA0ji62qlWD3C5OUaWQbBrvG/8LvCOXm4mPmp1e0\nJeli6DZBIn2Uo7ne29V+itvgB/du6+pkrIr0egAbkJfkS+f3lQjepjFakiQqK3YL\nJtXJUrKvwjWkdgTmWr8S1P9LX4fE4Rlr9i+pg6NVspSDezmDHg7jbgcq1tK8g3ra\nDpAM4LkyGJHCSE0tWmNDw6QKRb/ev6fBdz1UVTXaWZoA22rWcfMH35YwcCP5oXpi\nkISi+JmG6HojBs4ljpbZFYcRRu9P/i0mvpdJQtPRRnvNC5v5EwPuktE1Wi6qkp68\nN7j+QLl8jyaXLn6GHE6CjggE4YB8veqceLaDDYutxRjT77LhESxWN6XRBzhMcOrH\nFpNJQI1VlalABW2YjpJIPvo+iWlAZZx20k2+GFJVNiwe0Xzdyql1eGMxCkKpd5wB\nezJeBUurMQ+tqd+1dG10fEBL3gikBGlZLSWus3pFxSiwYzhSSoAqK9zF7T+A674p\n7EQB9fk8V4ZtR6Oo20R4NWOX4VrqszFcYaNJrpKuB8FaDvUqcE2aQ+vkYXfi0Fad\nLFmc7WeMePIMvkfinr9qEgYc+yq5Xa0WHb3Xe+1y7l0TKyuKHdBgHGJUBAbAEyau\n4UcIBjn1gX2YNQ/N1TRvqIbkcQ==\n-----END CERTIFICATE-----"
 
-        assert resource.is_matching_spec(crd)
+        assert resource.get_spec_diff(crd) == {}
 
 
 class TestResourceFactory:

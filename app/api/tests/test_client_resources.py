@@ -10,6 +10,7 @@ from pydantic_core._pydantic_core import ValidationError
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import (
     BaseResource,
+    Diff,
     NetworkResource,
     ResourceProtocol,
     ResourceProtocols,
@@ -91,16 +92,18 @@ class TestBaseResourceModel:
         )
 
         assert resource.get_spec_diff(crd) == {
-            "name": ("My K8S Resource", "new-name"),
-            "address": (
-                "my-k8s-resource.default.cluster.local",
-                "new-address.internal",
+            "name": Diff(remote="My K8S Resource", local="new-name"),
+            "address": Diff(
+                remote="my-k8s-resource.default.cluster.local",
+                local="new-address.internal",
             ),
-            "is_visible": (True, False),
-            "alias": ("my-k8s-resource", "new-alias.internal"),
-            "protocols": (resource.protocols.model_dump(), crd_protocols),
-            "remote_network_id": ("rn1", "new-rn-id"),
-            "security_policy_id": ("sp1", "new-sp-id"),
+            "is_visible": Diff(remote=True, local=False),
+            "alias": Diff(remote="my-k8s-resource", local="new-alias.internal"),
+            "protocols": Diff(
+                remote=resource.protocols.model_dump(), local=crd_protocols
+            ),
+            "remote_network_id": Diff(remote="rn1", local="new-rn-id"),
+            "security_policy_id": Diff(remote="sp1", local="new-sp-id"),
         }
 
     def test_get_spec_diff_with_empty_security_policy(self, mock_resource_data):
@@ -108,7 +111,7 @@ class TestBaseResourceModel:
         crd = ResourceSpec(**resource.to_spec_dict() | {"security_policy_id": None})
 
         assert resource.get_spec_diff(crd) == {
-            "security_policy_id": (resource.security_policy.id, None)
+            "security_policy_id": Diff(remote=resource.security_policy.id, local=None)
         }
 
     def test_get_labels_diff(self, mock_resource_data):
@@ -120,7 +123,7 @@ class TestBaseResourceModel:
         updated_crd_labels = {"env": "prod"}
 
         assert r.get_labels_diff(updated_crd_labels) == {
-            "tags": (crd_labels, updated_crd_labels)
+            "tags": Diff(remote=crd_labels, local=updated_crd_labels)
         }
 
 
@@ -138,7 +141,7 @@ class TestNetworkResourceModel:
         crd = resource.to_spec(is_browser_shortcut_enabled=True)
 
         assert resource.get_spec_diff(crd) == {
-            "is_browser_shortcut_enabled": (False, True)
+            "is_browser_shortcut_enabled": Diff(remote=False, local=True)
         }
 
     def test_is_matching_case_protocols(self):
@@ -201,10 +204,12 @@ class TestKubernetesResourceModel:
         crd = resource.to_spec(proxy=crd_proxy)
 
         assert resource.get_spec_diff(crd) == {
-            "proxy_address": (resource.proxy_address, "proxy.kubernetes.cluster.local"),
-            "certificate_authority_cert": (
-                resource.x509_ca_cert,
-                crd_proxy.x509_ca_cert,
+            "proxy_address": Diff(
+                remote=resource.proxy_address, local="proxy.kubernetes.cluster.local"
+            ),
+            "certificate_authority_cert": Diff(
+                remote=resource.x509_ca_cert,
+                local=crd_proxy.x509_ca_cert,
             ),
         }
 
@@ -213,8 +218,10 @@ class TestKubernetesResourceModel:
         crd = resource.to_spec(proxy=None)
 
         assert resource.get_spec_diff(crd) == {
-            "proxy_address": (resource.proxy_address, None),
-            "certificate_authority_cert": (resource.x509_ca_cert, None),
+            "proxy_address": Diff(remote=resource.proxy_address, local=None),
+            "certificate_authority_cert": Diff(
+                remote=resource.x509_ca_cert, local=None
+            ),
         }
 
     def test_get_spec_diff_with_equivalent_certificate(

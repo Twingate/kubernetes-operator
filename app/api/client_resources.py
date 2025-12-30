@@ -1,6 +1,6 @@
 import base64
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 from cryptography import x509
 from gql import GraphQLRequest
@@ -65,6 +65,11 @@ class Tag(BaseModel):
     value: str
 
 
+class Diff(NamedTuple):
+    remote: Any
+    local: Any
+
+
 class BaseResource(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -122,31 +127,35 @@ class BaseResource(BaseModel):
             }
         """
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Any]:
-        diff: dict[str, Any] = {}
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
+        diff = {}
         if self.name != crd.name:
-            diff["name"] = (self.name, crd.name)
+            diff["name"] = Diff(remote=self.name, local=crd.name)
 
         if self.address.value != crd.address:
-            diff["address"] = (self.address.value, crd.address)
+            diff["address"] = Diff(remote=self.address.value, local=crd.address)
 
         if self.alias != crd.alias:
-            diff["alias"] = (self.alias, crd.alias)
+            diff["alias"] = Diff(remote=self.alias, local=crd.alias)
 
         if self.is_visible != crd.is_visible:
-            diff["is_visible"] = (self.is_visible, crd.is_visible)
+            diff["is_visible"] = Diff(remote=self.is_visible, local=crd.is_visible)
 
         self_protocols = self.protocols.model_dump() if self.protocols else None
         crd_protocols = crd.protocols.model_dump() if crd.protocols else None
         if self_protocols != crd_protocols:
-            diff["protocols"] = (self_protocols, crd_protocols)
+            diff["protocols"] = Diff(remote=self_protocols, local=crd_protocols)
 
         if self.remote_network.id != crd.remote_network_id:
-            diff["remote_network_id"] = (self.remote_network.id, crd.remote_network_id)
+            diff["remote_network_id"] = Diff(
+                remote=self.remote_network.id, local=crd.remote_network_id
+            )
 
         security_policy_id = self.security_policy and self.security_policy.id
         if security_policy_id != crd.security_policy_id:
-            diff["security_policy_id"] = (security_policy_id, crd.security_policy_id)
+            diff["security_policy_id"] = Diff(
+                remote=security_policy_id, local=crd.security_policy_id
+            )
 
         return diff
 
@@ -168,12 +177,12 @@ class BaseResource(BaseModel):
         )
         return data
 
-    def get_labels_diff(self, crd_labels: dict[str, str]) -> dict[str, Any]:
+    def get_labels_diff(self, crd_labels: dict[str, str]) -> dict[str, Diff]:
         diff = {}
 
         metadata_labels = self.to_metadata_labels()
         if metadata_labels != crd_labels:
-            diff["tags"] = (metadata_labels, crd_labels)
+            diff["tags"] = Diff(remote=metadata_labels, local=crd_labels)
 
         return diff
 
@@ -196,12 +205,12 @@ class NetworkResource(BaseResource):
             """
         )
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Any]:
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
         diff = super().get_spec_diff(crd)
         if self.is_browser_shortcut_enabled != crd.is_browser_shortcut_enabled:
-            diff["is_browser_shortcut_enabled"] = (
-                self.is_browser_shortcut_enabled,
-                crd.is_browser_shortcut_enabled,
+            diff["is_browser_shortcut_enabled"] = Diff(
+                remote=self.is_browser_shortcut_enabled,
+                local=crd.is_browser_shortcut_enabled,
             )
 
         return diff
@@ -240,17 +249,19 @@ class KubernetesResource(BaseResource):
     def x509_ca_cert(self) -> x509.Certificate:
         return x509.load_pem_x509_certificate(self.certificate_authority_cert.encode())
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Any]:
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
         diff = super().get_spec_diff(crd)
         crd_proxy_address = crd.proxy and crd.proxy.address
         if self.proxy_address != crd_proxy_address:
-            diff["proxy_address"] = (self.proxy_address, crd_proxy_address)
+            diff["proxy_address"] = Diff(
+                remote=self.proxy_address, local=crd_proxy_address
+            )
 
         crd_ca_cert = crd.proxy and crd.proxy.x509_ca_cert
         if self.x509_ca_cert != crd_ca_cert:
-            diff["certificate_authority_cert"] = (
-                self.x509_ca_cert,
-                crd_ca_cert,
+            diff["certificate_authority_cert"] = Diff(
+                remote=self.x509_ca_cert,
+                local=crd_ca_cert,
             )
 
         return diff

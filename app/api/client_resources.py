@@ -1,6 +1,6 @@
 import base64
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 from cryptography import x509
 from gql import GraphQLRequest
@@ -65,6 +65,11 @@ class Tag(BaseModel):
     value: str
 
 
+class Diff(NamedTuple):
+    remote: Any
+    local: Any
+
+
 class BaseResource(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -122,20 +127,37 @@ class BaseResource(BaseModel):
             }
         """
 
-    def is_matching_spec(self, crd: ResourceSpec) -> bool:
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
+        diff = {}
+        if self.name != crd.name:
+            diff["name"] = Diff(remote=self.name, local=crd.name)
+
+        if self.address.value != crd.address:
+            diff["address"] = Diff(remote=self.address.value, local=crd.address)
+
+        if self.alias != crd.alias:
+            diff["alias"] = Diff(remote=self.alias, local=crd.alias)
+
+        if self.is_visible != crd.is_visible:
+            diff["is_visible"] = Diff(remote=self.is_visible, local=crd.is_visible)
+
         self_protocols = self.protocols.model_dump() if self.protocols else None
         crd_protocols = crd.protocols.model_dump() if crd.protocols else None
+        if self_protocols != crd_protocols:
+            diff["protocols"] = Diff(remote=self_protocols, local=crd_protocols)
 
-        return (
-            self.name == crd.name
-            and self.address.value == crd.address
-            and self.alias == crd.alias
-            and self.is_visible == crd.is_visible
-            and self_protocols == crd_protocols
-            and self.remote_network.id == crd.remote_network_id
-            and (self.security_policy and self.security_policy.id)
-            == crd.security_policy_id
-        )
+        if self.remote_network.id != crd.remote_network_id:
+            diff["remote_network_id"] = Diff(
+                remote=self.remote_network.id, local=crd.remote_network_id
+            )
+
+        security_policy_id = self.security_policy and self.security_policy.id
+        if security_policy_id != crd.security_policy_id:
+            diff["security_policy_id"] = Diff(
+                remote=security_policy_id, local=crd.security_policy_id
+            )
+
+        return diff
 
     def to_spec_dict(self) -> dict[str, Any]:
         data = self.model_dump(
@@ -155,8 +177,14 @@ class BaseResource(BaseModel):
         )
         return data
 
-    def is_matching_labels(self, crd_labels: dict[str, str]) -> bool:
-        return crd_labels == self.to_metadata_labels()
+    def get_labels_diff(self, crd_labels: dict[str, str]) -> dict[str, Diff]:
+        diff = {}
+
+        metadata_labels = self.to_metadata_labels()
+        if metadata_labels != crd_labels:
+            diff["tags"] = Diff(remote=metadata_labels, local=crd_labels)
+
+        return diff
 
     def to_metadata_labels(self) -> dict[str, str]:
         return {tag.key: tag.value for tag in self.tags}
@@ -177,11 +205,15 @@ class NetworkResource(BaseResource):
             """
         )
 
-    def is_matching_spec(self, crd: ResourceSpec) -> bool:
-        return (
-            super().is_matching_spec(crd)
-            and self.is_browser_shortcut_enabled == crd.is_browser_shortcut_enabled
-        )
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd)
+        if self.is_browser_shortcut_enabled != crd.is_browser_shortcut_enabled:
+            diff["is_browser_shortcut_enabled"] = Diff(
+                remote=self.is_browser_shortcut_enabled,
+                local=crd.is_browser_shortcut_enabled,
+            )
+
+        return diff
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data: dict[str, Any] = (
@@ -217,13 +249,22 @@ class KubernetesResource(BaseResource):
     def x509_ca_cert(self) -> x509.Certificate:
         return x509.load_pem_x509_certificate(self.certificate_authority_cert.encode())
 
-    def is_matching_spec(self, crd: ResourceSpec) -> bool:
-        return (
-            super().is_matching_spec(crd)
-            and crd.proxy is not None
-            and self.proxy_address == crd.proxy.address
-            and self.x509_ca_cert == crd.proxy.x509_ca_cert
-        )
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd)
+        crd_proxy_address = crd.proxy and crd.proxy.address
+        if self.proxy_address != crd_proxy_address:
+            diff["proxy_address"] = Diff(
+                remote=self.proxy_address, local=crd_proxy_address
+            )
+
+        crd_ca_cert = crd.proxy and crd.proxy.x509_ca_cert
+        if self.x509_ca_cert != crd_ca_cert:
+            diff["certificate_authority_cert"] = Diff(
+                remote=self.x509_ca_cert,
+                local=crd_ca_cert,
+            )
+
+        return diff
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data: dict[str, Any] = (

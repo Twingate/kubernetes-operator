@@ -9,6 +9,6 @@ sources:
   - https://github.com/Twingate/kubernetes-operator
 dependencies:
   - name: kubernetes-access-gateway
-    version: 0.11.0
+    version: 0.11.1
     repository: "oci://ghcr.io/twingate/helmcharts"
     condition: kubernetes-access-gateway.enabled

@@ -26,7 +26,7 @@ cryptography = "^46.0.3"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-bandit = "^1.9.2"
+bandit = "^1.9.3"
 coveralls = "^4.0.2"
 factory-boy = "^3.3.3"
 mypy = "^1.19.1"

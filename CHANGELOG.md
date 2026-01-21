@@ -1,6 +1,92 @@
 # CHANGELOG
 
 
+## v0.29.0 (2026-01-21)
+
+### Chores
+
+- Bump actions/cache from 4 to 5 ([#854](https://github.com/Twingate/kubernetes-operator/pull/854),
+  [`ec94681`](https://github.com/Twingate/kubernetes-operator/commit/ec946812b3aed372a3811f72dd5fe1a04c2ec058))
+
+- Bump aiohttp from 3.12.14 to 3.13.3
+  ([#864](https://github.com/Twingate/kubernetes-operator/pull/864),
+  [`c541066`](https://github.com/Twingate/kubernetes-operator/commit/c54106611c3e7e7bf9cd47f0ff3f5e486b6b7cec))
+
+- Bump bandit from 1.9.2 to 1.9.3 ([#875](https://github.com/Twingate/kubernetes-operator/pull/875),
+  [`53872aa`](https://github.com/Twingate/kubernetes-operator/commit/53872aaa10e711f5b0385d507e523f8f14afaac7))
+
+- Bump filelock from 3.12.3 to 3.20.1
+  ([#860](https://github.com/Twingate/kubernetes-operator/pull/860),
+  [`29ce898`](https://github.com/Twingate/kubernetes-operator/commit/29ce898421a5143a4aede99d7e01aeccadfa0d9b))
+
+- Bump filelock from 3.20.1 to 3.20.3
+  ([#870](https://github.com/Twingate/kubernetes-operator/pull/870),
+  [`9f69950`](https://github.com/Twingate/kubernetes-operator/commit/9f69950011712eb270edd0b3330100103644e384))
+
+- Bump google-cloud-artifact-registry from 1.18.0 to 1.19.0
+  ([#867](https://github.com/Twingate/kubernetes-operator/pull/867),
+  [`b82a0af`](https://github.com/Twingate/kubernetes-operator/commit/b82a0afa19ca2c359753cc2945f9e5fa88ce4b70))
+
+- Bump kubernetes from 34.1.0 to 35.0.0
+  ([#871](https://github.com/Twingate/kubernetes-operator/pull/871),
+  [`51f111b`](https://github.com/Twingate/kubernetes-operator/commit/51f111bd0dd465b9645bbf6c5b444c732d7f77aa))
+
+- Bump kubernetes-access-gateway from 0.11.0 to 0.11.1 in /deploy/twingate-operator
+  ([#873](https://github.com/Twingate/kubernetes-operator/pull/873),
+  [`888f6e0`](https://github.com/Twingate/kubernetes-operator/commit/888f6e0c15f86d9688e796cc6f44b708e27468aa))
+
+- Bump mypy from 1.19.0 to 1.19.1 ([#858](https://github.com/Twingate/kubernetes-operator/pull/858),
+  [`5b80727`](https://github.com/Twingate/kubernetes-operator/commit/5b80727eeb9a558d0806b23ed400aa452410fae4))
+
+- Bump pre-commit from 4.5.0 to 4.5.1
+  ([#861](https://github.com/Twingate/kubernetes-operator/pull/861),
+  [`8999c62`](https://github.com/Twingate/kubernetes-operator/commit/8999c62cd9a49fa4fff4b0bfd7804042469b6610))
+
+- Bump python-semantic-release from 10.5.2 to 10.5.3
+  ([#857](https://github.com/Twingate/kubernetes-operator/pull/857),
+  [`7319247`](https://github.com/Twingate/kubernetes-operator/commit/7319247ef79a7a689c3cbfa7af0f2864fe562b00))
+
+- Bump ruff from 0.14.10 to 0.14.11
+  ([#866](https://github.com/Twingate/kubernetes-operator/pull/866),
+  [`092a46d`](https://github.com/Twingate/kubernetes-operator/commit/092a46d6d33c23afadd0caa2e80c490554f67b04))
+
+- Bump ruff from 0.14.11 to 0.14.13
+  ([#872](https://github.com/Twingate/kubernetes-operator/pull/872),
+  [`49ef04e`](https://github.com/Twingate/kubernetes-operator/commit/49ef04ee80d69128c9fc12105c8843a108a98964))
+
+- Bump ruff from 0.14.8 to 0.14.9 ([#855](https://github.com/Twingate/kubernetes-operator/pull/855),
+  [`d3ccf31`](https://github.com/Twingate/kubernetes-operator/commit/d3ccf31afdaddefa062e689179df529061c032ff))
+
+- Bump ruff from 0.14.9 to 0.14.10
+  ([#862](https://github.com/Twingate/kubernetes-operator/pull/862),
+  [`d6ea14e`](https://github.com/Twingate/kubernetes-operator/commit/d6ea14e4af3b829fc1c21bec2a95af2466bcc8ed))
+
+- Bump types-requests from 2.32.4.20250913 to 2.32.4.20260107
+  ([#865](https://github.com/Twingate/kubernetes-operator/pull/865),
+  [`e670539`](https://github.com/Twingate/kubernetes-operator/commit/e670539008477bb92391a271c5e9e092744440da))
+
+- Bump urllib3 from 2.3.0 to 2.6.3
+  ([#874](https://github.com/Twingate/kubernetes-operator/pull/874),
+  [`b1e0673`](https://github.com/Twingate/kubernetes-operator/commit/b1e06737029e82e7eded18ed5a85d4ceea26ce06))
+
+- Bump virtualenv from 20.26.6 to 20.36.1
+  ([#869](https://github.com/Twingate/kubernetes-operator/pull/869),
+  [`75af6a2`](https://github.com/Twingate/kubernetes-operator/commit/75af6a2d4c3d9e63b61ca5bce7b351db954c222f))
+
+- Pin helm-unittest version to v1.0.3
+  ([#859](https://github.com/Twingate/kubernetes-operator/pull/859),
+  [`58f9443`](https://github.com/Twingate/kubernetes-operator/commit/58f9443f634af81f8a823022e27b1e91d54ec191))
+
+- Upgrade to Python 3.13.11 ([#856](https://github.com/Twingate/kubernetes-operator/pull/856),
+  [`1f6b3df`](https://github.com/Twingate/kubernetes-operator/commit/1f6b3dfa0bec461a9675296373420db1babb966f))
+
+### Features
+
+- Log the diff when updating resource in `twingate_resource_sync`
+  ([#863](https://github.com/Twingate/kubernetes-operator/pull/863),
+  [`778123c`](https://github.com/Twingate/kubernetes-operator/commit/778123c3cdf87b70f7f6b40d001b39cb706bc09c))
+
+
 ## v0.28.0 (2025-12-09)
 
 ### Chores

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "Bash(make *)",
+      "Bash(poetry run *)",
+      "Bash(poetry *)",
+      "Bash(pytest *)",
+      "Bash(python *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(kubectl get *)",
+      "Bash(kubectl describe *)",
+      "Bash(kubectl apply *)",
+      "Bash(kubectl delete *)",
+      "Bash(kubectl logs *)",
+      "Bash(minikube *)",
+      "Bash(helm *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(find *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(kubectl delete namespace *)"
+    ]
+  },
+  "respectGitignore": true,
+  "env": {
+    "TWINGATE_API_KEY": "Set this to your Twingate API key for local development",
+    "TWINGATE_NETWORK": "Set this to your Twingate network name",
+    "TWINGATE_REMOTE_NETWORK_ID": "Set this to your remote network ID (base64-encoded GraphQL ID)"
+  },
+  "showTurnDuration": true
+}

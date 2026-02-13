@@ -1001,14 +1001,14 @@ requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
 
 [[package]]
 name = "google-cloud-artifact-registry"
-version = "1.19.0"
+version = "1.20.0"
 description = "Google Cloud Artifact Registry API client library"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_cloud_artifact_registry-1.19.0-py3-none-any.whl", hash = "sha256:1136294fad38d01285bbd4dd104fe4f2ba4b6bbcfef5c6dcc7a072ebe9d48842"},
-    {file = "google_cloud_artifact_registry-1.19.0.tar.gz", hash = "sha256:415032dbd0733ddf443b84432a8de4899aa4b6ea641960c98ddf2feb1d749a91"},
+    {file = "google_cloud_artifact_registry-1.20.0-py3-none-any.whl", hash = "sha256:a0a4ba0a6f6421260e5b6063681089e1da2a27e0598829a70d6426f623b1c4d2"},
+    {file = "google_cloud_artifact_registry-1.20.0.tar.gz", hash = "sha256:88161c9b8ad467915f9ee1f3fa923554431f91aa15aeb87e4fdbb99affb3235b"},
 ]
 
 [package.dependencies]
@@ -3301,4 +3301,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "42481a0e98e8fdc72c249c8ae50be9a8a20ba7908d9a6ff50aac4ae598b6dafb"
+content-hash = "29aa73381651328e9a5c043f65f527d32dd5840a8675d7eed37545ea76be59cc"

@@ -9,7 +9,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 croniter = "^6.0.0"
-google-cloud-artifact-registry = "^1.19.0"
+google-cloud-artifact-registry = "^1.20.0"
 gql = {version = "~=4.0.0", extras = ["requests"]}
 kopf = "^1.38.0"
 kubernetes = "^35.0.0"

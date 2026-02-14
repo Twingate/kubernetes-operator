@@ -3,13 +3,23 @@
   "permissions": {
     "defaultMode": "default",
     "allow": [
+      "Bash(make help)",
+      "Bash(make run)",
+      "Bash(make test*)",
+      "Bash(make check)",
+      "Bash(make lint*)",
+      "Bash(make typecheck)",
+      "Bash(make check-pre-commit)",
+      "Bash(make lock)",
+      "Bash(make dev-deps)",
+      "Bash(make version)",
+      "Bash(make gen-api-docs)",
       "Bash(poetry run *)",
       "Bash(poetry *)",
       "Bash(pytest *)",
       "Bash(python *)",
       "Bash(ruff *)",
       "Bash(mypy *)",
-      "Bash(git checkout:*)",
       "Bash(git status)",
       "Bash(git diff *)",
       "Bash(git log *)",
@@ -17,6 +27,7 @@
       "Bash(git checkout *)",
       "Bash(git add *)",
       "Bash(git commit *)",
+      "Bash(git push *)",
       "Bash(kubectl get *)",
       "Bash(kubectl describe *)",
       "Bash(kubectl apply *)",
@@ -27,7 +38,6 @@
       "Bash(ls *)",
       "Bash(cat *)",
       "Bash(grep *)",
-      "Bash(head:*)",
       "Bash(find *)"
     ],
     "deny": [
@@ -43,5 +53,10 @@
     "linear@claude-plugins-official": true
   },
   "respectGitignore": true,
+  "env": {
+    "TWINGATE_API_KEY": "Set this to your Twingate API key for local development",
+    "TWINGATE_NETWORK": "Set this to your Twingate network name",
+    "TWINGATE_REMOTE_NETWORK_ID": "Set this to your remote network ID (base64-encoded GraphQL ID)"
+  },
   "showTurnDuration": true
 }

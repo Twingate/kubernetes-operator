@@ -53,10 +53,5 @@
     "linear@claude-plugins-official": true
   },
   "respectGitignore": true,
-  "env": {
-    "TWINGATE_API_KEY": "Set this to your Twingate API key for local development",
-    "TWINGATE_NETWORK": "Set this to your Twingate network name",
-    "TWINGATE_REMOTE_NETWORK_ID": "Set this to your remote network ID (base64-encoded GraphQL ID)"
-  },
   "showTurnDuration": true
 }

@@ -15,7 +15,6 @@
       "Bash(make version)",
       "Bash(make gen-api-docs)",
       "Bash(poetry run *)",
-      "Bash(poetry *)",
       "Bash(pytest *)",
       "Bash(python *)",
       "Bash(ruff *)",

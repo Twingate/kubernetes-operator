@@ -29,8 +29,6 @@
       "Bash(git push *)",
       "Bash(kubectl get *)",
       "Bash(kubectl describe *)",
-      "Bash(kubectl apply *)",
-      "Bash(kubectl delete *)",
       "Bash(kubectl logs *)",
       "Bash(minikube *)",
       "Bash(helm *)",

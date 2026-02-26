@@ -1,0 +1,32 @@
+# CodeCov configuration for Twingate Kubernetes Operator
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: false
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+        informational: false
+
+  precision: 2
+  round: down
+  range: "70...100"
+
+comment:
+  layout: "reach,diff,flags,tree,reach"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+ignore:
+  - "app/tests/**/*"
+  - "tests_integration/**/*"
+  - "**/__pycache__/**/*"
+  - ".venv/**/*"

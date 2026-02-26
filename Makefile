@@ -63,7 +63,7 @@ test: ##@tests Runs all tests
 
 .PHONY: test-cov
 test-cov: ##@tests Runs all tests with coverage
-	poetry run pytest --cov=app --cov-report html -m "not integration"
+	poetry run pytest --cov=app --cov-report html --cov-report xml -m "not integration"
 
 .PHONY: test-int
 test-int: ##@tests Runs integration tests
@@ -78,10 +78,6 @@ test-helm: ##@test Run helm-unittest
 test-helm-and-update-snapshots: ##@test Run helm-unittest and also update the test snapshots
 	@echo "Running Helm unittest and update test snapshots"
 	helm unittest deploy/twingate-operator -u
-
-.PHONY: report-to-coveralls
-report-to-coveralls:
-	poetry run coveralls
 
 .PHONY: image-name
 image-name:

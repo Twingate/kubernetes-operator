@@ -1,7 +1,7 @@
 # Twingate Kubernetes Operator
 
 [![CI](https://github.com/Twingate/kubernetes-operator/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/Twingate/kubernetes-operator/actions/workflows/ci.yaml)
-[![Coverage Status](https://coveralls.io/repos/github/Twingate/kubernetes-operator/badge.svg?branch=main&t=7BQPrK)](https://coveralls.io/github/Twingate/kubernetes-operator?branch=main)
+[![codecov](https://codecov.io/gh/Twingate/kubernetes-operator/branch/main/graph/badge.svg)](https://codecov.io/gh/Twingate/kubernetes-operator)
 [![Dockerhub](https://img.shields.io/badge/dockerhub-images-info.svg?logo=Docker)](https://hub.docker.com/r/twingate/kubernetes-operator)
 
 The Twingate Kubernetes Controller is a custom controller designed to automate

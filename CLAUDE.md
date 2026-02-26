@@ -37,10 +37,13 @@ Models use `frozen=True`, `populate_by_name=True`, `alias_generator=to_camel`. F
 
 ### API Client
 
-All API calls via `TwingateAPIClient(memo.twingate_settings, logger=logger)`. GraphQL queries in
-`protocol.py`. Raises `GraphQLMutationError` on failures.
+All API calls via `TwingateAPIClient(memo.twingate_settings, logger=logger)`. GraphQL queries and mutations are
+defined as string constants in the respective `client_*.py` mixin files where they are used. `protocol.py` contains
+the `TwingateClientProtocol` interface, which defines `execute_gql` and `execute_mutation`. Raises `GraphQLMutationError`
+on failures.
 
-**Add new API**: Define query in `protocol.py` → Create mixin in `client_*.py` → Add to `TwingateAPIClient`
+**Add new API**: Define the query or mutation in the appropriate `client_*.py` mixin → Implement a method that calls
+`execute_gql` / `execute_mutation` via the protocol → Add the mixin to `TwingateAPIClient`
 
 ### Settings
 

@@ -104,21 +104,21 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true
 
-  # e2e-tests:
-  #   runs-on: ubuntu-latest
-  #   name: Integration tests
-  #   steps:
-  #   - uses: actions/checkout@v6
-  #   - uses: actions/setup-python@v6
-  #     with:
-  #       python-version: ${{ env.PYTHON_VERSION }}
-  #   - name: Install and configure Poetry
-  #     uses: snok/install-poetry@v1
-  #     with:
-  #       version: ${{ env.POETRY_VERSION }}
-  #       virtualenvs-create: true
-  #       virtualenvs-in-project: true
-  #       installer-parallel: true
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: Integration tests
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    - name: Install and configure Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: ${{ env.POETRY_VERSION }}
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
 
     - name: Cache Dependencies
       id: cache-dev-deps
@@ -168,7 +168,7 @@ jobs:
   release_dev:
     runs-on: ubuntu-latest
     name: Release dev
-    needs: [dockerfile-lint, helm-tests, unit-tests, build]
+    needs: [dockerfile-lint, helm-tests, unit-tests, e2e-tests, build]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v6

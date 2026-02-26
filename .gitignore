@@ -79,3 +79,4 @@ venv.bak/
 .dmypy.json
 dmypy.json
 /.claude/settings.local.json
+/junit.xml

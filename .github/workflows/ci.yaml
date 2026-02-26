@@ -94,6 +94,7 @@ jobs:
         flags: unittests
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: true
 
   e2e-tests:
     runs-on: ubuntu-latest

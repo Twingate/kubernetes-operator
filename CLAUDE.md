@@ -52,20 +52,11 @@ Env vars with `TWINGATE_` prefix: `API_KEY`, `NETWORK`, `REMOTE_NETWORK_ID` (or 
 
 ## Development
 
-**Setup**: `asdf install && poetry sync --with dev && poetry run pre-commit install`
-**Run locally**: `make run` (or PyCharm: module `kopf`, args `run ./main.py -A --verbose`)
-**Testing**: `make test` (unit), `make test-int` (integration, needs K8s + env vars), `make check` (all checks)
-
 ### Testing
 
 - Unit tests use `mocked_responses` and fixtures from `app/conftest.py`
 - Integration tests need `TWINGATE_API_KEY`, `TWINGATE_NETWORK`, `TWINGATE_REMOTE_NETWORK_ID`
 - Mock settings before importing handlers (loaded at module import time)
-
-### Common Tasks
-
-- **Add API**: Query in `protocol.py` → Mixin in `client_*.py` → Mix into `TwingateAPIClient`
-- **Add CRD**: Pydantic model in `crds.py` → Handler in `handlers_*.py` → YAML in `deploy/*/crds/` → Import in `app/handlers/__init__.py`
 
 ## Code Quality
 
@@ -94,11 +85,6 @@ Env vars with `TWINGATE_` prefix: `API_KEY`, `NETWORK`, `REMOTE_NETWORK_ID` (or 
 - Models are frozen - use `model_copy()` for modifications
 - Always instantiate CRD classes (validates specs)
 
-**Testing**:
-
-- Mock settings before importing handlers
-- Integration tests need `TWINGATE_API_KEY`, `TWINGATE_NETWORK`, `TWINGATE_REMOTE_NETWORK_ID`
-
 **Breaking Changes**:
 
 - CRD schema changes need migration strategy
@@ -111,6 +97,16 @@ Env vars with `TWINGATE_` prefix: `API_KEY`, `NETWORK`, `REMOTE_NETWORK_ID` (or 
 **Prod releases**: `./scripts/release.sh` (conventional commits: `feat:` = minor, `fix:`/`chore:` = patch,
 `BREAKING CHANGE:` = major)
 **Helm chart**: `deploy/twingate-operator/` (test with `make test-helm`)
+
+## Pull Requests
+
+**Creating PRs**: Use `gh pr create` or GitHub UI. Follow `.github/pull_request_template.md`:
+
+- Link related tickets
+- Summarize changes (bullet points)
+- For bug fixes: include root cause and reproduction steps
+
+**Review**: `gh pr review`, `gh pr comment`, `gh pr diff`, `gh pr checks`
 
 ## Commands
 

@@ -90,8 +90,16 @@ jobs:
     - name: Upload coverage to CodeCov
       uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.xml
-        flags: unittests
+        files: ./coverage.xml
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: true
+
+    - name: Upload test results to CodeCov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./junit.xml
+        report_type: test_results
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true

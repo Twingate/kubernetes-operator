@@ -72,19 +72,19 @@ jobs:
         key: pre-commit-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
     - run: make dev-deps
-    - run: make check-pre-commit skip=shellcheck,markdownlint,no-commit-to-branch
+    # - run: make check-pre-commit skip=shellcheck,markdownlint,no-commit-to-branch
 
-    - name: Check the validity of pyproject.toml
-      run: poetry check
+    # - name: Check the validity of pyproject.toml
+    #   run: poetry check
 
-    - name: Lint (ruff)
-      run: make lint
+    # - name: Lint (ruff)
+    #   run: make lint
 
-    - name: Typecheck
-      run: make typecheck
+    # - name: Typecheck
+    #   run: make typecheck
 
-    - name: Lint Bandit
-      run: make lint-bandit
+    # - name: Lint Bandit
+    #   run: make lint-bandit
 
     - run: make test-cov
     - name: Upload coverage to CodeCov

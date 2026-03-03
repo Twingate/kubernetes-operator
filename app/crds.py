@@ -162,8 +162,11 @@ class ResourceProxy(BaseModel):
             ) from ex
 
     @property
-    def x509_ca_cert(self) -> x509.Certificate:
-        return x509.load_pem_x509_certificate(self.certificate_authority_cert.encode())
+    def x509_ca_cert(self) -> x509.Certificate | None:
+        if certificate_authority_cert := self.get_certificate_authority_cert():
+            return x509.load_pem_x509_certificate(certificate_authority_cert.encode())
+
+        return None
 
 
 class ResourceType(StrEnum):

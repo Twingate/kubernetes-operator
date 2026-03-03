@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twingate-operator"
-version = "0.26.4"
+version = "0.29.0"
 description = ""
 authors = ["Eran Kampf <eran@twingate.com>"]
 readme = "README.md"
@@ -9,46 +9,45 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 croniter = "^6.0.0"
-google-cloud-artifact-registry = "^1.17.0"
+google-cloud-artifact-registry = "^1.20.0"
 gql = {version = "~=4.0.0", extras = ["requests"]}
 kopf = "^1.38.0"
-kubernetes = "^34.1.0"
-orjson = "^3.11.4"
-pendulum = "^3.1.0"
-pydantic = "^2.12.3"
-pydantic-settings = "^2.11.0"
+kubernetes = "^35.0.0"
+orjson = "^3.11.7"
+pendulum = "^3.2.0"
+pydantic = "^2.12.5"
+pydantic-settings = "^2.13.1"
 requests = "^2.32.5"
 semantic-version = "^2.10.0"
-tenacity = "^9.1.2"
-cryptography = "^46.0.3"
+tenacity = "^9.1.4"
+cryptography = "^46.0.5"
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-bandit = "^1.8.6"
-coveralls = "^4.0.1"
+bandit = "^1.9.4"
 factory-boy = "^3.3.3"
-mypy = "^1.18.2"
-pre-commit = "^4.3.0"
-pytest = "^8.4.2"
+mypy = "^1.19.1"
+pre-commit = "^4.5.1"
+pytest = "^9.0.2"
 pytest-cov = "^7.0.0"
 pytest-datadir = "^1.8.0"
 pytest-factoryboy = "^2.8.1"
 pytest-randomly = "^4.0.1"
 pytest-sugar = "^1.1.1"
-pyupgrade = "^3.21.0"
-responses = "^0.25.8"
-ruff = "^0.14.2"
-syrupy = "^5.0.0"
+pyupgrade = "^3.21.2"
+responses = "^0.26.0"
+ruff = "^0.15.4"
+syrupy = "^5.1.0"
 types-croniter = "^6.0.0.20250809"
-types-requests = "^2.32.4.20250913"
+types-requests = "^2.32.4.20260107"
 types-pyyaml = "^6.0.12.20250915"
 [tool.poetry.group.build]
 optional = true
 
 [tool.poetry.group.build.dependencies]
-python-semantic-release = "^10.4.1"
+python-semantic-release = "^10.5.3"
 
 [build-system]
 requires = ["poetry-core"]
@@ -95,6 +94,8 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration",
 ]
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
 
 [tool.ruff.lint]
 select = [

@@ -9,6 +9,7 @@ import kopf
 import kubernetes.client
 import pendulum
 from croniter import croniter
+from cryptography import x509
 from pydantic import (
     AfterValidator,
     Base64Str,
@@ -159,6 +160,10 @@ class ResourceProxy(BaseModel):
             raise kopf.PermanentError(
                 f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
             ) from ex
+
+    @property
+    def x509_ca_cert(self) -> x509.Certificate:
+        return x509.load_pem_x509_certificate(self.certificate_authority_cert.encode())
 
 
 class ResourceType(StrEnum):

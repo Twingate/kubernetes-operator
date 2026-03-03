@@ -1,3 +1,4 @@
+import os
 from collections.abc import MutableMapping
 from datetime import timedelta
 from typing import Any
@@ -7,6 +8,7 @@ import kopf
 from app.api.client import GraphQLMutationError, TwingateAPIClient
 from app.crds import PrincipalTypeEnum, ResourceAccessSpec
 from app.handlers.base import fail, success
+from app.utils import to_bool
 
 K8sObject = MutableMapping[Any, Any]
 
@@ -98,6 +100,11 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
         return fail(error=mex.error)
 
 
+ENABLE_RESOURCE_ACCESS_RECONCILER = os.environ.get(
+    "ENABLE_RESOURCE_ACCESS_RECONCILER", True
+)
+
+
 @kopf.timer(
     "twingateresourceaccess",
     interval=timedelta(hours=10).seconds,
@@ -105,6 +112,12 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
     idle=60,
 )
 def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
+    # Allow the reconciler to be temporarily disabled because tenants with large numbers of
+    # resource access CRD objects can generate many write operations and get throttled. We currently
+    # don't have a way to diff the resource access CRD and make writes optional.
+    if not to_bool(ENABLE_RESOURCE_ACCESS_RECONCILER):
+        return None
+
     return twingate_resource_access_change(
         body, spec, memo, logger, patch, status, **kwargs
     )

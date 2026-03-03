@@ -185,7 +185,7 @@ class TestServiceToTwingateResource:
             "address": "kubernetes.default.svc.cluster.local",
             "alias": "alias.int",
             "proxy": {
-                "address": "kubernetes-gateway.custom-namespace.svc.cluster.local",
+                "address": "kubernetes-gateway.custom-namespace.svc.cluster.local:443",
                 "certificateAuthorityCertSecretRef": {
                     "name": tls_object_name,
                     "namespace": namespace,
@@ -223,10 +223,10 @@ class TestServiceToTwingateResource:
     @pytest.mark.parametrize(
         ("status", "expected"),
         [
-            ({"loadBalancer": {"ingress": [{"ip": "1.2.3.4"}]}}, "1.2.3.4"),
+            ({"loadBalancer": {"ingress": [{"ip": "1.2.3.4"}]}}, "1.2.3.4:443"),
             (
                 {"loadBalancer": {"ingress": [{"hostname": "gateway.hostname.int"}]}},
-                "gateway.hostname.int",
+                "gateway.hostname.int:443",
             ),
         ],
     )

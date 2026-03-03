@@ -293,6 +293,16 @@ def test_resource_proxy_get_certificate_authority_cert_without_secret_ref():
     assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
 
 
+def test_resource_proxy_x509_ca_cert_returns_none_when_no_cert():
+    proxy = ResourceProxy(
+        address="proxy.default.cluster.local",
+        certificate_authority_cert=None,
+        certificate_authority_cert_secret_ref=None,
+    )
+
+    assert proxy.x509_ca_cert is None
+
+
 def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
     k8s_core_client_mock, k8s_secret_mock
 ):

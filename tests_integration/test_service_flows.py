@@ -466,7 +466,10 @@ def test_service_flows_with_kubernetes_resource(run_kopf, random_name_generator)
             "type": "Kubernetes",
             "proxy": {
                 "address": f"{service_name}.default.svc.cluster.local:443",
-                "certificateAuthorityCert": BASE64_OF_VALID_CA_CERT,
+                "certificateAuthorityCertSecretRef": {
+                    "name": secret_name,
+                    "namespace": "default",
+                },
             },
         }
 

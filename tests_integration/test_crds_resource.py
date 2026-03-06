@@ -453,3 +453,79 @@ def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
         "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
         in stderr
     )
+
+
+def test_kubernetes_resource_proxy_object_must_have_address(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              type: Kubernetes
+              proxy:
+                certificateAuthorityCert: "base64-encoded-cert"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.proxy.address: Required value" in stderr
+
+
+def test_kubernetes_resource_proxy_object_has_both_ca_cert_string_and_secret_ref(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              type: Kubernetes
+              proxy:
+                address: "my-proxy.default.cluster.local"
+                certificateAuthorityCert: "base64-encoded-cert"
+                certificateAuthorityCertSecretRef:
+                    name: "tls-secret"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        '"spec.proxy" must validate one and only one schema (oneOf). Found 2 valid alternatives'
+        in stderr
+    )
+
+
+def test_kubernetes_resource_proxy_object_missing_either_ca_cert_string_or_secret_ref(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              type: Kubernetes
+              proxy:
+                address: "my-proxy.default.cluster.local"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        '"spec.proxy" must validate one and only one schema (oneOf). Found none valid'
+        in stderr
+    )

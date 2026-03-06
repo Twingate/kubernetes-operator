@@ -102,7 +102,7 @@ class TestTwingateResourceTlsSecretUpdate:
             return None
 
         # Should continue updating other resources even if one update fails
-        mock_api_client.update_resource.side_effect = [
+        mock_api_client.resource_update.side_effect = [
             MagicMock(),
             GraphQLMutationError("kubernetesResourceUpdate", "API error"),
             MagicMock(),

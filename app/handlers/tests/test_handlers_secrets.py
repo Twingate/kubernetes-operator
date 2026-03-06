@@ -1,8 +1,10 @@
 from unittest.mock import MagicMock, patch
 
+import kopf
 import pytest
 
 from app.api.exceptions import GraphQLMutationError
+from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
 from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_secrets import (
     twingate_resource_tls_secret_update,
@@ -23,8 +25,7 @@ def mock_memo():
 
 
 @pytest.fixture
-def mock_api_client(k8s_core_client_mock, k8s_secret_mock):
-    k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
+def mock_api_client():
     api_client_instance = MagicMock()
     with patch(
         "app.handlers.handlers_secrets.TwingateAPIClient"
@@ -71,14 +72,18 @@ class TestTwingateResourceTlsSecretUpdate:
                 namespace="default",
                 name="my-tls-secret",
                 diff=[],
+                new=BASE64_OF_VALID_CA_CERT,
                 memo=mock_memo,
                 logger=MagicMock(),
                 twingate_resource_secret_index=mock_index,
             )
 
-        mock_api_client.resource_update.assert_called_once_with(
-            resource_type=ResourceType.KUBERNETES,
-            **resource_spec.to_graphql_arguments(labels={"env": "dev"}),
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_called_once_with(
+            id=resource_spec.id,
+            name=resource_spec.name,
+            address=resource_spec.address,
+            remote_network_id=resource_spec.remote_network_id,
+            certificate_authority_cert=VALID_CA_CERT,
         )
 
     def test_update_multiple_resources_referencing_same_secret(
@@ -102,7 +107,7 @@ class TestTwingateResourceTlsSecretUpdate:
             return None
 
         # Should continue updating other resources even if one update fails
-        mock_api_client.resource_update.side_effect = [
+        mock_api_client.kubernetes_resource_update_ca_cert.side_effect = [
             MagicMock(),
             GraphQLMutationError("kubernetesResourceUpdate", "API error"),
             MagicMock(),
@@ -116,12 +121,13 @@ class TestTwingateResourceTlsSecretUpdate:
                 namespace="default",
                 name="my-tls-secret",
                 diff=[],
+                new=BASE64_OF_VALID_CA_CERT,
                 memo=mock_memo,
                 logger=MagicMock(),
                 twingate_resource_secret_index=mock_index,
             )
 
-        assert mock_api_client.resource_update.call_count == 3
+        assert mock_api_client.kubernetes_resource_update_ca_cert.call_count == 3
 
     def test_skip_update_with_non_indexed_secret(self, mock_api_client, mock_memo):
         mock_index = {}
@@ -130,12 +136,13 @@ class TestTwingateResourceTlsSecretUpdate:
             namespace="default",
             name="unrelated-secret",
             diff=[],
+            new=BASE64_OF_VALID_CA_CERT,
             memo=mock_memo,
             logger=MagicMock(),
             twingate_resource_secret_index=mock_index,
         )
 
-        mock_api_client.resource_update.assert_not_called()
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
 
     def test_skip_non_existent_resource(self, mock_api_client, mock_memo):
         mock_index = {
@@ -152,12 +159,13 @@ class TestTwingateResourceTlsSecretUpdate:
                 namespace="default",
                 name="my-tls-secret",
                 diff=[],
+                new=BASE64_OF_VALID_CA_CERT,
                 memo=mock_memo,
                 logger=MagicMock(),
                 twingate_resource_secret_index=mock_index,
             )
 
-        mock_api_client.resource_update.assert_not_called()
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
 
     def test_skip_resource_without_id(self, mock_api_client, mock_memo):
         resource_obj = sample_resource_obj("resource-id-1", "my-resource")
@@ -177,9 +185,32 @@ class TestTwingateResourceTlsSecretUpdate:
                 namespace="default",
                 name="my-tls-secret",
                 diff=[],
+                new=BASE64_OF_VALID_CA_CERT,
                 memo=mock_memo,
                 logger=MagicMock(),
                 twingate_resource_secret_index=mock_index,
             )
 
-        mock_api_client.resource_update.assert_not_called()
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
+
+    def test_raise_permanent_error_on_invalid_cert(self, mock_api_client, mock_memo):
+        mock_index = {
+            ("default", "my-tls-secret"): [
+                {"namespace": "default", "name": "my-resource"}
+            ]
+        }
+
+        with pytest.raises(
+            kopf.PermanentError, match=r"Secret my-tls-secret ca.crt is invalid."
+        ):
+            twingate_resource_tls_secret_update(
+                namespace="default",
+                name="my-tls-secret",
+                diff=[],
+                new="invalid",
+                memo=mock_memo,
+                logger=MagicMock(),
+                twingate_resource_secret_index=mock_index,
+            )
+
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()

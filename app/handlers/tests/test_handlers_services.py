@@ -14,6 +14,7 @@ from app.handlers.handlers_services import (
     k8s_get_tls_secret,
     k8s_get_twingate_resource,
     service_to_twingate_resource,
+    twingate_service_annotation_removed,
     twingate_service_create,
 )
 
@@ -496,3 +497,47 @@ class TestTwingateServiceCreate:
             updated_resource,
         )
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()
+
+
+class TestTwingateServiceAnnotationRemoved:
+    def test_deletes_twingate_resource_when_it_exists(
+        self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
+    ):
+        existing_resource = {
+            "metadata": {"name": "my-service-resource"},
+            "spec": {"id": "1", "name": "my-service-resource"},
+        }
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = (
+            existing_resource
+        )
+
+        twingate_service_annotation_removed(
+            example_service_body,
+            example_service_body.spec,
+            "default",
+            example_service_body.metadata,
+            MagicMock(),
+        )
+
+        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_called_once_with(
+            "twingate.com",
+            "v1beta",
+            "default",
+            "twingateresources",
+            "my-service-resource",
+        )
+
+    def test_does_not_delete_when_twingate_resource_does_not_exist(
+        self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
+    ):
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
+
+        twingate_service_annotation_removed(
+            example_service_body,
+            example_service_body.spec,
+            "default",
+            example_service_body.metadata,
+            MagicMock(),
+        )
+
+        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_not_called()

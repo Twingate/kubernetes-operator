@@ -33,7 +33,7 @@ def update_twingate_resource(resource_ref, memo, logger):
         logger.exception("Failed to update resource %s after secret changed", crd.id)
 
 
-@kopf.on.update("", "v1", "secrets", field=("data", "ca.crt"))
+@kopf.on.update("", "v1", "secrets", field=("data", "ca.crt"))  # type: ignore[arg-type]
 def twingate_resource_tls_secret_update(
     namespace, name, diff, memo, logger, twingate_resource_secret_index, **_
 ):

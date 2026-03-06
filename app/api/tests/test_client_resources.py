@@ -597,6 +597,55 @@ class TestTwingateResourceAPIs:
         )
         assert result == resource
 
+    def test_kubernetes_resource_update_ca_cert(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
+    ):
+        resource = kubernetes_resource_factory()
+        crd = resource.to_spec()
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "kubernetesResourceUpdate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": crd.model_dump(
+                            include={
+                                "id",
+                                "name",
+                                "address",
+                                "remoteNetworkId",
+                                "certificateAuthorityCert",
+                            },
+                            by_alias=True,
+                        )
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+
+        result = api_client.kubernetes_resource_update_ca_cert(
+            id=resource.id,
+            name=resource.name,
+            address=resource.address.value,
+            remote_network_id=resource.remote_network.id,
+            certificate_authority_cert=VALID_CA_CERT,
+        )
+        assert result == resource
+
     def test_resource_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"resourceDelete": {"ok": True}}})
 

@@ -137,3 +137,21 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
         )
 
     return None
+
+
+@kopf.index("twingateresource")
+def twingate_resource_secret_index(namespace, name, spec, **_):
+    proxy = spec.get("proxy", {})
+    secret_ref = proxy.get("certificateAuthorityCertSecretRef", {})
+    secret_name = secret_ref.get("name")
+    secret_namespace = secret_ref.get("namespace", "default")
+
+    if secret_name:
+        return {
+            (secret_namespace, secret_name): {
+                "namespace": namespace,
+                "name": name,
+            },
+        }
+
+    return None

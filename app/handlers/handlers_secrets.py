@@ -18,7 +18,7 @@ def twingate_tls_secret_update(
     if event.get("type") != "MODIFIED":
         return
 
-    logger.info("Secret %s content is modified. Body: %s", name, body)
+    logger.info("Secret %s content is modified", name)
 
     ca_crt_b64 = body.get("data", {}).get("ca.crt")
     if not ca_crt_b64:
@@ -54,6 +54,13 @@ def twingate_tls_secret_update(
 
         try:
             remote_resource = client.get_resource(crd.id)
+            if remote_resource is None:
+                logger.warning(
+                    "Resource %s not found in Twingate, skipping update.",
+                    crd.id,
+                )
+                continue
+
             if isinstance(remote_resource, NetworkResource):
                 # We should never get here since NetworkResource should not have a reference to TLS secret
                 logger.warning(

@@ -277,6 +277,33 @@ class TestTwingateTlsSecretEvent:
         mock_api_client.get_resource.assert_not_called()
         mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
 
+    def test_skip_update_on_deleted_resource(self, mock_api_client, mock_memo):
+        resource_obj = sample_resource_obj(resource_id="1", resource_name="my-resource")
+        mock_index = {
+            ("default", "my-tls-secret"): [
+                {"namespace": "default", "name": "my-resource"}
+            ]
+        }
+
+        mock_api_client.get_resource.return_value = None
+
+        with patch(
+            "app.handlers.handlers_secrets.k8s_get_twingate_resource",
+            return_value=resource_obj,
+        ):
+            twingate_tls_secret_update(
+                event={"type": "MODIFIED"},
+                body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
+                namespace="default",
+                name="my-tls-secret",
+                memo=mock_memo,
+                logger=MagicMock(),
+                twingate_resource_secret_index=mock_index,
+            )
+
+        mock_api_client.get_resource.assert_called_once_with("1")
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
+
     def test_skip_update_on_network_resource(
         self, mock_api_client, mock_memo, network_resource_factory
     ):

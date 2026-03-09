@@ -4,7 +4,7 @@ import kopf
 from gql.transport.exceptions import TransportQueryError
 
 from app.api import TwingateAPIClient
-from app.api.client_resources import KubernetesResource
+from app.api.client_resources import NetworkResource
 from app.api.exceptions import GraphQLMutationError
 from app.crds import ResourceSpec
 from app.handlers.handlers_services import k8s_get_twingate_resource
@@ -54,7 +54,12 @@ def twingate_tls_secret_update(
 
         try:
             remote_resource = client.get_resource(crd.id)
-            if not isinstance(remote_resource, KubernetesResource):
+            if isinstance(remote_resource, NetworkResource):
+                # We should never get here since NetworkResource should not have a reference to TLS secret
+                logger.warning(
+                    "Resource %s is a NetworkResource, skipping update.",
+                    crd.id,
+                )
                 continue
 
             if remote_resource.certificate_authority_cert == local_ca_cert:

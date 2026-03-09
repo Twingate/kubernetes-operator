@@ -55,7 +55,7 @@ def sample_resource_obj(resource_id, resource_name):
     }
 
 
-class TestTwingateResourceTlsSecretEvent:
+class TestTwingateTlsSecretEvent:
     def test_update_resource_when_secret_change(
         self, mock_api_client, mock_memo, kubernetes_resource_factory
     ):
@@ -94,37 +94,6 @@ class TestTwingateResourceTlsSecretEvent:
             remote_network_id=resource_spec.remote_network_id,
             certificate_authority_cert=VALID_CA_CERT,
         )
-
-    def test_skip_update_when_cert_unchanged(
-        self, mock_api_client, mock_memo, kubernetes_resource_factory
-    ):
-        resource_obj = sample_resource_obj(resource_id="1", resource_name="my-resource")
-        mock_index = {
-            ("default", "my-tls-secret"): [
-                {"namespace": "default", "name": "my-resource"}
-            ]
-        }
-
-        mock_api_client.get_resource.return_value = kubernetes_resource_factory(
-            certificate_authority_cert=VALID_CA_CERT
-        )
-
-        with patch(
-            "app.handlers.handlers_secrets.k8s_get_twingate_resource",
-            return_value=resource_obj,
-        ):
-            twingate_tls_secret_update(
-                event={"type": "MODIFIED"},
-                body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
-                namespace="default",
-                name="my-tls-secret",
-                memo=mock_memo,
-                logger=MagicMock(),
-                twingate_resource_secret_index=mock_index,
-            )
-
-        mock_api_client.get_resource.assert_called_once_with("1")
-        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
 
     def test_update_multiple_resources_referencing_same_secret(
         self, mock_api_client, mock_memo, kubernetes_resource_factory
@@ -178,14 +147,72 @@ class TestTwingateResourceTlsSecretEvent:
         )
         assert mock_api_client.kubernetes_resource_update_ca_cert.call_count == 2
 
-    def test_skip_update_with_non_indexed_secret(self, mock_api_client, mock_memo):
-        mock_index = {}
+    @pytest.mark.parametrize("event_type", ["ADDED", "DELETED", None])
+    def test_skip_update_on_non_modified_events(
+        self, event_type, mock_api_client, mock_memo
+    ):
+        mock_index = {
+            ("default", "my-tls-secret"): [
+                {"namespace": "default", "name": "my-resource"}
+            ]
+        }
 
+        twingate_tls_secret_update(
+            event={"type": event_type},
+            body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
+            namespace="default",
+            name="my-tls-secret",
+            memo=mock_memo,
+            logger=MagicMock(),
+            twingate_resource_secret_index=mock_index,
+        )
+
+        mock_api_client.get_resource.assert_not_called()
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
+
+    @pytest.mark.parametrize("secret_data", [{}, {"ca.crt": ""}, {"ca.crt": None}])
+    def test_skip_update_on_empty_ca_cert(
+        self, secret_data, mock_api_client, mock_memo
+    ):
+        twingate_tls_secret_update(
+            event={"type": "MODIFIED"},
+            body={"data": secret_data},
+            namespace="default",
+            name="unrelated-secret",
+            memo=mock_memo,
+            logger=MagicMock(),
+            twingate_resource_secret_index={},
+        )
+
+        mock_api_client.get_resource.assert_not_called()
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
+
+    def test_skip_update_with_non_indexed_secret(self, mock_api_client, mock_memo):
         twingate_tls_secret_update(
             event={"type": "MODIFIED"},
             body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
             namespace="default",
             name="unrelated-secret",
+            memo=mock_memo,
+            logger=MagicMock(),
+            twingate_resource_secret_index={},
+        )
+
+        mock_api_client.get_resource.assert_not_called()
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
+
+    def test_skip_update_on_invalid_cert(self, mock_api_client, mock_memo):
+        mock_index = {
+            ("default", "my-tls-secret"): [
+                {"namespace": "default", "name": "my-resource"}
+            ]
+        }
+
+        twingate_tls_secret_update(
+            event={"type": "MODIFIED"},
+            body={"data": {"ca.crt": "invalid"}},
+            namespace="default",
+            name="my-tls-secret",
             memo=mock_memo,
             logger=MagicMock(),
             twingate_resource_secret_index=mock_index,
@@ -245,45 +272,62 @@ class TestTwingateResourceTlsSecretEvent:
         mock_api_client.get_resource.assert_not_called()
         mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
 
-    def test_skip_update_on_invalid_cert(self, mock_api_client, mock_memo):
+    def test_skip_update_on_network_resource(
+        self, mock_api_client, mock_memo, network_resource_factory
+    ):
+        resource_obj = sample_resource_obj(resource_id="1", resource_name="my-resource")
         mock_index = {
             ("default", "my-tls-secret"): [
                 {"namespace": "default", "name": "my-resource"}
             ]
         }
 
-        twingate_tls_secret_update(
-            event={"type": "MODIFIED"},
-            body={"data": {"ca.crt": "invalid"}},
-            namespace="default",
-            name="my-tls-secret",
-            memo=mock_memo,
-            logger=MagicMock(),
-            twingate_resource_secret_index=mock_index,
-        )
+        mock_api_client.get_resource.return_value = network_resource_factory()
 
-        mock_api_client.get_resource.assert_not_called()
+        with patch(
+            "app.handlers.handlers_secrets.k8s_get_twingate_resource",
+            return_value=resource_obj,
+        ):
+            twingate_tls_secret_update(
+                event={"type": "MODIFIED"},
+                body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
+                namespace="default",
+                name="my-tls-secret",
+                memo=mock_memo,
+                logger=MagicMock(),
+                twingate_resource_secret_index=mock_index,
+            )
+
+        mock_api_client.get_resource.assert_called_once_with("1")
         mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()
 
-    @pytest.mark.parametrize("event_type", ["ADDED", "DELETED", None])
-    def test_skip_update_on_non_modified_events(
-        self, event_type, mock_api_client, mock_memo
+    def test_skip_update_when_cert_unchanged(
+        self, mock_api_client, mock_memo, kubernetes_resource_factory
     ):
+        resource_obj = sample_resource_obj(resource_id="1", resource_name="my-resource")
         mock_index = {
             ("default", "my-tls-secret"): [
                 {"namespace": "default", "name": "my-resource"}
             ]
         }
 
-        twingate_tls_secret_update(
-            event={"type": event_type},
-            body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
-            namespace="default",
-            name="my-tls-secret",
-            memo=mock_memo,
-            logger=MagicMock(),
-            twingate_resource_secret_index=mock_index,
+        mock_api_client.get_resource.return_value = kubernetes_resource_factory(
+            certificate_authority_cert=VALID_CA_CERT
         )
 
-        mock_api_client.get_resource.assert_not_called()
+        with patch(
+            "app.handlers.handlers_secrets.k8s_get_twingate_resource",
+            return_value=resource_obj,
+        ):
+            twingate_tls_secret_update(
+                event={"type": "MODIFIED"},
+                body={"data": {"ca.crt": BASE64_OF_VALID_CA_CERT}},
+                namespace="default",
+                name="my-tls-secret",
+                memo=mock_memo,
+                logger=MagicMock(),
+                twingate_resource_secret_index=mock_index,
+            )
+
+        mock_api_client.get_resource.assert_called_once_with("1")
         mock_api_client.kubernetes_resource_update_ca_cert.assert_not_called()

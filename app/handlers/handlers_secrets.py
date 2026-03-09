@@ -73,9 +73,6 @@ def twingate_tls_secret_update(
             logger.info("Updating resource %s", crd.id)
             resource = client.kubernetes_resource_update_ca_cert(
                 id=crd.id,
-                name=crd.name,
-                address=crd.address,
-                remote_network_id=crd.remote_network_id,
                 certificate_authority_cert=local_ca_cert,
             )
             logger.info("Got resource %s", resource)

@@ -450,16 +450,10 @@ MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
 MUT_UPDATE_KUBERNETES_RESOURCE_CA_CERT = _KUBERNETES_RESOURCE_FRAGMENT + """
     mutation UpdateKubernetesResourceCACert(
         $id: ID!
-        $name: String!
-        $address: String!
-        $remoteNetworkId: ID!
         $certificateAuthorityCert: String
     ) {
         kubernetesResourceUpdate(
             id: $id
-            name: $name
-            address: $address
-            remoteNetworkId: $remoteNetworkId
             certificateAuthorityCert: $certificateAuthorityCert
         ) {
             ok
@@ -670,9 +664,6 @@ class TwingateResourceAPIs:
         self: TwingateClientProtocol,
         *,
         id: str,
-        name: str,
-        address: str,
-        remote_network_id: str,
         certificate_authority_cert: str,
     ) -> KubernetesResource | None:
         result = self.execute_mutation(
@@ -681,9 +672,6 @@ class TwingateResourceAPIs:
                 MUT_UPDATE_KUBERNETES_RESOURCE_CA_CERT,
                 variable_values={
                     "id": id,
-                    "name": name,
-                    "address": address,
-                    "remoteNetworkId": remote_network_id,
                     "certificateAuthorityCert": certificate_authority_cert,
                 },
             ),

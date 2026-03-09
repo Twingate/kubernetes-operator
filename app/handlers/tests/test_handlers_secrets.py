@@ -9,7 +9,7 @@ from app.api.tests.factories import (
     VALID_CA_CERT,
     VALID_CA_CERT_1,
 )
-from app.crds import ResourceSpec, ResourceType
+from app.crds import ResourceType
 from app.handlers.handlers_secrets import twingate_tls_secret_update
 from app.settings import TwingateOperatorSettings
 
@@ -66,10 +66,8 @@ class TestTwingateTlsSecretEvent:
             ]
         }
 
-        resource_spec = ResourceSpec(**resource_obj["spec"])
-
         mock_api_client.get_resource.return_value = kubernetes_resource_factory(
-            certificate_authority_cert=VALID_CA_CERT_1
+            id="1", certificate_authority_cert=VALID_CA_CERT_1
         )
 
         with patch(
@@ -86,12 +84,9 @@ class TestTwingateTlsSecretEvent:
                 twingate_resource_secret_index=mock_index,
             )
 
-        mock_api_client.get_resource.assert_called_once_with(resource_spec.id)
+        mock_api_client.get_resource.assert_called_once_with("1")
         mock_api_client.kubernetes_resource_update_ca_cert.assert_called_once_with(
-            id=resource_spec.id,
-            name=resource_spec.name,
-            address=resource_spec.address,
-            remote_network_id=resource_spec.remote_network_id,
+            id="1",
             certificate_authority_cert=VALID_CA_CERT,
         )
 
@@ -117,8 +112,12 @@ class TestTwingateTlsSecretEvent:
 
         # Should continue updating other resources even if API request fails
         mock_api_client.get_resource.side_effect = [
-            kubernetes_resource_factory(certificate_authority_cert=VALID_CA_CERT_1),
-            kubernetes_resource_factory(certificate_authority_cert=VALID_CA_CERT_1),
+            kubernetes_resource_factory(
+                id="resource-id-1", certificate_authority_cert=VALID_CA_CERT_1
+            ),
+            kubernetes_resource_factory(
+                id="resource-id-2", certificate_authority_cert=VALID_CA_CERT_1
+            ),
             TransportQueryError("Failed to get resource"),
         ]
         mock_api_client.kubernetes_resource_update_ca_cert.side_effect = [
@@ -145,7 +144,13 @@ class TestTwingateTlsSecretEvent:
             [call("resource-id-1"), call("resource-id-2"), call("resource-id-3")],
             any_order=True,
         )
-        assert mock_api_client.kubernetes_resource_update_ca_cert.call_count == 2
+        mock_api_client.kubernetes_resource_update_ca_cert.assert_has_calls(
+            [
+                call(id="resource-id-1", certificate_authority_cert=VALID_CA_CERT),
+                call(id="resource-id-2", certificate_authority_cert=VALID_CA_CERT),
+            ],
+            any_order=True,
+        )
 
     @pytest.mark.parametrize("event_type", ["ADDED", "DELETED", None])
     def test_skip_update_on_non_modified_events(

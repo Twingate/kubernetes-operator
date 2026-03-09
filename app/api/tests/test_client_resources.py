@@ -624,9 +624,6 @@ class TestTwingateResourceAPIs:
                         "variables": crd.model_dump(
                             include={
                                 "id",
-                                "name",
-                                "address",
-                                "remoteNetworkId",
                                 "certificateAuthorityCert",
                             },
                             by_alias=True,
@@ -639,9 +636,6 @@ class TestTwingateResourceAPIs:
 
         result = api_client.kubernetes_resource_update_ca_cert(
             id=resource.id,
-            name=resource.name,
-            address=resource.address.value,
-            remote_network_id=resource.remote_network.id,
             certificate_authority_cert=VALID_CA_CERT,
         )
         assert result == resource

@@ -179,14 +179,20 @@ class TestTwingateTlsSecretEvent:
     def test_skip_update_on_empty_ca_cert(
         self, secret_data, mock_api_client, mock_memo
     ):
+        mock_index = {
+            ("default", "my-tls-secret"): [
+                {"namespace": "default", "name": "my-resource"}
+            ]
+        }
+
         twingate_tls_secret_update(
             event={"type": "MODIFIED"},
             body={"data": secret_data},
             namespace="default",
-            name="unrelated-secret",
+            name="my-tls-secret",
             memo=mock_memo,
             logger=MagicMock(),
-            twingate_resource_secret_index={},
+            twingate_resource_secret_index=mock_index,
         )
 
         mock_api_client.get_resource.assert_not_called()

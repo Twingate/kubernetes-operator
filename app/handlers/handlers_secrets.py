@@ -20,10 +20,6 @@ def twingate_tls_secret_update(
 
     logger.info("Secret %s content is modified", name)
 
-    ca_crt_b64 = body.get("data", {}).get("ca.crt")
-    if not ca_crt_b64:
-        return
-
     twingate_resource_refs = twingate_resource_secret_index.get((namespace, name), [])
     if not twingate_resource_refs:
         logger.info(
@@ -32,11 +28,19 @@ def twingate_tls_secret_update(
         )
         return
 
+    ca_crt_b64 = body.get("data", {}).get("ca.crt")
+    if not ca_crt_b64:
+        logger.error(
+            "Secret %s is referenced by TwingateResource but has no ca.crt data.",
+            name,
+        )
+        return
+
     try:
         local_ca_cert = base64.b64decode(ca_crt_b64).decode()
         validate_pem_x509_certificate(local_ca_cert)
     except ValueError:
-        logger.error("Secret %s ca.crt is invalid, skipping update.", name)
+        logger.error("Secret %s ca.crt is invalid.", name)
         return
 
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)

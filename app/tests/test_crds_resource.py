@@ -293,16 +293,6 @@ def test_resource_proxy_get_certificate_authority_cert_without_secret_ref():
     assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
 
 
-def test_resource_proxy_x509_ca_cert_returns_none_when_no_cert():
-    proxy = ResourceProxy(
-        address="proxy.default.cluster.local",
-        certificate_authority_cert=None,
-        certificate_authority_cert_secret_ref=None,
-    )
-
-    assert proxy.x509_ca_cert is None
-
-
 def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
     k8s_core_client_mock, k8s_secret_mock
 ):
@@ -319,6 +309,29 @@ def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
     ) as read_ca_cert_mock:
         assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
         read_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
+
+
+def test_resource_proxy_get_certificate_authority_cert_with_non_existing_secret(
+    k8s_core_client_mock, k8s_secret_mock
+):
+    proxy = ResourceProxy(
+        address="proxy.default.cluster.local",
+        certificate_authority_cert_secret_ref=_KubernetesObjectRef(name="gateway-tls"),
+        certificate_authority_cert=None,
+    )
+    k8s_core_client_mock.read_namespaced_secret.return_value = None
+
+    assert proxy.get_certificate_authority_cert() is None
+
+
+def test_resource_proxy_x509_ca_cert_returns_none_when_no_cert():
+    proxy = ResourceProxy(
+        address="proxy.default.cluster.local",
+        certificate_authority_cert=None,
+        certificate_authority_cert_secret_ref=None,
+    )
+
+    assert proxy.x509_ca_cert is None
 
 
 def test_network_resource_spec_to_graphql_arguments(sample_network_resource_object):

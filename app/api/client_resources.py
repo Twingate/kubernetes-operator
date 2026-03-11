@@ -647,7 +647,7 @@ class TwingateResourceAPIs:
         *,
         id: str,
         certificate_authority_cert: str,
-    ) -> KubernetesResource | None:
+    ) -> KubernetesResource:
         result = self.execute_mutation(
             "kubernetesResourceUpdate",
             GraphQLRequest(

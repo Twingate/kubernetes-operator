@@ -11,18 +11,18 @@ from app.handlers.handlers_services import k8s_get_twingate_resource
 from app.utils import validate_pem_x509_certificate
 
 
-@kopf.on.event("", "v1", "secrets", field="type", value="kubernetes.io/tls")  # type: ignore[arg-type]
+@kopf.on.event("", "v1", "secrets", field=("data", "ca.crt"))  # type: ignore[arg-type]
 def twingate_tls_secret_update(
-    event, body, namespace, name, memo, logger, twingate_resource_secret_index, **_
+    event, body, namespace, name, memo, logger, twingate_resource_secret_index, **kwargs
 ):
     if event.get("type") != "MODIFIED":
         return
 
-    logger.info("Secret %s content is modified", name)
+    logger.debug("Secret %s content is modified", name)
 
     twingate_resource_refs = twingate_resource_secret_index.get((namespace, name), [])
     if not twingate_resource_refs:
-        logger.info(
+        logger.debug(
             "Secret %s is not referenced by any TwingateResource, skipping update.",
             name,
         )

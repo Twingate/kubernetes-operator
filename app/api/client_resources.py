@@ -414,12 +414,12 @@ MUT_UPDATE_NETWORK_RESOURCE = _NETWORK_RESOURCE_FRAGMENT + """
 MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
     mutation UpdateKubernetesResource(
         $id: ID!
-        $name: String!
-        $address: String!
+        $name: String
+        $address: String
         $alias: String
         $isVisible: Boolean
         $protocols: ProtocolsInput
-        $remoteNetworkId: ID!
+        $remoteNetworkId: ID
         $securityPolicyId: ID
         $tags: [TagInput!]
         $proxyAddress: String
@@ -636,6 +636,24 @@ class TwingateResourceAPIs:
                     "protocols": protocols,
                     "tags": tags,
                     "proxyAddress": proxy_address,
+                    "certificateAuthorityCert": certificate_authority_cert,
+                },
+            ),
+        )
+        return KubernetesResource(**result["entity"])
+
+    def kubernetes_resource_update_ca_cert(
+        self: TwingateClientProtocol,
+        *,
+        id: str,
+        certificate_authority_cert: str,
+    ) -> KubernetesResource:
+        result = self.execute_mutation(
+            "kubernetesResourceUpdate",
+            GraphQLRequest(
+                MUT_UPDATE_KUBERNETES_RESOURCE,
+                variable_values={
+                    "id": id,
                     "certificateAuthorityCert": certificate_authority_cert,
                 },
             ),

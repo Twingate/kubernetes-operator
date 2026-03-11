@@ -7,6 +7,7 @@ from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_resource import (
     twingate_resource_create,
     twingate_resource_delete,
+    twingate_resource_secret_index,
     twingate_resource_sync,
     twingate_resource_update,
 )
@@ -629,3 +630,44 @@ class TestResourceSyncTimer:
         )
 
         assert patch_mock.spec == {"id": resource.id}
+
+
+class TestTwingateResourceSecretIndex:
+    def test_store_secret_index(self):
+        spec = {
+            "name": "my-resource",
+            "proxy": {
+                "certificateAuthorityCertSecretRef": {
+                    "name": "my-secret",
+                }
+            },
+        }
+        result = twingate_resource_secret_index(
+            namespace="default", name="my-resource-crd", spec=spec
+        )
+
+        assert result == {
+            ("default", "my-secret"): {
+                "namespace": "default",
+                "name": "my-resource-crd",
+            },
+        }
+
+    def test_empty_secret_index_when_resource_has_no_proxy(self):
+        spec = {"name": "my-resource"}
+        result = twingate_resource_secret_index(
+            namespace="default", name="my-resource-crd", spec=spec
+        )
+
+        assert result is None
+
+    def test_empty_secret_index_when_no_secret_ref(self):
+        spec = {
+            "name": "my-resource",
+            "proxy": {"address": "proxy.default.svc.cluster.local"},
+        }
+        result = twingate_resource_secret_index(
+            namespace="default", name="my-resource-crd", spec=spec
+        )
+
+        assert result is None

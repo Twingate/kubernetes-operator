@@ -144,7 +144,7 @@ def twingate_resource_secret_index(namespace, name, spec, **_):
     proxy = spec.get("proxy", {})
     secret_ref = proxy.get("certificateAuthorityCertSecretRef", {})
     secret_name = secret_ref.get("name")
-    secret_namespace = secret_ref.get("namespace", "default")
+    secret_namespace = secret_ref.get("namespace") or namespace
 
     if secret_name:
         return {

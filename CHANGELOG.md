@@ -1,6 +1,165 @@
 # CHANGELOG
 
 
+## v0.30.0 (2026-03-16)
+
+### Bug Fixes
+
+- Make CodeCov verbose
+  ([`952de8a`](https://github.com/Twingate/kubernetes-operator/commit/952de8a3cafc7f9cb04c9d08948d95f98fcdfcb0))
+
+### Chores
+
+- Add tests for `twingate_service_annotation_removed` handler
+  ([#907](https://github.com/Twingate/kubernetes-operator/pull/907),
+  [`2f1ebe7`](https://github.com/Twingate/kubernetes-operator/commit/2f1ebe71b639f0c6aeac6467a1ce28fc2483c234))
+
+- Bump bandit from 1.9.3 to 1.9.4 ([#897](https://github.com/Twingate/kubernetes-operator/pull/897),
+  [`326957e`](https://github.com/Twingate/kubernetes-operator/commit/326957e10ce4be4cc2e7a3beec281a0bf0839abb))
+
+- Bump crazy-max/ghaction-github-runtime from 3 to 4
+  ([#903](https://github.com/Twingate/kubernetes-operator/pull/903),
+  [`e407d33`](https://github.com/Twingate/kubernetes-operator/commit/e407d3311d51e764847c43fce49c7377a17c62c8))
+
+- Bump croniter from 6.0.0 to 6.2.2
+  ([#915](https://github.com/Twingate/kubernetes-operator/pull/915),
+  [`b7b558c`](https://github.com/Twingate/kubernetes-operator/commit/b7b558c51410dcaad50df487c4e92d07934af195))
+
+- Bump cryptography from 46.0.3 to 46.0.4
+  ([#878](https://github.com/Twingate/kubernetes-operator/pull/878),
+  [`9b0617f`](https://github.com/Twingate/kubernetes-operator/commit/9b0617fbc4c81f7ed237ef5ef3a2d6fb7028857c))
+
+- Bump cryptography from 46.0.4 to 46.0.5
+  ([#886](https://github.com/Twingate/kubernetes-operator/pull/886),
+  [`67f5ca3`](https://github.com/Twingate/kubernetes-operator/commit/67f5ca33cd381da8487954021ab868120b7f61c3))
+
+- Bump docker/login-action from 3 to 4
+  ([#905](https://github.com/Twingate/kubernetes-operator/pull/905),
+  [`a210444`](https://github.com/Twingate/kubernetes-operator/commit/a2104448a0ece7ba3f916ad809bda50f62d1c892))
+
+- Bump docker/setup-buildx-action from 3 to 4
+  ([#908](https://github.com/Twingate/kubernetes-operator/pull/908),
+  [`ce852dc`](https://github.com/Twingate/kubernetes-operator/commit/ce852dce8cf4e3643d4d94f0d1f2aa898136b0e2))
+
+- Bump docker/setup-qemu-action from 3 to 4
+  ([#906](https://github.com/Twingate/kubernetes-operator/pull/906),
+  [`7134714`](https://github.com/Twingate/kubernetes-operator/commit/713471452e83a205c5f47e3872113a92cbfd1b5b))
+
+- Bump google-cloud-artifact-registry from 1.19.0 to 1.20.0
+  ([#887](https://github.com/Twingate/kubernetes-operator/pull/887),
+  [`a98c968`](https://github.com/Twingate/kubernetes-operator/commit/a98c968ba1d578a3c902730ea8dd76b7145dbd6c))
+
+- Bump ncipollo/release-action from 1.20.0 to 1.21.0
+  ([#914](https://github.com/Twingate/kubernetes-operator/pull/914),
+  [`956b729`](https://github.com/Twingate/kubernetes-operator/commit/956b729d9fa3e075c7fae691731d7f358f682fd5))
+
+- Bump orjson from 3.11.5 to 3.11.6
+  ([#880](https://github.com/Twingate/kubernetes-operator/pull/880),
+  [`6d10578`](https://github.com/Twingate/kubernetes-operator/commit/6d10578bc30e1e851de632289161f5d7b98cbf86))
+
+- Bump orjson from 3.11.6 to 3.11.7
+  ([#881](https://github.com/Twingate/kubernetes-operator/pull/881),
+  [`4c7cfa1`](https://github.com/Twingate/kubernetes-operator/commit/4c7cfa1565434c88163d0f2b5cd8911958332fcc))
+
+- Bump pendulum from 3.1.0 to 3.2.0
+  ([#879](https://github.com/Twingate/kubernetes-operator/pull/879),
+  [`84697f2`](https://github.com/Twingate/kubernetes-operator/commit/84697f21f1b5759fadc685c21835df800fc91c23))
+
+- Bump protobuf from 4.25.8 to 6.33.5
+  ([#882](https://github.com/Twingate/kubernetes-operator/pull/882),
+  [`ee8e761`](https://github.com/Twingate/kubernetes-operator/commit/ee8e761f93f59bc0935f2766f5a90752c7490fa9))
+
+- Bump pydantic-settings from 2.12.0 to 2.13.0
+  ([#892](https://github.com/Twingate/kubernetes-operator/pull/892),
+  [`993db5f`](https://github.com/Twingate/kubernetes-operator/commit/993db5fd76b9c31f44f58368b4b4bedea4fdbf79))
+
+- Bump pydantic-settings from 2.13.0 to 2.13.1
+  ([#896](https://github.com/Twingate/kubernetes-operator/pull/896),
+  [`c1cb97d`](https://github.com/Twingate/kubernetes-operator/commit/c1cb97d5facf9a93c33cadba865b37b12627896c))
+
+- Bump responses from 0.25.8 to 0.26.0
+  ([#894](https://github.com/Twingate/kubernetes-operator/pull/894),
+  [`68a3066`](https://github.com/Twingate/kubernetes-operator/commit/68a3066a94966b8b3ec5d8ee7a61363212c2737b))
+
+- Bump ruff from 0.14.13 to 0.14.14
+  ([#876](https://github.com/Twingate/kubernetes-operator/pull/876),
+  [`db253a1`](https://github.com/Twingate/kubernetes-operator/commit/db253a1dd86e8fa313aa7060fac92b4ba140fdd9))
+
+- Bump ruff from 0.14.14 to 0.15.0
+  ([#883](https://github.com/Twingate/kubernetes-operator/pull/883),
+  [`e1b8dd0`](https://github.com/Twingate/kubernetes-operator/commit/e1b8dd05efa393c5e1c950e940961f99ae8afbf9))
+
+- Bump ruff from 0.15.0 to 0.15.1 ([#888](https://github.com/Twingate/kubernetes-operator/pull/888),
+  [`8379a57`](https://github.com/Twingate/kubernetes-operator/commit/8379a575954b6a8c24e9ceb652f798ce9d5c1a66))
+
+- Bump ruff from 0.15.1 to 0.15.2 ([#895](https://github.com/Twingate/kubernetes-operator/pull/895),
+  [`02d2a99`](https://github.com/Twingate/kubernetes-operator/commit/02d2a9977f868f26258023b2e7a532bee1fead0f))
+
+- Bump ruff from 0.15.2 to 0.15.4 ([#902](https://github.com/Twingate/kubernetes-operator/pull/902),
+  [`b153ccc`](https://github.com/Twingate/kubernetes-operator/commit/b153ccc3d119f8d970224181f07fc584d43fc50e))
+
+- Bump ruff from 0.15.4 to 0.15.5 ([#910](https://github.com/Twingate/kubernetes-operator/pull/910),
+  [`514191a`](https://github.com/Twingate/kubernetes-operator/commit/514191abb86a8f561dc536ee2df297a9ffe25d93))
+
+- Bump ruff from 0.15.5 to 0.15.6 ([#912](https://github.com/Twingate/kubernetes-operator/pull/912),
+  [`207060f`](https://github.com/Twingate/kubernetes-operator/commit/207060fc325771419e168d6381b3368c2490151d))
+
+- Bump syrupy from 5.0.0 to 5.1.0 ([#877](https://github.com/Twingate/kubernetes-operator/pull/877),
+  [`ea26ae7`](https://github.com/Twingate/kubernetes-operator/commit/ea26ae7615a1cfd4769be7dad712e9b455c6348a))
+
+- Bump tenacity from 9.1.2 to 9.1.3
+  ([#884](https://github.com/Twingate/kubernetes-operator/pull/884),
+  [`a926240`](https://github.com/Twingate/kubernetes-operator/commit/a9262409d76d545b4673b6c021638600f7f1ab7e))
+
+- Bump tenacity from 9.1.3 to 9.1.4
+  ([#885](https://github.com/Twingate/kubernetes-operator/pull/885),
+  [`f71dc52`](https://github.com/Twingate/kubernetes-operator/commit/f71dc522477bc64c3a32e24745b8d714b2beecf6))
+
+- Bump types-croniter from 6.0.0.20250809 to 6.2.2.20260316
+  ([#916](https://github.com/Twingate/kubernetes-operator/pull/916),
+  [`bd334bf`](https://github.com/Twingate/kubernetes-operator/commit/bd334bf7ef40735bffe501c85257ee7dc9e522ef))
+
+- CodeCov test results ([#900](https://github.com/Twingate/kubernetes-operator/pull/900),
+  [`c0a43a8`](https://github.com/Twingate/kubernetes-operator/commit/c0a43a89ac2b2874f04c1699b05032e390c2f1a8))
+
+- Enable branch coverage on make test-cov
+  ([`2c4db2d`](https://github.com/Twingate/kubernetes-operator/commit/2c4db2dd91bcd9c4926998fbc74f538aa3effc60))
+
+- Ignore local claude settings
+  ([`d678ee1`](https://github.com/Twingate/kubernetes-operator/commit/d678ee14c1873a4068a891addb117df0669d5532))
+
+- Migrate from Coveralls to CodeCov for coverage reporting
+  ([#899](https://github.com/Twingate/kubernetes-operator/pull/899),
+  [`ef4510f`](https://github.com/Twingate/kubernetes-operator/commit/ef4510fcb73bd9b88cae7ad7186f711022ff485b))
+
+- Remove goland from .envrc as its no longer used in this project
+  ([`7de59fc`](https://github.com/Twingate/kubernetes-operator/commit/7de59fc4387438c2d0bbfb6bced6a7be351abfab))
+
+- Update the connector version used in integration tests
+  ([#911](https://github.com/Twingate/kubernetes-operator/pull/911),
+  [`7e5fe32`](https://github.com/Twingate/kubernetes-operator/commit/7e5fe32382465387d90c08b60efe437879041106))
+
+### Documentation
+
+- Add CLAUDE.md and Claude Code settings
+  ([#891](https://github.com/Twingate/kubernetes-operator/pull/891),
+  [`3fe9576`](https://github.com/Twingate/kubernetes-operator/commit/3fe95769b2bb2987583458235092072d7f6d1ed8))
+
+### Features
+
+- Add K8s TLS secret object watch handler
+  ([#909](https://github.com/Twingate/kubernetes-operator/pull/909),
+  [`5691f3f`](https://github.com/Twingate/kubernetes-operator/commit/5691f3f081c36f768fed7e938008bd7f098e5a95))
+
+- Support `certificateAuthorityCertSecretRef` on `TwingateResource` CRD
+  ([#807](https://github.com/Twingate/kubernetes-operator/pull/807),
+  [`77af191`](https://github.com/Twingate/kubernetes-operator/commit/77af19158b2a2fecd3de3776ca94a3716e2870fb))
+
+- Update service handler to use `certificateAuthorityCertSecretRef`
+  ([#808](https://github.com/Twingate/kubernetes-operator/pull/808),
+  [`180852d`](https://github.com/Twingate/kubernetes-operator/commit/180852d978b2c3987f32e8c10dc61acb4bbf7076))
+
+
 ## v0.29.0 (2026-01-21)
 
 ### Chores

@@ -12,7 +12,7 @@ from tests_integration.utils import (
     kubectl_wait_to_exist,
 )
 
-CONNECTOR_VERSION = "1.77.0"
+CONNECTOR_VERSION = "1.82.0"
 
 
 def test_connector_flows(run_kopf, random_name_generator):
@@ -121,8 +121,8 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
         assert secret["data"] == {"TWINGATE_ACCESS_TOKEN": ANY, "TWINGATE_REFRESH_TOKEN": ANY}  # fmt: skip
 
         # Change image tag
-        # kubectl patch tc/test-connector-image-local -p '{"spec": {"image": {"tag": "1.78.0"}}}' --type=merge
-        kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.78.0"}}})
+        # kubectl patch tc/test-connector-image-local -p '{"spec": {"image": {"tag": "1.83.0"}}}' --type=merge
+        kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.83.0"}}})
         time.sleep(5)
         wait_for_deployment()
 

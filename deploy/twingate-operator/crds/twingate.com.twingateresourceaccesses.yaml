@@ -88,6 +88,18 @@ spec:
               type: object
               x-kubernetes-preserve-unknown-fields: true
       additionalPrinterColumns:
+        - name: Success
+          type: boolean
+          description: "Whether the resource access was successfully created."
+          jsonPath: .status.twingate_resource_access_change.success
+        - name: Resource ID
+          type: string
+          description: "The ID of the Twingate resource."
+          jsonPath: .status.twingate_resource_access_change.resource_id
+        - name: Principal ID
+          type: string
+          description: "The ID of the principal (Group/ServiceAccount)."
+          jsonPath: .status.twingate_resource_access_change.principal_id
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

@@ -1,5 +1,5 @@
-{{- if index .Values "gateway" "enabled" }}
-{{- $gatewayName := include "gateway.fullname" (index .Subcharts "gateway") }}
+{{- if .Values.gateway.enabled }}
+{{- $gatewayName := include "gateway.fullname" .Subcharts.gateway }}
 apiVersion: batch/v1
 kind: Job
 metadata:

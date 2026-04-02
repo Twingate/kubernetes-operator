@@ -41,7 +41,6 @@ twingateOperator: {}
 #    tag2: value_for_tag2
 
 
-# Twingate Kubernetes Access is currently in beta. Sign up for early access at https://www.twingate.com/product/kubernetes-access.
 gateway:
   enabled: false
 #  twingate:

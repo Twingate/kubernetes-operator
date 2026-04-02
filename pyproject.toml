@@ -40,7 +40,7 @@ pyupgrade = "^3.21.2"
 responses = "^0.26.0"
 ruff = "^0.15.8"
 syrupy = "^5.1.0"
-types-croniter = "^6.2.2.20260316"
+types-croniter = "^6.2.2.20260402"
 types-requests = "^2.33.0.20260402"
 types-pyyaml = "^6.0.12.20250915"
 [tool.poetry.group.build]

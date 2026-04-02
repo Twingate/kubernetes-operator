@@ -27,7 +27,7 @@ should enable pre-delete cleanup job:
                 - --ignore-not-found
                 - -n
                 - NAMESPACE
-                - RELEASE-NAME-kubernetes-access-gateway
+                - RELEASE-NAME-gateway
               image: rancher/kubectl:v1.34.0
               name: cleanup
               securityContext:

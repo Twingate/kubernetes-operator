@@ -1,5 +1,5 @@
-{{- if index .Values "kubernetes-access-gateway" "enabled" }}
-{{- $kubernetesAccessGatewayName := include "gateway.fullname" (index .Subcharts "kubernetes-access-gateway") }}
+{{- if .Values.gateway.enabled }}
+{{- $gatewayName := include "gateway.fullname" .Subcharts.gateway }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -33,7 +33,7 @@ spec:
             - --ignore-not-found
             - -n
             - {{ .Release.Namespace }}
-            - {{ $kubernetesAccessGatewayName }}
+            - {{ $gatewayName }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

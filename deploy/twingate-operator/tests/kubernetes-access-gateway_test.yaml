@@ -1,6 +1,6 @@
 suite: Kubernetes Access Gateway
 templates:
-  - charts/kubernetes-access-gateway/templates/*.yaml
+  - charts/gateway/templates/*.yaml
 set:
   twingateOperator:
     network: <network slug>
@@ -14,7 +14,7 @@ tests:
       version: 1.0.0
       appVersion: 1.0.0
     set:
-      kubernetes-access-gateway:
+      gateway:
         enabled: true
         twingate:
           network: <network slug>

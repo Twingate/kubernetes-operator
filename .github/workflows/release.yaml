@@ -36,7 +36,7 @@ jobs:
 
       - name: Update CHANGELOG
         id: changelog
-        uses: requarks/changelog-action@6d71e098526ee17bae963f058d34cd763378337f # v1.10.2
+        uses: requarks/changelog-action@b78a3354a01f4a1affb484b9264b506a815c46b1 # v1.10.3
         with:
           token: ${{ github.token }}
           fromTag: ${{ github.ref_name }}

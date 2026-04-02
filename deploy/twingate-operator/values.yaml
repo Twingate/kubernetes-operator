@@ -42,7 +42,7 @@ twingateOperator: {}
 
 
 # Twingate Kubernetes Access is currently in beta. Sign up for early access at https://www.twingate.com/product/kubernetes-access.
-kubernetes-access-gateway:
+gateway:
   enabled: false
 #  twingate:
 #    network: "<network slug>"

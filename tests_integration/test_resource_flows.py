@@ -118,7 +118,7 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
 def test_kubernetes_resource_flows(
     kopf_settings, kopf_runner_args, unique_resource_name
 ):
-    secret_name = "kubernetes-access-gateway-tls"  # noqa: S105
+    secret_name = "gateway-tls"  # noqa: S105
     OBJ = f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateResource
@@ -129,7 +129,7 @@ def test_kubernetes_resource_flows(
           address: kubernetes.default.svc.cluster.local
           type: Kubernetes
           proxy:
-            address: kubernetes-access-gateway.default.svc.cluster.local:443
+            address: gateway.default.svc.cluster.local:443
             certificateAuthorityCert: {BASE64_OF_VALID_CA_CERT}
           protocols:
             allowIcmp: false
@@ -153,7 +153,7 @@ def test_kubernetes_resource_flows(
           address: kubernetes.default.svc.cluster.local
           type: Kubernetes
           proxy:
-            address: kubernetes-access-gateway.default.svc.cluster.local:443
+            address: gateway.default.svc.cluster.local:443
             certificateAuthorityCertSecretRef:
                 name: {secret_name}
           protocols:
@@ -278,7 +278,7 @@ def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
 def test_kubernetes_resource_tls_secret_rotation(
     kopf_settings, kopf_runner_args, unique_resource_name
 ):
-    secret_name = "kubernetes-access-gateway-tls"  # noqa: S105
+    secret_name = "gateway-tls"  # noqa: S105
 
     initial_ca_cert = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURKakNDQWc2Z0F3SUJBZ0lRQ3VzQW56OWxEcGcxY3d5TmhlU045VEFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKc2IyTmhiQzFyZFdKbGNtNWxkR1Z6TFdGalkyVnpjeTFuWVhSbGQyRjVMV05oTUI0WApEVEkxTVRBd09ERTFNekkwTjFvWERUSTJNREV3TmpFMU16STBOMW93TFRFck1Da0dBMVVFQXhNaWJHOWpZV3d0CmEzVmlaWEp1WlhSbGN5MWhZMk5sYzNNdFoyRjBaWGRoZVMxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFPdlNGUUdNejZtRnhYMFVDcXNkTWZMMUthUHUrR1Jpa0xkRDJMaUM4N1dpK3V3dQpyOXFpK1I3MU53VFd4cWFSeHZlcE5zVzBhZEYrdjhnd0c3Nm5KanU2S3dvNVV3M3EwSWg3WWp4cXFsN0taeGJlCkNMM0JYSzhtdW9Kbk5yUmt6MzJDTFNYajZUUXNZclNGcUZabW5OSS9ma2hRT3ZoWG85SldtaGxuYXY2WCtSRGUKYWdqc29Ed2VkV2J2eXZuZHpUd1ZodVJCR0VDelhFU0dSQXkyR1VrNXoxeTY1ZjNNUDdOVit1MFowdk53MEtSawpRcmNTVDA1V0t5RWZYZUpDOHM1czZZVm9zZE1xRnRzZ1drTzg0N01OR3ZYc01yY3RTN1hNUkdNeTRwVUl6VEI1CnRyK3JhNENkZTYwZFpNNHNJODMvVmh6bnU5enhidUFGTGRVNkdGTUNBd0VBQWFOQ01FQXdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdIUVlEVlIwT0JCWUVGSWVsd3dsWGNnUy9rakZZY2hqQwpZWU1zNFFDb01BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQUk2V3JiUzA2TEdxRDl4VDdTbnhYZjl6YlQrRGhqCjZDaFhOb3NSOEJKNnhEL3YwU3NEV3ZuNkdIeFY0ZEd6YXJwVTdROUpLM0d2NlJhcmJ6M2orU2syN2I2MURmNmsKRGM1QUQ3N1hRSVovOTExUm4rcFk3c3lGaG91dVpjdFNJQXRLOTVhVnNGeTNuWkk3UFU2c01sWjNPRG5iWEpORgpMQkYwemYxYVIrdTk4Y2ZFWEIxWFJneWVJajNTdUNiQVZSNjFZY0h5NEZTNmdRMzhkR2FkalFnNlN4QWZyUlpaCkR5dEoyL3YzdmJCNFFiYVdZOHNOTDBxRVpjUGQ1eHZVTldQOVZibnZlVW1OZXBhbllabXJGV3dGMlE3V1dnZWgKVUp6dDV2ZzFENVRUcnE0eDZ1aUVML3lDZXFjaU8vSFJISTdwRk13WnlFWTYySnNONE5CejkybWYKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
 
@@ -292,7 +292,7 @@ def test_kubernetes_resource_tls_secret_rotation(
           address: kubernetes.default.svc.cluster.local
           type: Kubernetes
           proxy:
-            address: kubernetes-access-gateway.default.svc.cluster.local:443
+            address: gateway.default.svc.cluster.local:443
             certificateAuthorityCertSecretRef:
                 name: {secret_name}
                 namespace: default

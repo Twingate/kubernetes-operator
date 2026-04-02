@@ -9,7 +9,7 @@ set:
 tests:
   - it: should enable pre-delete cleanup job
     set:
-      kubernetes-access-gateway:
+      gateway:
         enabled: true
     asserts:
       - matchSnapshot: {}

@@ -3,7 +3,7 @@ should enable Kubernetes Access Gateway:
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
     metadata:
-      name: RELEASE-NAME-kubernetes-access-gateway-cluster-role
+      name: RELEASE-NAME-gateway-cluster-role
     rules:
       - apiGroups:
           - ""
@@ -17,14 +17,14 @@ should enable Kubernetes Access Gateway:
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
     metadata:
-      name: RELEASE-NAME-kubernetes-access-gateway-cluster-role-binding
+      name: RELEASE-NAME-gateway-cluster-role-binding
     roleRef:
       apiGroup: rbac.authorization.k8s.io
       kind: ClusterRole
-      name: RELEASE-NAME-kubernetes-access-gateway-cluster-role
+      name: RELEASE-NAME-gateway-cluster-role
     subjects:
       - kind: ServiceAccount
-        name: RELEASE-NAME-kubernetes-access-gateway
+        name: RELEASE-NAME-gateway
         namespace: NAMESPACE
   3: |
     apiVersion: apps/v1
@@ -33,30 +33,30 @@ should enable Kubernetes Access Gateway:
       labels:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: kubernetes-access-gateway
+        app.kubernetes.io/name: gateway
         app.kubernetes.io/version: 1.0.0
-        helm.sh/chart: kubernetes-access-gateway-1.0.0
-      name: RELEASE-NAME-kubernetes-access-gateway
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway
     spec:
       replicas: 1
       selector:
         matchLabels:
           app.kubernetes.io/instance: RELEASE-NAME
-          app.kubernetes.io/name: kubernetes-access-gateway
+          app.kubernetes.io/name: gateway
       template:
         metadata:
           labels:
             app.kubernetes.io/instance: RELEASE-NAME
             app.kubernetes.io/managed-by: Helm
-            app.kubernetes.io/name: kubernetes-access-gateway
+            app.kubernetes.io/name: gateway
             app.kubernetes.io/version: 1.0.0
-            helm.sh/chart: kubernetes-access-gateway-1.0.0
+            helm.sh/chart: gateway-1.0.0
         spec:
           containers:
             - env:
                 - name: TWINGATE_CONFIG
                   value: /etc/gateway/config.yaml
-              image: twingate/kubernetes-access-gateway:1.0.0
+              image: twingate/gateway:1.0.0
               imagePullPolicy: IfNotPresent
               livenessProbe:
                 httpGet:
@@ -65,7 +65,7 @@ should enable Kubernetes Access Gateway:
                   scheme: HTTPS
                 initialDelaySeconds: 5
                 periodSeconds: 5
-              name: kubernetes-access-gateway
+              name: gateway
               ports:
                 - containerPort: 8443
                   name: https
@@ -99,14 +99,14 @@ should enable Kubernetes Access Gateway:
           securityContext:
             seccompProfile:
               type: RuntimeDefault
-          serviceAccountName: RELEASE-NAME-kubernetes-access-gateway
+          serviceAccountName: RELEASE-NAME-gateway
           volumes:
             - configMap:
-                name: RELEASE-NAME-kubernetes-access-gateway-config
+                name: RELEASE-NAME-gateway-config
               name: config
             - name: tls-certs
               secret:
-                secretName: RELEASE-NAME-kubernetes-access-gateway-tls
+                secretName: RELEASE-NAME-gateway-tls
   4: |
     apiVersion: v1
     data:
@@ -130,10 +130,10 @@ should enable Kubernetes Access Gateway:
       labels:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: kubernetes-access-gateway
+        app.kubernetes.io/name: gateway
         app.kubernetes.io/version: 1.0.0
-        helm.sh/chart: kubernetes-access-gateway-1.0.0
-      name: RELEASE-NAME-kubernetes-access-gateway-config
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway-config
   5: |
     apiVersion: v1
     kind: Service
@@ -142,10 +142,10 @@ should enable Kubernetes Access Gateway:
       labels:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: kubernetes-access-gateway
+        app.kubernetes.io/name: gateway
         app.kubernetes.io/version: 1.0.0
-        helm.sh/chart: kubernetes-access-gateway-1.0.0
-      name: RELEASE-NAME-kubernetes-access-gateway
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway
     spec:
       ports:
         - name: https
@@ -154,7 +154,7 @@ should enable Kubernetes Access Gateway:
           targetPort: https
       selector:
         app.kubernetes.io/instance: RELEASE-NAME
-        app.kubernetes.io/name: kubernetes-access-gateway
+        app.kubernetes.io/name: gateway
       type: ClusterIP
   6: |
     apiVersion: v1
@@ -163,10 +163,10 @@ should enable Kubernetes Access Gateway:
       labels:
         app.kubernetes.io/instance: RELEASE-NAME
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: kubernetes-access-gateway
+        app.kubernetes.io/name: gateway
         app.kubernetes.io/version: 1.0.0
-        helm.sh/chart: kubernetes-access-gateway-1.0.0
-      name: RELEASE-NAME-kubernetes-access-gateway
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway
   7: |
     apiVersion: v1
     data:
@@ -175,5 +175,5 @@ should enable Kubernetes Access Gateway:
       tls.key: PHRscyBrZXk+
     kind: Secret
     metadata:
-      name: RELEASE-NAME-kubernetes-access-gateway-tls
+      name: RELEASE-NAME-gateway-tls
     type: kubernetes.io/tls

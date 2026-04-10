@@ -10,6 +10,26 @@ from app.crds import ResourceType
 from app.utils import to_bool
 
 
+def parse_ports(value: str) -> list[dict]:
+    """Parse a comma-separated port string into port range dicts.
+
+    Supports single ports ("80") and ranges ("8080-8090").
+    Example: "80,443,8080-8090" -> [{"start": 80, "end": 80}, {"start": 443, "end": 443}, {"start": 8080, "end": 8090}]
+    """
+    ports = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            start, end = part.split("-", 1)
+            ports.append({"start": int(start.strip()), "end": int(end.strip())})
+        else:
+            port = int(part)
+            ports.append({"start": port, "end": port})
+    return ports
+
+
 def k8s_get_twingate_resource(
     namespace: str, name: str, kapi: kubernetes.client.CustomObjectsApi | None = None
 ) -> dict | None:
@@ -119,6 +139,18 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             protocols["tcp"]["ports"].append({"start": port, "end": port})
         elif port_obj["protocol"] == "UDP":
             protocols["udp"]["ports"].append({"start": port, "end": port})
+
+    # Allow annotation overrides for protocols
+    annotations = meta.annotations
+    for proto in ("tcp", "udp"):
+        if policy := annotations.get(f"resource.twingate.com/protocols.{proto}.policy"):
+            protocols[proto]["policy"] = policy
+        if ports_str := annotations.get(f"resource.twingate.com/protocols.{proto}.ports"):
+            protocols[proto]["ports"] = parse_ports(ports_str)
+            if protocols[proto]["policy"] != "ALLOW_ALL":
+                protocols[proto]["policy"] = "RESTRICTED"
+    if icmp := annotations.get("resource.twingate.com/protocols.allowIcmp"):
+        protocols["allowIcmp"] = to_bool(icmp)
 
     result["spec"]["protocols"] = protocols
 

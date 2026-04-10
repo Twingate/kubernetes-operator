@@ -304,6 +304,52 @@ class TestServiceToTwingateResource:
             )
 
 
+    def test_protocol_annotation_overrides_tcp_ports(self, example_service_body):
+        example_service_body.metadata["annotations"][
+            "resource.twingate.com/protocols.tcp.ports"
+        ] = "80"
+        result = service_to_twingate_resource(example_service_body, "default")
+        assert result["spec"]["protocols"]["tcp"] == {
+            "policy": "RESTRICTED",
+            "ports": [{"start": 80, "end": 80}],
+        }
+
+    def test_protocol_annotation_overrides_tcp_policy(self, example_service_body):
+        example_service_body.metadata["annotations"][
+            "resource.twingate.com/protocols.tcp.policy"
+        ] = "ALLOW_ALL"
+        result = service_to_twingate_resource(example_service_body, "default")
+        assert result["spec"]["protocols"]["tcp"]["policy"] == "ALLOW_ALL"
+
+    def test_protocol_annotation_overrides_udp_ports(self, example_service_body):
+        example_service_body.metadata["annotations"][
+            "resource.twingate.com/protocols.udp.ports"
+        ] = "53,5353"
+        result = service_to_twingate_resource(example_service_body, "default")
+        assert result["spec"]["protocols"]["udp"] == {
+            "policy": "RESTRICTED",
+            "ports": [{"start": 53, "end": 53}, {"start": 5353, "end": 5353}],
+        }
+
+    def test_protocol_annotation_port_ranges(self, example_service_body):
+        example_service_body.metadata["annotations"][
+            "resource.twingate.com/protocols.tcp.ports"
+        ] = "80,443,8080-8090"
+        result = service_to_twingate_resource(example_service_body, "default")
+        assert result["spec"]["protocols"]["tcp"]["ports"] == [
+            {"start": 80, "end": 80},
+            {"start": 443, "end": 443},
+            {"start": 8080, "end": 8090},
+        ]
+
+    def test_protocol_annotation_allow_icmp(self, example_service_body):
+        example_service_body.metadata["annotations"][
+            "resource.twingate.com/protocols.allowIcmp"
+        ] = "true"
+        result = service_to_twingate_resource(example_service_body, "default")
+        assert result["spec"]["protocols"]["allowIcmp"] is True
+
+
 class TestK8sGetTwingateResource:
     def test_handles_404_returns_none(self, k8s_customobjects_client_mock):
         k8s_customobjects_client_mock.get_namespaced_custom_object.side_effect = (

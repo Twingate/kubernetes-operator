@@ -1,5 +1,4 @@
 import functools
-import time
 from unittest.mock import ANY
 
 from tests_integration.utils import (
@@ -9,6 +8,7 @@ from tests_integration.utils import (
     kubectl_get,
     kubectl_patch,
     kubectl_wait_deployment_available,
+    kubectl_wait_object_handler_success,
     kubectl_wait_to_exist,
 )
 
@@ -67,7 +67,9 @@ def test_connector_flows(run_kopf, random_name_generator):
                 }
             },
         )
-        time.sleep(5)
+        kubectl_wait_object_handler_success(
+            "tc", connector_name, "twingate_connector_update"
+        )
         deployment = wait_for_deployment()
         pod = deployment["spec"]["template"]
 
@@ -123,7 +125,9 @@ def test_connector_flows_image_change(run_kopf, random_name_generator):
         # Change image tag
         # kubectl patch tc/test-connector-image-local -p '{"spec": {"image": {"tag": "1.83.0"}}}' --type=merge
         kubectl_patch(f"tc/{connector_name}", {"spec": {"image": {"tag": "1.83.0"}}})
-        time.sleep(5)
+        kubectl_wait_object_handler_success(
+            "tc", connector_name, "twingate_connector_update"
+        )
         wait_for_deployment()
 
         kubectl_delete_wait("tc", connector_name)

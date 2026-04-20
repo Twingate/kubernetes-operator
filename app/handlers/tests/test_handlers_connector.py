@@ -271,7 +271,12 @@ class TestTwingateConnectorUpdate:
         )
 
         mock_create_or_replace_deployment.assert_called_once()
-        assert run.result == {"success": True, "twingate_id": connector.id, "ts": ANY}
+        assert run.result == {
+            "success": True,
+            "twingate_id": connector.id,
+            "ts": ANY,
+            "message": "Update completed",
+        }
 
     def test_does_nothing_if_only_id_changed(
         self, get_connector_and_crd, kopf_handler_runner, mock_api_client

@@ -160,12 +160,16 @@ def kubectl_wait_object_handler_success(
     resource_name: str,
     handler_name: str,
     *,
+    message: str | None = None,
     max_retries: int = 5,
 ):
     retry = 0
     obj = kubectl_wait_to_exist(resource_type, resource_name, max_retries=max_retries)
     while True:
-        if obj.get("status", {}).get(handler_name, {}).get("success"):
+        handler_status = obj.get("status", {}).get(handler_name, {})
+        if handler_status.get("success") and (
+            message is None or handler_status.get("message") == message
+        ):
             return obj
 
         retry += 1

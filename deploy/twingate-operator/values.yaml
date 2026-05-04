@@ -109,6 +109,21 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+# Additional fields for the liveness probe, merged on top of the hardcoded
+# httpGet against /healthz on port 8080. Useful for tuning timeouts in busy
+# clusters where the kopf event loop may briefly saturate and starve the
+# /healthz endpoint (the default 1s timeoutSeconds is tight for such cases).
+# Example:
+#   livenessProbe:
+#     timeoutSeconds: 5
+#     periodSeconds: 30
+#     failureThreshold: 5
+livenessProbe: {}
+
+# Additional fields for the readiness probe. Same merge behavior and tuning
+# considerations as livenessProbe above.
+readinessProbe: {}
+
 nodeSelector: {}
 
 tolerations: []

@@ -97,10 +97,16 @@ spec:
           httpGet:
             path: /healthz
             port: 8080
+          {{- with .Values.livenessProbe }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
         readinessProbe:
           httpGet:
             path: /healthz
             port: 8080
+          {{- with .Values.readinessProbe }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

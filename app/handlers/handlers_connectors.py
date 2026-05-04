@@ -276,7 +276,7 @@ def twingate_connector_update(body, memo, logger, new, diff, status, namespace, 
 
     create_or_replace_deployment(body, namespace, crd, memo.twingate_settings.full_url)
 
-    return success(twingate_id=updated_connector.id)
+    return success(twingate_id=updated_connector.id, message="Update completed")
 
 
 @kopf.on.delete("twingateconnector")

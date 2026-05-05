@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.0.1 (2026-05-05)
+
+### Chores
+
+- Bump gateway from 0.15.0 to 0.16.0 in /deploy/twingate-operator
+  ([#980](https://github.com/Twingate/kubernetes-operator/pull/980),
+  [`f6af933`](https://github.com/Twingate/kubernetes-operator/commit/f6af933b749af452732452b584df0ed5ae570067))
+
+
 ## v1.0.0 (2026-05-05)
 
 ### Bug Fixes

@@ -180,12 +180,17 @@ class TestResourceAccessChangeHandler:
         memo_mock = MagicMock()
         patch_mock = MagicMock()
 
-        with patch(
-            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
-            return_value=None,
+        with (
+            patch(
+                "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+                return_value=None,
+            ),
+            patch("kopf.warn") as kopf_warn_mock,
         ):
-            with patch("kopf.warn") as kopf_warn_mock:
-                result = twingate_resource_access_sync(
+            with pytest.raises(
+                kopf.TemporaryError, match=r"Resource default/invalid not found"
+            ):
+                twingate_resource_access_sync(
                     body="",
                     spec=resource_access_spec,
                     memo=memo_mock,
@@ -193,10 +198,6 @@ class TestResourceAccessChangeHandler:
                     patch=patch_mock,
                     status={},
                 )
-                assert result == {
-                    "success": False,
-                    "error": "Resource default/invalid not found",
-                }
 
             kopf_warn_mock.assert_called_once_with(
                 "",

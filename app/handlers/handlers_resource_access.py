@@ -74,7 +74,7 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
     if not resource_crd:
         err = f"Resource {access_crd.resource_ref_fullname} not found"
         kopf.warn(body, reason="ResourceNotFound", message=err)
-        return {"success": False, "error": err}
+        raise kopf.TemporaryError(err, delay=30)
 
     if not resource_crd.spec.id:
         raise kopf.TemporaryError("Resource not yet created, retrying...", delay=15)

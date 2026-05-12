@@ -262,6 +262,24 @@ class PrincipalTypeEnum(str, Enum):
     ServiceAccount = "serviceAccount"
 
 
+class AccessMode(str, Enum):
+    MANUAL = "MANUAL"
+    AUTO_LOCK = "AUTO_LOCK"
+    ACCESS_REQUEST = "ACCESS_REQUEST"
+
+
+class AccessApprovalMode(str, Enum):
+    MANUAL = "MANUAL"
+    AUTOMATIC = "AUTOMATIC"
+
+
+class AccessPolicyInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    mode: AccessMode
+    duration_seconds: int | None = Field(alias="durationSeconds", default=None)
+
+
 class _PrincipalExternalRef(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -277,6 +295,9 @@ class ResourceAccessSpec(BaseModel):
     group_ref: _KubernetesObjectRef | None = None
     principal_external_ref: _PrincipalExternalRef | None = None
     security_policy_id: str | None = None
+    expires_at: datetime | None = None
+    access_policy: AccessPolicyInput | None = None
+    approval_mode: AccessApprovalMode | None = None
 
     @model_validator(mode="after")
     def validate_target_ref_exists(self):

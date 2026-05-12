@@ -1,10 +1,16 @@
+from datetime import datetime, timezone
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
 import pytest
 
 from app.api.client import GraphQLMutationError
-from app.crds import K8sMetadata
+from app.crds import (
+    AccessApprovalMode,
+    AccessMode,
+    AccessPolicyInput,
+    K8sMetadata,
+)
 from app.handlers.handlers_resource_access import (
     get_principal_id,
     twingate_resource_access_delete,
@@ -308,6 +314,114 @@ class TestResourceAccessChangeHandler:
             assert result is None
 
         twingate_resource_access_change_mock.assert_not_called()
+
+    def test_create_passes_expires_at_to_client(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource = network_resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+            "expiresAt": "2026-12-31T23:59:59Z",
+        }
+
+        mock_api_client.resource_access_add.return_value = True
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            twingate_resource_access_sync(
+                body="",
+                spec=resource_access_spec,
+                memo=MagicMock(),
+                logger=MagicMock(),
+                patch=MagicMock(),
+                status={},
+            )
+
+        call_kwargs = mock_api_client.resource_access_add.call_args.kwargs
+        assert call_kwargs["expires_at"] == datetime(
+            2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc
+        )
+        assert call_kwargs["access_policy"] is None
+        assert call_kwargs["approval_mode"] is None
+
+    def test_create_passes_access_policy_to_client(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource = network_resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+            "accessPolicy": {"mode": "AUTO_LOCK", "durationSeconds": 3600},
+        }
+
+        mock_api_client.resource_access_add.return_value = True
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            twingate_resource_access_sync(
+                body="",
+                spec=resource_access_spec,
+                memo=MagicMock(),
+                logger=MagicMock(),
+                patch=MagicMock(),
+                status={},
+            )
+
+        call_kwargs = mock_api_client.resource_access_add.call_args.kwargs
+        assert call_kwargs["access_policy"] == AccessPolicyInput(
+            mode=AccessMode.AUTO_LOCK, duration_seconds=3600
+        )
+
+    def test_create_passes_approval_mode_to_client(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource = network_resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+            "approvalMode": "AUTOMATIC",
+        }
+
+        mock_api_client.resource_access_add.return_value = True
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            twingate_resource_access_sync(
+                body="",
+                spec=resource_access_spec,
+                memo=MagicMock(),
+                logger=MagicMock(),
+                patch=MagicMock(),
+                status={},
+            )
+
+        call_kwargs = mock_api_client.resource_access_add.call_args.kwargs
+        assert call_kwargs["approval_mode"] == AccessApprovalMode.AUTOMATIC
 
 
 class TestResourceAccessDelete:

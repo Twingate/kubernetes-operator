@@ -85,6 +85,18 @@ Env vars with `TWINGATE_` prefix: `API_KEY`, `NETWORK`, `REMOTE_NETWORK_ID` (or 
 - Models are frozen - use `model_copy()` for modifications
 - Always instantiate CRD classes (validates specs)
 
+**CRD Schema Changes**:
+
+- Any new constraint in `deploy/twingate-operator/crds/*.yaml` (enum, pattern, minimum/maximum,
+  required, oneOf, x-kubernetes-validations CEL rules, format) MUST be paired with an integration
+  test in `tests_integration/test_crds_*.py` that uses `kubectl_create()` to apply a manifest
+  and asserts the API server's accept/reject behavior. Pydantic does not enforce OpenAPI/CEL
+  rules — only the K8s API server does, so unit tests on `app/crds.py` cannot cover these.
+- Add both negative tests (assert `subprocess.CalledProcessError`, match expected stderr) and
+  at least one positive happy-path test per validation.
+- Pydantic-level validators (`@model_validator`, `@field_validator`) belong in
+  `app/tests/test_crds_*.py`.
+
 **Breaking Changes**:
 
 - CRD schema changes need migration strategy

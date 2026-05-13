@@ -257,18 +257,18 @@ class TwingateResourceCRD(BaseK8sModel):
 # region TwingateResourceAccessCRD
 
 
-class PrincipalTypeEnum(str, Enum):
+class PrincipalTypeEnum(StrEnum):
     Group = "group"
     ServiceAccount = "serviceAccount"
 
 
-class AccessMode(str, Enum):
+class AccessMode(StrEnum):
     MANUAL = "MANUAL"
     AUTO_LOCK = "AUTO_LOCK"
     ACCESS_REQUEST = "ACCESS_REQUEST"
 
 
-class AccessApprovalMode(str, Enum):
+class AccessApprovalMode(StrEnum):
     MANUAL = "MANUAL"
     AUTOMATIC = "AUTOMATIC"
 

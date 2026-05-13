@@ -91,7 +91,7 @@ spec:
                     durationSeconds:
                       type: integer
                       nullable: true
-                      description: "Duration of the access policy in seconds. Used with AUTO_LOCK mode."
+                      description: "Duration of the access policy in seconds. Used with AUTO_LOCK and ACCESS_REQUEST mode."
                 approvalMode:
                   type: string
                   nullable: true

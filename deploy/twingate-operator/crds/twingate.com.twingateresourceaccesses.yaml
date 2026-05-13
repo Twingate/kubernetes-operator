@@ -96,6 +96,8 @@ spec:
                     durationSeconds:
                       type: integer
                       nullable: true
+                      minimum: 3600
+                      maximum: 31536000
                       description: "Duration of the access policy in seconds. Used with AUTO_LOCK and ACCESS_REQUEST mode."
                 approvalMode:
                   type: string

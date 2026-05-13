@@ -9,7 +9,9 @@ from app.crds import AccessApprovalMode, AccessMode, AccessPolicyInput
 
 
 class TestResourceAccessAPIs:
-    def test_resource_access_add_success(self, test_url, api_client, mocked_responses):
+    def test_resource_access_add_with_security_policy_id(
+        self, test_url, api_client, mocked_responses
+    ):
         resource_id = "test-resource"
         principal_id = "test-principal"
         security_policy_id = "test-security-policy"

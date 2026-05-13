@@ -230,3 +230,262 @@ def test_both_principalId_and_groupRef_fails():
         "must validate one and only one schema (oneOf). Found 2 valid alternatives"
         in stderr
     )
+
+
+def test_accessPolicy_auto_lock_without_durationSeconds_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              accessPolicy:
+                mode: AUTO_LOCK
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "durationSeconds is required when mode is AUTO_LOCK" in stderr
+
+
+def test_accessPolicy_manual_with_durationSeconds_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              accessPolicy:
+                mode: MANUAL
+                durationSeconds: 3600
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "durationSeconds must not be set when mode is MANUAL" in stderr
+
+
+def test_accessPolicy_durationSeconds_below_minimum_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              accessPolicy:
+                mode: AUTO_LOCK
+                durationSeconds: 100
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.accessPolicy.durationSeconds" in stderr
+    assert "3600" in stderr
+
+
+def test_accessPolicy_durationSeconds_above_maximum_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              accessPolicy:
+                mode: AUTO_LOCK
+                durationSeconds: 99999999
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.accessPolicy.durationSeconds" in stderr
+    assert "31536000" in stderr
+
+
+def test_accessPolicy_invalid_mode_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              accessPolicy:
+                mode: NOT_A_MODE
+                durationSeconds: 3600
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.accessPolicy.mode" in stderr
+
+
+def test_accessPolicy_missing_mode_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              accessPolicy:
+                durationSeconds: 3600
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.accessPolicy.mode" in stderr
+
+
+def test_approvalMode_invalid_value_fails():
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            """
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResourceAccess
+            metadata:
+              name: fail
+            spec:
+              principalId: R3JvdXA6MTE1NzI2MA==
+              resourceRef:
+                name: my-twingate-resource
+                namespace: default
+              approvalMode: NOT_VALID
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.approvalMode" in stderr
+
+
+def test_with_accessPolicy_auto_lock(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          principalId: R3JvdXA6MTE1NzI2MA==
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+          accessPolicy:
+            mode: AUTO_LOCK
+            durationSeconds: 3600
+    """
+    )
+
+    assert result.returncode == 0
+
+
+def test_with_accessPolicy_access_request(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          principalId: R3JvdXA6MTE1NzI2MA==
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+          accessPolicy:
+            mode: ACCESS_REQUEST
+            durationSeconds: 7200
+    """
+    )
+
+    assert result.returncode == 0
+
+
+def test_with_accessPolicy_manual(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          principalId: R3JvdXA6MTE1NzI2MA==
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+          accessPolicy:
+            mode: MANUAL
+    """
+    )
+
+    assert result.returncode == 0
+
+
+def test_with_approvalMode_automatic(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          principalId: R3JvdXA6MTE1NzI2MA==
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+          approvalMode: AUTOMATIC
+    """
+    )
+
+    assert result.returncode == 0
+
+
+def test_with_expiresAt(unique_access_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResourceAccess
+        metadata:
+          name: {unique_access_name}
+        spec:
+          principalId: R3JvdXA6MTE1NzI2MA==
+          resourceRef:
+            name: my-twingate-resource
+            namespace: default
+          expiresAt: "2027-01-01T00:00:00Z"
+    """
+    )
+
+    assert result.returncode == 0

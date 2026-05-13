@@ -80,6 +80,11 @@ spec:
                   nullable: true
                   required: ["mode"]
                   description: "Access policy applied to this access edge. Omitting the field or setting it to null clears any existing policy. Must be null when the principal is a ServiceAccount."
+                  x-kubernetes-validations:
+                    - rule: "self.mode != 'AUTO_LOCK' || has(self.durationSeconds)"
+                      message: "durationSeconds is required when mode is AUTO_LOCK"
+                    - rule: "self.mode != 'MANUAL' || !has(self.durationSeconds)"
+                      message: "durationSeconds must not be set when mode is MANUAL"
                   properties:
                     mode:
                       type: string

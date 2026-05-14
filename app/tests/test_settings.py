@@ -63,20 +63,22 @@ def test_remote_network_id_pass_if_base64_with_globalid_content():
     )
 
 
-def test_full_url():
-    settings = TwingateOperatorSettings(
-        api_key="foo",
-        network="foo",
-        host="testhost.com",
-        remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
-    )
+def test_full_url(mocked_responses):
+    with patch("app.settings.resolve_shard_host", return_value="testhost.com"):
+        settings = TwingateOperatorSettings(
+            api_key="foo",
+            network="foo",
+            host="testhost.com",
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+        )
+
     assert settings.full_url == "https://foo.testhost.com"
 
 
 def test_resolve_shard_host_extracts_host_from_308_redirect(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         status=308,
         headers={"Location": "https://mynetwork.us1.twingate.com"},
     )
@@ -87,7 +89,7 @@ def test_resolve_shard_host_extracts_host_from_308_redirect(mocked_responses):
 def test_resolve_shard_host_retains_host_on_non_308_status(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         status=405,
     )
     result = resolve_shard_host("mynetwork", "twingate.com")
@@ -97,7 +99,7 @@ def test_resolve_shard_host_retains_host_on_non_308_status(mocked_responses):
 def test_resolve_shard_host_retries_on_connection_error(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         body=RequestsConnectionError("connection failed"),
     )
     result = resolve_shard_host("mynetwork", "twingate.com")
@@ -108,7 +110,7 @@ def test_resolve_shard_host_retries_on_connection_error(mocked_responses):
 def test_resolve_shard_host_retains_host_on_308_without_location(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         status=308,
     )
     result = resolve_shard_host("mynetwork", "twingate.com")
@@ -118,7 +120,7 @@ def test_resolve_shard_host_retains_host_on_308_without_location(mocked_response
 def test_resolve_shard_host_retains_host_on_308_with_bad_location(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         status=308,
         headers={"Location": "not-a-url"},
     )
@@ -130,12 +132,12 @@ def test_resolve_shard_host_retries_then_succeeds(mocked_responses):
     mocked_responses.assert_all_requests_are_fired = True
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         body=RequestsConnectionError("connection failed"),
     )
     mocked_responses.add(
         responses.HEAD,
-        "https://mynetwork.twingate.com",
+        "https://mynetwork.twingate.com/api/graphql/",
         status=308,
         headers={"Location": "https://mynetwork.us1.twingate.com"},
     )

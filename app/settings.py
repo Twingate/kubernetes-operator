@@ -3,14 +3,62 @@ import logging
 import os
 from base64 import b64decode
 from typing import Annotated, ClassVar
+from urllib.parse import urlparse
 
 import kopf
+import requests
 import tomllib
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = logging.getLogger(__name__)
+
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(requests.RequestException),
+    reraise=True,
+)
+def _resolve_shard_host(network: str, host: str) -> str:
+    url = f"https://{network}.{host}"
+    response = requests.head(
+        url,
+        allow_redirects=False,
+        timeout=10,
+        headers={"User-Agent": f"Twingate-Operator/{get_version()}"},
+    )
+    location = response.headers.get("Location")
+    if response.status_code != 308 or not location:
+        return host
+
+    hostname_with_shard = urlparse(location).hostname
+    prefix = f"{network}."
+    if hostname_with_shard and hostname_with_shard.startswith(prefix):
+        sharded_host = hostname_with_shard[len(prefix) :]
+        logger.info("Resolved shard host %r -> %r", host, sharded_host)
+        return sharded_host
+
+    return host
+
+
+def resolve_shard_host(network: str, host: str) -> str:
+    try:
+        return _resolve_shard_host(network, host)
+    except:
+        logger.warning(
+            "Shard resolution failed, using original host: %s",
+            host,
+        )
+
+    return host
 
 
 def validate_graphql_global_id(value: str) -> str:
@@ -53,6 +101,8 @@ class TwingateOperatorSettings(BaseSettings):
         from app.api import TwingateAPIClient
 
         super().__init__(*args, **kwargs)
+
+        self.host = resolve_shard_host(self.network, self.host)
 
         if self.remote_network_name:
             client = TwingateAPIClient(self, logger=logger)

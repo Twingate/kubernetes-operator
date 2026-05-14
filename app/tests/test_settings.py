@@ -88,7 +88,7 @@ def test_resolve_shard_host_retains_host_on_non_308_status(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com",
-        status=200,
+        status=405,
     )
     result = resolve_shard_host("mynetwork", "twingate.com")
     assert result == "twingate.com"

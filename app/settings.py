@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
     reraise=True,
 )
 def _resolve_shard_host(network: str, host: str) -> str:
-    url = f"https://{network}.{host}"
+    url = f"https://{network}.{host}/api/graphql/"
     response = requests.head(
         url,
         allow_redirects=False,

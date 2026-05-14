@@ -5,7 +5,7 @@ import responses
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
-from app.settings import TwingateOperatorSettings, resolve_shard_host
+from app.settings import TwingateOperatorSettings, get_host
 
 
 @pytest.fixture
@@ -64,7 +64,7 @@ def test_remote_network_id_pass_if_base64_with_globalid_content():
 
 
 def test_full_url(mocked_responses):
-    with patch("app.settings.resolve_shard_host", return_value="testhost.com"):
+    with patch("app.settings.get_host", return_value="testhost.com"):
         settings = TwingateOperatorSettings(
             api_key="foo",
             network="foo",
@@ -75,60 +75,49 @@ def test_full_url(mocked_responses):
     assert settings.full_url == "https://foo.testhost.com"
 
 
-def test_resolve_shard_host_extracts_host_from_308_redirect(mocked_responses):
+def test_get_host_extracts_host_from_308_redirect(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=308,
         headers={"Location": "https://mynetwork.us1.twingate.com"},
     )
-    result = resolve_shard_host("mynetwork", "twingate.com")
+    result = get_host("mynetwork", "twingate.com")
     assert result == "us1.twingate.com"
 
 
-def test_resolve_shard_host_retains_host_on_non_308_status(mocked_responses):
+def test_get_host_retains_host_on_non_308_status_code(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=405,
     )
-    result = resolve_shard_host("mynetwork", "twingate.com")
+    result = get_host("mynetwork", "twingate.com")
     assert result == "twingate.com"
 
 
-def test_resolve_shard_host_retries_on_connection_error(mocked_responses):
-    mocked_responses.add(
-        responses.HEAD,
-        "https://mynetwork.twingate.com/api/graphql/",
-        body=RequestsConnectionError("connection failed"),
-    )
-    result = resolve_shard_host("mynetwork", "twingate.com")
-    assert result == "twingate.com"
-    assert len(mocked_responses.calls) == 5
-
-
-def test_resolve_shard_host_retains_host_on_308_without_location(mocked_responses):
+def test_get_host_retains_host_on_308_without_location(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=308,
     )
-    result = resolve_shard_host("mynetwork", "twingate.com")
+    result = get_host("mynetwork", "twingate.com")
     assert result == "twingate.com"
 
 
-def test_resolve_shard_host_retains_host_on_308_with_bad_location(mocked_responses):
+def test_get_host_retains_host_on_308_with_bad_location(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=308,
         headers={"Location": "not-a-url"},
     )
-    result = resolve_shard_host("mynetwork", "twingate.com")
+    result = get_host("mynetwork", "twingate.com")
     assert result == "twingate.com"
 
 
-def test_resolve_shard_host_retries_then_succeeds(mocked_responses):
+def test_get_host_retries_then_succeeds(mocked_responses):
     mocked_responses.assert_all_requests_are_fired = True
     mocked_responses.add(
         responses.HEAD,
@@ -142,19 +131,30 @@ def test_resolve_shard_host_retries_then_succeeds(mocked_responses):
         headers={"Location": "https://mynetwork.us1.twingate.com"},
     )
 
-    result = resolve_shard_host("mynetwork", "twingate.com")
+    result = get_host("mynetwork", "twingate.com")
 
     assert result == "us1.twingate.com"
     assert len(mocked_responses.calls) == 2
 
 
-def test_settings_init_resolves_shard_before_remote_network_lookup(
+def test_get_host_fallback_to_default(mocked_responses):
+    mocked_responses.add(
+        responses.HEAD,
+        "https://mynetwork.twingate.com/api/graphql/",
+        body=RequestsConnectionError("connection failed"),
+    )
+    result = get_host("mynetwork", "twingate.com")
+    assert result == "twingate.com"
+    assert len(mocked_responses.calls) == 5
+
+
+def test_settings_init_get_sharded_host_before_remote_network_lookup(
     mock_get_remote_network_by_name,
 ):
     call_order = []
 
-    def resolve_shard_host(_network, _host):
-        call_order.append("resolve_shard_host")
+    def get_sharded_host(_network, _host):
+        call_order.append("get_sharded_host")
         return "us1.twingate.com"
 
     def get_remote_network_by_name(_name):
@@ -162,7 +162,7 @@ def test_settings_init_resolves_shard_before_remote_network_lookup(
         return MagicMock(id="bar", name="test")
 
     mock_get_remote_network_by_name.side_effect = get_remote_network_by_name
-    with patch("app.settings.resolve_shard_host", side_effect=resolve_shard_host):
+    with patch("app.settings.get_host", side_effect=get_sharded_host):
         settings = TwingateOperatorSettings(
             api_key="foo",
             network="foo",
@@ -172,4 +172,4 @@ def test_settings_init_resolves_shard_before_remote_network_lookup(
 
     assert settings.full_url == "https://foo.us1.twingate.com"
     assert settings.remote_network_id == "bar"
-    assert call_order == ["resolve_shard_host", "get_remote_network_by_name"]
+    assert call_order == ["get_sharded_host", "get_remote_network_by_name"]

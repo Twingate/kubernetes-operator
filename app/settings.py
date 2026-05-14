@@ -33,22 +33,22 @@ def _resolve_shard_host(network: str, host: str) -> str:
     if response.status_code != 308 or not location:
         return host
 
-    hostname_with_shard = urlparse(location).hostname
+    hostname = urlparse(location).hostname
     prefix = f"{network}."
-    if hostname_with_shard and hostname_with_shard.startswith(prefix):
-        sharded_host = hostname_with_shard[len(prefix) :]
+    if hostname and hostname.startswith(prefix):
+        sharded_host = hostname[len(prefix) :]
         logger.info("Resolved shard host %r -> %r", host, sharded_host)
         return sharded_host
 
     return host
 
 
-def resolve_shard_host(network: str, host: str) -> str:
+def get_host(network: str, host: str) -> str:
     try:
         return _resolve_shard_host(network, host)
     except:
         logger.warning(
-            "Shard resolution failed, using original host: %s",
+            "Failed to resolve shard host, using original host: %s",
             host,
         )
 
@@ -96,7 +96,7 @@ class TwingateOperatorSettings(BaseSettings):
 
         super().__init__(*args, **kwargs)
 
-        self.host = resolve_shard_host(self.network, self.host)
+        self.host = get_host(self.network, self.host)
 
         if self.remote_network_name:
             client = TwingateAPIClient(self, logger=logger)

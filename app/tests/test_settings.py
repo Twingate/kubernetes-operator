@@ -63,7 +63,7 @@ def test_remote_network_id_pass_if_base64_with_globalid_content():
     )
 
 
-def test_full_url(mocked_responses):
+def test_full_url():
     with patch("app.settings.get_host", return_value="testhost.com"):
         settings = TwingateOperatorSettings(
             api_key="foo",

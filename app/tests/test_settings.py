@@ -4,8 +4,17 @@ import pytest
 import responses
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError as RequestsConnectionError
+from tenacity import wait_none
 
-from app.settings import TwingateOperatorSettings, get_host
+from app.settings import TwingateOperatorSettings, _resolve_shard_host, get_host
+
+
+@pytest.fixture(autouse=True)
+def _disable_retry_wait():
+    original_wait = _resolve_shard_host.retry.wait
+    _resolve_shard_host.retry.wait = wait_none()
+    yield
+    _resolve_shard_host.retry.wait = original_wait
 
 
 @pytest.fixture
@@ -80,40 +89,56 @@ def test_get_host_extracts_host_from_308_redirect(mocked_responses):
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=308,
-        headers={"Location": "https://mynetwork.us1.twingate.com"},
+        headers={"location": "https://mynetwork.us1.twingate.com/api/graphql/"},
     )
+
     result = get_host("mynetwork", "twingate.com")
+
     assert result == "us1.twingate.com"
 
 
-def test_get_host_retains_host_on_non_308_status_code(mocked_responses):
+def test_get_host_retains_host_when_no_redirect(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
-        status=405,
+        status=200,
     )
+
     result = get_host("mynetwork", "twingate.com")
+
     assert result == "twingate.com"
 
 
-def test_get_host_retains_host_on_308_without_location(mocked_responses):
+@pytest.mark.parametrize(
+    "headers",
+    [
+        pytest.param({}, id="empty_headers"),
+        pytest.param({"location": ""}, id="empty_location"),
+        pytest.param({"location": "not-a-url"}, id="bad_location"),
+        pytest.param({"location": "https://mynetwork"}, id="missing_host_suffix"),
+        pytest.param(
+            {"location": "https://mynetwork.evil.com/api/graphql/"}, id="different_host"
+        ),
+        pytest.param(
+            {"location": "https://us1.twingate.com/api/graphql/"},
+            id="missing_network_prefix",
+        ),
+        pytest.param(
+            {"location": "https://othernetwork.us1.twingate.com/api/graphql/"},
+            id="different_network",
+        ),
+    ],
+)
+def test_get_host_fallback_to_default(mocked_responses, headers):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=308,
+        headers=headers,
     )
-    result = get_host("mynetwork", "twingate.com")
-    assert result == "twingate.com"
 
-
-def test_get_host_retains_host_on_308_with_bad_location(mocked_responses):
-    mocked_responses.add(
-        responses.HEAD,
-        "https://mynetwork.twingate.com/api/graphql/",
-        status=308,
-        headers={"Location": "not-a-url"},
-    )
     result = get_host("mynetwork", "twingate.com")
+
     assert result == "twingate.com"
 
 
@@ -128,7 +153,7 @@ def test_get_host_retries_then_succeeds(mocked_responses):
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         status=308,
-        headers={"Location": "https://mynetwork.us1.twingate.com"},
+        headers={"location": "https://mynetwork.us1.twingate.com/api/graphql/"},
     )
 
     result = get_host("mynetwork", "twingate.com")
@@ -137,13 +162,15 @@ def test_get_host_retries_then_succeeds(mocked_responses):
     assert len(mocked_responses.calls) == 2
 
 
-def test_get_host_fallback_to_default(mocked_responses):
+def test_get_host_fallback_to_default_when_retries_exhausted(mocked_responses):
     mocked_responses.add(
         responses.HEAD,
         "https://mynetwork.twingate.com/api/graphql/",
         body=RequestsConnectionError("connection failed"),
     )
+
     result = get_host("mynetwork", "twingate.com")
+
     assert result == "twingate.com"
     assert len(mocked_responses.calls) == 5
 

@@ -11,7 +11,12 @@ import tomllib
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from tenacity import retry, retry_if_exception_type, stop_after_attempt
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,32 +25,32 @@ logger = logging.getLogger(__name__)
     stop=stop_after_attempt(5),
     retry=retry_if_exception_type(requests.RequestException),
     reraise=True,
+    wait=wait_exponential(multiplier=0.1, max=10),
 )
 def _resolve_shard_host(network: str, host: str) -> str:
     url = f"https://{network}.{host}/api/graphql/"
     response = requests.head(
         url,
-        allow_redirects=False,
         timeout=10,
         headers={"User-Agent": f"Twingate-Operator/{get_version()}"},
     )
-    location = response.headers.get("Location")
+    location = response.headers.get("location")
     if response.status_code != 308 or not location:
         return host
 
-    hostname = urlparse(location).hostname
+    hostname = urlparse(location).hostname or ""
     prefix = f"{network}."
-    if hostname and hostname.startswith(prefix):
-        sharded_host = hostname[len(prefix) :]
-        logger.info("Resolved shard host %r -> %r", host, sharded_host)
-        return sharded_host
+    if hostname.startswith(prefix) and hostname.endswith(f".{host}"):
+        return hostname.lstrip(prefix)
 
     return host
 
 
 def get_host(network: str, host: str) -> str:
     try:
-        return _resolve_shard_host(network, host)
+        resolved_host = _resolve_shard_host(network, host)
+        logger.info("Resolved host %s", resolved_host)
+        return resolved_host
     except:
         logger.warning(
             "Failed to resolve shard host, using original host: %s",

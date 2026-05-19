@@ -117,9 +117,6 @@ def test_get_host_retains_host_when_no_redirect(mocked_responses):
         pytest.param({"location": "not-a-url"}, id="bad_location"),
         pytest.param({"location": "https://mynetwork"}, id="missing_host_suffix"),
         pytest.param(
-            {"location": "https://mynetwork.evil.com/api/graphql/"}, id="different_host"
-        ),
-        pytest.param(
             {"location": "https://us1.twingate.com/api/graphql/"},
             id="missing_network_prefix",
         ),

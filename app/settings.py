@@ -40,8 +40,8 @@ def _resolve_shard_host(network: str, host: str) -> str:
 
     hostname = urlparse(location).hostname or ""
     prefix = f"{network}."
-    if hostname.startswith(prefix) and hostname.endswith(f".{host}"):
-        return hostname.lstrip(prefix)
+    if hostname.startswith(prefix):
+        return hostname[len(prefix) :]
 
     return host
 

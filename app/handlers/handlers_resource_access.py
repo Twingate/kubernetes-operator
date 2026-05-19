@@ -84,7 +84,12 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         principal_id = get_principal_id(access_crd, creation_status, client)
         client.resource_access_add(
-            resource_id, principal_id, access_crd.security_policy_id
+            resource_id,
+            principal_id,
+            access_crd.security_policy_id,
+            expires_at=access_crd.expires_at,
+            access_policy=access_crd.access_policy,
+            approval_mode=access_crd.approval_mode,
         )
 
         kopf.info(

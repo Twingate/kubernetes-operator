@@ -70,6 +70,42 @@ spec:
                   type: string
                   nullable: True
                   pattern: "^[-A-Za-z0-9+/]*={0,3}$"
+                expiresAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: "RFC3339 datetime when this access expires. Omitting the field or setting it to null clears any existing expiration. Must be null when the principal is a ServiceAccount."
+                accessPolicy:
+                  type: object
+                  nullable: true
+                  required: ["mode"]
+                  description: "Access policy applied to this access edge. Omitting the field or setting it to null clears any existing policy. Must be null when the principal is a ServiceAccount."
+                  x-kubernetes-validations:
+                    - rule: "self.mode != 'AUTO_LOCK' || has(self.durationSeconds)"
+                      message: "durationSeconds is required when mode is AUTO_LOCK"
+                    - rule: "self.mode != 'MANUAL' || !has(self.durationSeconds)"
+                      message: "durationSeconds must not be set when mode is MANUAL"
+                  properties:
+                    mode:
+                      type: string
+                      enum:
+                        - MANUAL
+                        - AUTO_LOCK
+                        - ACCESS_REQUEST
+                      description: "Access mode."
+                    durationSeconds:
+                      type: integer
+                      nullable: true
+                      minimum: 3600
+                      maximum: 31536000
+                      description: "Duration of the access policy in seconds. Used with AUTO_LOCK and ACCESS_REQUEST mode."
+                approvalMode:
+                  type: string
+                  nullable: true
+                  enum:
+                    - MANUAL
+                    - AUTOMATIC
+                  description: "Approval mode for the access edge. Omitting the field or setting it to null clears any existing value. Must be null when the principal is a ServiceAccount."
                 resourceRef:
                   type: object
                   description: "resourceRef specifies the TwingateResource reference to provide access to."

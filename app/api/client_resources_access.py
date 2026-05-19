@@ -1,16 +1,22 @@
+from datetime import datetime
+
 from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
+from app.crds import AccessApprovalMode, AccessPolicyInput
 
 
 class AccessInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     principal_id: str = Field(alias="principalId")
-    security_policy_id: str | None = Field(alias="securityPolicyId")
+    security_policy_id: str | None = Field(alias="securityPolicyId", default=None)
+    expires_at: datetime | None = Field(alias="expiresAt", default=None)
+    access_policy: AccessPolicyInput | None = Field(alias="accessPolicy", default=None)
+    approval_mode: AccessApprovalMode | None = Field(alias="approvalMode", default=None)
 
 
 # fmt:off
@@ -41,12 +47,19 @@ class TwingateResourceAccessAPIs:
         self: TwingateClientProtocol,
         resource_id: str,
         principal_id: str,
-        security_policy_id: str | None,
+        security_policy_id: str | None = None,
+        expires_at: datetime | None = None,
+        access_policy: AccessPolicyInput | None = None,
+        approval_mode: AccessApprovalMode | None = None,
     ) -> bool:
         access = AccessInput(
-            principal_id=principal_id, security_policy_id=security_policy_id
+            principal_id=principal_id,
+            security_policy_id=security_policy_id,
+            expires_at=expires_at,
+            access_policy=access_policy,
+            approval_mode=approval_mode,
         )
-        access_list = [access.model_dump(by_alias=True)]
+        access_list = [access.model_dump(by_alias=True, mode="json")]
         result = self.execute_mutation(
             "resourceAccessAdd",
             GraphQLRequest(

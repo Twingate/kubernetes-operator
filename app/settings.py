@@ -32,7 +32,7 @@ def _resolve_shard_host(network: str, host: str) -> str:
     response = requests.head(
         url,
         timeout=3,
-        headers={"User-Agent": f"Twingate-Operator/{get_version()}"},
+        headers={"User-Agent": get_user_agent()},
     )
     location = response.headers.get("location")
     if response.status_code != 308 or not location:
@@ -133,6 +133,10 @@ def get_settings() -> TwingateOperatorSettings:  # pragma: no cover
     if not __settings:
         __settings = TwingateOperatorSettings()
     return __settings
+
+
+def get_user_agent() -> str:
+    return f"Twingate-Operator/{get_version()}"
 
 
 def get_version() -> str:  # pragma: no cover

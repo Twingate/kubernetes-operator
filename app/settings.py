@@ -22,16 +22,16 @@ logger = logging.getLogger(__name__)
 
 
 @retry(
-    stop=stop_after_attempt(5),
+    stop=stop_after_attempt(3),
     retry=retry_if_exception_type(requests.RequestException),
     reraise=True,
-    wait=wait_exponential(multiplier=0.1, max=10),
+    wait=wait_exponential(multiplier=1, max=10),
 )
 def _resolve_shard_host(network: str, host: str) -> str:
     url = f"https://{network}.{host}/api/graphql/"
     response = requests.head(
         url,
-        timeout=10,
+        timeout=3,
         headers={"User-Agent": f"Twingate-Operator/{get_version()}"},
     )
     location = response.headers.get("location")

@@ -169,7 +169,7 @@ def test_get_host_fallback_to_default_when_retries_exhausted(mocked_responses):
     result = get_host("mynetwork", "twingate.com")
 
     assert result == "twingate.com"
-    assert len(mocked_responses.calls) == 5
+    assert len(mocked_responses.calls) == 3
 
 
 def test_settings_init_get_sharded_host_before_remote_network_lookup(

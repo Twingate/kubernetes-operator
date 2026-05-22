@@ -31,7 +31,7 @@ def _resolve_shard_host(network: str, host: str) -> str:
     url = f"https://{network}.{host}/api/graphql/"
     response = requests.head(
         url,
-        timeout=3,
+        timeout=1,
         headers={"User-Agent": get_user_agent()},
     )
     location = response.headers.get("location")

@@ -52,7 +52,7 @@ def get_host(network: str, host: str) -> str:
         logger.info("Resolved host %s", resolved_host)
         return resolved_host
     except:
-        logger.warning(
+        logger.exception(
             "Failed to resolve shard host, using original host: %s",
             host,
         )

@@ -3,14 +3,61 @@ import logging
 import os
 from base64 import b64decode
 from typing import Annotated, ClassVar
+from urllib.parse import urlparse
 
 import kopf
+import requests
 import tomllib
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = logging.getLogger(__name__)
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(requests.RequestException),
+    reraise=True,
+    wait=wait_exponential(multiplier=1, max=10),
+)
+def _resolve_shard_host(network: str, host: str) -> str:
+    url = f"https://{network}.{host}/api/graphql/"
+    response = requests.head(
+        url,
+        timeout=1,
+        headers={"User-Agent": get_user_agent()},
+    )
+    location = response.headers.get("location")
+    if response.status_code != 308 or not location:
+        return host
+
+    hostname = urlparse(location).hostname or ""
+    prefix = f"{network}."
+    if hostname.startswith(prefix):
+        return hostname[len(prefix) :]
+
+    return host
+
+
+def get_host(network: str, host: str) -> str:
+    try:
+        resolved_host = _resolve_shard_host(network, host)
+        logger.info("Resolved host %s", resolved_host)
+        return resolved_host
+    except:
+        logger.exception(
+            "Failed to resolve shard host, using original host: %s",
+            host,
+        )
+
+    return host
 
 
 def validate_graphql_global_id(value: str) -> str:
@@ -54,6 +101,8 @@ class TwingateOperatorSettings(BaseSettings):
 
         super().__init__(*args, **kwargs)
 
+        self.host = get_host(self.network, self.host)
+
         if self.remote_network_name:
             client = TwingateAPIClient(self, logger=logger)
             rn = client.get_remote_network_by_name(self.remote_network_name)
@@ -84,6 +133,10 @@ def get_settings() -> TwingateOperatorSettings:  # pragma: no cover
     if not __settings:
         __settings = TwingateOperatorSettings()
     return __settings
+
+
+def get_user_agent() -> str:
+    return f"Twingate-Operator/{get_version()}"
 
 
 def get_version() -> str:  # pragma: no cover

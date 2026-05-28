@@ -15,7 +15,7 @@ from app.api.client_resources import TwingateResourceAPIs
 from app.api.client_resources_access import TwingateResourceAccessAPIs
 from app.api.client_service_accounts import TwingateServiceAccountAPIs
 from app.api.exceptions import GraphQLMutationError
-from app.settings import TwingateOperatorSettings, get_version
+from app.settings import TwingateOperatorSettings, get_user_agent
 
 DEFAULT_LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class TwingateRequestsHTTPTransport(RequestsHTTPTransport):
         headers = kwargs.pop("headers", {})
         headers.update(
             {
-                "User-Agent": f"Twingate-Operator/{get_version()}",
+                "User-Agent": get_user_agent(),
                 "X-API-KEY": twingate_api_key,
             }
         )

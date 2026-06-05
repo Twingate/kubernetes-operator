@@ -1,0 +1,69 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: twingatecertificateauthorities.twingate.com
+spec:
+  group: twingate.com
+  versions:
+    - name: v1beta
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: "TwingateCertificateAuthority represents a Certificate Authority in Twingate."
+          required: ["spec"]
+          properties:
+            spec:
+              type: object
+              description: "TwingateCertificateAuthoritySpec defines the desired state of TwingateCertificateAuthority"
+              required: ["name", "secretRef"]
+              properties:
+                id:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  description: "Name of the Certificate Authority in Twingate."
+                type:
+                  type: string
+                  enum: ["X509", "SSH"]
+                  default: "X509"
+                  description: "Type of the Certificate Authority. Only X509 is currently supported."
+                secretRef:
+                  type: object
+                  required: ["name"]
+                  description: "Reference to the kubernetes.io/tls Secret the CA's public certificate (ca.crt) is read from."
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the Secret object."
+                    namespace:
+                      type: string
+                      default: default
+                      description: "Namespace of the Secret object."
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: ID
+          type: string
+          description: "The ID of the Certificate Authority."
+          jsonPath: .spec.id
+        - name: Type
+          type: string
+          description: "Type of the Certificate Authority."
+          jsonPath: .spec.type
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: twingatecertificateauthorities
+    singular: twingatecertificateauthority
+    kind: TwingateCertificateAuthority
+    shortNames:
+      - tgca
+    categories:
+      - all
+      - twingate

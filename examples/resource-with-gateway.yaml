@@ -1,0 +1,14 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateResource
+metadata:
+  name: my-k8s-resource
+spec:
+  name: My K8S Cluster
+  address: kubernetes.default.svc.cluster.local
+  alias: k8s-cluster.int
+  type: Kubernetes
+  # Bind to a TwingateGateway instead of inline proxy config. `gatewayRef`
+  # replaces the deprecated `proxy` field for Kubernetes resources.
+  gatewayRef:
+    name: example-gateway
+    namespace: twingate

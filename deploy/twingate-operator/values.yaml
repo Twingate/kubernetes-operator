@@ -46,7 +46,17 @@ gateway:
 #  twingate:
 #    network: "<network slug>"
 #
-#    # Customize the `TwingateResource` to create for operator to sync to Twingate
+#    # When true, the gateway subchart annotates its Service with
+#    # `gateway.twingate.com` (and `gateway.twingate.com/tlsSecret`). The operator
+#    # watches that Service and reconciles a TwingateGateway + its
+#    # TwingateCertificateAuthority from it.
+#    managed: true
+#
+#    # Customize the `TwingateResource` to create for operator to sync to Twingate.
+#    # When `managed` is also true, this resource is the in-cluster Kubernetes API
+#    # server, bound to the managed gateway via gatewayRef. Adding `managed: true`
+#    # to an existing deployment migrates the existing resource in place (its
+#    # Twingate id and access grants are preserved).
 #    resource:
 #      # Enable/disable automatic Twingate Resource creation
 #      enabled: true

@@ -1,0 +1,11 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateGateway
+metadata:
+  name: example-gateway
+spec:
+  # host:port the Twingate Client connects to.
+  address: gateway.twingate.svc.cluster.local:443
+  # The TwingateCertificateAuthority whose X509 CA signs this gateway's TLS certs.
+  x509CertificateAuthorityRef:
+    name: example-ca
+    namespace: twingate

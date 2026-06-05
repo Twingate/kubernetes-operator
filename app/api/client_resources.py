@@ -251,6 +251,12 @@ class KubernetesResource(BaseResource):
 
     def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
         diff = super().get_spec_diff(crd)
+
+        # Gateway-backed resources derive proxyAddress / certificateAuthorityCert
+        # from the Gateway, so they are not part of the desired spec to diff.
+        if crd.gateway_ref is not None:
+            return diff
+
         crd_proxy_address = crd.proxy and crd.proxy.address
         if self.proxy_address != crd_proxy_address:
             diff["proxy_address"] = Diff(
@@ -348,8 +354,9 @@ MUT_CREATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
         $remoteNetworkId: ID!
         $securityPolicyId: ID
         $tags: [TagInput!]
-        $proxyAddress: String!
-        $certificateAuthorityCert: String!
+        $proxyAddress: String
+        $certificateAuthorityCert: String
+        $gatewayId: ID
     ) {
         kubernetesResourceCreate(
             name: $name
@@ -362,6 +369,7 @@ MUT_CREATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
             tags: $tags
             proxyAddress: $proxyAddress
             certificateAuthorityCert: $certificateAuthorityCert
+            gatewayId: $gatewayId
         ) {
             ok
             error
@@ -424,6 +432,7 @@ MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
         $tags: [TagInput!]
         $proxyAddress: String
         $certificateAuthorityCert: String
+        $gatewayId: ID
     ) {
         kubernetesResourceUpdate(
             id: $id,
@@ -437,6 +446,7 @@ MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
             tags: $tags
             proxyAddress: $proxyAddress
             certificateAuthorityCert: $certificateAuthorityCert
+            gatewayId: $gatewayId
         ) {
             ok
             error
@@ -538,8 +548,9 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         protocols: dict[str, Any],
         tags: list[dict[str, str]],
-        proxy_address: str,
-        certificate_authority_cert: str,
+        proxy_address: str | None = None,
+        certificate_authority_cert: str | None = None,
+        gateway_id: str | None = None,
     ) -> KubernetesResource:
         result = self.execute_mutation(
             "kubernetesResourceCreate",
@@ -556,6 +567,7 @@ class TwingateResourceAPIs:
                     "tags": tags,
                     "proxyAddress": proxy_address,
                     "certificateAuthorityCert": certificate_authority_cert,
+                    "gatewayId": gateway_id,
                 },
             ),
         )
@@ -618,8 +630,9 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         protocols: dict[str, Any],
         tags: list[dict[str, str]],
-        proxy_address: str,
-        certificate_authority_cert: str,
+        proxy_address: str | None = None,
+        certificate_authority_cert: str | None = None,
+        gateway_id: str | None = None,
     ) -> KubernetesResource | None:
         result = self.execute_mutation(
             "kubernetesResourceUpdate",
@@ -637,6 +650,7 @@ class TwingateResourceAPIs:
                     "tags": tags,
                     "proxyAddress": proxy_address,
                     "certificateAuthorityCert": certificate_authority_cert,
+                    "gatewayId": gateway_id,
                 },
             ),
         )

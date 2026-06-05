@@ -193,6 +193,9 @@ class ResourceSpec(BaseModel):
     sync_labels: bool = True
     type: ResourceType = ResourceType.NETWORK
     proxy: ResourceProxy | None = None
+    # Reference to a TwingateGateway. The modern replacement for the deprecated
+    # `proxy` field on Kubernetes resources.
+    gateway_ref: _KubernetesObjectRef | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -206,6 +209,22 @@ class ResourceSpec(BaseModel):
 
         return self
 
+    @model_validator(mode="after")
+    def check_proxy_and_gateway_ref(self):
+        has_proxy = self.proxy is not None
+        has_gateway_ref = self.gateway_ref is not None
+
+        if self.type == ResourceType.NETWORK and (has_proxy or has_gateway_ref):
+            raise ValueError("Network resources cannot set `proxy` or `gatewayRef`.")
+
+        if self.type == ResourceType.KUBERNETES and has_proxy == has_gateway_ref:
+            raise ValueError(
+                "Kubernetes resources require exactly one of `proxy` (deprecated) "
+                "or `gatewayRef`."
+            )
+
+        return self
+
     def to_graphql_arguments(
         self, *, labels: dict[str, str], exclude: set[str] | None = None
     ) -> dict[str, Any]:
@@ -215,6 +234,7 @@ class ResourceSpec(BaseModel):
             "sync_labels",
             "proxy",
             "type",
+            "gateway_ref",
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
@@ -232,16 +252,29 @@ class ResourceSpec(BaseModel):
                     "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
                 }
             case ResourceType.KUBERNETES:
-                resource_proxy = cast(ResourceProxy, self.proxy)
-                ca_cert = resource_proxy.get_certificate_authority_cert()
-                if ca_cert is None:
-                    raise kopf.PermanentError(
-                        "Certificate authority cert is not found for Kubernetes Resource type"
-                    )
-                graphql_args |= {
-                    "proxy_address": resource_proxy.address,
-                    "certificate_authority_cert": ca_cert,
-                }
+                if self.gateway_ref is not None:
+                    # Imported lazily to avoid a circular import at module load
+                    # time (app.handlers imports app.crds).
+                    from app.handlers.base import resolve_ref_to_backend_id
+
+                    graphql_args |= {
+                        "gateway_id": resolve_ref_to_backend_id(
+                            "twingategateways",
+                            self.gateway_ref.namespace,
+                            self.gateway_ref.name,
+                        ),
+                    }
+                else:
+                    resource_proxy = cast(ResourceProxy, self.proxy)
+                    ca_cert = resource_proxy.get_certificate_authority_cert()
+                    if ca_cert is None:
+                        raise kopf.PermanentError(
+                            "Certificate authority cert is not found for Kubernetes Resource type"
+                        )
+                    graphql_args |= {
+                        "proxy_address": resource_proxy.address,
+                        "certificate_authority_cert": ca_cert,
+                    }
 
         return graphql_args
 

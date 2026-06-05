@@ -213,16 +213,15 @@ class TestKubernetesResourceModel:
             ),
         }
 
-    def test_get_spec_diff_with_empty_proxy(self, kubernetes_resource_factory):
+    def test_get_spec_diff_for_gateway_backed_resource(
+        self, kubernetes_resource_factory
+    ):
         resource = kubernetes_resource_factory()
-        crd = resource.to_spec(proxy=None)
+        crd = resource.to_spec(proxy=None, gateway_ref={"name": "my-gateway"})
 
-        assert resource.get_spec_diff(crd) == {
-            "proxy_address": Diff(remote=resource.proxy_address, local=None),
-            "certificate_authority_cert": Diff(
-                remote=resource.x509_ca_cert, local=None
-            ),
-        }
+        # Gateway-backed resources derive proxyAddress / certificateAuthorityCert
+        # from the Gateway, so those fields are not part of the diff.
+        assert resource.get_spec_diff(crd) == {}
 
     def test_get_spec_diff_with_equivalent_certificate(
         self, kubernetes_resource_factory
@@ -385,7 +384,13 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels", "type", "proxy"],
+                            exclude=[
+                                "id",
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                                "gateway_ref",
+                            ],
                             by_alias=True,
                         )
                     },
@@ -427,7 +432,13 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels", "type", "proxy"],
+                            exclude=[
+                                "id",
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                                "gateway_ref",
+                            ],
                             by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
@@ -473,6 +484,7 @@ class TestTwingateResourceAPIs:
                                 "sync_labels",
                                 "type",
                                 "proxy",
+                                "gateway_ref",
                             },
                             by_alias=True,
                         )
@@ -539,7 +551,8 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["sync_labels", "type", "proxy"], by_alias=True
+                            exclude=["sync_labels", "type", "proxy", "gateway_ref"],
+                            by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
                     },
@@ -582,6 +595,7 @@ class TestTwingateResourceAPIs:
                                 "sync_labels",
                                 "type",
                                 "proxy",
+                                "gateway_ref",
                             },
                             by_alias=True,
                         )

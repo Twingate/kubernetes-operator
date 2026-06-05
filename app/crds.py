@@ -47,7 +47,7 @@ class K8sMetadata(BaseModel):
     @property
     def owner_reference_object(self) -> dict:
         return {
-            "apiVersion": "twingate.com/v1",
+            "apiVersion": "twingate.com/v1beta",
             "kind": "TwingateResource",
             "name": self.name,
             "uid": self.uid,

@@ -11,7 +11,12 @@ from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,
     TLS_OBJECT_ANNOTATION,
     k8s_get_twingate_resource,
+    service_to_certificate_authority,
+    service_to_gateway,
+    service_to_gateway_resource,
     service_to_twingate_resource,
+    twingate_gateway_service_create,
+    twingate_gateway_service_removed,
     twingate_service_annotation_removed,
     twingate_service_create,
 )
@@ -438,3 +443,195 @@ class TestTwingateServiceAnnotationRemoved:
         )
 
         k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_not_called()
+
+
+@pytest.fixture
+def example_gateway_service_body():
+    yaml_str = """
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: kubernetes-gateway
+      uid: svc-uid-123
+      labels:
+        env: dev
+      annotations:
+        gateway.twingate.com: "true"
+        gateway.twingate.com/tlsSecret: "gateway-tls"
+        resource.twingate.com: "true"
+        resource.twingate.com/alias: "myk8s.int"
+    spec:
+      type: ClusterIP
+      ports:
+        - name: https
+          protocol: TCP
+          port: 443
+          targetPort: https
+    """
+    return kopf.Body(yaml.safe_load(yaml_str))
+
+
+class TestServiceToGatewaySubobjects:
+    def test_certificate_authority(self, example_gateway_service_body):
+        result = service_to_certificate_authority(
+            example_gateway_service_body, "default", "gateway-tls"
+        )
+        assert result == {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateCertificateAuthority",
+            "metadata": {
+                "name": "kubernetes-gateway-ca",
+                "labels": {"env": "dev"},
+            },
+            "spec": {
+                "name": "kubernetes-gateway-ca",
+                "secretRef": {"name": "gateway-tls", "namespace": "default"},
+            },
+        }
+
+    def test_gateway_cluster_ip(self, example_gateway_service_body):
+        result = service_to_gateway(example_gateway_service_body, "default")
+        assert result["kind"] == "TwingateGateway"
+        assert result["metadata"]["name"] == "kubernetes-gateway-gateway"
+        assert (
+            result["spec"]["address"]
+            == "kubernetes-gateway.default.svc.cluster.local:443"
+        )
+        assert result["spec"]["x509CertificateAuthorityRef"] == {
+            "name": "kubernetes-gateway-ca",
+            "namespace": "default",
+        }
+
+    def test_gateway_load_balancer(self, example_load_balancer_gateway_service_body):
+        result = service_to_gateway(
+            example_load_balancer_gateway_service_body, "default"
+        )
+        assert result["spec"]["address"] == "10.0.0.1:443"
+
+    def test_gateway_resource(self, example_gateway_service_body):
+        result = service_to_gateway_resource(example_gateway_service_body, "default")
+        assert result["metadata"]["name"] == "kubernetes-gateway-resource"
+        assert result["spec"]["type"] == "Kubernetes"
+        assert result["spec"]["address"] == "kubernetes.default.svc.cluster.local"
+        assert result["spec"]["gatewayRef"] == {
+            "name": "kubernetes-gateway-gateway",
+            "namespace": "default",
+        }
+        assert result["spec"]["alias"] == "myk8s.int"
+        assert "proxy" not in result["spec"]
+
+
+class TestTwingateGatewayServiceCreate:
+    def _run(self, body):
+        twingate_gateway_service_create(
+            body,
+            body.spec,
+            "default",
+            body.metadata,
+            MagicMock(),
+            Reason.CREATE,
+        )
+
+    def test_creates_ca_gateway_and_resource(
+        self,
+        example_gateway_service_body,
+        kopf_handler_runner,
+        k8s_customobjects_client_mock,
+    ):
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
+        k8s_customobjects_client_mock.list_namespaced_custom_object.return_value = {
+            "items": []
+        }
+
+        self._run(example_gateway_service_body)
+
+        created_plurals = [
+            call.args[3]
+            for call in k8s_customobjects_client_mock.create_namespaced_custom_object.call_args_list
+        ]
+        assert created_plurals == [
+            "twingatecertificateauthorities",
+            "twingategateways",
+            "twingateresources",
+        ]
+
+    def test_migrates_existing_resource_in_place(
+        self,
+        example_gateway_service_body,
+        kopf_handler_runner,
+        k8s_customobjects_client_mock,
+    ):
+        existing_resource = {
+            "metadata": {
+                "name": "kubernetes-gateway-resource",
+                "labels": {},
+                "ownerReferences": [{"uid": "svc-uid-123"}],
+            },
+            "spec": {
+                "id": "UmVzb3VyY2U6MQ==",
+                "type": "Kubernetes",
+                "name": "kubernetes-gateway-resource",
+                "address": "kubernetes.default.svc.cluster.local",
+                "proxy": {
+                    "address": "kubernetes-gateway.default.svc.cluster.local:443",
+                    "certificateAuthorityCertSecretRef": {"name": "gateway-tls"},
+                },
+            },
+        }
+        # CA and Gateway do not exist yet; the resource is found via ownerReferences.
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
+        k8s_customobjects_client_mock.list_namespaced_custom_object.return_value = {
+            "items": [existing_resource]
+        }
+
+        self._run(example_gateway_service_body)
+
+        replace_calls = [
+            call
+            for call in k8s_customobjects_client_mock.replace_namespaced_custom_object.call_args_list
+            if call.args[3] == "twingateresources"
+        ]
+        assert len(replace_calls) == 1
+        replaced_spec = replace_calls[0].args[5]["spec"]
+        # backend id preserved (grants ride along), migrated to gatewayRef.
+        assert replaced_spec["id"] == "UmVzb3VyY2U6MQ=="
+        assert replaced_spec["gatewayRef"] == {
+            "name": "kubernetes-gateway-gateway",
+            "namespace": "default",
+        }
+        assert "proxy" not in replaced_spec
+
+    def test_missing_tls_secret_annotation_raises(
+        self,
+        example_gateway_service_body,
+        kopf_handler_runner,
+        k8s_customobjects_client_mock,
+    ):
+        del example_gateway_service_body.metadata["annotations"][
+            "gateway.twingate.com/tlsSecret"
+        ]
+
+        with pytest.raises(kopf.PermanentError, match="tlsSecret"):
+            self._run(example_gateway_service_body)
+
+
+class TestTwingateGatewayServiceRemoved:
+    def test_tears_down_resource_gateway_and_ca(
+        self,
+        example_gateway_service_body,
+        kopf_handler_runner,
+        k8s_customobjects_client_mock,
+    ):
+        twingate_gateway_service_removed(
+            example_gateway_service_body, "default", MagicMock()
+        )
+
+        deleted = [
+            (call.args[3], call.args[4])
+            for call in k8s_customobjects_client_mock.delete_namespaced_custom_object.call_args_list
+        ]
+        assert deleted == [
+            ("twingateresources", "kubernetes-gateway-resource"),
+            ("twingategateways", "kubernetes-gateway-gateway"),
+            ("twingatecertificateauthorities", "kubernetes-gateway-ca"),
+        ]

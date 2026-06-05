@@ -486,3 +486,95 @@ def test_service_flows_with_kubernetes_resource(run_kopf, random_name_generator)
 
     assert runner.exception is None
     assert runner.exit_code == 0
+
+
+def test_service_flows_with_gateway(run_kopf, random_name_generator):
+    service_name = random_name_generator("test-gw")
+    secret_name = f"{service_name}-tls"
+    ca_name = f"{service_name}-ca"
+    gateway_name = f"{service_name}-gateway"
+    resource_name = f"{service_name}-resource"
+    SECRET_OBJ = f"""
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: {secret_name}
+        type: "kubernetes.io/tls"
+        data:
+          ca.crt: {BASE64_OF_VALID_CA_CERT}
+    """
+    SERVICE_OBJ = f"""
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: {service_name}
+          annotations:
+            gateway.twingate.com: "true"
+            gateway.twingate.com/tlsSecret: "{secret_name}"
+            resource.twingate.com: "true"
+            resource.twingate.com/alias: "myk8s.int"
+        spec:
+          selector:
+            app.kubernetes.io/name: MyApp
+          ports:
+            - name: https
+              protocol: TCP
+              port: 443
+              targetPort: https
+    """
+
+    with run_kopf(
+        enable_connector_reconciler=False,
+        enable_group_reconciler=False,
+        enable_resource_reconciler=False,
+    ) as runner:
+        kubectl_create(SECRET_OBJ)
+        kubectl_create(SERVICE_OBJ)
+
+        # The annotated Service drives creation of the CA, the Gateway, and an
+        # in-cluster Kubernetes resource bound to that Gateway via gatewayRef.
+        tgca = kubectl_wait_object_handler_success(
+            "tgca", ca_name, "twingate_certificate_authority_create"
+        )
+        assert tgca["spec"]["name"] == ca_name
+        assert tgca["spec"]["secretRef"] == {
+            "name": secret_name,
+            "namespace": "default",
+        }
+        assert tgca["spec"]["id"] is not None
+
+        tggw = kubectl_wait_object_handler_success(
+            "tggw", gateway_name, "twingate_gateway_create_update"
+        )
+        assert (
+            tggw["spec"]["address"] == f"{service_name}.default.svc.cluster.local:443"
+        )
+        assert tggw["spec"]["x509CertificateAuthorityRef"] == {
+            "name": ca_name,
+            "namespace": "default",
+        }
+        assert tggw["spec"]["id"] is not None
+
+        tgr = kubectl_wait_object_handler_success(
+            "tgr", resource_name, "twingate_resource_create"
+        )
+        assert tgr["spec"]["type"] == "Kubernetes"
+        assert tgr["spec"]["address"] == "kubernetes.default.svc.cluster.local"
+        assert tgr["spec"]["alias"] == "myk8s.int"
+        assert tgr["spec"]["gatewayRef"] == {
+            "name": gateway_name,
+            "namespace": "default",
+        }
+        assert "proxy" not in tgr["spec"]
+        assert tgr["spec"]["id"] is not None
+
+        # Deleting the Service tears down the owned resource, gateway and CA.
+        kubectl_delete_wait("svc", service_name)
+        kubectl_delete_wait("twingateresource", resource_name, perform_deletion=False)
+        kubectl_delete_wait("twingategateway", gateway_name, perform_deletion=False)
+        kubectl_delete_wait(
+            "twingatecertificateauthority", ca_name, perform_deletion=False
+        )
+
+    assert runner.exception is None
+    assert runner.exit_code == 0

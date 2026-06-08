@@ -29,7 +29,7 @@ ENV PIP_REQUIRE_VIRTUALENV=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     ### Poetry
     POETRY_HOME=/opt/poetry \
-    POETRY_VERSION=2.2.1 \
+    POETRY_VERSION=2.4.1 \
     POETRY_VIRTUALENVS_CREATE=false
 ENV POETRY_CACHE_DIR=$POETRY_HOME/.cache/pypoetry \
     PATH="$POETRY_HOME/bin:$PATH"
@@ -44,7 +44,7 @@ COPY poetry.lock pyproject.toml ./
 # hadolint ignore=DL3013
 RUN python -m venv "$VIRTUAL_ENV" && \
     pip install -U --no-cache-dir pip && \
-    poetry install --only main --sync --no-root --compile -n -vvv
+    poetry sync --only main --no-root --compile -n -vvv
 
 COPY . .
 

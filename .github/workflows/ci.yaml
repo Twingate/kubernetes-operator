@@ -190,8 +190,10 @@ jobs:
 
       - name: Set DEV release version
         run: |
-          poetry version $(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)-dev${{ github.run_id }}
-          poetry version -s
+          NEXT=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)
+          DEV_VERSION="${NEXT}-dev.${{ github.run_id }}"
+          poetry version "$DEV_VERSION"            # PEP-440 in pyproject is fine; never read back
+          echo "VERSION=$DEV_VERSION" >> "$GITHUB_ENV"
 
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
@@ -241,7 +243,8 @@ jobs:
 
       - name: Set env vars
         run: |
-          echo "CHART_VERSION=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)-dev${{ github.run_id }}" >> $GITHUB_ENV
+          NEXT=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)
+          echo "CHART_VERSION=${NEXT}-dev.${{ github.run_id }}" >> "$GITHUB_ENV"
 
       - name: Helm Publish (Github)
         env:

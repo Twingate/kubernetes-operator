@@ -1,5 +1,5 @@
 PYTHON_VERSION 		?= $(shell python -c "import platform; print(platform.python_version())")
-VERSION 	 		?= $(shell poetry version -s)
+VERSION 	 		?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 REGISTRY 			?= twingate
 IMAGE				:= kubernetes-operator
 IMAGE_NAME 			:= $(REGISTRY)/$(IMAGE)

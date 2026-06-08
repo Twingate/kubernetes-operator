@@ -6,15 +6,8 @@ if [ -n "$(git diff --cached --name-status)" ]; then
 	exit 1
 fi
 
-# Make sure s installed
-if type "semantic-release" &>/dev/null; then
-	echo "semantic-release exists."
-else
-	poetry install --with build -n
-fi
-
 echo "🧠 Running semantic-release..."
-if ! semantic-release --strict version --no-vcs-release; then
+if ! pipx run --spec python-semantic-release==10.5.3 semantic-release --strict version --no-vcs-release; then
 	echo "🚀 Pushing release commit and tag to GitHub... "
 	git push --no-verify
 fi

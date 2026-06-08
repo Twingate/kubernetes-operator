@@ -56,7 +56,9 @@ def get_principal_id(
 def check_status_created(status: dict | None) -> dict | None:
     if (
         create_status := status
-        and status.get(twingate_resource_access_change.__name__, {})
+        # kopf 1.44 types the decorated handler as ChangingFn for mypy, but at
+        # runtime it's the plain function, so __name__ (the handler id) is valid.
+        and status.get(twingate_resource_access_change.__name__, {})  # type: ignore[attr-defined]
     ) and create_status["success"]:
         return create_status
 

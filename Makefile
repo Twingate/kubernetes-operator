@@ -1,5 +1,5 @@
 PYTHON_VERSION 		?= $(shell python -c "import platform; print(platform.python_version())")
-VERSION 	 		?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+VERSION 	 		?= $(shell v=$$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//'); echo $${v:-0.0.0-dev})
 REGISTRY 			?= twingate
 IMAGE				:= kubernetes-operator
 IMAGE_NAME 			:= $(REGISTRY)/$(IMAGE)

@@ -48,7 +48,7 @@ repos:
         entry: poetry run pyupgrade
         language: system
         types: [python]
-        args: [--py311-plus]
+        args: [--py314-plus]
 
       - id: ruff
         name: ruff

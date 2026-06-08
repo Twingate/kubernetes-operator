@@ -44,7 +44,7 @@ COPY poetry.lock pyproject.toml ./
 # hadolint ignore=DL3013
 RUN python -m venv "$VIRTUAL_ENV" && \
     pip install -U --no-cache-dir pip && \
-    poetry install --only main --sync --no-root --compile -n -vvv
+    poetry sync --only main --no-root --compile -n -vvv
 
 COPY . .
 

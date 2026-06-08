@@ -190,8 +190,7 @@ jobs:
 
       - name: Set DEV release version
         run: |
-          NEXT=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)
-          DEV_VERSION="${NEXT}-dev.${{ github.run_id }}"
+          DEV_VERSION=$(make version-dev BUILD_ID=${{ github.run_id }})
           poetry version "$DEV_VERSION"            # PEP-440 in pyproject is fine; never read back
           echo "VERSION=$DEV_VERSION" >> "$GITHUB_ENV"
 
@@ -243,8 +242,7 @@ jobs:
 
       - name: Set env vars
         run: |
-          NEXT=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)
-          echo "CHART_VERSION=${NEXT}-dev.${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "CHART_VERSION=$(make version-dev BUILD_ID=${{ github.run_id }})" >> "$GITHUB_ENV"
 
       - name: Helm Publish (Github)
         env:

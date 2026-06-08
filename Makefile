@@ -5,6 +5,9 @@ IMAGE				:= kubernetes-operator
 IMAGE_NAME 			:= $(REGISTRY)/$(IMAGE)
 PLATFORMS 			?= linux/amd64,linux/arm64
 DOCKER_BUILDX_CACHE ?=
+SEMANTIC_RELEASE_VERSION ?= 10.5.3
+SEMANTIC_RELEASE = pipx run --spec python-semantic-release==$(SEMANTIC_RELEASE_VERSION) semantic-release
+BUILD_ID ?= local
 PROD_TAGS = $(shell ./scripts/split_semver.sh $(VERSION) | awk -v image="-t $(IMAGE_NAME)" '{ print image ":" $$0 }')
 
 HELP_FUN = \
@@ -25,6 +28,18 @@ help: ##@other Shows this help.
 
 version: ## Prints current version used for tagging docker images
 	@echo $(VERSION)
+
+.PHONY: version-next
+version-next: ## Prints the next release version computed by semantic-release (read-only)
+	@$(SEMANTIC_RELEASE) --strict version --print
+
+.PHONY: version-dev
+version-dev: ## Prints the next DEV version (<next>-dev.<BUILD_ID>)
+	@echo "$$($(SEMANTIC_RELEASE) --strict version --print)-dev.$(BUILD_ID)"
+
+.PHONY: version-release
+version-release: ## Computes and writes the next release version (bump + commit + tag)
+	$(SEMANTIC_RELEASE) --strict version --no-vcs-release
 
 .PHONY: lock
 lock: ##@dependencies Generates poetry.lock from pyproject.toml

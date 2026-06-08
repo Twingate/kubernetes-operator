@@ -198,7 +198,7 @@ jobs:
 
       - name: Set DEV release version
         run: |
-          poetry version $(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)-dev${{ github.run_id }}
+          poetry version $(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)-dev.${{ github.run_id }}
           poetry version -s
 
       - name: Login to Docker Hub
@@ -249,7 +249,7 @@ jobs:
 
       - name: Set env vars
         run: |
-          echo "CHART_VERSION=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)-dev${{ github.run_id }}" >> $GITHUB_ENV
+          echo "CHART_VERSION=$(pipx run --spec python-semantic-release==10.5.3 semantic-release --strict --verbose version --print)-dev.${{ github.run_id }}" >> $GITHUB_ENV
 
       - name: Helm Publish (Github)
         env:

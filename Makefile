@@ -8,6 +8,7 @@ DOCKER_BUILDX_CACHE ?=
 SEMANTIC_RELEASE_VERSION ?= 10.5.3
 SEMANTIC_RELEASE = pipx run --spec python-semantic-release==$(SEMANTIC_RELEASE_VERSION) semantic-release
 BUILD_ID ?= local
+RELEASE_BRANCH_PATTERN ?= ^(main|master|hotfix(/.*)?)$$
 PROD_TAGS = $(shell ./scripts/split_semver.sh $(VERSION) | awk -v image="-t $(IMAGE_NAME)" '{ print image ":" $$0 }')
 
 HELP_FUN = \
@@ -39,6 +40,11 @@ version-dev: ## Prints the next DEV version (<next>-dev.<BUILD_ID>)
 
 .PHONY: version-release
 version-release: ## Computes and writes the next release version (bump + commit + tag)
+	@branch=$$(git rev-parse --abbrev-ref HEAD); \
+	if ! echo "$$branch" | grep -Eq '$(RELEASE_BRANCH_PATTERN)'; then \
+		echo "Error: version-release must run on a main or hotfix branch (current: $$branch)"; \
+		exit 1; \
+	fi
 	$(SEMANTIC_RELEASE) --strict version --no-vcs-release
 
 .PHONY: lock

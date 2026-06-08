@@ -87,7 +87,7 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     assert runner.exception is None
     assert runner.exit_code == 0
 
-    logs = load_stdout(runner.stdout)
+    logs = load_stdout(runner.output)
 
     # fmt: off
 
@@ -195,7 +195,7 @@ def test_kubernetes_resource_flows(
     assert runner.exception is None
     assert runner.exit_code == 0
 
-    logs = load_stdout(runner.stdout)
+    logs = load_stdout(runner.output)
 
     # fmt: off
 
@@ -255,7 +255,7 @@ def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
 
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
 
-    logs = load_stdout(runner.stdout)
+    logs = load_stdout(runner.output)
 
     # fmt: off
 
@@ -330,7 +330,7 @@ def test_kubernetes_resource_tls_secret_rotation(
     assert runner.exception is None
     assert runner.exit_code == 0
 
-    logs = load_stdout(runner.stdout)
+    logs = load_stdout(runner.output)
 
     # Verify resource_update was called for the resource
     twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
@@ -455,7 +455,7 @@ def test_resource_access_flows(
     assert runner.exception is None
     assert runner.exit_code == 0
 
-    logs = load_stdout(runner.stdout)
+    logs = load_stdout(runner.output)
 
     expected_object = {
         "apiVersion": "twingate.com/v1beta",

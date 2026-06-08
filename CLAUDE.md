@@ -52,6 +52,13 @@ Env vars with `TWINGATE_` prefix: `API_KEY`, `NETWORK`, `REMOTE_NETWORK_ID` (or 
 
 ## Development
 
+### Tool Versions
+
+`.tool-versions` pins the Python and Poetry versions (managed via [asdf](https://asdf-vm.com/) or
+[mise](https://mise.jdx.dev/)). Run `asdf install` (or `mise install`) in the repo root to install the
+pinned versions. Keep this file as the single source of truth — when bumping Python or Poetry, update
+`.tool-versions` so local dev, CI, and Docker builds stay aligned.
+
 ### Testing
 
 - Unit tests use `mocked_responses` and fixtures from `app/conftest.py`

@@ -102,6 +102,25 @@ class ResourceProtocol(BaseModel):
     policy: ProtocolPolicy = ProtocolPolicy.ALLOW_ALL
     ports: list[ProtocolRange] = Field(default_factory=list)
 
+    @field_validator("ports")
+    @classmethod
+    def normalize_ports(cls, ports: list[ProtocolRange]) -> list[ProtocolRange]:
+        if len(ports) <= 1:
+            return ports
+
+        sorted_ports = sorted(ports, key=lambda p: (p.start, p.end))
+        normalized_ports = [sorted_ports[0]]
+        for next_port in sorted_ports[1:]:
+            prev_port = normalized_ports[-1]
+            if next_port.start <= prev_port.end + 1:
+                normalized_ports[-1] = ProtocolRange(
+                    start=prev_port.start, end=max(prev_port.end, next_port.end)
+                )
+            else:
+                normalized_ports.append(next_port)
+
+        return normalized_ports
+
     @model_validator(mode="after")
     def check_policy_ports(self):
         if self.policy == ProtocolPolicy.ALLOW_ALL and self.ports:

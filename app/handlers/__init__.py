@@ -1,5 +1,7 @@
 # ruff: noqa: F403
+from .handlers_certificate_authorities import *
 from .handlers_connectors import *
+from .handlers_gateways import *
 from .handlers_groups import *
 from .handlers_resource import *
 from .handlers_resource_access import *

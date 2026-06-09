@@ -1,0 +1,13 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateCertificateAuthority
+metadata:
+  name: example-ca
+spec:
+  name: Example Gateway CA
+  type: X509
+  # kubernetes.io/tls Secret whose `ca.crt` is registered with Twingate as the
+  # X509 CA. Provisioned by the gateway chart (self-signed or cert-manager) or
+  # an external tool - the operator only reads the public certificate.
+  secretRef:
+    name: gateway-tls
+    namespace: twingate

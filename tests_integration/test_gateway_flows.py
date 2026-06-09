@@ -15,6 +15,7 @@ def test_gateway_flows(run_kopf, random_name_generator):
     svc_name = random_name_generator("gw-svc")
     ca_name = random_name_generator("gw-ca")
     gw_name = random_name_generator("gw")
+    resource_name = random_name_generator("gw-res")
     port = 8443
 
     SERVICE_OBJ = f"""
@@ -57,6 +58,19 @@ def test_gateway_flows(run_kopf, random_name_generator):
             name: {ca_name}
     """
 
+    RESOURCE_OBJ = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {resource_name}
+        spec:
+          name: My K8S Resource
+          address: kubernetes.default.svc.cluster.local
+          type: Kubernetes
+          gatewayRef:
+            name: {gw_name}
+    """
+
     with run_kopf() as runner:
         try:
             # The CA handler reads ca.crt from this kubernetes.io/tls Secret.
@@ -83,8 +97,20 @@ def test_gateway_flows(run_kopf, random_name_generator):
                 == f"{svc_name}.default.svc.cluster.local:{port}"
             )
 
-            # 3. Delete the Gateway first - deleting the CA while still referenced
-            #    raises the "in use" TemporaryError.
+            # 3. A Kubernetes resource binds to the Gateway via gatewayRef. The
+            #    create handler resolves the Gateway's spec.id and sends it as
+            #    gatewayId to the Twingate API.
+            kubectl_create(RESOURCE_OBJ)
+            resource = kubectl_wait_object_handler_success(
+                "tgr", resource_name, "twingate_resource_create"
+            )
+            assert resource["spec"]["id"], (
+                f"Resource spec.id not set: {resource['spec']}"
+            )
+
+            # 4. Delete the resource, then the Gateway - deleting the CA while still
+            #    referenced raises the "in use" TemporaryError.
+            kubectl_delete_wait("tgr", resource_name)
             kubectl_delete_wait("twingategateway", gw_name)
             kubectl_delete_wait("tgca", ca_name)
         finally:
@@ -100,4 +126,5 @@ def test_gateway_flows(run_kopf, random_name_generator):
     assert_log_message_contains(
         logs, "Handler 'twingate_gateway_create_update' succeeded."
     )
+    assert_log_message_contains(logs, "Handler 'twingate_resource_create' succeeded.")
     assert_log_message_contains(logs, "Handler 'twingate_gateway_delete' succeeded.")

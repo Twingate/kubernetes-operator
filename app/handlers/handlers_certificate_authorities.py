@@ -23,7 +23,9 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     certificate = ca_spec.get_certificate()
     if certificate is None:
         raise kopf.TemporaryError(
-            f"ca.crt not found yet in Secret '{ca_spec.secret_ref.name}'.", delay=30
+            f"ca.crt not found yet in Secret "
+            f"'{ca_spec.secret_ref.namespace}/{ca_spec.secret_ref.name}'.",
+            delay=30,
         )
 
     ca = client.x509_certificate_authority_create(

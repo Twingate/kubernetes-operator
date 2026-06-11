@@ -25,6 +25,23 @@ def assert_log_message_contains(logs, message):
     )
 
 
+def create_tls_secret(secret_name, base64_ca_cert):
+    # The operator only reads `ca.crt`; tls.crt/tls.key are dummy values required
+    # by the `kubernetes.io/tls` Secret type.
+    return f"""
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: {secret_name}
+      namespace: default
+    type: kubernetes.io/tls
+    data:
+      ca.crt: {base64_ca_cert}
+      tls.crt: ZHVtbXk=
+      tls.key: ZHVtbXk=
+"""
+
+
 def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         f"{KUBECTL_COMMAND} {command}",

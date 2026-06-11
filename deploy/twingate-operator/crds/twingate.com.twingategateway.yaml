@@ -1,0 +1,78 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: twingategateways.twingate.com
+spec:
+  group: twingate.com
+  versions:
+    - name: v1beta
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: "TwingateGateway represents a Gateway in Twingate."
+          required: ["spec"]
+          properties:
+            spec:
+              type: object
+              description: "TwingateGatewaySpec defines the desired state of TwingateGateway"
+              required: ["serviceRef", "x509CertificateAuthorityRef"]
+              properties:
+                id:
+                  type: string
+                  nullable: true
+                serviceRef:
+                  type: object
+                  required: ["name", "port"]
+                  description: "Reference to the Service fronting the Gateway. The operator resolves the host from the Service and combines it with port into status.address."
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the Service object."
+                    namespace:
+                      type: string
+                      default: default
+                      description: "Namespace of the Service object."
+                    port:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      description: "Port the Gateway is reachable on."
+                x509CertificateAuthorityRef:
+                  type: object
+                  required: ["name"]
+                  description: "Reference to the TwingateCertificateAuthority whose X509 CA signs this Gateway's TLS certificates."
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the TwingateCertificateAuthority object."
+                    namespace:
+                      type: string
+                      default: default
+                      description: "Namespace of the TwingateCertificateAuthority object."
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: ID
+          type: string
+          description: "The ID of the Gateway."
+          jsonPath: .spec.id
+        - name: Address
+          type: string
+          description: "Address of the Gateway."
+          jsonPath: .status.address
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: twingategateways
+    singular: twingategateway
+    kind: TwingateGateway
+    shortNames:
+      - tggw
+    categories:
+      - all
+      - twingate

@@ -273,6 +273,72 @@ class TwingateResourceCRD(BaseK8sModel):
 
 # endregion
 
+# region TwingateCertificateAuthorityCRD
+
+
+class CertificateAuthorityType(StrEnum):
+    X509 = "X509"
+
+
+class CertificateAuthoritySpec(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    id: str | None = None
+    name: str
+    type: CertificateAuthorityType = CertificateAuthorityType.X509
+    # Secret (kubernetes.io/tls) the CA's public certificate (`ca.crt`) is read from.
+    secret_ref: _KubernetesObjectRef
+
+    def get_certificate(self) -> str | None:
+        if secret := k8s_read_namespaced_secret(
+            self.secret_ref.namespace, self.secret_ref.name
+        ):
+            return ResourceProxy.read_certificate_authority_cert_from_secret(secret)
+
+        return None
+
+
+class TwingateCertificateAuthorityCRD(BaseK8sModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    spec: CertificateAuthoritySpec
+
+
+# endregion
+
+# region TwingateGatewayCRD
+
+
+class _ServiceRef(_KubernetesObjectRef):
+    # Port the Gateway is reachable on. The host is resolved from the Service.
+    port: int = Field(ge=1, le=65535)
+
+
+class GatewaySpec(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    id: str | None = None
+    # Reference to the Service fronting the Gateway. The operator resolves the
+    # host from the Service and combines it with `serviceRef.port` into the
+    # `status.address` the Twingate Client connects to.
+    service_ref: _ServiceRef
+    # Reference to the TwingateCertificateAuthority whose backend id signs this
+    # Gateway's TLS certs.
+    x509_certificate_authority_ref: _KubernetesObjectRef
+
+
+class TwingateGatewayCRD(BaseK8sModel):
+    model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    spec: GatewaySpec
+
+
+# endregion
+
 # region TwingateResourceAccessCRD
 
 

@@ -1,0 +1,12 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateGateway
+metadata:
+  name: example-gateway
+spec:
+  # Service fronting the Gateway; resolved to status.address as host:port.
+  serviceRef:
+    name: example-gateway
+    port: 443
+  # X509 CA that signs this gateway's TLS certs.
+  x509CertificateAuthorityRef:
+    name: example-ca

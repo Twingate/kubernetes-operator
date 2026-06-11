@@ -62,7 +62,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch):
 
 @kopf.on.resume("twingategateway")
 @kopf.on.create("twingategateway")
-@kopf.on.update("twingategateway")
+@kopf.on.update("twingategateway", field="spec")
 def twingate_gateway_create_update(body, spec, logger, memo, patch, **kwargs):
     logger.info("twingate_gateway_create_update: %s", spec)
 
@@ -108,7 +108,11 @@ def twingate_gateway_delete(spec, status, memo, logger, **_):
     if gateway_id := spec.get("id"):
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         try:
-            client.gateway_delete(gateway_id)
+            if not client.gateway_delete(gateway_id):
+                # Transport/API error - retry so we don't leak the backend Gateway.
+                raise kopf.TemporaryError(
+                    "Failed to delete gateway, retrying.", delay=30
+                )
         except GraphQLMutationError as gqlerr:
             # Retry while the Gateway is still referenced by a Resource (GC order
             # is not guaranteed) rather than leaking the backend entity.

@@ -20,8 +20,8 @@ spec:
               x-kubernetes-validations:
                 - rule: (self.isBrowserShortcutEnabled && !(self.address.contains('*') || self.address.contains('?'))) || (self.isBrowserShortcutEnabled == false)
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
-                - rule: (self.type == "Network" && !has(self.proxy)) || (self.type == "Kubernetes" && has(self.proxy))
-                  message: "proxy should be set for Kubernetes Resource"
+                - rule: (self.type == "Network" && !has(self.proxy) && !has(self.gatewayRef)) || (self.type == "Kubernetes" && (has(self.proxy) != has(self.gatewayRef)))
+                  message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; Network Resource allows neither"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
                   message: "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
               required: ["name", "address"]
@@ -160,6 +160,18 @@ spec:
                           type: string
                           default: default
                           description: "Namespace of the Secret object."
+                gatewayRef:
+                  type: object
+                  required: ["name"]
+                  description: "Reference to the TwingateGateway this Kubernetes Resource is served by. Replaces the deprecated proxy field."
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the TwingateGateway object."
+                    namespace:
+                      type: string
+                      default: default
+                      description: "Namespace of the TwingateGateway object."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

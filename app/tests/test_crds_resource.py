@@ -451,6 +451,74 @@ def test_kubernetes_resource_spec_to_graphql_arguments_when_certificate_authorit
         resource_spec.to_graphql_arguments(labels={"key": "value"})
 
 
+def test_kubernetes_resource_spec_to_graphql_arguments_with_gateway_ref():
+    resource_spec = ResourceSpec(
+        name="My K8S Resource",
+        address="kubernetes.default.svc.cluster.local",
+        type=ResourceType.KUBERNETES,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
+    )
+
+    with patch(
+        "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
+    ) as resolve_mock:
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={"key": "value"}, exclude={"id"}
+        )
+
+    resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
+    assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
+    assert "proxy_address" not in graphql_arguments
+    assert "certificate_authority_cert" not in graphql_arguments
+    assert "gateway_ref" not in graphql_arguments
+
+
+def test_kubernetes_resource_requires_proxy_or_gateway_ref():
+    with pytest.raises(ValueError, match=r"exactly one of `proxy` .* or `gatewayRef`"):
+        ResourceSpec(
+            name="My K8S Resource",
+            address="kubernetes.default.svc.cluster.local",
+            type=ResourceType.KUBERNETES,
+        )
+
+
+def test_kubernetes_resource_rejects_both_proxy_and_gateway_ref():
+    with pytest.raises(ValueError, match=r"exactly one of `proxy` .* or `gatewayRef`"):
+        ResourceSpec(
+            name="My K8S Resource",
+            address="kubernetes.default.svc.cluster.local",
+            type=ResourceType.KUBERNETES,
+            proxy=ResourceProxy(
+                address="proxy.default.cluster.local",
+                certificate_authority_cert=BASE64_OF_VALID_CA_CERT,
+            ),
+            gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        )
+
+
+def test_kubernetes_resource_accepts_gateway_ref_only():
+    resource_spec = ResourceSpec(
+        name="My K8S Resource",
+        address="kubernetes.default.svc.cluster.local",
+        type=ResourceType.KUBERNETES,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+    )
+    assert resource_spec.gateway_ref is not None
+    assert resource_spec.proxy is None
+
+
+def test_network_resource_rejects_gateway_ref():
+    with pytest.raises(
+        ValueError, match="Network resources cannot set `proxy` or `gatewayRef`"
+    ):
+        ResourceSpec(
+            name="My Network Resource",
+            address="my.default.cluster.local",
+            type=ResourceType.NETWORK,
+            gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        )
+
+
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
     sample_network_resource_object,
 ):

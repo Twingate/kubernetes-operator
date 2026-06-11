@@ -5,6 +5,18 @@ metadata:
   labels:
     env: dev
 spec:
-  name: My K8S Resource
-  address: my.default.cluster.local
-  alias: mine.local
+  name: My Resource
+  address: my-resource.internal
+  alias: my-resource.int
+---
+apiVersion: twingate.com/v1beta
+kind: TwingateResource
+metadata:
+  name: my-k8s-resource
+spec:
+  type: Kubernetes
+  name: My K8S Cluster
+  address: kubernetes.default.svc.cluster.local
+  alias: k8s-cluster.int
+  gatewayRef:
+    name: example-gateway

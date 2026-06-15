@@ -1,7 +1,7 @@
-from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
 from tests_integration.utils import (
     assert_log_message_contains,
     create_tls_secret,
+    generate_base64_ca_cert,
     kubectl,
     kubectl_create,
     kubectl_delete_wait,
@@ -60,7 +60,7 @@ def test_gateway_flows(run_kopf, random_name_generator):
     with run_kopf() as runner:
         try:
             # The CA handler reads ca.crt from this kubernetes.io/tls Secret.
-            kubectl_create(create_tls_secret(secret_name, BASE64_OF_VALID_CA_CERT))
+            kubectl_create(create_tls_secret(secret_name, generate_base64_ca_cert()))
             # The Gateway resolves its address from this Service.
             kubectl_create(SERVICE_OBJ)
 

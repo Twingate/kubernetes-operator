@@ -32,7 +32,11 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
         name=ca_spec.name, certificate=certificate
     )
     patch.spec["id"] = ca.id
-    kopf.info(body, reason="Success", message=f"Created on Twingate as {ca.id}")
+    kopf.info(
+        body,
+        reason="Success",
+        message=f"Created Certificate Authority on Twingate as {ca.id}",
+    )
     return success(twingate_id=ca.id)
 
 

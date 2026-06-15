@@ -56,7 +56,9 @@ def _reconcile_gateway(body, spec, logger, memo, patch):
         x509_ca_id=x509_ca_id,
     )
     patch.spec["id"] = gateway.id
-    kopf.info(body, reason="Success", message=f"Created on Twingate as {gateway.id}")
+    kopf.info(
+        body, reason="Success", message=f"Created Gateway on Twingate as {gateway.id}"
+    )
     return success(twingate_id=gateway.id)
 
 

@@ -121,6 +121,6 @@ def twingate_gateway_delete(spec, status, memo, logger, **_):
             # is not guaranteed) rather than leaking the backend entity.
             if "being used" in gqlerr.message:
                 raise kopf.TemporaryError(
-                    "Gateway still in use, retrying.", delay=30
+                    "Gateway still in use, retrying.", delay=5
                 ) from gqlerr
             logger.warning("Ignoring gateway delete error: %s", gqlerr)

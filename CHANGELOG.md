@@ -1,6 +1,40 @@
 # CHANGELOG
 
 
+## v1.1.1 (2026-06-10)
+
+### Bug Fixes
+
+- DEV version (poetry now enforces PEP-440 which doesnt allow dot after “dev”
+  ([`1fba3bb`](https://github.com/Twingate/kubernetes-operator/commit/1fba3bb79e20925a91abe260883a8a385ef109e2))
+
+- Mock shard host resolution in unit tests
+  ([#1033](https://github.com/Twingate/kubernetes-operator/pull/1033),
+  [`0dc5727`](https://github.com/Twingate/kubernetes-operator/commit/0dc5727e9af0ddd3449c3d702910442905869779))
+
+- Normalize CRD protocol port ranges to prevent false diffs
+  ([#1036](https://github.com/Twingate/kubernetes-operator/pull/1036),
+  [`5d89585`](https://github.com/Twingate/kubernetes-operator/commit/5d8958560610e3c5b04f6cfe628bb163b68feb79))
+
+### Chores
+
+- Bump cryptography from 48.0.0 to 48.0.1
+  ([#1040](https://github.com/Twingate/kubernetes-operator/pull/1040),
+  [`b153725`](https://github.com/Twingate/kubernetes-operator/commit/b1537255b862c0f19f04dcea78bbb9f46ac31a27))
+
+- Bump kubernetes from 35.0.0 to 36.0.2
+  ([#1019](https://github.com/Twingate/kubernetes-operator/pull/1019),
+  [`2ebc213`](https://github.com/Twingate/kubernetes-operator/commit/2ebc213fa759101170a58b856dd41eaab0e2102a))
+
+- Bump syrupy from 5.3.1 to 5.3.2
+  ([#1039](https://github.com/Twingate/kubernetes-operator/pull/1039),
+  [`91caab1`](https://github.com/Twingate/kubernetes-operator/commit/91caab142a3d5271e21b6e96fc385cb8f4457f82))
+
+- Unblock kopf updates by running semantic-release via pipx
+  ([#1030](https://github.com/Twingate/kubernetes-operator/pull/1030),
+  [`a5e34ba`](https://github.com/Twingate/kubernetes-operator/commit/a5e34ba37ec733a8727907cb897515967498b1e4))
+
+
 ## v1.1.0 (2026-06-08)
 
 ### Chores

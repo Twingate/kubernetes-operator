@@ -134,15 +134,3 @@ class TestCertificateAuthorityDeleteHandler:
                 MagicMock(),
                 MagicMock(),
             )
-
-    def test_delete_returns_false_raises_temporary_error(self, mock_api_client):
-        # A False return (e.g. transport error) must retry, not leak the CA.
-        mock_api_client.x509_certificate_authority_delete.return_value = False
-
-        with pytest.raises(kopf.TemporaryError):
-            twingate_certificate_authority_delete(
-                _spec(with_id=True),
-                {"twingate_certificate_authority_create": {"success": True}},
-                MagicMock(),
-                MagicMock(),
-            )

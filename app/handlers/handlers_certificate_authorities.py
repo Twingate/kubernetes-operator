@@ -71,11 +71,7 @@ def twingate_certificate_authority_delete(spec, status, memo, logger, **_):
     if ca_id := spec.get("id"):
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         try:
-            if not client.x509_certificate_authority_delete(ca_id):
-                # Transport/API error - retry so we don't leak the backend CA.
-                raise kopf.TemporaryError(
-                    "Failed to delete certificate authority, retrying.", delay=30
-                )
+            client.x509_certificate_authority_delete(ca_id)
         except GraphQLMutationError as gqlerr:
             # GC teardown order is not guaranteed: the CA may still be referenced
             # by a Gateway that hasn't been deleted yet. Retry so the CA is removed

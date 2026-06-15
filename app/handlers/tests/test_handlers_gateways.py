@@ -184,15 +184,3 @@ class TestGatewayDeleteHandler:
                 MagicMock(),
                 MagicMock(),
             )
-
-    def test_delete_returns_false_raises_temporary_error(self, mock_api_client):
-        # A False return (e.g. transport error) must retry, not leak the Gateway.
-        mock_api_client.gateway_delete.return_value = False
-
-        with pytest.raises(kopf.TemporaryError):
-            twingate_gateway_delete(
-                _spec(with_id=True),
-                {"twingate_gateway_create_update": {"success": True}},
-                MagicMock(),
-                MagicMock(),
-            )

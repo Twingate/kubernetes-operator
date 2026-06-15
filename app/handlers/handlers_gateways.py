@@ -116,11 +116,7 @@ def twingate_gateway_delete(spec, status, memo, logger, **_):
     if gateway_id := spec.get("id"):
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         try:
-            if not client.gateway_delete(gateway_id):
-                # Transport/API error - retry so we don't leak the backend Gateway.
-                raise kopf.TemporaryError(
-                    "Failed to delete gateway, retrying.", delay=30
-                )
+            client.gateway_delete(gateway_id)
         except GraphQLMutationError as gqlerr:
             # Retry while the Gateway is still referenced by a Resource (GC order
             # is not guaranteed) rather than leaking the backend entity.

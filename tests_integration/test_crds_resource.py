@@ -495,6 +495,27 @@ def test_kubernetes_resource_with_gateway_ref_accepted(unique_resource_name):
     kubectl_delete("tgr", unique_resource_name)
 
 
+def test_kubernetes_resource_with_gateway_ref_name_required(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "kubernetes.default.svc.cluster.local"
+              type: Kubernetes
+              gatewayRef:
+                namespace: default
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.gatewayRef.name: Required value" in stderr
+
+
 def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(

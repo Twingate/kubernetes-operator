@@ -69,10 +69,11 @@ def twingate_gateway_create_update(body, spec, logger, memo, patch, **kwargs):
     logger.info("twingate_gateway_create_update: %s", spec)
 
     # If ID changed from `None` to a value we just created it - no need to
-    # immediately update. (Mirrors the group handler.)
+    # immediately update. The update handler uses `field="spec"`, so the diff
+    # is scoped relative to `spec` (path is `("id",)`, not `("spec", "id")`).
     diff = kwargs.get("diff")
     # fmt: off
-    if diff and len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id",), None):
+    if diff and len(diff) == 1 and diff[0][:3] == ("add", ("id",), None):
         return success()
     # fmt: on
 

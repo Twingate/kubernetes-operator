@@ -62,9 +62,14 @@ def _reconcile_gateway(body, spec, logger, memo, patch):
     return success(twingate_id=gateway.id)
 
 
-@kopf.on.resume("twingategateway")
-@kopf.on.create("twingategateway")
-@kopf.on.update("twingategateway", field="spec")
+# Bound retries so a bad ref (e.g. a typo) eventually fails instead of retrying
+# forever; the timer reconciler still recovers it if the ref is later fixed.
+GATEWAY_HANDLER_TIMEOUT = int(os.environ.get("GATEWAY_HANDLER_TIMEOUT", timedelta(minutes=10).seconds))  # fmt: skip
+
+
+@kopf.on.resume("twingategateway", timeout=GATEWAY_HANDLER_TIMEOUT)
+@kopf.on.create("twingategateway", timeout=GATEWAY_HANDLER_TIMEOUT)
+@kopf.on.update("twingategateway", field="spec", timeout=GATEWAY_HANDLER_TIMEOUT)
 def twingate_gateway_create_update(body, spec, logger, memo, patch, **kwargs):
     logger.info("twingate_gateway_create_update: %s", spec)
 

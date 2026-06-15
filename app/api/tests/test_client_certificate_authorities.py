@@ -55,6 +55,22 @@ class TestTwingateCertificateAuthorityAPIs:
         )
         assert api_client.get_certificate_authority("ca-id") is None
 
+    def test_get_certificate_authority_transport_error_returns_none(
+        self, test_url, api_client, mocked_responses
+    ):
+        errors_response = json.dumps({"errors": [{"message": "Transport error"}]})
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=errors_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "ca-id"}}, strict_match=False
+                )
+            ],
+        )
+        assert api_client.get_certificate_authority("ca-id") is None
+
     def test_x509_certificate_authority_create(
         self, test_url, api_client, mocked_responses
     ):
@@ -165,3 +181,19 @@ class TestTwingateCertificateAuthorityAPIs:
         )
         mocked_responses.post(test_url, status=200, body=failed_response)
         assert api_client.x509_certificate_authority_delete("ca-id") is True
+
+    def test_x509_certificate_authority_delete_transport_error_returns_false(
+        self, test_url, api_client, mocked_responses
+    ):
+        errors_response = json.dumps({"errors": [{"message": "Transport error"}]})
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=errors_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "ca-id"}}, strict_match=False
+                )
+            ],
+        )
+        assert api_client.x509_certificate_authority_delete("ca-id") is False

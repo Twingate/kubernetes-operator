@@ -38,6 +38,22 @@ class TestTwingateGatewayAPIs:
         )
         assert api_client.get_gateway("gw-id") is None
 
+    def test_get_gateway_transport_error_returns_none(
+        self, test_url, api_client, mocked_responses
+    ):
+        errors_response = json.dumps({"errors": [{"message": "Transport error"}]})
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=errors_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "gw-id"}}, strict_match=False
+                )
+            ],
+        )
+        assert api_client.get_gateway("gw-id") is None
+
     def test_gateway_create(self, test_url, api_client, mocked_responses):
         success_response = json.dumps(
             {
@@ -173,3 +189,19 @@ class TestTwingateGatewayAPIs:
         )
         mocked_responses.post(test_url, status=200, body=failed_response)
         assert api_client.gateway_delete("gw-id") is True
+
+    def test_gateway_delete_transport_error_returns_false(
+        self, test_url, api_client, mocked_responses
+    ):
+        errors_response = json.dumps({"errors": [{"message": "Transport error"}]})
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=errors_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "gw-id"}}, strict_match=False
+                )
+            ],
+        )
+        assert api_client.gateway_delete("gw-id") is False

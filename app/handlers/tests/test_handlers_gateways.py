@@ -115,7 +115,7 @@ class TestGatewayCreateUpdateHandler:
     def test_diff_only_id_added_skips(self, mock_api_client, call_create_update):
         result, patch_mock = call_create_update(
             _spec(with_id=True),
-            diff=(("add", ("spec", "id"), None, "gateway-id"),),
+            diff=(("add", ("id",), None, "gateway-id"),),
         )
 
         assert result == {"success": True, "ts": ANY}

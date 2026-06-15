@@ -1,8 +1,14 @@
+import datetime
 import os
 import subprocess
 import time
+from base64 import b64encode
 
 import orjson as json
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.x509.oid import NameOID
 
 KUBECTL_COMMAND = os.environ.get("KUBECTL_COMMAND", "kubectl")
 
@@ -23,6 +29,24 @@ def assert_log_message_contains(logs, message):
     assert any(message in log["message"] for log in logs), (
         f"Could not find log message containing '{message}'"
     )
+
+
+def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
+    key = ed25519.Ed25519PrivateKey.generate()
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.datetime.now(datetime.UTC)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=365))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .sign(key, None)
+    )
+    return b64encode(cert.public_bytes(Encoding.PEM)).decode()
 
 
 def create_tls_secret(secret_name, base64_ca_cert):

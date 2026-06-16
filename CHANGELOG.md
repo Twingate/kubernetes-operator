@@ -1,6 +1,35 @@
 # CHANGELOG
 
 
+## v1.1.2 (2026-06-16)
+
+### Chores
+
+- Add resource type as a display column
+  ([#1045](https://github.com/Twingate/kubernetes-operator/pull/1045),
+  [`5708b7b`](https://github.com/Twingate/kubernetes-operator/commit/5708b7bd38a21627723262184ef7410e2e43f27a))
+
+- Bump cryptography from 48.0.1 to 49.0.0
+  ([#1044](https://github.com/Twingate/kubernetes-operator/pull/1044),
+  [`ab4c735`](https://github.com/Twingate/kubernetes-operator/commit/ab4c735287d65401f4f7a84df922cecbbac65b06))
+
+- Bump gateway from 0.17.0 to 0.18.0 in /deploy/twingate-operator
+  ([#1046](https://github.com/Twingate/kubernetes-operator/pull/1046),
+  [`bd75a0d`](https://github.com/Twingate/kubernetes-operator/commit/bd75a0d1b64f3649189a5f7a42f31fae81c62f5d))
+
+- Bump pytest from 9.0.3 to 9.1.0
+  ([#1043](https://github.com/Twingate/kubernetes-operator/pull/1043),
+  [`ec989ad`](https://github.com/Twingate/kubernetes-operator/commit/ec989ad4a35356a9b7802dc061af95a845f288b0))
+
+- Bump ruff from 0.15.16 to 0.15.17
+  ([#1042](https://github.com/Twingate/kubernetes-operator/pull/1042),
+  [`dfe6c42`](https://github.com/Twingate/kubernetes-operator/commit/dfe6c422b69a382e1005767718c9c9342c46cce3))
+
+- Upgrade Poetry to 2.4.1 and fix SemVer version handling
+  ([#1034](https://github.com/Twingate/kubernetes-operator/pull/1034),
+  [`c05633b`](https://github.com/Twingate/kubernetes-operator/commit/c05633bcaae121da2a775ac5aa0dcfcfbb7a19c3))
+
+
 ## v1.1.1 (2026-06-10)
 
 ### Bug Fixes

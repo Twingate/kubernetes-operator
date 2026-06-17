@@ -13,15 +13,33 @@ def mocked_responses():
         yield rsps
 
 
+@pytest.fixture(autouse=True)
+def _mock_shard_resolution():
+    # Resolving the shard host makes a real (retried) HTTP request on every
+    # TwingateOperatorSettings construction. Make it a no-op in unit tests so
+    # they stay network-free. app/tests/test_settings.py overrides this with a
+    # no-op fixture to exercise the real resolver.
+    with patch(
+        "app.settings._resolve_shard_host", side_effect=lambda network, host: host
+    ):
+        yield
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _mock_settings():
     from app.settings import TwingateOperatorSettings
 
-    settings = TwingateOperatorSettings(
-        api_key="apikey",
-        network="network",
-        remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
-    )
+    # Module-scoped fixtures set up before the function-scoped
+    # _mock_shard_resolution above, so patch the resolver here too to keep
+    # construction network-free.
+    with patch(
+        "app.settings._resolve_shard_host", side_effect=lambda network, host: host
+    ):
+        settings = TwingateOperatorSettings(
+            api_key="apikey",
+            network="network",
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+        )
 
     with patch("app.crds.get_settings", return_value=settings):
         yield

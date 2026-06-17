@@ -10,6 +10,13 @@ from app.settings import TwingateOperatorSettings, _resolve_shard_host, get_host
 
 
 @pytest.fixture(autouse=True)
+def _mock_shard_resolution():
+    # Override app/conftest.py's autouse mock: this module exercises the real
+    # shard resolver (_resolve_shard_host / get_host), so do not mock it here.
+    return
+
+
+@pytest.fixture(autouse=True)
 def _disable_retry_wait():
     original_wait = _resolve_shard_host.retry.wait
     _resolve_shard_host.retry.wait = wait_none()

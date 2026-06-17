@@ -13,7 +13,7 @@ if ! type "pipx" &>/dev/null; then
 fi
 
 echo "🧠 Running semantic-release..."
-if ! pipx run --spec python-semantic-release==10.5.3 semantic-release --strict version --no-vcs-release; then
+if ! make version-release; then
 	echo "🚀 Pushing release commit and tag to GitHub... "
 	git push --no-verify
 fi

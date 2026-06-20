@@ -63,6 +63,10 @@ spec:
           type: string
           description: "Address of the Gateway."
           jsonPath: .status.address
+        - name: CA ID
+          type: string
+          description: "Backend id of the signing X509 Certificate Authority."
+          jsonPath: .status.x509CaId
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

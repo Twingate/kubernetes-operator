@@ -24,7 +24,10 @@ spec:
                   nullable: true
                 name:
                   type: string
-                  description: "Name of the Certificate Authority in Twingate."
+                  description: "Name used at creation if the Certificate Authority doesn't exist yet in Twingate."
+                  x-kubernetes-validations:
+                    - rule: "self == oldSelf"
+                      message: "name is immutable"
                 type:
                   type: string
                   enum: ["X509"]
@@ -34,6 +37,9 @@ spec:
                   type: object
                   required: ["name"]
                   description: "Reference to the kubernetes.io/tls Secret the CA's public certificate (ca.crt) is read from."
+                  x-kubernetes-validations:
+                    - rule: "self == oldSelf"
+                      message: "secretRef is immutable"
                   properties:
                     name:
                       type: string

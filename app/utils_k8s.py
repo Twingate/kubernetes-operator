@@ -74,6 +74,34 @@ def k8s_get_twingate_custom_object(
         raise
 
 
+def k8s_patch_twingate_custom_object(
+    plural: str,
+    namespace: str,
+    name: str,
+    patch,
+    kapi: kubernetes.client.CustomObjectsApi | None = None,
+) -> None:
+    """Persist a reconcile patch-shim's ``.spec`` / ``.status`` to a Twingate object.
+
+    Lets the cross-resource event handlers drive the shared ``_reconcile_*``
+    functions (which only mutate ``patch.spec`` / ``patch.status``) even though they
+    have no kopf ``patch`` of their own. The CRDs declare no status subresource, so
+    ``spec`` and ``status`` are written in a single patch.
+    """
+    body = {
+        key: value
+        for key, value in (("spec", patch.spec), ("status", patch.status))
+        if value
+    }
+    if not body:
+        return
+
+    kapi = kapi or kubernetes.client.CustomObjectsApi()
+    kapi.patch_namespaced_custom_object(
+        "twingate.com", "v1beta", namespace, plural, name, body
+    )
+
+
 def resolve_ref_to_twingate_id(
     plural: str, namespace: str, name: str, *, delay: int = 30
 ) -> str:

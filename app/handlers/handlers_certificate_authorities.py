@@ -1,24 +1,24 @@
 import os
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import kopf
 
 from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
-from app.crds import CertificateAuthoritySpec
+from app.crds import CertificateAuthoritySpec, TwingateCertificateAuthorityCRD
 from app.handlers.base import success
+from app.utils import x509_sha256_fingerprint
+from app.utils_k8s import (
+    k8s_get_twingate_custom_object,
+    k8s_patch_twingate_custom_object,
+)
 
 
 def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     ca_spec = CertificateAuthoritySpec(**spec)
 
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-
-    # Already registered and still present on the backend - nothing to do.
-    # NOTE: the backend has no CA update mutation, so a rotated cert / renamed CA
-    # is reconciled by re-creating it (a new Twingate ID), not by updating in place.
-    if ca_spec.id and client.get_certificate_authority(ca_spec.id):
-        return success(twingate_id=ca_spec.id)
 
     certificate = ca_spec.get_certificate()
     if certificate is None:
@@ -28,10 +28,30 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
             delay=30,
         )
 
-    ca = client.x509_certificate_authority_create(
-        name=ca_spec.name, certificate=certificate
-    )
+    desired_fingerprint = x509_sha256_fingerprint(certificate)
+
+    # The backend has no CA update mutation, so reconciliation re-creates the CA
+    # when its certificate changes (a new fingerprint -> a new Twingate ID) rather
+    # than updating in place. `name` is only used when creating and is immutable.
+    old_id = ca_spec.id
+    backend = client.get_certificate_authority(old_id) if old_id else None
+    if backend and backend.fingerprint == desired_fingerprint:
+        return success(twingate_id=old_id)
+
+    name = ca_spec.name
+    if backend is not None:
+        # The old CA still holds `ca_spec.name` until the cleanup cron reaps it, and
+        # the backend rejects duplicate names - so suffix this re-create's name.
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+        name = f"{ca_spec.name} ({timestamp})"
+
+    ca = client.x509_certificate_authority_create(name=name, certificate=certificate)
+
     patch.spec["id"] = ca.id
+
+    # A drift re-create leaves the previous backend CA orphaned, but we don't delete
+    # it here: it's still referenced by its Gateway until that Gateway reconciles
+    # onto the new ID, and the backend's `cleanup` cron reaps unreferenced X509 CAs.
     kopf.info(
         body,
         reason="Success",
@@ -40,8 +60,13 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     return success(twingate_id=ca.id)
 
 
-@kopf.on.resume("twingatecertificateauthority")
-@kopf.on.create("twingatecertificateauthority")
+# Bound retries so a misspelled secretRef eventually fails instead of retrying
+# forever; the timer reconciler still recovers it if the ref is later fixed.
+CA_HANDLER_TIMEOUT = int(os.environ.get("CA_HANDLER_TIMEOUT", timedelta(minutes=10).seconds))  # fmt: skip
+
+
+@kopf.on.resume(TwingateCertificateAuthorityCRD.PLURAL, timeout=CA_HANDLER_TIMEOUT)
+@kopf.on.create(TwingateCertificateAuthorityCRD.PLURAL, timeout=CA_HANDLER_TIMEOUT)
 def twingate_certificate_authority_create(body, spec, logger, memo, patch, **_):
     logger.info("twingate_certificate_authority_create: %s", spec)
     return _reconcile_certificate_authority(body, spec, logger, memo, patch)
@@ -53,7 +78,7 @@ CA_RECONCILER_IDLE = int(os.environ.get("CA_RECONCILER_IDLE", 60))  # fmt: skip
 
 
 @kopf.timer(
-    "twingatecertificateauthority",
+    TwingateCertificateAuthorityCRD.PLURAL,
     interval=CA_RECONCILER_INTERVAL,
     initial_delay=CA_RECONCILER_INIT_DELAY,
     idle=CA_RECONCILER_IDLE,
@@ -62,7 +87,7 @@ def twingate_certificate_authority_reconciler(body, spec, logger, memo, patch, *
     return _reconcile_certificate_authority(body, spec, logger, memo, patch)
 
 
-@kopf.on.delete("twingatecertificateauthority")
+@kopf.on.delete(TwingateCertificateAuthorityCRD.PLURAL)
 def twingate_certificate_authority_delete(spec, status, memo, logger, **_):
     logger.info("twingate_certificate_authority_delete: %s. Status: %s", spec, status)
     if not status:
@@ -81,3 +106,66 @@ def twingate_certificate_authority_delete(spec, status, memo, logger, **_):
                     "Certificate authority still in use, retrying.", delay=30
                 ) from gqlerr
             logger.warning("Ignoring certificate authority delete error: %s", gqlerr)
+
+
+@kopf.index(TwingateCertificateAuthorityCRD.PLURAL)
+def twingate_ca_secret_index(namespace, name, spec, **_):
+    secret_ref = spec.get("secretRef", {})
+    secret_name = secret_ref.get("name")
+    secret_namespace = secret_ref.get("namespace") or namespace
+
+    if not secret_name:
+        return None
+
+    return {
+        (secret_namespace, secret_name): {
+            "namespace": namespace,
+            "name": name,
+        },
+    }
+
+
+@kopf.on.event("", "v1", "secrets", field=("data", "ca.crt"))  # type: ignore[arg-type]
+def twingate_ca_tls_secret_update(
+    event, namespace, name, memo, logger, twingate_ca_secret_index, **_
+):
+    if event.get("type") != "MODIFIED":
+        return
+
+    ca_refs = twingate_ca_secret_index.get((namespace, name), [])
+    if not ca_refs:
+        return
+
+    for ca_ref in ca_refs:
+        ca_namespace = ca_ref["namespace"]
+        ca_name = ca_ref["name"]
+        ca_obj = k8s_get_twingate_custom_object(
+            TwingateCertificateAuthorityCRD.PLURAL, ca_namespace, ca_name
+        )
+        if not ca_obj:
+            continue
+
+        logger.info(
+            "Secret %s changed, reconciling certificate authority %s/%s.",
+            name,
+            ca_namespace,
+            ca_name,
+        )
+        patch = SimpleNamespace(spec={}, status={})
+        try:
+            _reconcile_certificate_authority(
+                ca_obj, ca_obj["spec"], logger, memo, patch
+            )
+        except Exception:
+            logger.exception(
+                "Failed to reconcile certificate authority %s/%s after secret change",
+                ca_namespace,
+                ca_name,
+            )
+            continue
+
+        # Persist the patch so a re-created CA's new backend ID (spec.id) is
+        # saved back to the CR.
+        k8s_patch_twingate_custom_object(
+            TwingateCertificateAuthorityCRD.PLURAL, ca_namespace, ca_name, patch
+        )

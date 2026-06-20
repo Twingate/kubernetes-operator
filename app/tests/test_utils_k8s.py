@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import kopf
@@ -7,6 +8,7 @@ import pytest
 from app.utils_k8s import (
     k8s_delete_pod,
     k8s_get_twingate_custom_object,
+    k8s_patch_twingate_custom_object,
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
     k8s_read_namespaced_secret,
@@ -128,6 +130,33 @@ class TestGetTwingateCustomObject:
 
         assert result == {"a": 1}
         custom_api_mock.assert_called_once()
+
+
+class TestPatchTwingateCustomObject:
+    def test_patches_spec_and_status_together(self):
+        kapi = MagicMock()
+        patch = SimpleNamespace(spec={"id": "ca-1"}, status={"ok": True})
+
+        k8s_patch_twingate_custom_object(
+            "twingatecertificateauthorities", "default", "my-ca", patch, kapi=kapi
+        )
+
+        kapi.patch_namespaced_custom_object.assert_called_once_with(
+            "twingate.com",
+            "v1beta",
+            "default",
+            "twingatecertificateauthorities",
+            "my-ca",
+            {"spec": {"id": "ca-1"}, "status": {"ok": True}},
+        )
+
+    def test_no_op_when_empty(self):
+        kapi = MagicMock()
+        patch = SimpleNamespace(spec={}, status={})
+
+        k8s_patch_twingate_custom_object("plural", "default", "name", patch, kapi=kapi)
+
+        kapi.patch_namespaced_custom_object.assert_not_called()
 
 
 class TestResolveRefToTwingateId:

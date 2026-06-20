@@ -1,6 +1,7 @@
 from typing import Any
 
 from cryptography import x509
+from cryptography.hazmat.primitives import hashes
 
 
 def to_bool(val: Any) -> bool:
@@ -46,3 +47,9 @@ def validate_pem_x509_certificate(value: str):
         x509.load_pem_x509_certificate(value.encode())
     except ValueError as ex:
         raise ValueError("Invalid certificate") from ex
+
+
+def x509_sha256_fingerprint(pem: str) -> str:
+    """SHA-256 fingerprint of a PEM cert as uppercase hex with colon separators."""
+    cert = x509.load_pem_x509_certificate(pem.encode())
+    return cert.fingerprint(hashes.SHA256()).hex(":").upper()

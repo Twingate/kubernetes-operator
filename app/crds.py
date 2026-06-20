@@ -3,7 +3,7 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum, StrEnum
-from typing import Annotated, Any, cast
+from typing import Annotated, Any, ClassVar, cast
 
 import kopf
 import kubernetes.client
@@ -332,6 +332,8 @@ class CertificateAuthoritySpec(BaseModel):
 class TwingateCertificateAuthorityCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
 
+    PLURAL: ClassVar[str] = "twingatecertificateauthorities"
+
     spec: CertificateAuthoritySpec
 
 
@@ -362,6 +364,8 @@ class GatewaySpec(BaseModel):
 
 class TwingateGatewayCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")
+
+    PLURAL: ClassVar[str] = "twingategateways"
 
     spec: GatewaySpec
 

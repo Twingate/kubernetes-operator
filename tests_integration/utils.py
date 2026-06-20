@@ -204,19 +204,41 @@ def kubectl_wait_object_handler_success(
     message: str | None = None,
     max_retries: int = 5,
 ):
+    def _handler_succeeded(obj: dict) -> bool:
+        handler_status = obj.get("status", {}).get(handler_name, {})
+        return bool(handler_status.get("success")) and (
+            message is None or handler_status.get("message") == message
+        )
+
+    return kubectl_wait_object(
+        resource_type,
+        resource_name,
+        _handler_succeeded,
+        description=f"handler '{handler_name}' success",
+        max_retries=max_retries,
+    )
+
+
+def kubectl_wait_object(
+    resource_type: str,
+    resource_name: str,
+    predicate,
+    *,
+    description: str = "expected condition",
+    max_retries: int = 5,
+    sleep_time: int = 10,
+) -> dict:
+    """Poll an object until ``predicate(obj)`` is truthy, then return it."""
     retry = 0
     obj = kubectl_wait_to_exist(resource_type, resource_name, max_retries=max_retries)
     while True:
-        handler_status = obj.get("status", {}).get(handler_name, {})
-        if handler_status.get("success") and (
-            message is None or handler_status.get("message") == message
-        ):
+        if predicate(obj):
             return obj
 
         retry += 1
         if retry > max_retries:
             raise RuntimeError(
-                f"Handler {handler_name} did not succeed for {resource_type}/{resource_name}"
+                f"{resource_type}/{resource_name} did not reach {description}"
             )
-        time.sleep(10)
+        time.sleep(sleep_time)
         obj = kubectl_get(resource_type, resource_name)

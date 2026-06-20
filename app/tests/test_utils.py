@@ -1,7 +1,11 @@
 import pytest
 
 from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
-from app.utils import to_bool, validate_pem_x509_certificate
+from app.utils import (
+    to_bool,
+    validate_pem_x509_certificate,
+    x509_sha256_fingerprint,
+)
 
 
 class TestToBool:
@@ -50,3 +54,11 @@ class TestValidatePemX509Certificate:
                 MIIFfjCCA2agAwIBAgIUBNt
                 -----END CERTIFICATE-----"""
             )
+
+
+class TestX509Sha256Fingerprint:
+    def test_fingerprint(self):
+        assert x509_sha256_fingerprint(VALID_CA_CERT) == (
+            "C3:FA:A1:49:4F:74:57:1E:85:E3:91:7C:55:58:62:DB:"
+            "88:F8:74:CC:0F:6A:91:85:7C:BD:60:3B:93:43:80:E3"
+        )

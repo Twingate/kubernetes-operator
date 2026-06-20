@@ -1,6 +1,69 @@
 # CHANGELOG
 
 
+## v1.1.2 (2026-06-16)
+
+### Chores
+
+- Add resource type as a display column
+  ([#1045](https://github.com/Twingate/kubernetes-operator/pull/1045),
+  [`5708b7b`](https://github.com/Twingate/kubernetes-operator/commit/5708b7bd38a21627723262184ef7410e2e43f27a))
+
+- Bump cryptography from 48.0.1 to 49.0.0
+  ([#1044](https://github.com/Twingate/kubernetes-operator/pull/1044),
+  [`ab4c735`](https://github.com/Twingate/kubernetes-operator/commit/ab4c735287d65401f4f7a84df922cecbbac65b06))
+
+- Bump gateway from 0.17.0 to 0.18.0 in /deploy/twingate-operator
+  ([#1046](https://github.com/Twingate/kubernetes-operator/pull/1046),
+  [`bd75a0d`](https://github.com/Twingate/kubernetes-operator/commit/bd75a0d1b64f3649189a5f7a42f31fae81c62f5d))
+
+- Bump pytest from 9.0.3 to 9.1.0
+  ([#1043](https://github.com/Twingate/kubernetes-operator/pull/1043),
+  [`ec989ad`](https://github.com/Twingate/kubernetes-operator/commit/ec989ad4a35356a9b7802dc061af95a845f288b0))
+
+- Bump ruff from 0.15.16 to 0.15.17
+  ([#1042](https://github.com/Twingate/kubernetes-operator/pull/1042),
+  [`dfe6c42`](https://github.com/Twingate/kubernetes-operator/commit/dfe6c422b69a382e1005767718c9c9342c46cce3))
+
+- Upgrade Poetry to 2.4.1 and fix SemVer version handling
+  ([#1034](https://github.com/Twingate/kubernetes-operator/pull/1034),
+  [`c05633b`](https://github.com/Twingate/kubernetes-operator/commit/c05633bcaae121da2a775ac5aa0dcfcfbb7a19c3))
+
+
+## v1.1.1 (2026-06-10)
+
+### Bug Fixes
+
+- DEV version (poetry now enforces PEP-440 which doesnt allow dot after “dev”
+  ([`1fba3bb`](https://github.com/Twingate/kubernetes-operator/commit/1fba3bb79e20925a91abe260883a8a385ef109e2))
+
+- Mock shard host resolution in unit tests
+  ([#1033](https://github.com/Twingate/kubernetes-operator/pull/1033),
+  [`0dc5727`](https://github.com/Twingate/kubernetes-operator/commit/0dc5727e9af0ddd3449c3d702910442905869779))
+
+- Normalize CRD protocol port ranges to prevent false diffs
+  ([#1036](https://github.com/Twingate/kubernetes-operator/pull/1036),
+  [`5d89585`](https://github.com/Twingate/kubernetes-operator/commit/5d8958560610e3c5b04f6cfe628bb163b68feb79))
+
+### Chores
+
+- Bump cryptography from 48.0.0 to 48.0.1
+  ([#1040](https://github.com/Twingate/kubernetes-operator/pull/1040),
+  [`b153725`](https://github.com/Twingate/kubernetes-operator/commit/b1537255b862c0f19f04dcea78bbb9f46ac31a27))
+
+- Bump kubernetes from 35.0.0 to 36.0.2
+  ([#1019](https://github.com/Twingate/kubernetes-operator/pull/1019),
+  [`2ebc213`](https://github.com/Twingate/kubernetes-operator/commit/2ebc213fa759101170a58b856dd41eaab0e2102a))
+
+- Bump syrupy from 5.3.1 to 5.3.2
+  ([#1039](https://github.com/Twingate/kubernetes-operator/pull/1039),
+  [`91caab1`](https://github.com/Twingate/kubernetes-operator/commit/91caab142a3d5271e21b6e96fc385cb8f4457f82))
+
+- Unblock kopf updates by running semantic-release via pipx
+  ([#1030](https://github.com/Twingate/kubernetes-operator/pull/1030),
+  [`a5e34ba`](https://github.com/Twingate/kubernetes-operator/commit/a5e34ba37ec733a8727907cb897515967498b1e4))
+
+
 ## v1.1.0 (2026-06-08)
 
 ### Chores

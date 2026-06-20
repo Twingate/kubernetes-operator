@@ -324,7 +324,7 @@ class TestGatewayCaIdChanged:
         mock_api_client.gateway_create.assert_not_called()
         mock_patch_obj.assert_not_called()
 
-    def test_continues_on_reconcile_failure(
+    def test_reraises_temporary_error_for_retry(
         self,
         mock_get_obj,
         mock_patch_obj,
@@ -332,14 +332,70 @@ class TestGatewayCaIdChanged:
         mock_resolve_service_address,
         mock_resolve_ref_to_twingate_id,
     ):
-        # Reconcile blows up (service address not ready) - the error is logged and
-        # the patch is not persisted.
+        # CA/service not ready - re-raise so Kopf retries; patch not persisted.
         mock_get_obj.return_value = {
             "metadata": {"namespace": "default", "name": "my-gw"},
             "spec": {**_spec(with_id=True)},
         }
         mock_resolve_service_address.side_effect = kopf.TemporaryError("not ready")
 
+        with pytest.raises(kopf.TemporaryError):
+            self._call(self._index())
+
+        mock_patch_obj.assert_not_called()
+
+    def test_continues_on_non_transient_failure(
+        self,
+        mock_get_obj,
+        mock_patch_obj,
+        mock_api_client,
+        mock_resolve_service_address,
+        mock_resolve_ref_to_twingate_id,
+    ):
+        # A non-transient error is logged and swallowed (timer is the backstop),
+        # so the handler does not re-raise and the patch is not persisted.
+        mock_get_obj.return_value = {
+            "metadata": {"namespace": "default", "name": "my-gw"},
+            "spec": {**_spec(with_id=True)},
+        }
+        mock_api_client.get_gateway.side_effect = GraphQLMutationError(
+            "GetGateway", "boom"
+        )
+
         self._call(self._index())
 
         mock_patch_obj.assert_not_called()
+
+    def test_one_gateway_not_ready_does_not_starve_others(
+        self,
+        mock_get_obj,
+        mock_patch_obj,
+        mock_api_client,
+        mock_resolve_service_address,
+        mock_resolve_ref_to_twingate_id,
+    ):
+        # First Gateway is not ready, second reconciles fine: the ready one is still
+        # persisted, and the handler re-raises so the stuck one is retried.
+        refs = [
+            {"namespace": "default", "name": "gw-not-ready"},
+            {"namespace": "default", "name": "gw-ready"},
+        ]
+        mock_get_obj.side_effect = lambda _plural, _ns, gw_name: {
+            "metadata": {"namespace": "default", "name": gw_name},
+            "spec": {**_spec(with_id=True)},
+        }
+        mock_api_client.get_gateway.return_value = Gateway(
+            id="gateway-id", address="old-addr"
+        )
+        mock_resolve_service_address.side_effect = [
+            kopf.TemporaryError("not ready"),
+            "gateway.default.svc.cluster.local:443",
+        ]
+
+        with pytest.raises(kopf.TemporaryError):
+            self._call(self._index(refs))
+
+        # Only the ready Gateway's patch is persisted.
+        mock_patch_obj.assert_called_once()
+        _plural, _ns, name, _shim = mock_patch_obj.call_args.args
+        assert name == "gw-ready"

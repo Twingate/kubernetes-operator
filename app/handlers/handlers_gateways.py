@@ -147,7 +147,11 @@ def twingate_gateway_ca_index(namespace, name, spec, **_):
     }
 
 
-@kopf.on.field(TwingateCertificateAuthorityCRD.PLURAL, field="spec.id")  # type: ignore[arg-type]
+@kopf.on.field(  # type: ignore[arg-type]
+    TwingateCertificateAuthorityCRD.PLURAL,
+    field="spec.id",
+    timeout=GATEWAY_HANDLER_TIMEOUT,
+)
 def twingate_ca_id_changed(
     namespace, name, new, memo, logger, twingate_gateway_ca_index, **_
 ):
@@ -164,6 +168,10 @@ def twingate_ca_id_changed(
     gateway_refs = twingate_gateway_ca_index.get((namespace, name), [])
     if not gateway_refs:
         return
+
+    # Re-raise after attempting every Gateway so Kopf retries, without letting one
+    # not-yet-ready Gateway starve the others.
+    retry_exc: kopf.TemporaryError | None = None
 
     for gateway_ref in gateway_refs:
         gw_namespace = gateway_ref["namespace"]
@@ -183,7 +191,18 @@ def twingate_ca_id_changed(
         patch = SimpleNamespace(spec={}, status={})
         try:
             _reconcile_gateway(gw_obj, gw_obj["spec"], logger, memo, patch)
+        except kopf.TemporaryError as err:
+            # CA/service not ready yet - retry the event.
+            logger.warning(
+                "Gateway %s/%s not ready after CA change, will retry: %s",
+                gw_namespace,
+                gw_name,
+                err,
+            )
+            retry_exc = err
+            continue
         except Exception:
+            # Non-transient: log and let the Gateway timer be the backstop.
             logger.exception(
                 "Failed to reconcile gateway %s/%s after CA change",
                 gw_namespace,
@@ -196,3 +215,6 @@ def twingate_ca_id_changed(
         k8s_patch_twingate_custom_object(
             TwingateGatewayCRD.PLURAL, gw_namespace, gw_name, patch
         )
+
+    if retry_exc is not None:
+        raise retry_exc

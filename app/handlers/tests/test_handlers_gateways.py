@@ -10,6 +10,7 @@ from app.handlers.handlers_gateways import (
     twingate_gateway_ca_index,
     twingate_gateway_create_update,
     twingate_gateway_delete,
+    twingate_gateway_reconciler,
 )
 
 
@@ -164,6 +165,29 @@ class TestGatewayCreateUpdateHandler:
         assert patch_mock.spec == {}
 
 
+class TestGatewayReconciler:
+    def test_reconciler_delegates_to_shared_reconcile(
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_resolve_service_address,
+        mock_resolve_ref_to_twingate_id,
+    ):
+        mock_api_client.gateway_create.return_value = Gateway(
+            id="new-gateway-id", address="addr"
+        )
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+        patch_mock.status = {}
+
+        result = twingate_gateway_reconciler(
+            "", _spec(), MagicMock(), MagicMock(), patch_mock
+        )
+
+        assert result == {"success": True, "twingate_id": "new-gateway-id", "ts": ANY}
+        assert patch_mock.spec == {"id": "new-gateway-id"}
+
+
 class TestGatewayDeleteHandler:
     def test_delete(self, mock_api_client):
         twingate_gateway_delete(
@@ -195,6 +219,19 @@ class TestGatewayDeleteHandler:
                 MagicMock(),
             )
 
+    def test_delete_ignores_other_errors(self, mock_api_client):
+        # A non "being used" backend error is logged and swallowed (no retry).
+        mock_api_client.gateway_delete.side_effect = GraphQLMutationError(
+            "DeleteGateway", "already deleted"
+        )
+
+        twingate_gateway_delete(
+            _spec(with_id=True),
+            {"twingate_gateway_create_update": {"success": True}},
+            MagicMock(),
+            MagicMock(),
+        )
+
 
 class TestGatewayCaIndex:
     def test_maps_ca_to_gateway(self):
@@ -210,6 +247,12 @@ class TestGatewayCaIndex:
         spec["x509CertificateAuthorityRef"] = {"name": "my-ca", "namespace": "ns2"}
         result = twingate_gateway_ca_index(namespace="ns1", name="my-gw", spec=spec)
         assert result == {("ns2", "my-ca"): {"namespace": "ns1", "name": "my-gw"}}
+
+    def test_none_without_ca_name(self):
+        assert (
+            twingate_gateway_ca_index(namespace="default", name="my-gw", spec={})
+            is None
+        )
 
 
 @patch("app.handlers.handlers_gateways.k8s_patch_twingate_custom_object")
@@ -267,4 +310,36 @@ class TestGatewayCaIdChanged:
     ):
         self._call({})
         mock_get_obj.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_skips_when_gateway_object_missing(
+        self, mock_get_obj, mock_patch_obj, mock_api_client
+    ):
+        # The Gateway CR is gone - nothing to reconcile or persist.
+        mock_get_obj.return_value = None
+
+        self._call(self._index())
+
+        mock_api_client.gateway_update.assert_not_called()
+        mock_api_client.gateway_create.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_continues_on_reconcile_failure(
+        self,
+        mock_get_obj,
+        mock_patch_obj,
+        mock_api_client,
+        mock_resolve_service_address,
+        mock_resolve_ref_to_twingate_id,
+    ):
+        # Reconcile blows up (service address not ready) - the error is logged and
+        # the patch is not persisted.
+        mock_get_obj.return_value = {
+            "metadata": {"namespace": "default", "name": "my-gw"},
+            "spec": {**_spec(with_id=True)},
+        }
+        mock_resolve_service_address.side_effect = kopf.TemporaryError("not ready")
+
+        self._call(self._index())
+
         mock_patch_obj.assert_not_called()

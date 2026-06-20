@@ -10,6 +10,7 @@ from app.handlers.handlers_certificate_authorities import (
     twingate_ca_tls_secret_update,
     twingate_certificate_authority_create,
     twingate_certificate_authority_delete,
+    twingate_certificate_authority_reconciler,
 )
 
 
@@ -155,6 +156,24 @@ class TestCertificateAuthorityCreateHandler:
         mock_api_client.x509_certificate_authority_create.assert_not_called()
 
 
+class TestCertificateAuthorityReconciler:
+    def test_reconciler_delegates_to_shared_reconcile(
+        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+    ):
+        mock_api_client.x509_certificate_authority_create.return_value = (
+            CertificateAuthority(id="new-ca-id", name="My CA")
+        )
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        result = twingate_certificate_authority_reconciler(
+            "", _spec(), MagicMock(), MagicMock(), patch_mock
+        )
+
+        assert result == {"success": True, "twingate_id": "new-ca-id", "ts": ANY}
+        assert patch_mock.spec == {"id": "new-ca-id"}
+
+
 class TestCertificateAuthorityDeleteHandler:
     def test_delete(self, mock_api_client):
         twingate_certificate_authority_delete(
@@ -193,6 +212,19 @@ class TestCertificateAuthorityDeleteHandler:
                 MagicMock(),
                 MagicMock(),
             )
+
+    def test_delete_ignores_other_errors(self, mock_api_client):
+        # A non "in use" backend error is logged and swallowed (no retry).
+        mock_api_client.x509_certificate_authority_delete.side_effect = (
+            GraphQLMutationError("DeleteX509CertificateAuthority", "already deleted")
+        )
+
+        twingate_certificate_authority_delete(
+            _spec(with_id=True),
+            {"twingate_certificate_authority_create": {"success": True}},
+            MagicMock(),
+            MagicMock(),
+        )
 
 
 class TestCertificateAuthoritySecretIndex:
@@ -284,4 +316,35 @@ class TestCertificateAuthoritySecretWatch:
     ):
         self._call({})
         mock_get_obj.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_skips_when_ca_object_missing(
+        self, mock_get_obj, mock_patch_obj, mock_api_client
+    ):
+        # The CA CR is gone (e.g. deleted) - nothing to reconcile or persist.
+        mock_get_obj.return_value = None
+
+        self._call(self._index())
+
+        mock_api_client.x509_certificate_authority_create.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_continues_on_reconcile_failure(
+        self,
+        mock_get_obj,
+        mock_patch_obj,
+        mock_api_client,
+        mock_get_certificate,
+        mock_fingerprint,
+    ):
+        # Reconcile blows up (cert not ready yet) - the error is logged and the
+        # patch is not persisted.
+        mock_get_obj.return_value = {
+            "metadata": {"namespace": "default", "name": "my-ca"},
+            "spec": {"name": "My CA", "secretRef": {"name": "gateway-tls"}},
+        }
+        mock_get_certificate.return_value = None
+
+        self._call(self._index())
+
         mock_patch_obj.assert_not_called()

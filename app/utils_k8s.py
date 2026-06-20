@@ -85,8 +85,7 @@ def k8s_patch_twingate_custom_object(
 
     Lets the cross-resource event handlers drive the shared ``_reconcile_*``
     functions (which only mutate ``patch.spec`` / ``patch.status``) even though they
-    have no kopf ``patch`` of their own. The CRDs declare no status subresource, so
-    ``spec`` and ``status`` are written in a single patch.
+    have no kopf ``patch`` of their own.
     """
     body = {
         key: value

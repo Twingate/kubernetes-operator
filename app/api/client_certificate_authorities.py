@@ -63,7 +63,7 @@ MUT_DELETE_X509_CERTIFICATE_AUTHORITY = """
 
 
 class TwingateCertificateAuthorityAPIs:
-    def get_certificate_authority(
+    def get_x509_certificate_authority(
         self: TwingateClientProtocol, ca_id: str
     ) -> CertificateAuthority | None:
         try:
@@ -73,7 +73,12 @@ class TwingateCertificateAuthorityAPIs:
                 )
             )
             ca = result["certificateAuthority"]
-            return CertificateAuthority(**ca) if ca else None
+            # `certificateAuthority` is a union; the query only selects X509 fields.
+            # A non-X509 type comes back as just `__typename`, so treat it the same
+            # as "not found" rather than letting Pydantic raise on missing fields.
+            if not ca or ca.get("__typename") != "X509CertificateAuthority":
+                return None
+            return CertificateAuthority(**ca)
         except TransportQueryError:
             self.logger.exception("Failed to get certificate authority")
             return None

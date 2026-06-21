@@ -9,7 +9,7 @@ PEM_CERT = "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
 
 
 class TestTwingateCertificateAuthorityAPIs:
-    def test_get_certificate_authority_success(
+    def test_get_x509_certificate_authority_success(
         self, test_url, api_client, mocked_responses
     ):
         success_response = json.dumps(
@@ -34,12 +34,12 @@ class TestTwingateCertificateAuthorityAPIs:
                 )
             ],
         )
-        result = api_client.get_certificate_authority("ca-id")
+        result = api_client.get_x509_certificate_authority("ca-id")
         assert result is not None
         assert result.id == "ca-id"
         assert result.name == "My CA"
 
-    def test_get_certificate_authority_not_found_returns_none(
+    def test_get_x509_certificate_authority_not_found_returns_none(
         self, test_url, api_client, mocked_responses
     ):
         success_response = json.dumps({"data": {"certificateAuthority": None}})
@@ -53,9 +53,9 @@ class TestTwingateCertificateAuthorityAPIs:
                 )
             ],
         )
-        assert api_client.get_certificate_authority("ca-id") is None
+        assert api_client.get_x509_certificate_authority("ca-id") is None
 
-    def test_get_certificate_authority_transport_error_returns_none(
+    def test_get_x509_certificate_authority_transport_error_returns_none(
         self, test_url, api_client, mocked_responses
     ):
         errors_response = json.dumps({"errors": [{"message": "Transport error"}]})
@@ -69,7 +69,7 @@ class TestTwingateCertificateAuthorityAPIs:
                 )
             ],
         )
-        assert api_client.get_certificate_authority("ca-id") is None
+        assert api_client.get_x509_certificate_authority("ca-id") is None
 
     def test_x509_certificate_authority_create(
         self, test_url, api_client, mocked_responses

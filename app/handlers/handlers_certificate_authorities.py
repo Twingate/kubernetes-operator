@@ -34,7 +34,7 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     # when its certificate changes (a new fingerprint -> a new Twingate ID) rather
     # than updating in place. `name` is only used when creating and is immutable.
     old_id = ca_spec.id
-    backend = client.get_certificate_authority(old_id) if old_id else None
+    backend = client.get_x509_certificate_authority(old_id) if old_id else None
     if backend and backend.fingerprint == desired_fingerprint:
         return success(twingate_id=old_id)
 

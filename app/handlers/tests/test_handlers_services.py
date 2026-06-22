@@ -114,6 +114,33 @@ def example_load_balancer_gateway_service_body():
 
 
 @pytest.fixture
+def example_webapp_service_body():
+    yaml_str = """
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: web-app
+      labels:
+        env: dev
+      annotations:
+        resource.twingate.com: "true"
+        resource.twingate.com/type: "WebApp"
+        resource.twingate.com/gatewayName: "example-gateway"
+        resource.twingate.com/alias: "alias.int"
+    spec:
+      selector:
+        app.kubernetes.io/name: web-app
+      type: ClusterIP
+      ports:
+        - name: https
+          protocol: TCP
+          port: 443
+          targetPort: https
+    """
+    return kopf.Body(yaml.safe_load(yaml_str))
+
+
+@pytest.fixture
 def k8s_customobjects_client_mock():
     client_mock = MagicMock()
     with patch("kubernetes.client.CustomObjectsApi") as k8sclient_mock:
@@ -192,17 +219,6 @@ class TestServiceToTwingateResource:
                     "namespace": namespace,
                 },
             },
-            "protocols": {
-                "allowIcmp": False,
-                "tcp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 443, "end": 443}],
-                },
-                "udp": {
-                    "policy": "RESTRICTED",
-                    "ports": [],
-                },
-            },
             "type": ResourceType.KUBERNETES,
         }
 
@@ -257,17 +273,6 @@ class TestServiceToTwingateResource:
                     "namespace": namespace,
                 },
             },
-            "protocols": {
-                "allowIcmp": False,
-                "tcp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 443, "end": 443}],
-                },
-                "udp": {
-                    "policy": "RESTRICTED",
-                    "ports": [],
-                },
-            },
             "type": ResourceType.KUBERNETES,
         }
 
@@ -302,6 +307,51 @@ class TestServiceToTwingateResource:
             service_to_twingate_resource(
                 example_load_balancer_gateway_service_body, "default"
             )
+
+    def test_webapp_resource_type_annotation(self, example_webapp_service_body):
+        namespace = "custom-namespace"
+
+        result = service_to_twingate_resource(example_webapp_service_body, namespace)
+
+        assert result["spec"] == {
+            "name": "web-app-resource",
+            "address": "web-app.custom-namespace.svc.cluster.local",
+            "alias": "alias.int",
+            "type": ResourceType.WEB_APP,
+            "gatewayRef": {
+                "name": "example-gateway",
+                "namespace": namespace,
+            },
+        }
+
+    def test_webapp_resource_type_annotation_with_explicit_gateway_namespace(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/gatewayNamespace"
+        ] = "gateway-namespace"
+
+        result = service_to_twingate_resource(
+            example_webapp_service_body, "custom-namespace"
+        )
+
+        assert result["spec"]["gatewayRef"] == {
+            "name": "example-gateway",
+            "namespace": "gateway-namespace",
+        }
+
+    def test_webapp_resource_type_annotation_without_gateway_name(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/gatewayName"
+        ]
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/gatewayName annotation is required",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
 
 
 class TestK8sGetTwingateResource:

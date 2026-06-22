@@ -33,6 +33,8 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("type", str),
 ]
 TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
+GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
+GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 
 
 def get_load_balancer_address(status: Status, service_name: str) -> str:
@@ -85,7 +87,18 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
         if value := meta.annotations.get(f"resource.twingate.com/{key}"):
             result["spec"][key] = convert_f(value)
 
-    if result["spec"].get("type") == ResourceType.KUBERNETES:
+    resource_type = result["spec"].get("type")
+
+    if resource_type == ResourceType.WEB_APP:
+        if not (gateway_name := meta.annotations.get(GATEWAY_NAME_ANNOTATION)):
+            raise kopf.PermanentError(
+                f"{GATEWAY_NAME_ANNOTATION} annotation is required for WebApp resources."
+            )
+        result["spec"]["gatewayRef"] = {
+            "name": gateway_name,
+            "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
+        }
+    elif resource_type == ResourceType.KUBERNETES:
         if not (secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
             raise kopf.PermanentError(
                 f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
@@ -107,19 +120,22 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             },
         }
 
-    protocols: dict = {
-        "allowIcmp": False,
-        "tcp": {"policy": "RESTRICTED", "ports": []},
-        "udp": {"policy": "RESTRICTED", "ports": []},
-    }
-    for port_obj in spec.get("ports", []):
-        port = port_obj["port"]
-        if port_obj["protocol"] == "TCP":
-            protocols["tcp"]["ports"].append({"start": port, "end": port})
-        elif port_obj["protocol"] == "UDP":
-            protocols["udp"]["ports"].append({"start": port, "end": port})
+    # Only Network resources use port-based protocols. Kubernetes and WebApp
+    # resources configure upstream/downstream on the gateway instead.
+    if resource_type in (None, ResourceType.NETWORK):
+        protocols: dict = {
+            "allowIcmp": False,
+            "tcp": {"policy": "RESTRICTED", "ports": []},
+            "udp": {"policy": "RESTRICTED", "ports": []},
+        }
+        for port_obj in spec.get("ports", []):
+            port = port_obj["port"]
+            if port_obj["protocol"] == "TCP":
+                protocols["tcp"]["ports"].append({"start": port, "end": port})
+            elif port_obj["protocol"] == "UDP":
+                protocols["udp"]["ports"].append({"start": port, "end": port})
 
-    result["spec"]["protocols"] = protocols
+        result["spec"]["protocols"] = protocols
 
     return result
 

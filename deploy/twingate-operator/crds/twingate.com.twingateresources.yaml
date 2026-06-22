@@ -23,7 +23,7 @@ spec:
                 - rule: (self.type == "Network" && !has(self.proxy) && !has(self.gatewayRef)) || (self.type == "Kubernetes" && (has(self.proxy) != has(self.gatewayRef))) || (self.type == "WebApp" && has(self.gatewayRef) && !has(self.proxy))
                   message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; WebApp Resource requires gatewayRef and no proxy; Network Resource allows neither"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
-                  message: "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
+                  message: "isBrowserShortcutEnabled can only be set to true for Network Resources"
               required: ["name", "address"]
               properties:
                 id:

@@ -259,6 +259,28 @@ class TestKubernetesResourceModel:
         assert resource.get_spec_diff(crd) == {}
 
 
+class TestWebAppResourceModel:
+    def test_get_spec_diff_when_no_diff(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd) == {}
+
+    def test_get_spec_diff_for_gateway_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-2"
+        ):
+            assert resource.get_spec_diff(crd) == {
+                "gateway_id": Diff(remote="gw-1", local="gw-2"),
+            }
+
+
 class TestResourceFactory:
     def test_name_is_used_for_address(self, base_resource_factory):
         r = base_resource_factory()
@@ -390,6 +412,28 @@ class TestTwingateResourceAPIs:
 
         api_client.kubernetes_resource_create.assert_called_once_with(mock_argument=1)
         api_client.network_resource_create.assert_not_called()
+
+    def test_resource_create_with_web_app_type(self, api_client):
+        api_client.network_resource_create = MagicMock()
+        api_client.web_app_resource_create = MagicMock()
+
+        api_client.resource_create(resource_type=ResourceType.WEB_APP, mock_argument=1)
+
+        api_client.web_app_resource_create.assert_called_once_with(mock_argument=1)
+        api_client.network_resource_create.assert_not_called()
+
+    def test_resource_update_with_web_app_type(self, api_client):
+        api_client.network_resource_update = MagicMock()
+        api_client.web_app_resource_update = MagicMock()
+
+        api_client.resource_update(
+            id="1", resource_type=ResourceType.WEB_APP, mock_argument=1
+        )
+
+        api_client.web_app_resource_update.assert_called_once_with(
+            id="1", mock_argument=1
+        )
+        api_client.network_resource_update.assert_not_called()
 
     def test_resource_create_failure(
         self, test_url, api_client, network_resource_factory, mocked_responses
@@ -622,7 +666,12 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["sync_labels", "type", "proxy", "gateway_ref"],
+                            exclude=[
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                                "gateway_ref",
+                            ],
                             by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
@@ -727,6 +776,111 @@ class TestTwingateResourceAPIs:
         resolve_mock.assert_called_once_with(
             "twingategateways", "default", "my-gateway"
         )
+        assert result == resource
+
+    def test_get_web_app_resource(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
+    ):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "resource": resource.model_dump(by_alias=True)
+                    | {"__typename": "WebAppResource"}
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": resource.id}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.get_resource(resource.id)
+        assert result == resource
+
+    def test_web_app_resource_create(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
+    ):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            id=None,
+            gateway_ref={"name": "my-gateway"},
+        )
+        success_response = json.dumps(
+            {
+                "data": {
+                    "webAppResourceCreate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"gatewayId": "gw-1"}},
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.web_app_resource_create(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), exclude={"id"}
+                )
+            )
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
+        )
+        assert result == resource
+
+    def test_web_app_resource_update(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
+    ):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+        success_response = json.dumps(
+            {
+                "data": {
+                    "webAppResourceUpdate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"gatewayId": "gw-1"}},
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+            result = api_client.web_app_resource_update(
+                **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+            )
+
         assert result == resource
 
     def test_kubernetes_resource_update_ca_cert(

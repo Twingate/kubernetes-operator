@@ -307,10 +307,51 @@ class KubernetesResource(BaseResource):
         return ResourceSpec(**data)
 
 
+class WebAppResource(BaseResource):
+    gateway: ResourceGateway | None = None
+
+    @staticmethod
+    def get_graphql_fragment():
+        return (
+            BaseResource.get_graphql_fragment()
+            + """
+            fragment WebAppResourceFields on WebAppResource {
+                ...BaseResourceFields
+                gateway { id }
+            }
+            """
+        )
+
+    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd)
+
+        remote_gateway_id = self.gateway.id if self.gateway else None
+        crd_gateway_id = (
+            resolve_ref_to_twingate_id(
+                "twingategateways",
+                crd.gateway_ref.namespace,
+                crd.gateway_ref.name,
+            )
+            if crd.gateway_ref
+            else None
+        )
+        if remote_gateway_id != crd_gateway_id:
+            diff["gateway_id"] = Diff(remote=remote_gateway_id, local=crd_gateway_id)
+
+        return diff
+
+    def to_spec(self, **overrides: Any) -> ResourceSpec:
+        data: dict[str, Any] = (
+            {"type": ResourceType.WEB_APP} | super().to_spec_dict() | overrides
+        )
+        return ResourceSpec(**data)
+
+
 # fmt:off
 
 _NETWORK_RESOURCE_FRAGMENT = NetworkResource.get_graphql_fragment()
 _KUBERNETES_RESOURCE_FRAGMENT = KubernetesResource.get_graphql_fragment()
+_WEB_APP_RESOURCE_FRAGMENT = WebAppResource.get_graphql_fragment()
 
 QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
     query GetResource($id: ID!) {
@@ -323,6 +364,9 @@ QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
             ... on KubernetesResource {
                 proxyAddress
                 certificateAuthorityCert
+                gateway { id }
+            }
+            ... on WebAppResource {
                 gateway { id }
             }
         }
@@ -394,6 +438,38 @@ MUT_CREATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
             error
             entity {
               ...KubernetesResourceFields
+            }
+        }
+    }
+"""
+
+MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
+    mutation CreateWebAppResource(
+        $name: String!
+        $address: String!
+        $alias: String
+        $isVisible: Boolean
+        $protocols: ProtocolsInput
+        $remoteNetworkId: ID!
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+        $gatewayId: ID!
+    ) {
+        webAppResourceCreate(
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            protocols: $protocols
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+            gatewayId: $gatewayId
+        ) {
+            ok
+            error
+            entity {
+              ...WebAppResourceFields
             }
         }
     }
@@ -476,6 +552,40 @@ MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
     }
 """
 
+MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
+    mutation UpdateWebAppResource(
+        $id: ID!
+        $name: String
+        $address: String
+        $alias: String
+        $isVisible: Boolean
+        $protocols: ProtocolsInput
+        $remoteNetworkId: ID
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+        $gatewayId: ID
+    ) {
+        webAppResourceUpdate(
+            id: $id,
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            protocols: $protocols
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+            gatewayId: $gatewayId
+        ) {
+            ok
+            error
+            entity {
+                ...WebAppResourceFields
+            }
+        }
+    }
+"""
+
 # endregion
 
 
@@ -496,7 +606,7 @@ MUT_DELETE_RESOURCE = """
 class TwingateResourceAPIs:
     def get_resource(
         self: TwingateClientProtocol, resource_id: str
-    ) -> NetworkResource | KubernetesResource | None:
+    ) -> NetworkResource | KubernetesResource | WebAppResource | None:
         try:
             result = self.execute_gql(
                 GraphQLRequest(QUERY_GET_RESOURCE, variable_values={"id": resource_id})
@@ -510,6 +620,8 @@ class TwingateResourceAPIs:
                     return NetworkResource(**result["resource"])
                 case "KubernetesResource":
                     return KubernetesResource(**result["resource"])
+                case "WebAppResource":
+                    return WebAppResource(**result["resource"])
                 case _:
                     raise ValueError(f"Invalid Resource Type: {resource_type}")
         except TransportQueryError:
@@ -518,9 +630,12 @@ class TwingateResourceAPIs:
 
     def resource_create(
         self: TwingateClientProtocol, resource_type: ResourceType, **graphql_arguments
-    ) -> NetworkResource | KubernetesResource:
+    ) -> NetworkResource | KubernetesResource | WebAppResource:
         if resource_type == ResourceType.KUBERNETES:
             return self.kubernetes_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
+
+        if resource_type == ResourceType.WEB_APP:
+            return self.web_app_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
 
         return self.network_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
 
@@ -592,14 +707,49 @@ class TwingateResourceAPIs:
         )
         return KubernetesResource(**result["entity"])
 
+    def web_app_resource_create(
+        self: TwingateClientProtocol,
+        *,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        protocols: dict[str, Any],
+        tags: list[dict[str, str]],
+        gateway_id: str,
+    ) -> WebAppResource:
+        result = self.execute_mutation(
+            "webAppResourceCreate",
+            GraphQLRequest(
+                MUT_CREATE_WEB_APP_RESOURCE,
+                variable_values={
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "protocols": protocols,
+                    "tags": tags,
+                    "gatewayId": gateway_id,
+                },
+            ),
+        )
+        return WebAppResource(**result["entity"])
+
     def resource_update(
         self: TwingateClientProtocol,
         id: str,
         resource_type: ResourceType,
         **graphql_arguments,
-    ) -> NetworkResource | KubernetesResource | None:
+    ) -> NetworkResource | KubernetesResource | WebAppResource | None:
         if resource_type == ResourceType.KUBERNETES:
             return self.kubernetes_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
+
+        if resource_type == ResourceType.WEB_APP:
+            return self.web_app_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
 
         return self.network_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
 
@@ -674,6 +824,40 @@ class TwingateResourceAPIs:
             ),
         )
         return KubernetesResource(**result["entity"])
+
+    def web_app_resource_update(
+        self: TwingateClientProtocol,
+        *,
+        id: str,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        protocols: dict[str, Any],
+        tags: list[dict[str, str]],
+        gateway_id: str,
+    ) -> WebAppResource | None:
+        result = self.execute_mutation(
+            "webAppResourceUpdate",
+            GraphQLRequest(
+                MUT_UPDATE_WEB_APP_RESOURCE,
+                variable_values={
+                    "id": id,
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "protocols": protocols,
+                    "tags": tags,
+                    "gatewayId": gateway_id,
+                },
+            ),
+        )
+        return WebAppResource(**result["entity"])
 
     def kubernetes_resource_update_ca_cert(
         self: TwingateClientProtocol,

@@ -191,6 +191,7 @@ class ResourceProxy(BaseModel):
 class ResourceType(StrEnum):
     NETWORK = "Network"
     KUBERNETES = "Kubernetes"
+    WEB_APP = "WebApp"
 
 
 class ResourceSpec(BaseModel):
@@ -233,14 +234,23 @@ class ResourceSpec(BaseModel):
         has_proxy = self.proxy is not None
         has_gateway_ref = self.gateway_ref is not None
 
-        if self.type == ResourceType.NETWORK and (has_proxy or has_gateway_ref):
-            raise ValueError("Network resources cannot set `proxy` or `gatewayRef`.")
-
-        if self.type == ResourceType.KUBERNETES and has_proxy == has_gateway_ref:
-            raise ValueError(
-                "Kubernetes resources require exactly one of `proxy` (deprecated) "
-                "or `gatewayRef`."
-            )
+        match self.type:
+            case ResourceType.NETWORK:
+                if has_proxy or has_gateway_ref:
+                    raise ValueError(
+                        "Network resources cannot set `proxy` or `gatewayRef`."
+                    )
+            case ResourceType.KUBERNETES:
+                if has_proxy == has_gateway_ref:
+                    raise ValueError(
+                        "Kubernetes resources require exactly one of `proxy` "
+                        "(deprecated) or `gatewayRef`."
+                    )
+            case ResourceType.WEB_APP:
+                if has_proxy:
+                    raise ValueError("WebApp resources cannot set `proxy`.")
+                if not has_gateway_ref:
+                    raise ValueError("WebApp resources require `gatewayRef`.")
 
         return self
 
@@ -290,6 +300,15 @@ class ResourceSpec(BaseModel):
                         "proxy_address": resource_proxy.address,
                         "certificate_authority_cert": ca_cert,
                     }
+            case ResourceType.WEB_APP:
+                gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
+                graphql_args |= {
+                    "gateway_id": resolve_ref_to_twingate_id(
+                        "twingategateways",
+                        gateway_ref.namespace,
+                        gateway_ref.name,
+                    ),
+                }
 
         return graphql_args
 

@@ -516,6 +516,68 @@ def test_kubernetes_resource_with_gateway_ref_name_required(unique_resource_name
     assert "spec.gatewayRef.name: Required value" in stderr
 
 
+def test_web_app_resource_with_gateway_ref_accepted(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My WebApp Resource
+          address: "webapp.default.svc.cluster.local"
+          type: WebApp
+          gatewayRef:
+            name: my-gateway
+        """
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_web_app_resource_must_have_gateway_ref(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "WebApp Resource requires gatewayRef" in stderr
+
+
+def test_web_app_resource_cannot_have_proxy(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              proxy:
+                address: "my-proxy.default.cluster.local"
+                certificateAuthorityCert: "base64-encoded-cert"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "WebApp Resource requires gatewayRef and no proxy" in stderr
+
+
 def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(

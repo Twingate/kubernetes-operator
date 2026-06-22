@@ -519,6 +519,51 @@ def test_network_resource_rejects_gateway_ref():
         )
 
 
+def test_web_app_resource_requires_gateway_ref():
+    with pytest.raises(ValueError, match="WebApp resources require `gatewayRef`"):
+        ResourceSpec(
+            name="My WebApp Resource",
+            address="webapp.default.cluster.local",
+            type=ResourceType.WEB_APP,
+        )
+
+
+def test_web_app_resource_rejects_proxy():
+    with pytest.raises(ValueError, match="WebApp resources cannot set `proxy`"):
+        ResourceSpec(
+            name="My WebApp Resource",
+            address="webapp.default.cluster.local",
+            type=ResourceType.WEB_APP,
+            proxy=ResourceProxy(
+                address="proxy.default.cluster.local",
+                certificate_authority_cert=BASE64_OF_VALID_CA_CERT,
+            ),
+            gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        )
+
+
+def test_web_app_resource_spec_to_graphql_arguments():
+    resource_spec = ResourceSpec(
+        name="My WebApp Resource",
+        address="webapp.default.cluster.local",
+        type=ResourceType.WEB_APP,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
+    )
+
+    with patch(
+        "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
+    ) as resolve_mock:
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={"key": "value"}, exclude={"id"}
+        )
+
+    resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
+    assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
+    assert "proxy_address" not in graphql_arguments
+    assert "gateway_ref" not in graphql_arguments
+    assert "type" not in graphql_arguments
+
+
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
     sample_network_resource_object,
 ):

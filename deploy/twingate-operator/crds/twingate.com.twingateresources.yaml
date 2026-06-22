@@ -20,8 +20,8 @@ spec:
               x-kubernetes-validations:
                 - rule: (self.isBrowserShortcutEnabled && !(self.address.contains('*') || self.address.contains('?'))) || (self.isBrowserShortcutEnabled == false)
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
-                - rule: (self.type == "Network" && !has(self.proxy) && !has(self.gatewayRef)) || (self.type == "Kubernetes" && (has(self.proxy) != has(self.gatewayRef)))
-                  message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; Network Resource allows neither"
+                - rule: (self.type == "Network" && !has(self.proxy) && !has(self.gatewayRef)) || (self.type == "Kubernetes" && (has(self.proxy) != has(self.gatewayRef))) || (self.type == "WebApp" && has(self.gatewayRef) && !has(self.proxy))
+                  message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; WebApp Resource requires gatewayRef and no proxy; Network Resource allows neither"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
                   message: "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
               required: ["name", "address"]
@@ -133,6 +133,7 @@ spec:
                   enum:
                     - Network
                     - Kubernetes
+                    - WebApp
                   x-kubernetes-validations:
                     - rule: self == oldSelf
                       message: "Resource type is immutable"
@@ -163,7 +164,7 @@ spec:
                 gatewayRef:
                   type: object
                   required: ["name"]
-                  description: "Reference to the TwingateGateway this Kubernetes Resource is served by. Replaces the deprecated proxy field."
+                  description: "Reference to the TwingateGateway this Kubernetes or WebApp Resource is served by. For Kubernetes Resources it replaces the deprecated proxy field."
                   properties:
                     name:
                       type: string

@@ -20,3 +20,15 @@ spec:
   alias: k8s-cluster.int
   gatewayRef:
     name: example-gateway
+---
+apiVersion: twingate.com/v1beta
+kind: TwingateResource
+metadata:
+  name: my-web-app-resource
+spec:
+  type: WebApp
+  name: My Web App
+  address: web-app.default.svc.cluster.local
+  alias: web-app.int
+  gatewayRef:
+    name: example-gateway

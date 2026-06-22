@@ -35,11 +35,21 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     # than updating in place. `name` is only used when creating and is immutable.
     old_id = ca_spec.id
     backend = client.get_x509_certificate_authority(old_id) if old_id else None
-    if backend and backend.fingerprint == desired_fingerprint:
+    backend_fingerprint = (
+        backend.fingerprint.upper() if backend and backend.fingerprint else None
+    )
+    if backend_fingerprint == desired_fingerprint:
         return success(twingate_id=old_id)
 
     name = ca_spec.name
     if backend is not None:
+        logger.info(
+            "Certificate authority %s drifted (backend fingerprint %s, "
+            "desired %s); re-creating.",
+            old_id,
+            backend_fingerprint,
+            desired_fingerprint,
+        )
         # The old CA still holds `ca_spec.name` until the cleanup cron reaps it, and
         # the backend rejects duplicate names - so suffix this re-create's name.
         timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")

@@ -19,7 +19,7 @@ class TestTwingateCertificateAuthorityAPIs:
                         "__typename": "X509CertificateAuthority",
                         "id": "ca-id",
                         "name": "My CA",
-                        "fingerprint": "ab:cd",
+                        "fingerprint": "AB:CD",
                     }
                 }
             }
@@ -82,7 +82,7 @@ class TestTwingateCertificateAuthorityAPIs:
                         "entity": {
                             "id": "ca-id",
                             "name": "My CA",
-                            "fingerprint": "ab:cd",
+                            "fingerprint": "AB:CD",
                         },
                     }
                 }

@@ -192,7 +192,7 @@ def twingate_ca_id_changed(
         try:
             _reconcile_gateway(gw_obj, gw_obj["spec"], logger, memo, patch)
         except kopf.TemporaryError as err:
-            # CA/service not ready yet - retry the event.
+            # Service not ready yet - retry the event.
             logger.warning(
                 "Gateway %s/%s not ready after CA change, will retry: %s",
                 gw_namespace,

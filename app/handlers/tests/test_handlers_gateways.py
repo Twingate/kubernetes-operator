@@ -285,20 +285,35 @@ class TestGatewayCaIdChanged:
         mock_resolve_service_address,
         mock_resolve_ref_to_twingate_id,
     ):
-        mock_get_obj.return_value = {
-            "metadata": {"namespace": "default", "name": "my-gw"},
-            "spec": {**_spec(with_id=True)},
-        }
+        # Two Gateways reference the same CA - the handler must reconcile both, not
+        # just the first ref.
+        mock_get_obj.side_effect = [
+            {
+                "metadata": {"namespace": "default", "name": name},
+                "spec": {**_spec(with_id=True)},
+            }
+            for name in ("my-gw", "my-gw-2")
+        ]
         mock_api_client.get_gateway.return_value = Gateway(
             id="gateway-id", address="old-addr"
         )
 
-        self._call(self._index())
+        self._call(
+            self._index(
+                [
+                    {"namespace": "default", "name": "my-gw"},
+                    {"namespace": "default", "name": "my-gw-2"},
+                ]
+            )
+        )
 
-        mock_api_client.gateway_update.assert_called_once()
-        plural, _ns, _name, shim = mock_patch_obj.call_args.args
-        assert plural == "twingategateways"
-        assert shim.status["x509CaId"] == "ca-backend-id"
+        assert mock_get_obj.call_count == 2
+        assert mock_api_client.gateway_update.call_count == 2
+        assert mock_patch_obj.call_count == 2
+        for call in mock_patch_obj.call_args_list:
+            plural, _ns, _name, shim = call.args
+            assert plural == "twingategateways"
+            assert shim.status["x509CaId"] == "ca-backend-id"
 
     def test_noop_when_id_unset(self, mock_get_obj, mock_patch_obj, mock_api_client):
         self._call(self._index(), new=None)

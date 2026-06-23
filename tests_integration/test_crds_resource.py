@@ -599,7 +599,7 @@ def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
 
     stderr = ex.value.stderr.decode()
     assert (
-        "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
+        "isBrowserShortcutEnabled can only be set to true for Network Resources"
         in stderr
     )
 

@@ -281,14 +281,19 @@ class TestCertificateAuthoritySecretWatch:
         mock_get_certificate,
         mock_fingerprint,
     ):
-        mock_get_obj.return_value = {
-            "metadata": {"namespace": "default", "name": "my-ca"},
-            "spec": {
-                "name": "My CA",
-                "secretRef": {"name": "gateway-tls"},
-                "id": "ca-id",
-            },
-        }
+        # Two CAs reference the same Secret - the handler must reconcile both, not
+        # just the first ref.
+        mock_get_obj.side_effect = [
+            {
+                "metadata": {"namespace": "default", "name": name},
+                "spec": {
+                    "name": "My CA",
+                    "secretRef": {"name": "gateway-tls"},
+                    "id": "ca-id",
+                },
+            }
+            for name in ("my-ca", "my-ca-2")
+        ]
         mock_api_client.get_x509_certificate_authority.return_value = (
             CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
@@ -296,13 +301,22 @@ class TestCertificateAuthoritySecretWatch:
             CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
-        self._call(self._index())
+        self._call(
+            self._index(
+                [
+                    {"namespace": "default", "name": "my-ca"},
+                    {"namespace": "default", "name": "my-ca-2"},
+                ]
+            )
+        )
 
-        mock_api_client.x509_certificate_authority_create.assert_called_once()
-        mock_patch_obj.assert_called_once()
-        plural, _ns, _name, shim = mock_patch_obj.call_args.args
-        assert plural == "twingatecertificateauthorities"
-        assert shim.spec == {"id": "recreated-id"}
+        assert mock_get_obj.call_count == 2
+        assert mock_api_client.x509_certificate_authority_create.call_count == 2
+        assert mock_patch_obj.call_count == 2
+        for call in mock_patch_obj.call_args_list:
+            plural, _ns, _name, shim = call.args
+            assert plural == "twingatecertificateauthorities"
+            assert shim.spec == {"id": "recreated-id"}
 
     def test_skips_non_modified_events(
         self, mock_get_obj, mock_patch_obj, mock_api_client

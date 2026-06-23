@@ -9,7 +9,7 @@ from app.api.protocol import TwingateClientProtocol
 class CertificateAuthority(BaseModel):
     id: str
     name: str
-    fingerprint: str | None = None
+    fingerprint: str
 
 
 _X509_CA_FRAGMENT = """

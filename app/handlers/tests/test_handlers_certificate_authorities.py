@@ -61,7 +61,7 @@ class TestCertificateAuthorityCreateHandler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="new-ca-id", name="My CA")
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec())
@@ -94,7 +94,7 @@ class TestCertificateAuthorityCreateHandler:
         # spec.id is set but the backend CA is gone - recreate, nothing to delete.
         mock_api_client.get_x509_certificate_authority.return_value = None
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -116,7 +116,7 @@ class TestCertificateAuthorityCreateHandler:
             CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -161,7 +161,7 @@ class TestCertificateAuthorityReconciler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="new-ca-id", name="My CA")
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
         patch_mock = MagicMock()
         patch_mock.spec = {}
@@ -293,7 +293,7 @@ class TestCertificateAuthoritySecretWatch:
             CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         self._call(self._index())

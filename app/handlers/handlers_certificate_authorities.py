@@ -35,9 +35,7 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     # than updating in place. `name` is only used when creating and is immutable.
     old_id = ca_spec.id
     backend = client.get_x509_certificate_authority(old_id) if old_id else None
-    backend_fingerprint = (
-        backend.fingerprint.upper() if backend and backend.fingerprint else None
-    )
+    backend_fingerprint = backend.fingerprint.upper() if backend else None
     if backend_fingerprint == desired_fingerprint:
         return success(twingate_id=old_id)
 

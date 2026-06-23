@@ -301,6 +301,8 @@ class ResourceSpec(BaseModel):
                         "certificate_authority_cert": ca_cert,
                     }
             case ResourceType.WEB_APP:
+                # WebApp Resources are not port-based, so protocols don't apply.
+                graphql_args.pop("protocols", None)
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
                 graphql_args |= {
                     "gateway_id": resolve_ref_to_twingate_id(

@@ -449,7 +449,6 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
         $address: String!
         $alias: String
         $isVisible: Boolean
-        $protocols: ProtocolsInput
         $remoteNetworkId: ID!
         $securityPolicyId: ID
         $tags: [TagInput!]
@@ -460,7 +459,6 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             address: $address
             alias: $alias
             isVisible: $isVisible
-            protocols: $protocols
             remoteNetworkId: $remoteNetworkId
             securityPolicyId: $securityPolicyId
             tags: $tags
@@ -559,7 +557,6 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
         $address: String
         $alias: String
         $isVisible: Boolean
-        $protocols: ProtocolsInput
         $remoteNetworkId: ID
         $securityPolicyId: ID
         $tags: [TagInput!]
@@ -571,7 +568,6 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             address: $address
             alias: $alias
             isVisible: $isVisible
-            protocols: $protocols
             remoteNetworkId: $remoteNetworkId
             securityPolicyId: $securityPolicyId
             tags: $tags
@@ -716,7 +712,6 @@ class TwingateResourceAPIs:
         is_visible: bool,
         remote_network_id: str,
         security_policy_id: str | None,
-        protocols: dict[str, Any],
         tags: list[dict[str, str]],
         gateway_id: str,
     ) -> WebAppResource:
@@ -731,7 +726,6 @@ class TwingateResourceAPIs:
                     "isVisible": is_visible,
                     "remoteNetworkId": remote_network_id,
                     "securityPolicyId": security_policy_id,
-                    "protocols": protocols,
                     "tags": tags,
                     "gatewayId": gateway_id,
                 },
@@ -835,7 +829,6 @@ class TwingateResourceAPIs:
         is_visible: bool,
         remote_network_id: str,
         security_policy_id: str | None,
-        protocols: dict[str, Any],
         tags: list[dict[str, str]],
         gateway_id: str,
     ) -> WebAppResource | None:
@@ -851,7 +844,6 @@ class TwingateResourceAPIs:
                     "isVisible": is_visible,
                     "remoteNetworkId": remote_network_id,
                     "securityPolicyId": security_policy_id,
-                    "protocols": protocols,
                     "tags": tags,
                     "gatewayId": gateway_id,
                 },

@@ -562,6 +562,7 @@ def test_web_app_resource_spec_to_graphql_arguments():
     assert "proxy_address" not in graphql_arguments
     assert "gateway_ref" not in graphql_arguments
     assert "type" not in graphql_arguments
+    assert "protocols" not in graphql_arguments
 
 
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(

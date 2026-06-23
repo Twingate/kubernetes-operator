@@ -55,6 +55,30 @@ class TestTwingateCertificateAuthorityAPIs:
         )
         assert api_client.get_x509_certificate_authority("ca-id") is None
 
+    def test_get_x509_certificate_authority_non_x509_returns_none(
+        self, test_url, api_client, mocked_responses
+    ):
+        # `certificateAuthority` is a union; a non-X509 type comes back as just
+        # `__typename`, which is treated as "not found".
+        success_response = json.dumps(
+            {
+                "data": {
+                    "certificateAuthority": {"__typename": "SSHCertificateAuthority"}
+                }
+            }
+        )
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": "ca-id"}}, strict_match=False
+                )
+            ],
+        )
+        assert api_client.get_x509_certificate_authority("ca-id") is None
+
     def test_get_x509_certificate_authority_transport_error_returns_none(
         self, test_url, api_client, mocked_responses
     ):

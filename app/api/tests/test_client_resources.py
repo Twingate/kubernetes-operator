@@ -296,6 +296,22 @@ class TestWebAppResourceModel:
                 "upstream": Diff(remote=resource.upstream.port, local=9090),
             }
 
+    def test_get_spec_diff_ignores_protocols(self, web_app_resource_factory):
+        # WebApp is not port-based; protocols are not sent on update, so they must
+        # not appear in the diff even when the CRD sets non-default protocols.
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            protocols=ResourceProtocols(
+                tcp=ResourceProtocol(policy=ProtocolPolicy.RESTRICTED)
+            ).model_dump(),
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd) == {}
+
 
 class TestResourceFactory:
     def test_name_is_used_for_address(self, base_resource_factory):

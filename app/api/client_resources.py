@@ -335,6 +335,9 @@ class WebAppResource(BaseResource):
 
     def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
         diff = super().get_spec_diff(crd)
+        # WebApp is not port-based; protocols are not sent on update, so diffing
+        # them would cause a non-converging reconcile loop.
+        diff.pop("protocols", None)
 
         remote_gateway_id = self.gateway.id if self.gateway else None
         crd_gateway_id = (

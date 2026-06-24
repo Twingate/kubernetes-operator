@@ -165,9 +165,10 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
         }
         for port_obj in spec.get("ports", []):
             port = port_obj["port"]
-            if port_obj["protocol"] == "TCP":
+            protocol = port_obj.get("protocol", "TCP")
+            if protocol == "TCP":
                 protocols["tcp"]["ports"].append({"start": port, "end": port})
-            elif port_obj["protocol"] == "UDP":
+            elif protocol == "UDP":
                 protocols["udp"]["ports"].append({"start": port, "end": port})
 
         result["spec"]["protocols"] = protocols

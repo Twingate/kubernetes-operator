@@ -140,6 +140,23 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
 
 
 @kopf.index("twingateresource")
+def twingate_resource_gateway_index(namespace, name, spec, **_):
+    gw_ref = spec.get("gatewayRef", {})
+    gw_name = gw_ref.get("name")
+    gw_namespace = gw_ref.get("namespace") or namespace
+
+    if not gw_name:
+        return None
+
+    return {
+        (gw_namespace, gw_name): {
+            "namespace": namespace,
+            "name": name,
+        },
+    }
+
+
+@kopf.index("twingateresource")
 def twingate_resource_secret_index(namespace, name, spec, **_):
     proxy = spec.get("proxy", {})
     secret_ref = proxy.get("certificateAuthorityCertSecretRef", {})

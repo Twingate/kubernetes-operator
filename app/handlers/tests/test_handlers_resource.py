@@ -7,6 +7,7 @@ from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_resource import (
     twingate_resource_create,
     twingate_resource_delete,
+    twingate_resource_gateway_index,
     twingate_resource_secret_index,
     twingate_resource_sync,
     twingate_resource_update,
@@ -668,6 +669,40 @@ class TestTwingateResourceSecretIndex:
         }
         result = twingate_resource_secret_index(
             namespace="default", name="my-resource-crd", spec=spec
+        )
+
+        assert result is None
+
+
+class TestTwingateResourceGatewayIndex:
+    def test_maps_gateway_to_resource(self):
+        result = twingate_resource_gateway_index(
+            namespace="default",
+            name="my-resource-crd",
+            spec={"gatewayRef": {"name": "my-gw"}},
+        )
+
+        assert result == {
+            ("default", "my-gw"): {
+                "namespace": "default",
+                "name": "my-resource-crd",
+            },
+        }
+
+    def test_uses_gateway_namespace_when_set(self):
+        result = twingate_resource_gateway_index(
+            namespace="ns1",
+            name="my-resource-crd",
+            spec={"gatewayRef": {"name": "my-gw", "namespace": "ns2"}},
+        )
+
+        assert result == {
+            ("ns2", "my-gw"): {"namespace": "ns1", "name": "my-resource-crd"}
+        }
+
+    def test_none_without_gateway_ref(self):
+        result = twingate_resource_gateway_index(
+            namespace="default", name="my-resource-crd", spec={}
         )
 
         assert result is None

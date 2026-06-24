@@ -8,6 +8,7 @@ from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
 from app.crds import GatewaySpec, TwingateCertificateAuthorityCRD, TwingateGatewayCRD
 from app.handlers.base import fail, success
+from app.handlers.handlers_certificate_authorities import try_delete_ca
 from app.utils_k8s import (
     k8s_get_twingate_custom_object,
     k8s_patch_twingate_custom_object,
@@ -16,7 +17,7 @@ from app.utils_k8s import (
 )
 
 
-def _reconcile_gateway(body, spec, logger, memo, patch):
+def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
     gw_spec = GatewaySpec(**spec)
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings, logger=logger)
@@ -45,6 +46,9 @@ def _reconcile_gateway(body, spec, logger, memo, patch):
             address=address,
             x509_ca_id=x509_ca_id,
         )
+        old_x509_ca_id = (status or {}).get("x509CaId")
+        if old_x509_ca_id and old_x509_ca_id != x509_ca_id:
+            try_delete_ca(client, old_x509_ca_id, logger)
         return success(twingate_id=gw_spec.id)
 
     if gw_spec.id:
@@ -65,7 +69,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch):
 
 # Bound retries so a bad ref (e.g. a typo) eventually fails instead of retrying
 # forever; the timer reconciler still recovers it if the ref is later fixed.
-GATEWAY_HANDLER_TIMEOUT = int(os.environ.get("GATEWAY_HANDLER_TIMEOUT", timedelta(minutes=10).seconds))  # fmt: skip
+GATEWAY_HANDLER_TIMEOUT = int(os.environ.get("GATEWAY_HANDLER_TIMEOUT", timedelta(minutes=5).seconds))  # fmt: skip
 
 
 @kopf.on.resume(TwingateGatewayCRD.PLURAL, timeout=GATEWAY_HANDLER_TIMEOUT)
@@ -73,7 +77,9 @@ GATEWAY_HANDLER_TIMEOUT = int(os.environ.get("GATEWAY_HANDLER_TIMEOUT", timedelt
 @kopf.on.update(
     TwingateGatewayCRD.PLURAL, field="spec", timeout=GATEWAY_HANDLER_TIMEOUT
 )
-def twingate_gateway_create_update(body, spec, logger, memo, patch, **kwargs):
+def twingate_gateway_create_update(
+    body, spec, logger, memo, patch, status=None, **kwargs
+):
     logger.info("twingate_gateway_create_update: %s", spec)
 
     # If ID changed from `None` to a value we just created it - no need to
@@ -86,7 +92,7 @@ def twingate_gateway_create_update(body, spec, logger, memo, patch, **kwargs):
     # fmt: on
 
     try:
-        return _reconcile_gateway(body, spec, logger, memo, patch)
+        return _reconcile_gateway(body, spec, logger, memo, patch, status=status)
     except GraphQLMutationError as gqlerr:
         logger.error("Failed to reconcile gateway: %s", gqlerr)
         kopf.exception(body, reason="Failed to reconcile gateway", exc=gqlerr)
@@ -106,12 +112,16 @@ GATEWAY_RECONCILER_IDLE = int(os.environ.get("GATEWAY_RECONCILER_IDLE", 60))  # 
     initial_delay=GATEWAY_RECONCILER_INIT_DELAY,
     idle=GATEWAY_RECONCILER_IDLE,
 )
-def twingate_gateway_reconciler(body, spec, logger, memo, patch, **_):
-    return _reconcile_gateway(body, spec, logger, memo, patch)
+def twingate_gateway_reconciler(body, spec, logger, memo, patch, status=None, **_):
+    return _reconcile_gateway(body, spec, logger, memo, patch, status=status)
 
 
-@kopf.on.delete(TwingateGatewayCRD.PLURAL)
-def twingate_gateway_delete(spec, status, memo, logger, **_):
+@kopf.on.delete(  # type: ignore[arg-type]
+    TwingateGatewayCRD.PLURAL, timeout=GATEWAY_HANDLER_TIMEOUT
+)
+def twingate_gateway_delete(
+    namespace, name, spec, status, memo, logger, twingate_resource_gateway_index, **_
+):
     logger.info("twingate_gateway_delete: %s. Status: %s", spec, status)
     if not status:
         return
@@ -121,13 +131,22 @@ def twingate_gateway_delete(spec, status, memo, logger, **_):
         try:
             client.gateway_delete(gateway_id)
         except GraphQLMutationError as gqlerr:
-            # Retry while the Gateway is still referenced by a Resource (GC order
-            # is not guaranteed) rather than leaking the backend entity.
-            if "being used" in gqlerr.message:
+            # Surface unexpected errors so kopf retries them (the client already
+            # treats an already-deleted Gateway as success).
+            if "being used" not in gqlerr.message:
+                raise
+            # Still referenced (GC order isn't guaranteed). Retry while a Resource in
+            # this cluster references it; otherwise the ref is stale or managed
+            # elsewhere and won't clear by waiting, so leave it for later cleanup.
+            if twingate_resource_gateway_index.get((namespace, name)):
                 raise kopf.TemporaryError(
-                    "Gateway still in use, retrying.", delay=5
+                    "Gateway still in use by a Resource, retrying.",
+                    delay=5,
                 ) from gqlerr
-            logger.warning("Ignoring gateway delete error: %s", gqlerr)
+            logger.info(
+                "Gateway still in use but unreferenced in this cluster; "
+                "leaving it for later cleanup."
+            )
 
 
 @kopf.index(TwingateGatewayCRD.PLURAL)
@@ -190,7 +209,14 @@ def twingate_ca_id_changed(
         )
         patch = SimpleNamespace(spec={}, status={})
         try:
-            _reconcile_gateway(gw_obj, gw_obj["spec"], logger, memo, patch)
+            _reconcile_gateway(
+                gw_obj,
+                gw_obj["spec"],
+                logger,
+                memo,
+                patch,
+                status=gw_obj.get("status"),
+            )
         except kopf.TemporaryError as err:
             # CA/service not ready yet - retry the event.
             logger.warning(

@@ -32,3 +32,7 @@ spec:
   alias: web-app.int
   gatewayRef:
     name: example-gateway
+  downstream:
+    port: 80
+  upstream:
+    port: 8080

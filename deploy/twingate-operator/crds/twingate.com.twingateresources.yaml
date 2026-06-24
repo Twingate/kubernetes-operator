@@ -22,6 +22,8 @@ spec:
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
                 - rule: (self.type == "Network" && !has(self.proxy) && !has(self.gatewayRef)) || (self.type == "Kubernetes" && (has(self.proxy) != has(self.gatewayRef))) || (self.type == "WebApp" && has(self.gatewayRef) && !has(self.proxy))
                   message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; WebApp Resource requires gatewayRef and no proxy; Network Resource allows neither"
+                - rule: (self.type == "WebApp" && has(self.downstream) && has(self.upstream)) || (self.type != "WebApp" && !has(self.downstream) && !has(self.upstream))
+                  message: "WebApp Resource requires downstream and upstream; other Resource types allow neither"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
                   message: "isBrowserShortcutEnabled can only be set to true for Network Resources"
               required: ["name", "address"]
@@ -173,6 +175,26 @@ spec:
                       type: string
                       default: default
                       description: "Namespace of the TwingateGateway object."
+                downstream:
+                  type: object
+                  required: ["port"]
+                  description: "Downstream (client-facing) configuration for a WebApp Resource."
+                  properties:
+                    port:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      description: "The downstream port."
+                upstream:
+                  type: object
+                  required: ["port"]
+                  description: "Upstream (target) configuration for a WebApp Resource."
+                  properties:
+                    port:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      description: "The upstream port."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

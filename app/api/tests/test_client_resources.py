@@ -280,6 +280,22 @@ class TestWebAppResourceModel:
                 "gateway_id": Diff(remote="gw-1", local="gw-2"),
             }
 
+    def test_get_spec_diff_for_port_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            downstream={"port": 8443},
+            upstream={"port": 9090},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd) == {
+                "downstream": Diff(remote=resource.downstream.port, local=8443),
+                "upstream": Diff(remote=resource.upstream.port, local=9090),
+            }
+
 
 class TestResourceFactory:
     def test_name_is_used_for_address(self, base_resource_factory):
@@ -458,6 +474,8 @@ class TestTwingateResourceAPIs:
                                 "type",
                                 "proxy",
                                 "gateway_ref",
+                                "downstream",
+                                "upstream",
                             ],
                             by_alias=True,
                         )
@@ -506,6 +524,8 @@ class TestTwingateResourceAPIs:
                                 "type",
                                 "proxy",
                                 "gateway_ref",
+                                "downstream",
+                                "upstream",
                             ],
                             by_alias=True,
                         )
@@ -553,6 +573,8 @@ class TestTwingateResourceAPIs:
                                 "type",
                                 "proxy",
                                 "gateway_ref",
+                                "downstream",
+                                "upstream",
                             },
                             by_alias=True,
                         )
@@ -671,6 +693,8 @@ class TestTwingateResourceAPIs:
                                 "type",
                                 "proxy",
                                 "gateway_ref",
+                                "downstream",
+                                "upstream",
                             ],
                             by_alias=True,
                         )
@@ -716,6 +740,8 @@ class TestTwingateResourceAPIs:
                                 "type",
                                 "proxy",
                                 "gateway_ref",
+                                "downstream",
+                                "upstream",
                             },
                             by_alias=True,
                         )
@@ -830,7 +856,13 @@ class TestTwingateResourceAPIs:
             body=success_response,
             match=[
                 responses.matchers.json_params_matcher(
-                    {"variables": {"gatewayId": "gw-1"}},
+                    {
+                        "variables": {
+                            "gatewayId": "gw-1",
+                            "downstream": {"port": resource.downstream.port},
+                            "upstream": {"port": resource.upstream.port},
+                        }
+                    },
                     strict_match=False,
                 )
             ],

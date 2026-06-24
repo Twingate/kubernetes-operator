@@ -10,7 +10,14 @@ from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
-from app.crds import ProtocolPolicy, ResourceProxy, ResourceSpec, ResourceType
+from app.crds import (
+    ProtocolPolicy,
+    ResourceDownstream,
+    ResourceProxy,
+    ResourceSpec,
+    ResourceType,
+    ResourceUpstream,
+)
 from app.utils_k8s import resolve_ref_to_twingate_id
 
 
@@ -309,6 +316,8 @@ class KubernetesResource(BaseResource):
 
 class WebAppResource(BaseResource):
     gateway: ResourceGateway | None = None
+    downstream: ResourceDownstream
+    upstream: ResourceUpstream
 
     @staticmethod
     def get_graphql_fragment():
@@ -318,6 +327,8 @@ class WebAppResource(BaseResource):
             fragment WebAppResourceFields on WebAppResource {
                 ...BaseResourceFields
                 gateway { id }
+                downstream { port }
+                upstream { port }
             }
             """
         )
@@ -338,11 +349,27 @@ class WebAppResource(BaseResource):
         if remote_gateway_id != crd_gateway_id:
             diff["gateway_id"] = Diff(remote=remote_gateway_id, local=crd_gateway_id)
 
+        crd_downstream_port = crd.downstream.port if crd.downstream else None
+        if self.downstream.port != crd_downstream_port:
+            diff["downstream"] = Diff(
+                remote=self.downstream.port, local=crd_downstream_port
+            )
+
+        crd_upstream_port = crd.upstream.port if crd.upstream else None
+        if self.upstream.port != crd_upstream_port:
+            diff["upstream"] = Diff(remote=self.upstream.port, local=crd_upstream_port)
+
         return diff
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
         data: dict[str, Any] = (
-            {"type": ResourceType.WEB_APP} | super().to_spec_dict() | overrides
+            {
+                "type": ResourceType.WEB_APP,
+                "downstream": self.downstream,
+                "upstream": self.upstream,
+            }
+            | super().to_spec_dict()
+            | overrides
         )
         return ResourceSpec(**data)
 
@@ -368,6 +395,8 @@ QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
             }
             ... on WebAppResource {
                 gateway { id }
+                downstream { port }
+                upstream { port }
             }
         }
     }
@@ -453,6 +482,8 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
         $securityPolicyId: ID
         $tags: [TagInput!]
         $gatewayId: ID!
+        $downstream: WebAppDownstreamInput!
+        $upstream: WebAppUpstreamInput!
     ) {
         webAppResourceCreate(
             name: $name
@@ -463,6 +494,8 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             securityPolicyId: $securityPolicyId
             tags: $tags
             gatewayId: $gatewayId
+            downstream: $downstream
+            upstream: $upstream
         ) {
             ok
             error
@@ -561,6 +594,8 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
         $securityPolicyId: ID
         $tags: [TagInput!]
         $gatewayId: ID
+        $downstream: WebAppDownstreamInput
+        $upstream: WebAppUpstreamInput
     ) {
         webAppResourceUpdate(
             id: $id,
@@ -572,6 +607,8 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             securityPolicyId: $securityPolicyId
             tags: $tags
             gatewayId: $gatewayId
+            downstream: $downstream
+            upstream: $upstream
         ) {
             ok
             error
@@ -714,6 +751,8 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         tags: list[dict[str, str]],
         gateway_id: str,
+        downstream: dict[str, Any],
+        upstream: dict[str, Any],
     ) -> WebAppResource:
         result = self.execute_mutation(
             "webAppResourceCreate",
@@ -728,6 +767,8 @@ class TwingateResourceAPIs:
                     "securityPolicyId": security_policy_id,
                     "tags": tags,
                     "gatewayId": gateway_id,
+                    "downstream": downstream,
+                    "upstream": upstream,
                 },
             ),
         )
@@ -831,6 +872,8 @@ class TwingateResourceAPIs:
         security_policy_id: str | None,
         tags: list[dict[str, str]],
         gateway_id: str,
+        downstream: dict[str, Any],
+        upstream: dict[str, Any],
     ) -> WebAppResource | None:
         result = self.execute_mutation(
             "webAppResourceUpdate",
@@ -846,6 +889,8 @@ class TwingateResourceAPIs:
                     "securityPolicyId": security_policy_id,
                     "tags": tags,
                     "gatewayId": gateway_id,
+                    "downstream": downstream,
+                    "upstream": upstream,
                 },
             ),
         )

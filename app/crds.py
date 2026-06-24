@@ -33,6 +33,9 @@ OptionalK8sObject = K8sObject | None
 
 logger = logging.getLogger(__name__)
 
+MIN_PORT = 1
+MAX_PORT = 65535
+
 
 class K8sMetadata(BaseModel):
     model_config = ConfigDict(
@@ -83,8 +86,8 @@ class ProtocolRange(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    start: int = Field(ge=1, le=65535)
-    end: int = Field(ge=1, le=65535)
+    start: int = Field(ge=MIN_PORT, le=MAX_PORT)
+    end: int = Field(ge=MIN_PORT, le=MAX_PORT)
 
     @model_validator(mode="after")
     def check_ports(self):
@@ -188,6 +191,22 @@ class ResourceProxy(BaseModel):
         return None
 
 
+class ResourceDownstream(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
+
+
+class ResourceUpstream(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
+
+
 class ResourceType(StrEnum):
     NETWORK = "Network"
     KUBERNETES = "Kubernetes"
@@ -216,6 +235,9 @@ class ResourceSpec(BaseModel):
     proxy: ResourceProxy | None = None
     # Reference to a TwingateGateway, the replacement for `proxy`.
     gateway_ref: _KubernetesObjectRef | None = None
+    # Endpoint configuration for PAM resources; currently only used by WebApp.
+    downstream: ResourceDownstream | None = None
+    upstream: ResourceUpstream | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -233,6 +255,7 @@ class ResourceSpec(BaseModel):
     def check_proxy_and_gateway_ref(self):
         has_proxy = self.proxy is not None
         has_gateway_ref = self.gateway_ref is not None
+        has_endpoints = self.downstream is not None or self.upstream is not None
 
         match self.type:
             case ResourceType.NETWORK:
@@ -240,17 +263,29 @@ class ResourceSpec(BaseModel):
                     raise ValueError(
                         "Network resources cannot set `proxy` or `gatewayRef`."
                     )
+                if has_endpoints:
+                    raise ValueError(
+                        "Network resources cannot set `downstream` or `upstream`."
+                    )
             case ResourceType.KUBERNETES:
                 if has_proxy == has_gateway_ref:
                     raise ValueError(
                         "Kubernetes resources require exactly one of `proxy` "
                         "(deprecated) or `gatewayRef`."
                     )
+                if has_endpoints:
+                    raise ValueError(
+                        "Kubernetes resources cannot set `downstream` or `upstream`."
+                    )
             case ResourceType.WEB_APP:
                 if has_proxy:
                     raise ValueError("WebApp resources cannot set `proxy`.")
                 if not has_gateway_ref:
                     raise ValueError("WebApp resources require `gatewayRef`.")
+                if self.downstream is None or self.upstream is None:
+                    raise ValueError(
+                        "WebApp resources require `downstream` and `upstream`."
+                    )
 
         return self
 
@@ -264,6 +299,8 @@ class ResourceSpec(BaseModel):
             "proxy",
             "type",
             "gateway_ref",
+            "downstream",
+            "upstream",
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
@@ -304,12 +341,16 @@ class ResourceSpec(BaseModel):
                 # WebApp Resources are not port-based, so protocols don't apply.
                 graphql_args.pop("protocols", None)
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
+                downstream = cast(ResourceDownstream, self.downstream)
+                upstream = cast(ResourceUpstream, self.upstream)
                 graphql_args |= {
                     "gateway_id": resolve_ref_to_twingate_id(
                         "twingategateways",
                         gateway_ref.namespace,
                         gateway_ref.name,
                     ),
+                    "downstream": downstream.model_dump(by_alias=True),
+                    "upstream": upstream.model_dump(by_alias=True),
                 }
 
         return graphql_args
@@ -365,7 +406,7 @@ class TwingateCertificateAuthorityCRD(BaseK8sModel):
 
 class _ServiceRef(_KubernetesObjectRef):
     # Port the Gateway is reachable on. The host is resolved from the Service.
-    port: int = Field(ge=1, le=65535)
+    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
 
 
 class GatewaySpec(BaseModel):

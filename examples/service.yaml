@@ -29,6 +29,11 @@ metadata:
     resource.twingate.com/gatewayName: "example-gateway"
     # Optional. Namespace of the TwingateGateway. Defaults to the Service's namespace.
     # resource.twingate.com/gatewayNamespace: "twingate"
+    # Downstream (client-facing) port.
+    resource.twingate.com/downstreamPort: "80"
+    # Optional. Upstream (target) port. Defaults to the Service's port when it
+    # exposes exactly one; required if the Service exposes multiple ports.
+    # resource.twingate.com/upstreamPort: "8080"
     resource.twingate.com/alias: "webapp.internal"
 spec:
   selector:

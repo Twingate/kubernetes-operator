@@ -126,6 +126,8 @@ def example_webapp_service_body():
         resource.twingate.com: "true"
         resource.twingate.com/type: "WebApp"
         resource.twingate.com/gatewayName: "example-gateway"
+        resource.twingate.com/downstreamPort: "80"
+        resource.twingate.com/upstreamPort: "8080"
         resource.twingate.com/alias: "alias.int"
     spec:
       selector:
@@ -322,6 +324,8 @@ class TestServiceToTwingateResource:
                 "name": "example-gateway",
                 "namespace": namespace,
             },
+            "downstream": {"port": 80},
+            "upstream": {"port": 8080},
         }
 
     def test_webapp_resource_type_annotation_with_explicit_gateway_namespace(
@@ -350,6 +354,73 @@ class TestServiceToTwingateResource:
         with pytest.raises(
             kopf.PermanentError,
             match=r"resource.twingate.com/gatewayName annotation is required",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_type_annotation_without_downstream_port(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ]
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/downstreamPort annotation is required",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_upstream_port_defaults_to_single_service_port(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ]
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        # The fixture Service exposes a single TCP port (443).
+        assert result["spec"]["upstream"] == {"port": 443}
+
+    def test_webapp_resource_upstream_port_required_when_multiple_service_ports(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ]
+        example_webapp_service_body.spec["ports"].append(
+            {"name": "http", "protocol": "TCP", "port": 8080, "targetPort": "http"}
+        )
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamPort annotation is required",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_non_integer_downstream_port(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ] = "not-a-number"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/downstreamPort annotation must be an integer",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_non_integer_upstream_port(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ] = "not-a-number"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamPort annotation must be an integer",
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
 

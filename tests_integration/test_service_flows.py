@@ -544,6 +544,7 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
             resource.twingate.com: "true"
             resource.twingate.com/type: "WebApp"
             resource.twingate.com/gatewayName: "{gw_name}"
+            resource.twingate.com/downstreamPort: "80"
             resource.twingate.com/alias: "webapp.internal"
         spec:
           selector:
@@ -551,7 +552,7 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
           ports:
             - name: http
               protocol: TCP
-              port: 80
+              port: 8080
               targetPort: http
     """
 
@@ -563,11 +564,11 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
         try:
             # The WebApp's gatewayRef needs a synced Gateway, which needs a CA + Service.
             kubectl_create(create_tls_secret(secret_name, generate_base64_ca_cert()))
-            kubectl_create(GW_SERVICE_OBJ)
             kubectl_create(CA_OBJ)
             kubectl_wait_object_handler_success(
                 "tgca", ca_name, "twingate_certificate_authority_create"
             )
+            kubectl_create(GW_SERVICE_OBJ)
             kubectl_create(GW_OBJ)
             gw = kubectl_wait_object_handler_success(
                 "tggw", gw_name, "twingate_gateway_create_update"
@@ -583,6 +584,8 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
                 "address": f"{service_name}.default.svc.cluster.local",
                 "alias": "webapp.internal",
                 "gatewayRef": {"name": gw_name, "namespace": "default"},
+                "downstream": {"port": 80},
+                "upstream": {"port": 8080},
                 "id": ANY,
                 "isBrowserShortcutEnabled": False,
                 "isVisible": True,
@@ -600,6 +603,7 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
             kubectl_delete_wait("tgca", ca_name)
         finally:
             # run_kopf only cleans up twingate CRs, not these helper objects.
+            kubectl(f"delete service {service_name} --ignore-not-found")
             kubectl(f"delete service {gw_svc_name} --ignore-not-found")
             kubectl(f"delete secret {secret_name} --ignore-not-found")
 

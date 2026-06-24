@@ -8,10 +8,12 @@ from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
 from app.crds import (
     ProtocolPolicy,
     ProtocolRange,
+    ResourceDownstream,
     ResourceProtocol,
     ResourceProxy,
     ResourceSpec,
     ResourceType,
+    ResourceUpstream,
     TwingateResourceCRD,
     _KubernetesObjectRef,
 )
@@ -542,12 +544,38 @@ def test_web_app_resource_rejects_proxy():
         )
 
 
+def test_web_app_resource_requires_downstream_and_upstream():
+    with pytest.raises(
+        ValueError, match="WebApp resources require `downstream` and `upstream`"
+    ):
+        ResourceSpec(
+            name="My WebApp Resource",
+            address="webapp.default.cluster.local",
+            type=ResourceType.WEB_APP,
+            gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        )
+
+
+def test_network_resource_rejects_downstream_and_upstream():
+    with pytest.raises(
+        ValueError, match="Network resources cannot set `downstream` or `upstream`"
+    ):
+        ResourceSpec(
+            name="My Network Resource",
+            address="network.default.cluster.local",
+            downstream=ResourceDownstream(port=80),
+            upstream=ResourceUpstream(port=8080),
+        )
+
+
 def test_web_app_resource_spec_to_graphql_arguments():
     resource_spec = ResourceSpec(
         name="My WebApp Resource",
         address="webapp.default.cluster.local",
         type=ResourceType.WEB_APP,
         gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
+        downstream=ResourceDownstream(port=80),
+        upstream=ResourceUpstream(port=8080),
     )
 
     with patch(
@@ -559,6 +587,8 @@ def test_web_app_resource_spec_to_graphql_arguments():
 
     resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
     assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
+    assert graphql_arguments["downstream"] == {"port": 80}
+    assert graphql_arguments["upstream"] == {"port": 8080}
     assert "proxy_address" not in graphql_arguments
     assert "gateway_ref" not in graphql_arguments
     assert "type" not in graphql_arguments

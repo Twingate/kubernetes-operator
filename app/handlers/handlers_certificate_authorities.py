@@ -55,14 +55,22 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     # when its certificate changes (a new fingerprint -> a new Twingate ID) rather
     # than updating in place. `name` is only used when creating and is immutable.
     old_id = ca_spec.id
-    backend = client.get_certificate_authority(old_id) if old_id else None
-    if backend and backend.fingerprint == desired_fingerprint:
+    backend = client.get_x509_certificate_authority(old_id) if old_id else None
+    backend_fingerprint = backend.fingerprint.upper() if backend else None
+    if backend_fingerprint == desired_fingerprint:
         return success(twingate_id=old_id)
 
     name = ca_spec.name
     if backend is not None:
-        # The old CA still holds `ca_spec.name` until it is removed, and the backend
-        # rejects duplicate names - so suffix this re-create's name.
+        logger.info(
+            "Certificate authority %s drifted (backend fingerprint %s, "
+            "desired %s); re-creating.",
+            old_id,
+            backend_fingerprint,
+            desired_fingerprint,
+        )
+        # The old CA still holds `ca_spec.name` until the cleanup cron reaps it, and
+        # the backend rejects duplicate names - so suffix this re-create's name.
         timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
         name = f"{ca_spec.name} ({timestamp})"
 

@@ -61,7 +61,7 @@ class TestCertificateAuthorityCreateHandler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="new-ca-id", name="My CA")
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec())
@@ -77,8 +77,8 @@ class TestCertificateAuthorityCreateHandler:
         self, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         # Backend CA exists with the same fingerprint - nothing to do.
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="AB:CD"
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -92,9 +92,9 @@ class TestCertificateAuthorityCreateHandler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         # spec.id is set but the backend CA is gone - recreate, nothing to delete.
-        mock_api_client.get_certificate_authority.return_value = None
+        mock_api_client.get_x509_certificate_authority.return_value = None
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -112,11 +112,11 @@ class TestCertificateAuthorityCreateHandler:
     ):
         # Cert rotated: backend fingerprint differs - recreate, then best-effort
         # delete the orphaned old CA.
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="OLD:FP"
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -136,11 +136,11 @@ class TestCertificateAuthorityCreateHandler:
     ):
         # The orphaned CA is still gateway-referenced, so the backend rejects the
         # delete. The re-create still succeeds.
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="OLD:FP"
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
         mock_api_client.x509_certificate_authority_delete.side_effect = (
             GraphQLMutationError(
@@ -189,7 +189,7 @@ class TestCertificateAuthorityReconciler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="new-ca-id", name="My CA")
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
         patch_mock = MagicMock()
         patch_mock.spec = {}
@@ -326,28 +326,42 @@ class TestCertificateAuthoritySecretWatch:
         mock_get_certificate,
         mock_fingerprint,
     ):
-        mock_get_obj.return_value = {
-            "metadata": {"namespace": "default", "name": "my-ca"},
-            "spec": {
-                "name": "My CA",
-                "secretRef": {"name": "gateway-tls"},
-                "id": "ca-id",
-            },
-        }
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="OLD:FP"
+        # Two CAs reference the same Secret - the handler must reconcile both, not
+        # just the first ref.
+        mock_get_obj.side_effect = [
+            {
+                "metadata": {"namespace": "default", "name": name},
+                "spec": {
+                    "name": "My CA",
+                    "secretRef": {"name": "gateway-tls"},
+                    "id": "ca-id",
+                },
+            }
+            for name in ("my-ca", "my-ca-2")
+        ]
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
-        self._call(self._index())
+        self._call(
+            self._index(
+                [
+                    {"namespace": "default", "name": "my-ca"},
+                    {"namespace": "default", "name": "my-ca-2"},
+                ]
+            )
+        )
 
-        mock_api_client.x509_certificate_authority_create.assert_called_once()
-        mock_patch_obj.assert_called_once()
-        plural, _ns, _name, shim = mock_patch_obj.call_args.args
-        assert plural == "twingatecertificateauthorities"
-        assert shim.spec == {"id": "recreated-id"}
+        assert mock_get_obj.call_count == 2
+        assert mock_api_client.x509_certificate_authority_create.call_count == 2
+        assert mock_patch_obj.call_count == 2
+        for call in mock_patch_obj.call_args_list:
+            plural, _ns, _name, shim = call.args
+            assert plural == "twingatecertificateauthorities"
+            assert shim.spec == {"id": "recreated-id"}
 
     def test_skips_non_modified_events(
         self, mock_get_obj, mock_patch_obj, mock_api_client

@@ -142,7 +142,7 @@ def test_gateway_flows(run_kopf, random_name_generator):
             # rotated-away CA (it's now unreferenced), so the original backend CA
             # should be gone - no manual cleanup needed.
             client = TwingateAPIClient(TwingateOperatorSettings())
-            assert client.get_certificate_authority(original_ca_id) is None, (
+            assert client.get_x509_certificate_authority(original_ca_id) is None, (
                 f"Rotated-away CA {original_ca_id} was not reaped by the operator"
             )
 

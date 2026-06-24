@@ -134,10 +134,10 @@ def example_webapp_service_body():
         app.kubernetes.io/name: web-app
       type: ClusterIP
       ports:
-        - name: https
+        - name: http
           protocol: TCP
-          port: 443
-          targetPort: https
+          port: 8080
+          targetPort: http
     """
     return kopf.Body(yaml.safe_load(yaml_str))
 
@@ -390,8 +390,8 @@ class TestServiceToTwingateResource:
 
         result = service_to_twingate_resource(example_webapp_service_body, "default")
 
-        # The fixture Service exposes a single TCP port (443).
-        assert result["spec"]["upstream"] == {"port": 443}
+        # The fixture Service exposes a single TCP port (8080).
+        assert result["spec"]["upstream"] == {"port": 8080}
 
     def test_webapp_resource_upstream_port_required_when_multiple_service_ports(
         self, example_webapp_service_body
@@ -400,12 +400,40 @@ class TestServiceToTwingateResource:
             "resource.twingate.com/upstreamPort"
         ]
         example_webapp_service_body.spec["ports"].append(
-            {"name": "http", "protocol": "TCP", "port": 8080, "targetPort": "http"}
+            {"name": "https", "protocol": "TCP", "port": 9090, "targetPort": "https"}
         )
 
         with pytest.raises(
             kopf.PermanentError,
             match=r"resource.twingate.com/upstreamPort annotation is required",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_explicit_upstream_port_selects_among_service_ports(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.spec["ports"].append(
+            {"name": "https", "protocol": "TCP", "port": 9090, "targetPort": "https"}
+        )
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ] = "9090"
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["upstream"] == {"port": 9090}
+
+    def test_webapp_resource_explicit_upstream_port_not_exposed_by_service(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ] = "9999"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamPort annotation \(9999\) must match "
+            r"a TCP port exposed by the Service",
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
 

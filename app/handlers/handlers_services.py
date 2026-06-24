@@ -109,15 +109,20 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             raise kopf.PermanentError(
                 f"{DOWNSTREAM_PORT_ANNOTATION} annotation is required for WebApp resources."
             )
+        tcp_ports = [
+            port_obj["port"]
+            for port_obj in spec.get("ports", [])
+            if port_obj.get("protocol", "TCP") == "TCP"
+        ]
         if upstream_port := meta.annotations.get(UPSTREAM_PORT_ANNOTATION):
             upstream = _parse_port_annotation(UPSTREAM_PORT_ANNOTATION, upstream_port)
+            if upstream not in tcp_ports:
+                raise kopf.PermanentError(
+                    f"{UPSTREAM_PORT_ANNOTATION} annotation ({upstream}) must match a "
+                    f"TCP port exposed by the Service {service_name}."
+                )
         else:
             # Default to the Service's port when it exposes exactly one TCP port.
-            tcp_ports = [
-                port_obj["port"]
-                for port_obj in spec.get("ports", [])
-                if port_obj.get("protocol", "TCP") == "TCP"
-            ]
             if len(tcp_ports) != 1:
                 raise kopf.PermanentError(
                     f"{UPSTREAM_PORT_ANNOTATION} annotation is required for WebApp "

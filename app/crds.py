@@ -237,7 +237,8 @@ class ResourceSpec(BaseModel):
     proxy: ResourceProxy | None = None
     # Reference to a TwingateGateway, the replacement for `proxy`.
     gateway_ref: _KubernetesObjectRef | None = None
-    # Endpoint configuration for PAM resources; currently only used by WebApp.
+    # Downstream/upstream connection configuration relative to the gateway
+    # (downstream = client-facing, upstream = backend); currently only used by WebApp.
     downstream: ResourceDownstream | None = None
     upstream: ResourceUpstream | None = None
 

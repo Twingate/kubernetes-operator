@@ -344,6 +344,17 @@ class TestServiceToTwingateResource:
             "namespace": "gateway-namespace",
         }
 
+    def test_unsupported_resource_type_annotation(self, example_service_body):
+        example_service_body.metadata["annotations"]["resource.twingate.com/type"] = (
+            "Bogus"
+        )
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"Unsupported resource type 'Bogus'",
+        ):
+            service_to_twingate_resource(example_service_body, "default")
+
     def test_webapp_resource_type_annotation_without_gateway_name(
         self, example_webapp_service_body
     ):

@@ -155,9 +155,9 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
             },
         }
 
-    # Only Network resources use port-based protocols. Kubernetes and WebApp
-    # resources configure upstream/downstream on the gateway instead.
-    if resource_type in (None, ResourceType.NETWORK):
+    elif resource_type in (None, ResourceType.NETWORK):
+        # Only Network resources use port-based protocols. Kubernetes and WebApp
+        # resources configure upstream/downstream on the gateway instead.
         protocols: dict = {
             "allowIcmp": False,
             "tcp": {"policy": "RESTRICTED", "ports": []},
@@ -172,6 +172,11 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 protocols["udp"]["ports"].append({"start": port, "end": port})
 
         result["spec"]["protocols"] = protocols
+    else:
+        raise kopf.PermanentError(
+            f"Unsupported resource type {resource_type!r}; "
+            f"must be one of {[t.value for t in ResourceType]}."
+        )
 
     return result
 

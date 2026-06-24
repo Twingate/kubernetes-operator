@@ -15,6 +15,27 @@ from app.utils_k8s import (
 )
 
 
+def try_delete_ca(client, ca_id, logger):
+    """Best-effort delete of a backend CA.
+
+    The backend only deletes a CA once no Gateway references it, so this is a no-op
+    left for a later reconcile while the CA is still in use.
+    """
+    try:
+        client.x509_certificate_authority_delete(ca_id)
+        logger.info("Deleted certificate authority %s", ca_id)
+    except GraphQLMutationError as gqlerr:
+        if "in use" in gqlerr.message:
+            logger.info(
+                "Certificate authority %s still in use; leaving it for later cleanup.",
+                ca_id,
+            )
+        else:
+            logger.warning(
+                "Ignoring certificate authority %s delete error: %s", ca_id, gqlerr
+            )
+
+
 def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     ca_spec = CertificateAuthoritySpec(**spec)
 
@@ -34,12 +55,20 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
     # when its certificate changes (a new fingerprint -> a new Twingate ID) rather
     # than updating in place. `name` is only used when creating and is immutable.
     old_id = ca_spec.id
-    backend = client.get_certificate_authority(old_id) if old_id else None
-    if backend and backend.fingerprint == desired_fingerprint:
+    backend = client.get_x509_certificate_authority(old_id) if old_id else None
+    backend_fingerprint = backend.fingerprint.upper() if backend else None
+    if backend_fingerprint == desired_fingerprint:
         return success(twingate_id=old_id)
 
     name = ca_spec.name
     if backend is not None:
+        logger.info(
+            "Certificate authority %s drifted (backend fingerprint %s, "
+            "desired %s); re-creating.",
+            old_id,
+            backend_fingerprint,
+            desired_fingerprint,
+        )
         # The old CA still holds `ca_spec.name` until the cleanup cron reaps it, and
         # the backend rejects duplicate names - so suffix this re-create's name.
         timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -49,9 +78,9 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
 
     patch.spec["id"] = ca.id
 
-    # A drift re-create leaves the previous backend CA orphaned, but we don't delete
-    # it here: it's still referenced by its Gateway until that Gateway reconciles
-    # onto the new ID, and the backend's `cleanup` cron reaps unreferenced X509 CAs.
+    if old_id and backend is not None:
+        try_delete_ca(client, old_id, logger)
+
     kopf.info(
         body,
         reason="Success",
@@ -62,7 +91,7 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
 
 # Bound retries so a misspelled secretRef eventually fails instead of retrying
 # forever; the timer reconciler still recovers it if the ref is later fixed.
-CA_HANDLER_TIMEOUT = int(os.environ.get("CA_HANDLER_TIMEOUT", timedelta(minutes=10).seconds))  # fmt: skip
+CA_HANDLER_TIMEOUT = int(os.environ.get("CA_HANDLER_TIMEOUT", timedelta(minutes=5).seconds))  # fmt: skip
 
 
 @kopf.on.resume(TwingateCertificateAuthorityCRD.PLURAL, timeout=CA_HANDLER_TIMEOUT)
@@ -87,8 +116,12 @@ def twingate_certificate_authority_reconciler(body, spec, logger, memo, patch, *
     return _reconcile_certificate_authority(body, spec, logger, memo, patch)
 
 
-@kopf.on.delete(TwingateCertificateAuthorityCRD.PLURAL)
-def twingate_certificate_authority_delete(spec, status, memo, logger, **_):
+@kopf.on.delete(  # type: ignore[arg-type]
+    TwingateCertificateAuthorityCRD.PLURAL, timeout=CA_HANDLER_TIMEOUT
+)
+def twingate_certificate_authority_delete(
+    namespace, name, spec, status, memo, logger, twingate_gateway_ca_index, **_
+):
     logger.info("twingate_certificate_authority_delete: %s. Status: %s", spec, status)
     if not status:
         return
@@ -98,14 +131,22 @@ def twingate_certificate_authority_delete(spec, status, memo, logger, **_):
         try:
             client.x509_certificate_authority_delete(ca_id)
         except GraphQLMutationError as gqlerr:
-            # GC teardown order is not guaranteed: the CA may still be referenced
-            # by a Gateway that hasn't been deleted yet. Retry so the CA is removed
-            # once its Gateway is gone, instead of leaking it.
-            if "in use" in gqlerr.message:
+            # Surface unexpected errors so kopf retries them (the client already
+            # treats an already-deleted CA as success).
+            if "in use" not in gqlerr.message:
+                raise
+            # Still referenced (GC order isn't guaranteed). Retry while a Gateway in
+            # this cluster references it; otherwise the ref is stale or managed
+            # elsewhere and won't clear by waiting, so leave it for later cleanup.
+            if twingate_gateway_ca_index.get((namespace, name)):
                 raise kopf.TemporaryError(
-                    "Certificate authority still in use, retrying.", delay=30
+                    "Certificate authority still in use by a Gateway, retrying.",
+                    delay=5,
                 ) from gqlerr
-            logger.warning("Ignoring certificate authority delete error: %s", gqlerr)
+            logger.info(
+                "Certificate authority still in use but unreferenced in this "
+                "cluster; leaving it for later cleanup."
+            )
 
 
 @kopf.index(TwingateCertificateAuthorityCRD.PLURAL)

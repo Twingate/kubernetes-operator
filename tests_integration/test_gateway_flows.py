@@ -75,10 +75,6 @@ def test_gateway_flows(run_kopf, random_name_generator):
             name: {gw_name}
     """
 
-    # Set once the rotation re-creates the CA, leaving the original backend CA
-    # orphaned (no CR references it) so it must be cleaned up directly.
-    orphaned_ca_id = None
-
     with run_kopf() as runner:
         try:
             # The CA handler reads ca.crt from this kubernetes.io/tls Secret.
@@ -133,7 +129,6 @@ def test_gateway_flows(run_kopf, random_name_generator):
                 description="a new spec.id after ca.crt rotation",
             )
             new_ca_id = ca["spec"]["id"]
-            orphaned_ca_id = original_ca_id
 
             gw = kubectl_wait_object(
                 "twingategateway",
@@ -143,18 +138,28 @@ def test_gateway_flows(run_kopf, random_name_generator):
             )
             assert gw["status"]["x509CaId"] == new_ca_id
 
-            # 5. Delete the resource, then the Gateway - deleting the CA while still
-            #    referenced raises the "in use" TemporaryError.
+            # The Gateway reconcile onto the new CA best-effort deletes the
+            # rotated-away CA (it's now unreferenced), so the original backend CA
+            # should be gone - no manual cleanup needed.
+            client = TwingateAPIClient(TwingateOperatorSettings())
+            assert client.get_x509_certificate_authority(original_ca_id) is None, (
+                f"Rotated-away CA {original_ca_id} was not reaped by the operator"
+            )
+
+            # 5. Tear down out of dependency order to exercise the in-use retry
+            #    path: request the Gateway and CA deletes while they are still
+            #    referenced, so each handler retries (rather than leaking the
+            #    backend entity) until its dependent is gone.
+            kubectl(f"delete twingategateway/{gw_name} tgca/{ca_name} --wait=false")
+
+            # Removing the Resource frees the Gateway, whose removal frees the CA.
             kubectl_delete_wait("tgr", resource_name)
-            kubectl_delete_wait("twingategateway", gw_name)
-            kubectl_delete_wait("tgca", ca_name)
+            kubectl_delete_wait("twingategateway", gw_name, perform_deletion=False)
+            kubectl_delete_wait("tgca", ca_name, perform_deletion=False)
         finally:
             # run_kopf only cleans up twingate CRs, not these helper objects.
             kubectl(f"delete service {svc_name} --ignore-not-found")
             kubectl(f"delete secret {secret_name} --ignore-not-found")
-            if orphaned_ca_id:
-                client = TwingateAPIClient(TwingateOperatorSettings())
-                client.x509_certificate_authority_delete(orphaned_ca_id)
 
     # run_kopf asserts runner.exception is None / exit_code == 0 on exit.
     logs = load_stdout(runner.output)
@@ -168,4 +173,9 @@ def test_gateway_flows(run_kopf, random_name_generator):
     # The cert-rotation propagation chain: secret change -> CA re-reconcile -> Gateway.
     assert_log_message_contains(logs, "changed, reconciling certificate authority")
     assert_log_message_contains(logs, "id changed, reconciling gateway")
+    # Out-of-order teardown retried each delete until its dependent was gone.
+    assert_log_message_contains(logs, "Gateway still in use by a Resource, retrying.")
+    assert_log_message_contains(
+        logs, "Certificate authority still in use by a Gateway, retrying."
+    )
     assert_log_message_contains(logs, "Handler 'twingate_gateway_delete' succeeded.")

@@ -61,7 +61,7 @@ class TestCertificateAuthorityCreateHandler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="new-ca-id", name="My CA")
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec())
@@ -77,8 +77,8 @@ class TestCertificateAuthorityCreateHandler:
         self, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         # Backend CA exists with the same fingerprint - nothing to do.
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="AB:CD"
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -92,9 +92,9 @@ class TestCertificateAuthorityCreateHandler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         # spec.id is set but the backend CA is gone - recreate, nothing to delete.
-        mock_api_client.get_certificate_authority.return_value = None
+        mock_api_client.get_x509_certificate_authority.return_value = None
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -110,13 +110,13 @@ class TestCertificateAuthorityCreateHandler:
     def test_recreate_on_fingerprint_drift(
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
-        # Cert rotated: backend fingerprint differs - recreate. The old CA is left
-        # for the backend cleanup cron (it's still gateway-referenced), not deleted.
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="OLD:FP"
+        # Cert rotated: backend fingerprint differs - recreate, then best-effort
+        # delete the orphaned old CA.
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
         result, patch_mock = _call_create(_spec(with_id=True))
@@ -126,7 +126,35 @@ class TestCertificateAuthorityCreateHandler:
         call = mock_api_client.x509_certificate_authority_create.call_args
         assert call.kwargs["name"].startswith("My CA (")
         assert call.kwargs["certificate"] == mock_get_certificate.return_value
-        mock_api_client.x509_certificate_authority_delete.assert_not_called()
+        mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
+            "ca-id"
+        )
+        assert patch_mock.spec == {"id": "recreated-id"}
+
+    def test_recreate_on_drift_swallows_in_use_delete_error(
+        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+    ):
+        # The orphaned CA is still gateway-referenced, so the backend rejects the
+        # delete. The re-create still succeeds.
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
+        )
+        mock_api_client.x509_certificate_authority_create.return_value = (
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
+        )
+        mock_api_client.x509_certificate_authority_delete.side_effect = (
+            GraphQLMutationError(
+                "DeleteX509CertificateAuthority",
+                "This CA is currently in use and cannot be deleted.",
+            )
+        )
+
+        result, patch_mock = _call_create(_spec(with_id=True))
+
+        assert result == {"success": True, "twingate_id": "recreated-id", "ts": ANY}
+        mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
+            "ca-id"
+        )
         assert patch_mock.spec == {"id": "recreated-id"}
 
     def test_create_failure_propagates(
@@ -161,7 +189,7 @@ class TestCertificateAuthorityReconciler:
         self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="new-ca-id", name="My CA")
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
         patch_mock = MagicMock()
         patch_mock.spec = {}
@@ -174,31 +202,39 @@ class TestCertificateAuthorityReconciler:
         assert patch_mock.spec == {"id": "new-ca-id"}
 
 
+_STATUS = {"twingate_certificate_authority_create": {"success": True}}
+
+
+def _call_delete(spec, status, *, gateway_index=None):
+    twingate_certificate_authority_delete(
+        namespace="default",
+        name="my-ca",
+        spec=spec,
+        status=status,
+        memo=MagicMock(),
+        logger=MagicMock(),
+        twingate_gateway_ca_index=gateway_index or {},
+    )
+
+
 class TestCertificateAuthorityDeleteHandler:
     def test_delete(self, mock_api_client):
-        twingate_certificate_authority_delete(
-            _spec(with_id=True),
-            {"twingate_certificate_authority_create": {"success": True}},
-            MagicMock(),
-            MagicMock(),
-        )
+        _call_delete(_spec(with_id=True), _STATUS)
         mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
             "ca-id"
         )
 
     def test_delete_without_status_does_nothing(self, mock_api_client):
-        twingate_certificate_authority_delete(
-            _spec(with_id=True), {}, MagicMock(), MagicMock()
-        )
+        _call_delete(_spec(with_id=True), {})
         mock_api_client.x509_certificate_authority_delete.assert_not_called()
 
     def test_delete_without_id_does_nothing(self, mock_api_client):
-        twingate_certificate_authority_delete(
-            _spec(), {"foo": "bar"}, MagicMock(), MagicMock()
-        )
+        _call_delete(_spec(), {"foo": "bar"})
         mock_api_client.x509_certificate_authority_delete.assert_not_called()
 
-    def test_delete_in_use_raises_temporary_error(self, mock_api_client):
+    def test_delete_in_use_retries_while_referenced(self, mock_api_client):
+        # A Gateway in this cluster still references the CA: retry until the Gateway
+        # is gone and the CA is freed (bounded by the handler timeout).
         mock_api_client.x509_certificate_authority_delete.side_effect = (
             GraphQLMutationError(
                 "DeleteX509CertificateAuthority", "CA is in use by a gateway"
@@ -206,25 +242,34 @@ class TestCertificateAuthorityDeleteHandler:
         )
 
         with pytest.raises(kopf.TemporaryError):
-            twingate_certificate_authority_delete(
+            _call_delete(
                 _spec(with_id=True),
-                {"twingate_certificate_authority_create": {"success": True}},
-                MagicMock(),
-                MagicMock(),
+                _STATUS,
+                gateway_index={
+                    ("default", "my-ca"): [{"namespace": "default", "name": "gw"}]
+                },
             )
 
-    def test_delete_ignores_other_errors(self, mock_api_client):
-        # A non "in use" backend error is logged and swallowed (no retry).
+    def test_delete_in_use_gives_up_when_unreferenced(self, mock_api_client):
+        # No in-cluster Gateway references the CA (stale ref, or another cluster's
+        # Gateway holds it): nothing to wait for, give up.
         mock_api_client.x509_certificate_authority_delete.side_effect = (
-            GraphQLMutationError("DeleteX509CertificateAuthority", "already deleted")
+            GraphQLMutationError(
+                "DeleteX509CertificateAuthority", "CA is in use by a gateway"
+            )
         )
 
-        twingate_certificate_authority_delete(
-            _spec(with_id=True),
-            {"twingate_certificate_authority_create": {"success": True}},
-            MagicMock(),
-            MagicMock(),
+        _call_delete(_spec(with_id=True), _STATUS)
+
+    def test_delete_other_error_propagates(self, mock_api_client):
+        # An unexpected backend error propagates so kopf retries (matching the other
+        # delete handlers); the client already swallows already-deleted CAs.
+        mock_api_client.x509_certificate_authority_delete.side_effect = (
+            GraphQLMutationError("DeleteX509CertificateAuthority", "boom")
         )
+
+        with pytest.raises(GraphQLMutationError, match="boom"):
+            _call_delete(_spec(with_id=True), _STATUS)
 
 
 class TestCertificateAuthoritySecretIndex:
@@ -281,28 +326,42 @@ class TestCertificateAuthoritySecretWatch:
         mock_get_certificate,
         mock_fingerprint,
     ):
-        mock_get_obj.return_value = {
-            "metadata": {"namespace": "default", "name": "my-ca"},
-            "spec": {
-                "name": "My CA",
-                "secretRef": {"name": "gateway-tls"},
-                "id": "ca-id",
-            },
-        }
-        mock_api_client.get_certificate_authority.return_value = CertificateAuthority(
-            id="ca-id", name="My CA", fingerprint="OLD:FP"
+        # Two CAs reference the same Secret - the handler must reconcile both, not
+        # just the first ref.
+        mock_get_obj.side_effect = [
+            {
+                "metadata": {"namespace": "default", "name": name},
+                "spec": {
+                    "name": "My CA",
+                    "secretRef": {"name": "gateway-tls"},
+                    "id": "ca-id",
+                },
+            }
+            for name in ("my-ca", "my-ca-2")
+        ]
+        mock_api_client.get_x509_certificate_authority.return_value = (
+            CertificateAuthority(id="ca-id", name="My CA", fingerprint="OLD:FP")
         )
         mock_api_client.x509_certificate_authority_create.return_value = (
-            CertificateAuthority(id="recreated-id", name="My CA")
+            CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
-        self._call(self._index())
+        self._call(
+            self._index(
+                [
+                    {"namespace": "default", "name": "my-ca"},
+                    {"namespace": "default", "name": "my-ca-2"},
+                ]
+            )
+        )
 
-        mock_api_client.x509_certificate_authority_create.assert_called_once()
-        mock_patch_obj.assert_called_once()
-        plural, _ns, _name, shim = mock_patch_obj.call_args.args
-        assert plural == "twingatecertificateauthorities"
-        assert shim.spec == {"id": "recreated-id"}
+        assert mock_get_obj.call_count == 2
+        assert mock_api_client.x509_certificate_authority_create.call_count == 2
+        assert mock_patch_obj.call_count == 2
+        for call in mock_patch_obj.call_args_list:
+            plural, _ns, _name, shim = call.args
+            assert plural == "twingatecertificateauthorities"
+            assert shim.spec == {"id": "recreated-id"}
 
     def test_skips_non_modified_events(
         self, mock_get_obj, mock_patch_obj, mock_api_client

@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 MIN_PORT = 1
 MAX_PORT = 65535
 
+Port = Annotated[int, Field(ge=MIN_PORT, le=MAX_PORT)]
+
 
 class K8sMetadata(BaseModel):
     model_config = ConfigDict(
@@ -86,8 +88,8 @@ class ProtocolRange(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    start: int = Field(ge=MIN_PORT, le=MAX_PORT)
-    end: int = Field(ge=MIN_PORT, le=MAX_PORT)
+    start: Port
+    end: Port
 
     @model_validator(mode="after")
     def check_ports(self):
@@ -196,7 +198,7 @@ class ResourceDownstream(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
+    port: Port
 
 
 class ResourceUpstream(BaseModel):
@@ -204,7 +206,7 @@ class ResourceUpstream(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
+    port: Port
 
 
 class ResourceType(StrEnum):
@@ -406,7 +408,7 @@ class TwingateCertificateAuthorityCRD(BaseK8sModel):
 
 class _ServiceRef(_KubernetesObjectRef):
     # Port the Gateway is reachable on. The host is resolved from the Service.
-    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
+    port: Port
 
 
 class GatewaySpec(BaseModel):

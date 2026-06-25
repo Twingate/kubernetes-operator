@@ -17,3 +17,29 @@ spec:
       port: 22
       targetPort: 9376
       name: second
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-web-app
+  annotations:
+    resource.twingate.com: "true"
+    resource.twingate.com/type: "WebApp"
+    # Name of the TwingateGateway fronting this WebApp.
+    resource.twingate.com/gatewayName: "example-gateway"
+    # Optional. Namespace of the TwingateGateway. Defaults to the Service's namespace.
+    # resource.twingate.com/gatewayNamespace: "twingate"
+    # Downstream (client-facing) port.
+    resource.twingate.com/downstreamPort: "80"
+    # Optional. Upstream (target) port. Defaults to the Service's port when it
+    # exposes exactly one; required if the Service exposes multiple ports.
+    # resource.twingate.com/upstreamPort: "8080"
+    resource.twingate.com/alias: "webapp.internal"
+spec:
+  selector:
+    app.kubernetes.io/name: MyWebApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      name: http

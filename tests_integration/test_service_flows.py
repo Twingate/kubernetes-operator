@@ -546,6 +546,7 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
             resource.twingate.com/gatewayName: "{gw_name}"
             resource.twingate.com/downstreamPort: "80"
             resource.twingate.com/alias: "webapp.internal"
+            resource.twingate.com/requestHeaderRewrites: '{{"X-Forwarded-Host": "web-app.int"}}'
         spec:
           selector:
             app.kubernetes.io/name: MyApp
@@ -586,6 +587,7 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
                 "gatewayRef": {"name": gw_name, "namespace": "default"},
                 "downstream": {"port": 80},
                 "upstream": {"port": 8080},
+                "requestHeaderRewrites": {"X-Forwarded-Host": "web-app.int"},
                 "id": ANY,
                 "isBrowserShortcutEnabled": False,
                 "isVisible": True,

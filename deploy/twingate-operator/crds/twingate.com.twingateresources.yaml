@@ -24,6 +24,8 @@ spec:
                   message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; WebApp Resource requires gatewayRef and no proxy; Network Resource allows neither"
                 - rule: (self.type == "WebApp" && has(self.downstream) && has(self.upstream)) || (self.type != "WebApp" && !has(self.downstream) && !has(self.upstream))
                   message: "WebApp Resource requires downstream and upstream; other Resource types allow neither"
+                - rule: '!has(self.requestHeaderRewrites) || self.type == "WebApp"'
+                  message: "requestHeaderRewrites can only be set for WebApp Resources"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
                   message: "isBrowserShortcutEnabled can only be set to true for Network Resources"
               required: ["name", "address"]
@@ -195,6 +197,11 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "The upstream port."
+                requestHeaderRewrites:
+                  type: object
+                  description: "HTTP headers to rewrite on requests to the upstream of a WebApp Resource. Maps header name to value."
+                  additionalProperties:
+                    type: string
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

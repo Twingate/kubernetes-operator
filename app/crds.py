@@ -209,6 +209,15 @@ class ResourceUpstream(BaseModel):
     port: Port
 
 
+class RequestHeaderRewrite(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    key: str
+    value: str
+
+
 class ResourceType(StrEnum):
     NETWORK = "Network"
     KUBERNETES = "Kubernetes"
@@ -237,10 +246,13 @@ class ResourceSpec(BaseModel):
     proxy: ResourceProxy | None = None
     # Reference to a TwingateGateway, the replacement for `proxy`.
     gateway_ref: _KubernetesObjectRef | None = None
-    # Downstream/upstream connection configuration relative to the gateway
-    # (downstream = client-facing, upstream = backend); currently only used by WebApp.
+    # (WebApp only) connection configuration relative to the gateway
+    # (downstream = client-facing, upstream = backend).
     downstream: ResourceDownstream | None = None
     upstream: ResourceUpstream | None = None
+    # (WebApp only) HTTP headers to rewrite on requests to the upstream
+    # (header name -> value).
+    request_header_rewrites: dict[str, str] | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -258,7 +270,11 @@ class ResourceSpec(BaseModel):
     def check_proxy_and_gateway_ref(self):
         has_proxy = self.proxy is not None
         has_gateway_ref = self.gateway_ref is not None
-        has_endpoints = self.downstream is not None or self.upstream is not None
+        has_endpoints = (
+            self.downstream is not None
+            or self.upstream is not None
+            or self.request_header_rewrites is not None
+        )
 
         match self.type:
             case ResourceType.NETWORK:
@@ -268,7 +284,8 @@ class ResourceSpec(BaseModel):
                     )
                 if has_endpoints:
                     raise ValueError(
-                        "Network resources cannot set `downstream` or `upstream`."
+                        "Network resources cannot set `downstream`, `upstream`, or "
+                        "`requestHeaderRewrites`."
                     )
             case ResourceType.KUBERNETES:
                 if has_proxy == has_gateway_ref:
@@ -278,7 +295,8 @@ class ResourceSpec(BaseModel):
                     )
                 if has_endpoints:
                     raise ValueError(
-                        "Kubernetes resources cannot set `downstream` or `upstream`."
+                        "Kubernetes resources cannot set `downstream`, `upstream`, or "
+                        "`requestHeaderRewrites`."
                     )
             case ResourceType.WEB_APP:
                 if has_proxy:
@@ -304,6 +322,7 @@ class ResourceSpec(BaseModel):
             "gateway_ref",
             "downstream",
             "upstream",
+            "request_header_rewrites",
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
@@ -354,6 +373,10 @@ class ResourceSpec(BaseModel):
                     ),
                     "downstream": downstream.model_dump(by_alias=True),
                     "upstream": upstream.model_dump(by_alias=True),
+                    "request_header_rewrites": [
+                        {"key": key, "value": value}
+                        for key, value in (self.request_header_rewrites or {}).items()
+                    ],
                 }
 
         return graphql_args

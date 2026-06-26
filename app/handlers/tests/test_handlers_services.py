@@ -490,6 +490,51 @@ class TestServiceToTwingateResource:
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
 
+    def test_webapp_resource_request_header_rewrites(self, example_webapp_service_body):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/requestHeaderRewrites"
+        ] = '{"Host": "example.com", "X-Foo": "bar"}'
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["requestHeaderRewrites"] == {
+            "Host": "example.com",
+            "X-Foo": "bar",
+        }
+
+    def test_webapp_resource_without_request_header_rewrites(
+        self, example_webapp_service_body
+    ):
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert "requestHeaderRewrites" not in result["spec"]
+
+    def test_webapp_resource_invalid_request_header_rewrites(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/requestHeaderRewrites"
+        ] = "not-json"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/requestHeaderRewrites annotation must be a JSON",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_non_object_request_header_rewrites(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/requestHeaderRewrites"
+        ] = '[{"key": "Host", "value": "example.com"}]'
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/requestHeaderRewrites annotation must be a JSON",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
 
 class TestK8sGetTwingateResource:
     def test_handles_404_returns_none(self, k8s_customobjects_client_mock):

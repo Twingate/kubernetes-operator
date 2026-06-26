@@ -17,7 +17,13 @@ from app.api.client_resources import (
     ResourceProtocols,
 )
 from app.api.tests.factories import VALID_CA_CERT, VALID_CA_CERT_1
-from app.crds import ProtocolPolicy, ResourceProxy, ResourceSpec, ResourceType
+from app.crds import (
+    ProtocolPolicy,
+    RequestHeaderRewrite,
+    ResourceProxy,
+    ResourceSpec,
+    ResourceType,
+)
 
 
 @pytest.fixture
@@ -312,6 +318,45 @@ class TestWebAppResourceModel:
         ):
             assert resource.get_spec_diff(crd) == {}
 
+    def test_get_spec_diff_ignores_header_rewrite_ordering(
+        self, web_app_resource_factory
+    ):
+        resource = web_app_resource_factory(
+            gateway=ResourceGateway(id="gw-1"),
+            request_header_rewrites=[
+                RequestHeaderRewrite(key="X-A", value="1"),
+                RequestHeaderRewrite(key="X-B", value="2"),
+            ],
+        )
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            request_header_rewrites={"X-B": "2", "X-A": "1"},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd) == {}
+
+    def test_get_spec_diff_for_header_rewrite_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(
+            gateway=ResourceGateway(id="gw-1"),
+            request_header_rewrites=[RequestHeaderRewrite(key="X-A", value="1")],
+        )
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            request_header_rewrites={"X-A": "2"},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd) == {
+                "request_header_rewrites": Diff(
+                    remote={"X-A": "1"}, local={"X-A": "2"}
+                ),
+            }
+
 
 class TestResourceFactory:
     def test_name_is_used_for_address(self, base_resource_factory):
@@ -492,6 +537,7 @@ class TestTwingateResourceAPIs:
                                 "gateway_ref",
                                 "downstream",
                                 "upstream",
+                                "request_header_rewrites",
                             ],
                             by_alias=True,
                         )
@@ -542,6 +588,7 @@ class TestTwingateResourceAPIs:
                                 "gateway_ref",
                                 "downstream",
                                 "upstream",
+                                "request_header_rewrites",
                             ],
                             by_alias=True,
                         )
@@ -591,6 +638,7 @@ class TestTwingateResourceAPIs:
                                 "gateway_ref",
                                 "downstream",
                                 "upstream",
+                                "request_header_rewrites",
                             },
                             by_alias=True,
                         )
@@ -711,6 +759,7 @@ class TestTwingateResourceAPIs:
                                 "gateway_ref",
                                 "downstream",
                                 "upstream",
+                                "request_header_rewrites",
                             ],
                             by_alias=True,
                         )
@@ -758,6 +807,7 @@ class TestTwingateResourceAPIs:
                                 "gateway_ref",
                                 "downstream",
                                 "upstream",
+                                "request_header_rewrites",
                             },
                             by_alias=True,
                         )

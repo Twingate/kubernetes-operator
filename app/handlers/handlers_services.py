@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 from enum import StrEnum
 
@@ -37,6 +38,7 @@ GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
 UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
+REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 
 
 def get_load_balancer_address(status: Status, service_name: str) -> str:
@@ -142,7 +144,7 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
             tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name
         )
 
-    return {
+    web_app_spec: dict = {
         "gatewayRef": {
             "name": gateway_name,
             "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
@@ -150,6 +152,23 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
         "downstream": {"port": downstream},
         "upstream": {"port": upstream},
     }
+
+    if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
+        try:
+            parsed = json.loads(rewrites)
+        except json.JSONDecodeError as ex:
+            raise kopf.PermanentError(
+                f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
+                "object mapping header names to values."
+            ) from ex
+        if not isinstance(parsed, dict):
+            raise kopf.PermanentError(
+                f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
+                "object mapping header names to values."
+            )
+        web_app_spec["requestHeaderRewrites"] = parsed
+
+    return web_app_spec
 
 
 def _kubernetes_spec(service_body: Body, namespace: str) -> dict:

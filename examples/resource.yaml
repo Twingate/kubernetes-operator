@@ -36,3 +36,5 @@ spec:
     port: 80
   upstream:
     port: 8080
+  requestHeaderRewrites:
+    Authorization: "Bearer {{ twingate.jwt }}"

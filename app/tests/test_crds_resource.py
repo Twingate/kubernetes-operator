@@ -6,6 +6,9 @@ import pytest
 
 from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
 from app.crds import (
+    ProtocolPolicy,
+    ProtocolRange,
+    ResourceProtocol,
     ResourceProxy,
     ResourceSpec,
     ResourceType,
@@ -281,6 +284,50 @@ def test_resourceprotocol_ports_validation():
                 },
             },
         )
+
+
+class TestResourceProtocolNormalizePort:
+    def test_sorted_and_merged(self):
+        protocol = ResourceProtocol(
+            policy=ProtocolPolicy.RESTRICTED,
+            ports=[
+                ProtocolRange(start=443, end=443),
+                ProtocolRange(start=80, end=80),
+                ProtocolRange(start=81, end=81),
+            ],
+        )
+        assert protocol.ports == [
+            ProtocolRange(start=80, end=81),
+            ProtocolRange(start=443, end=443),
+        ]
+
+    def test_overlapping_ports_merged(self):
+        protocol = ResourceProtocol(
+            policy=ProtocolPolicy.RESTRICTED,
+            ports=[ProtocolRange(start=80, end=90), ProtocolRange(start=85, end=100)],
+        )
+        assert protocol.ports == [ProtocolRange(start=80, end=100)]
+
+    def test_disjoint_ports_stay_separate(self):
+        protocol = ResourceProtocol(
+            policy=ProtocolPolicy.RESTRICTED,
+            ports=[ProtocolRange(start=80, end=80), ProtocolRange(start=443, end=443)],
+        )
+        assert protocol.ports == [
+            ProtocolRange(start=80, end=80),
+            ProtocolRange(start=443, end=443),
+        ]
+
+    def test_single_port_unchanged(self):
+        protocol = ResourceProtocol(
+            policy=ProtocolPolicy.RESTRICTED,
+            ports=[ProtocolRange(start=8080, end=8080)],
+        )
+        assert protocol.ports == [ProtocolRange(start=8080, end=8080)]
+
+    def test_empty_ports_unchanged(self):
+        protocol = ResourceProtocol(policy=ProtocolPolicy.RESTRICTED, ports=[])
+        assert protocol.ports == []
 
 
 def test_resource_proxy_get_certificate_authority_cert_without_secret_ref():

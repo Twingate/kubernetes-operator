@@ -172,6 +172,10 @@ spec:
           type: string
           description: "Name of the resource."
           jsonPath: .spec.name
+        - name: Type
+          type: string
+          description: "Type of the resource."
+          jsonPath: .spec.type
         - name: Address
           type: string
           description: "Address of the resource."

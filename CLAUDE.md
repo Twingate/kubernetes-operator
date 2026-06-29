@@ -2,7 +2,7 @@
 
 AI assistant guide for the Twingate Kubernetes Operator - a Kopf-based K8s controller for Twingate resources.
 
-**Stack**: Python 3.11+, Kopf, Pydantic v2, Mypy, GraphQL (gql), Pytest, Ruff
+**Stack**: Python 3.14, Kopf, Pydantic v2, Mypy, GraphQL (gql), Pytest, Ruff
 
 ## Structure
 
@@ -51,6 +51,13 @@ Env vars with `TWINGATE_` prefix: `API_KEY`, `NETWORK`, `REMOTE_NETWORK_ID` (or 
 `DEFAULT_RESOURCE_TAGS`. Access via `memo.twingate_settings`.
 
 ## Development
+
+### Tool Versions
+
+`.tool-versions` pins the Python and Poetry versions (managed via [asdf](https://asdf-vm.com/) or
+[mise](https://mise.jdx.dev/)). Run `asdf install` (or `mise install`) in the repo root to install the
+pinned versions. Keep this file as the single source of truth — when bumping Python or Poetry, update
+`.tool-versions` so local dev, CI, and Docker builds stay aligned.
 
 ### Testing
 

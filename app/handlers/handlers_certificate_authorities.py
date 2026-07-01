@@ -20,7 +20,7 @@ def _reconcile_certificate_authority(body, spec, logger, memo, patch):
 
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
-    certificate = ca_spec.get_certificate()
+    certificate = ca_spec.get_certificate_from_secret()
     if certificate is None:
         raise kopf.TemporaryError(
             f"ca.crt not found yet in Secret "

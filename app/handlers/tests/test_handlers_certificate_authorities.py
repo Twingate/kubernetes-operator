@@ -25,8 +25,8 @@ def mock_api_client():
 
 
 @pytest.fixture
-def mock_get_certificate():
-    with patch("app.crds.CertificateAuthoritySpec.get_certificate") as m:
+def mock_get_certificate_from_secret():
+    with patch("app.crds.CertificateAuthoritySpec.get_certificate_from_secret") as m:
         m.return_value = "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
         yield m
 
@@ -58,7 +58,11 @@ def _call_create(spec):
 
 class TestCertificateAuthorityCreateHandler:
     def test_create(
-        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_get_certificate_from_secret,
+        mock_fingerprint,
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
             CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
@@ -69,12 +73,12 @@ class TestCertificateAuthorityCreateHandler:
         assert result == {"success": True, "twingate_id": "new-ca-id", "ts": ANY}
         # First create uses the clean name (no timestamp suffix).
         mock_api_client.x509_certificate_authority_create.assert_called_once_with(
-            name="My CA", certificate=mock_get_certificate.return_value
+            name="My CA", certificate=mock_get_certificate_from_secret.return_value
         )
         assert patch_mock.spec == {"id": "new-ca-id"}
 
     def test_already_registered_is_noop(
-        self, mock_api_client, mock_get_certificate, mock_fingerprint
+        self, mock_api_client, mock_get_certificate_from_secret, mock_fingerprint
     ):
         # Backend CA exists with the same fingerprint - nothing to do.
         mock_api_client.get_x509_certificate_authority.return_value = (
@@ -89,7 +93,11 @@ class TestCertificateAuthorityCreateHandler:
         assert patch_mock.spec == {}
 
     def test_recreate_when_backend_deleted(
-        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_get_certificate_from_secret,
+        mock_fingerprint,
     ):
         # spec.id is set but the backend CA is gone - recreate, nothing to delete.
         mock_api_client.get_x509_certificate_authority.return_value = None
@@ -102,13 +110,17 @@ class TestCertificateAuthorityCreateHandler:
         assert result == {"success": True, "twingate_id": "recreated-id", "ts": ANY}
         # Backend CA already gone - no name collision, so keep the clean name.
         mock_api_client.x509_certificate_authority_create.assert_called_once_with(
-            name="My CA", certificate=mock_get_certificate.return_value
+            name="My CA", certificate=mock_get_certificate_from_secret.return_value
         )
         mock_api_client.x509_certificate_authority_delete.assert_not_called()
         assert patch_mock.spec == {"id": "recreated-id"}
 
     def test_recreate_on_fingerprint_drift(
-        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_get_certificate_from_secret,
+        mock_fingerprint,
     ):
         # Cert rotated: backend fingerprint differs - recreate, then best-effort
         # delete the orphaned old CA.
@@ -125,14 +137,20 @@ class TestCertificateAuthorityCreateHandler:
         # Old CA still holds the name - the re-create gets a timestamp suffix.
         call = mock_api_client.x509_certificate_authority_create.call_args
         assert call.kwargs["name"].startswith("My CA (")
-        assert call.kwargs["certificate"] == mock_get_certificate.return_value
+        assert (
+            call.kwargs["certificate"] == mock_get_certificate_from_secret.return_value
+        )
         mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
             "ca-id"
         )
         assert patch_mock.spec == {"id": "recreated-id"}
 
     def test_recreate_on_drift_swallows_in_use_delete_error(
-        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_get_certificate_from_secret,
+        mock_fingerprint,
     ):
         # The orphaned CA is still gateway-referenced, so the backend rejects the
         # delete. The re-create still succeeds.
@@ -160,7 +178,7 @@ class TestCertificateAuthorityCreateHandler:
     def test_create_failure_propagates(
         self,
         mock_api_client,
-        mock_get_certificate,
+        mock_get_certificate_from_secret,
         mock_fingerprint,
     ):
         # GraphQL errors propagate so Kopf retries (bounded by the handler
@@ -174,9 +192,9 @@ class TestCertificateAuthorityCreateHandler:
             _call_create(_spec())
 
     def test_missing_certificate_raises_temporary_error(
-        self, mock_api_client, mock_get_certificate
+        self, mock_api_client, mock_get_certificate_from_secret
     ):
-        mock_get_certificate.return_value = None
+        mock_get_certificate_from_secret.return_value = None
 
         with pytest.raises(kopf.TemporaryError):
             _call_create(_spec())
@@ -186,7 +204,11 @@ class TestCertificateAuthorityCreateHandler:
 
 class TestCertificateAuthorityReconciler:
     def test_reconciler_delegates_to_shared_reconcile(
-        self, kopf_info_mock, mock_api_client, mock_get_certificate, mock_fingerprint
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_get_certificate_from_secret,
+        mock_fingerprint,
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
             CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
@@ -323,7 +345,7 @@ class TestCertificateAuthoritySecretWatch:
         mock_patch_obj,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate,
+        mock_get_certificate_from_secret,
         mock_fingerprint,
     ):
         # Two CAs reference the same Secret - the handler must reconcile both, not
@@ -393,7 +415,7 @@ class TestCertificateAuthoritySecretWatch:
         mock_get_obj,
         mock_patch_obj,
         mock_api_client,
-        mock_get_certificate,
+        mock_get_certificate_from_secret,
         mock_fingerprint,
     ):
         # Reconcile blows up (cert not ready yet) - the error is logged and the
@@ -402,7 +424,7 @@ class TestCertificateAuthoritySecretWatch:
             "metadata": {"namespace": "default", "name": "my-ca"},
             "spec": {"name": "My CA", "secretRef": {"name": "gateway-tls"}},
         }
-        mock_get_certificate.return_value = None
+        mock_get_certificate_from_secret.return_value = None
 
         self._call(self._index())
 

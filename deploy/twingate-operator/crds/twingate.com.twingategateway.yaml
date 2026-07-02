@@ -76,6 +76,7 @@ spec:
           type: string
           description: "Name of the Service fronting the Gateway."
           jsonPath: .spec.serviceRef.name
+          priority: 1
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

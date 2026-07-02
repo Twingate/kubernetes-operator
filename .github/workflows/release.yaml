@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PYTHON_VERSION: 3.12
+  PYTHON_VERSION: 3.14.5
   POETRY_VERSION: 2.4.1
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -61,10 +61,10 @@ jobs:
     name: Release PROD Helm Chart
     needs: [create_release, release_prod]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install and configure Poetry
@@ -75,7 +75,7 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       - uses: chrisdickinson/setup-yq@3d931309f27270ebbafd53f2daee773a82ea1822 # v1.0.1
 
       - name: Set env vars
@@ -96,8 +96,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [create_release]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install and configure Poetry

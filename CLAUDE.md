@@ -2,7 +2,7 @@
 
 AI assistant guide for the Twingate Kubernetes Operator - a Kopf-based K8s controller for Twingate resources.
 
-**Stack**: Python 3.11+, Kopf, Pydantic v2, Mypy, GraphQL (gql), Pytest, Ruff
+**Stack**: Python 3.14, Kopf, Pydantic v2, Mypy, GraphQL (gql), Pytest, Ruff
 
 ## Structure
 

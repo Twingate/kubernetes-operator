@@ -320,7 +320,7 @@ class CertificateAuthoritySpec(BaseModel):
     # Secret (kubernetes.io/tls) the CA's public certificate (`ca.crt`) is read from.
     secret_ref: _KubernetesObjectRef
 
-    def get_certificate(self) -> str | None:
+    def get_certificate_from_secret(self) -> str | None:
         if secret := k8s_read_namespaced_secret(
             self.secret_ref.namespace, self.secret_ref.name
         ):

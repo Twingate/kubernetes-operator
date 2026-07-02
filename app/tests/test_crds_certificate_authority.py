@@ -73,7 +73,7 @@ def test_get_certificate_reads_cert_from_secret(read_secret_mock, k8s_secret_moc
     read_secret_mock.return_value = k8s_secret_mock
     spec = CertificateAuthoritySpec(name="My CA", secret_ref={"name": "gateway-tls"})
 
-    assert spec.get_certificate() == VALID_CA_CERT
+    assert spec.get_certificate_from_secret() == VALID_CA_CERT
     read_secret_mock.assert_called_once_with("default", "gateway-tls")
 
 
@@ -82,4 +82,4 @@ def test_get_certificate_returns_none_when_secret_missing(read_secret_mock):
     read_secret_mock.return_value = None
     spec = CertificateAuthoritySpec(name="My CA", secret_ref={"name": "gateway-tls"})
 
-    assert spec.get_certificate() is None
+    assert spec.get_certificate_from_secret() is None

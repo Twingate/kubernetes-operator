@@ -60,6 +60,15 @@ spec:
           type: string
           description: "Type of the Certificate Authority."
           jsonPath: .spec.type
+        - name: Secret Namespace
+          type: string
+          description: "Namespace of the Secret the CA's public certificate is read from."
+          jsonPath: .spec.secretRef.namespace
+          priority: 1
+        - name: Secret
+          type: string
+          description: "Name of the Secret the CA's public certificate is read from."
+          jsonPath: .spec.secretRef.name
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

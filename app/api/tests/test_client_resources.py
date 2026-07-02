@@ -1,5 +1,5 @@
 import base64
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import orjson as json
 import pytest
@@ -12,6 +12,7 @@ from app.api.client_resources import (
     BaseResource,
     Diff,
     NetworkResource,
+    ResourceGateway,
     ResourceProtocol,
     ResourceProtocols,
 )
@@ -213,16 +214,38 @@ class TestKubernetesResourceModel:
             ),
         }
 
-    def test_get_spec_diff_with_empty_proxy(self, kubernetes_resource_factory):
-        resource = kubernetes_resource_factory()
-        crd = resource.to_spec(proxy=None)
+    def test_get_spec_diff_for_gateway_backed_resource_in_sync(
+        self, kubernetes_resource_factory
+    ):
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(proxy=None, gateway_ref={"name": "my-gateway"})
 
-        assert resource.get_spec_diff(crd) == {
-            "proxy_address": Diff(remote=resource.proxy_address, local=None),
-            "certificate_authority_cert": Diff(
-                remote=resource.x509_ca_cert, local=None
-            ),
-        }
+        # The derived proxyAddress / certificateAuthorityCert are not diffed; only
+        # the Gateway binding is, and here it matches.
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id",
+            return_value="gw-1",
+        ) as resolve_mock:
+            assert resource.get_spec_diff(crd) == {}
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
+        )
+
+    def test_get_spec_diff_for_gateway_backed_resource_drift(
+        self, kubernetes_resource_factory
+    ):
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(proxy=None, gateway_ref={"name": "my-gateway"})
+
+        # The resource is bound to a different Gateway than the desired one.
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id",
+            return_value="gw-2",
+        ):
+            assert resource.get_spec_diff(crd) == {
+                "gateway_id": Diff(remote="gw-1", local="gw-2"),
+            }
 
     def test_get_spec_diff_with_equivalent_certificate(
         self, kubernetes_resource_factory
@@ -385,7 +408,13 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels", "type", "proxy"],
+                            exclude=[
+                                "id",
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                                "gateway_ref",
+                            ],
                             by_alias=True,
                         )
                     },
@@ -427,7 +456,13 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels", "type", "proxy"],
+                            exclude=[
+                                "id",
+                                "sync_labels",
+                                "type",
+                                "proxy",
+                                "gateway_ref",
+                            ],
                             by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
@@ -473,6 +508,7 @@ class TestTwingateResourceAPIs:
                                 "sync_labels",
                                 "type",
                                 "proxy",
+                                "gateway_ref",
                             },
                             by_alias=True,
                         )
@@ -486,6 +522,53 @@ class TestTwingateResourceAPIs:
             **crd.to_graphql_arguments(
                 labels=resource.to_metadata_labels(), exclude={"id"}
             )
+        )
+        assert result == resource
+
+    def test_kubernetes_resource_create_with_gateway_ref(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
+    ):
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(id=None, proxy=None, gateway_ref={"name": "my-gateway"})
+        success_response = json.dumps(
+            {
+                "data": {
+                    "kubernetesResourceCreate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": {
+                            "gatewayId": "gw-1",
+                            "proxyAddress": None,
+                            "certificateAuthorityCert": None,
+                        }
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.kubernetes_resource_create(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), exclude={"id"}
+                )
+            )
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
         )
         assert result == resource
 
@@ -539,7 +622,8 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["sync_labels", "type", "proxy"], by_alias=True
+                            exclude=["sync_labels", "type", "proxy", "gateway_ref"],
+                            by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
                     },
@@ -582,6 +666,7 @@ class TestTwingateResourceAPIs:
                                 "sync_labels",
                                 "type",
                                 "proxy",
+                                "gateway_ref",
                             },
                             by_alias=True,
                         )
@@ -594,6 +679,53 @@ class TestTwingateResourceAPIs:
 
         result = api_client.kubernetes_resource_update(
             **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+        )
+        assert result == resource
+
+    def test_kubernetes_resource_update_with_gateway_ref(
+        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
+    ):
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(proxy=None, gateway_ref={"name": "my-gateway"})
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "kubernetesResourceUpdate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": {
+                            "gatewayId": "gw-1",
+                            "proxyAddress": None,
+                            "certificateAuthorityCert": None,
+                        }
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.kubernetes_resource_update(
+                **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+            )
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
         )
         assert result == resource
 

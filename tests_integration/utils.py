@@ -1,8 +1,14 @@
+import datetime
 import os
 import subprocess
 import time
+from base64 import b64encode
 
 import orjson as json
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.x509.oid import NameOID
 
 KUBECTL_COMMAND = os.environ.get("KUBECTL_COMMAND", "kubectl")
 
@@ -23,6 +29,41 @@ def assert_log_message_contains(logs, message):
     assert any(message in log["message"] for log in logs), (
         f"Could not find log message containing '{message}'"
     )
+
+
+def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
+    key = ed25519.Ed25519PrivateKey.generate()
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.datetime.now(datetime.UTC)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=365))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .sign(key, None)
+    )
+    return b64encode(cert.public_bytes(Encoding.PEM)).decode()
+
+
+def create_tls_secret(secret_name, base64_ca_cert):
+    # The operator only reads `ca.crt`; tls.crt/tls.key are dummy values required
+    # by the `kubernetes.io/tls` Secret type.
+    return f"""
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: {secret_name}
+      namespace: default
+    type: kubernetes.io/tls
+    data:
+      ca.crt: {base64_ca_cert}
+      tls.crt: ZHVtbXk=
+      tls.key: ZHVtbXk=
+"""
 
 
 def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProcess:
@@ -163,19 +204,41 @@ def kubectl_wait_object_handler_success(
     message: str | None = None,
     max_retries: int = 5,
 ):
+    def _handler_succeeded(obj: dict) -> bool:
+        handler_status = obj.get("status", {}).get(handler_name, {})
+        return bool(handler_status.get("success")) and (
+            message is None or handler_status.get("message") == message
+        )
+
+    return kubectl_wait_object(
+        resource_type,
+        resource_name,
+        _handler_succeeded,
+        description=f"handler '{handler_name}' success",
+        max_retries=max_retries,
+    )
+
+
+def kubectl_wait_object(
+    resource_type: str,
+    resource_name: str,
+    predicate,
+    *,
+    description: str = "expected condition",
+    max_retries: int = 5,
+    sleep_time: int = 10,
+) -> dict:
+    """Poll an object until ``predicate(obj)`` is truthy, then return it."""
     retry = 0
     obj = kubectl_wait_to_exist(resource_type, resource_name, max_retries=max_retries)
     while True:
-        handler_status = obj.get("status", {}).get(handler_name, {})
-        if handler_status.get("success") and (
-            message is None or handler_status.get("message") == message
-        ):
+        if predicate(obj):
             return obj
 
         retry += 1
         if retry > max_retries:
             raise RuntimeError(
-                f"Handler {handler_name} did not succeed for {resource_type}/{resource_name}"
+                f"{resource_type}/{resource_name} did not reach {description}"
             )
-        time.sleep(10)
+        time.sleep(sleep_time)
         obj = kubectl_get(resource_type, resource_name)

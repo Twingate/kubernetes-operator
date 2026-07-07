@@ -8,7 +8,9 @@ from graphql import print_ast
 from requests.adapters import HTTPAdapter, Retry
 
 from app import typedefs
+from app.api.client_certificate_authorities import TwingateCertificateAuthorityAPIs
 from app.api.client_connectors import TwingateConnectorAPI
+from app.api.client_gateways import TwingateGatewayAPIs
 from app.api.client_groups import TwingateGroupAPIs
 from app.api.client_remote_networks import TwingateRemoteNetworksAPIs
 from app.api.client_resources import TwingateResourceAPIs
@@ -68,7 +70,9 @@ class TwingateRequestsHTTPTransport(RequestsHTTPTransport):
 
 
 class TwingateAPIClient(
+    TwingateCertificateAuthorityAPIs,
     TwingateConnectorAPI,
+    TwingateGatewayAPIs,
     TwingateGroupAPIs,
     TwingateResourceAPIs,
     TwingateResourceAccessAPIs,

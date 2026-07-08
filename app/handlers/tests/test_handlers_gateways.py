@@ -48,7 +48,7 @@ def _spec(*, with_id=False):
 
 @pytest.fixture
 def call_create_update(mock_resolve_service_address, mock_resolve_ref_to_twingate_id):
-    def run(spec, *, diff=None):
+    def run(spec, *, diff=None, status=None):
         patch_mock = MagicMock()
         patch_mock.spec = {}
         patch_mock.status = {}
@@ -58,6 +58,7 @@ def call_create_update(mock_resolve_service_address, mock_resolve_ref_to_twingat
             MagicMock(),
             MagicMock(),
             patch_mock,
+            status=status,
             diff=diff,
         )
         return result, patch_mock
@@ -100,7 +101,34 @@ class TestGatewayCreateUpdateHandler:
             x509_ca_id="ca-backend-id",
         )
         mock_api_client.gateway_create.assert_not_called()
+        mock_api_client.x509_certificate_authority_delete.assert_not_called()
         assert patch_mock.spec == {}
+
+    def test_update_swaps_ca_deletes_old(self, mock_api_client, call_create_update):
+        # The Gateway moves off the old CA - the orphaned old CA is best-effort
+        # deleted now rather than left to linger.
+        mock_api_client.get_gateway.return_value = Gateway(
+            id="gateway-id", address="old-addr"
+        )
+
+        result, _patch_mock = call_create_update(
+            _spec(with_id=True), status={"x509CaId": "old-ca-id"}
+        )
+
+        assert result == {"success": True, "twingate_id": "gateway-id", "ts": ANY}
+        mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
+            "old-ca-id"
+        )
+
+    def test_update_same_ca_does_not_delete(self, mock_api_client, call_create_update):
+        # CA unchanged (status already points at the resolved id) - nothing to reap.
+        mock_api_client.get_gateway.return_value = Gateway(
+            id="gateway-id", address="old-addr"
+        )
+
+        call_create_update(_spec(with_id=True), status={"x509CaId": "ca-backend-id"})
+
+        mock_api_client.x509_certificate_authority_delete.assert_not_called()
 
     def test_recreate_when_backend_deleted(
         self, kopf_info_mock, mock_api_client, call_create_update
@@ -188,49 +216,68 @@ class TestGatewayReconciler:
         assert patch_mock.spec == {"id": "new-gateway-id"}
 
 
+_STATUS = {"twingate_gateway_create_update": {"success": True}}
+
+
+def _call_delete(spec, status, *, resource_index=None):
+    twingate_gateway_delete(
+        namespace="default",
+        name="my-gw",
+        spec=spec,
+        status=status,
+        memo=MagicMock(),
+        logger=MagicMock(),
+        twingate_resource_gateway_index=resource_index or {},
+    )
+
+
 class TestGatewayDeleteHandler:
     def test_delete(self, mock_api_client):
-        twingate_gateway_delete(
-            _spec(with_id=True),
-            {"twingate_gateway_create_update": {"success": True}},
-            MagicMock(),
-            MagicMock(),
-        )
+        _call_delete(_spec(with_id=True), _STATUS)
         mock_api_client.gateway_delete.assert_called_once_with("gateway-id")
 
     def test_delete_without_status_does_nothing(self, mock_api_client):
-        twingate_gateway_delete(_spec(with_id=True), {}, MagicMock(), MagicMock())
+        _call_delete(_spec(with_id=True), {})
         mock_api_client.gateway_delete.assert_not_called()
 
     def test_delete_without_id_does_nothing(self, mock_api_client):
-        twingate_gateway_delete(_spec(), {"foo": "bar"}, MagicMock(), MagicMock())
+        _call_delete(_spec(), {"foo": "bar"})
         mock_api_client.gateway_delete.assert_not_called()
 
-    def test_delete_in_use_raises_temporary_error(self, mock_api_client):
+    def test_delete_in_use_retries_while_referenced(self, mock_api_client):
+        # A Resource in this cluster still references the Gateway: retry until the
+        # Resource is gone and the Gateway is freed (bounded by the handler timeout).
         mock_api_client.gateway_delete.side_effect = GraphQLMutationError(
             "DeleteGateway", "Gateway is being used by a resource"
         )
 
         with pytest.raises(kopf.TemporaryError):
-            twingate_gateway_delete(
+            _call_delete(
                 _spec(with_id=True),
-                {"twingate_gateway_create_update": {"success": True}},
-                MagicMock(),
-                MagicMock(),
+                _STATUS,
+                resource_index={
+                    ("default", "my-gw"): [{"namespace": "default", "name": "res"}]
+                },
             )
 
-    def test_delete_ignores_other_errors(self, mock_api_client):
-        # A non "being used" backend error is logged and swallowed (no retry).
+    def test_delete_in_use_gives_up_when_unreferenced(self, mock_api_client):
+        # No in-cluster Resource references the Gateway (stale ref, or another
+        # cluster's Resource holds it): nothing to wait for, give up.
         mock_api_client.gateway_delete.side_effect = GraphQLMutationError(
-            "DeleteGateway", "already deleted"
+            "DeleteGateway", "Gateway is being used by a resource"
         )
 
-        twingate_gateway_delete(
-            _spec(with_id=True),
-            {"twingate_gateway_create_update": {"success": True}},
-            MagicMock(),
-            MagicMock(),
+        _call_delete(_spec(with_id=True), _STATUS)
+
+    def test_delete_other_error_propagates(self, mock_api_client):
+        # An unexpected backend error propagates so kopf retries (matching the other
+        # delete handlers); the client already swallows already-deleted Gateways.
+        mock_api_client.gateway_delete.side_effect = GraphQLMutationError(
+            "DeleteGateway", "boom"
         )
+
+        with pytest.raises(GraphQLMutationError, match="boom"):
+            _call_delete(_spec(with_id=True), _STATUS)
 
 
 class TestGatewayCaIndex:

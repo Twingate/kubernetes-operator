@@ -67,6 +67,16 @@ spec:
           type: string
           description: "Backend id of the signing X509 Certificate Authority."
           jsonPath: .status.x509CaId
+        - name: Service Namespace
+          type: string
+          description: "Namespace of the Service fronting the Gateway."
+          jsonPath: .spec.serviceRef.namespace
+          priority: 1
+        - name: Service
+          type: string
+          description: "Name of the Service fronting the Gateway."
+          jsonPath: .spec.serviceRef.name
+          priority: 1
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

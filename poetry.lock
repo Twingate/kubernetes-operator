@@ -2921,14 +2921,14 @@ files = [
 
 [[package]]
 name = "types-croniter"
-version = "6.2.3.20260704"
+version = "6.2.4.20260711"
 description = "Typing stubs for croniter"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "types_croniter-6.2.3.20260704-py3-none-any.whl", hash = "sha256:1e5524d73222252568cefbc69d42b4c105f5f0b749be5771c4a222d1cf84b837"},
-    {file = "types_croniter-6.2.3.20260704.tar.gz", hash = "sha256:95e0bf0ff047c7857c59da41ecd786d392e36b923d78b7cceacd8c7e6a68fb3d"},
+    {file = "types_croniter-6.2.4.20260711-py3-none-any.whl", hash = "sha256:601b68139a47fe1b2177f433132cc81fd91155f3059a49c5cb63404c389dff01"},
+    {file = "types_croniter-6.2.4.20260711.tar.gz", hash = "sha256:807793e109f4e0d51ec18f6277a1a5f1d133e425ac6bee3a7c3254ab1793e0ea"},
 ]
 
 [[package]]

@@ -516,6 +516,150 @@ def test_kubernetes_resource_with_gateway_ref_name_required(unique_resource_name
     assert "spec.gatewayRef.name: Required value" in stderr
 
 
+def test_web_app_resource_with_gateway_ref_accepted(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My WebApp Resource
+          address: "webapp.default.svc.cluster.local"
+          type: WebApp
+          gatewayRef:
+            name: my-gateway
+          downstream:
+            port: 80
+          upstream:
+            port: 8080
+        """
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_web_app_resource_must_have_gateway_ref(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "WebApp Resource requires gatewayRef" in stderr
+
+
+def test_web_app_resource_cannot_have_proxy(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+              proxy:
+                address: "my-proxy.default.cluster.local"
+                certificateAuthorityCert: "base64-encoded-cert"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "WebApp Resource requires gatewayRef and no proxy" in stderr
+
+
+def test_web_app_resource_must_have_downstream_and_upstream(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "WebApp Resource requires downstream and upstream" in stderr
+
+
+def test_non_web_app_resource_cannot_have_downstream_and_upstream(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My Network Resource
+              address: "network.default.svc.cluster.local"
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "other Resource types allow neither" in stderr
+
+
+def test_web_app_resource_rejects_out_of_range_port(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 70000
+              upstream:
+                port: 8080
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.downstream.port" in stderr
+
+
 def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
@@ -537,7 +681,7 @@ def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
 
     stderr = ex.value.stderr.decode()
     assert (
-        "isBrowserShortcutEnabled cannot be set to true for Kubernetes Resource"
+        "isBrowserShortcutEnabled can only be set to true for Network Resources"
         in stderr
     )
 

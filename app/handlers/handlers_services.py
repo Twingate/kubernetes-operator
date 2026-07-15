@@ -33,6 +33,10 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("type", str),
 ]
 TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
+GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
+GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
+DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
+UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
 
 
 def get_load_balancer_address(status: Status, service_name: str) -> str:
@@ -60,8 +64,6 @@ class ServiceType(StrEnum):
 
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
-    spec = service_body.spec
-    status = service_body.status
     service_name = service_body.meta.name
     resource_object_name = f"{service_name}-resource"
 
@@ -85,43 +87,135 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
         if value := meta.annotations.get(f"resource.twingate.com/{key}"):
             result["spec"][key] = convert_f(value)
 
-    if result["spec"].get("type") == ResourceType.KUBERNETES:
-        if not (secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
+    match result["spec"].get("type"):
+        case ResourceType.WEB_APP:
+            result["spec"] |= _web_app_spec(service_body, namespace)
+        case ResourceType.KUBERNETES:
+            result["spec"] |= _kubernetes_spec(service_body, namespace)
+        case None | ResourceType.NETWORK:
+            result["spec"]["protocols"] = _network_protocols(service_body)
+        case unsupported:
             raise kopf.PermanentError(
-                f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
+                f"Unsupported resource type {unsupported!r}; "
+                f"must be one of {[t.value for t in ResourceType]}."
             )
 
-        host = (
-            get_load_balancer_address(status, service_name)
-            if spec["type"] == ServiceType.LOAD_BALANCER
-            else f"{service_name}.{namespace}.svc.cluster.local"
-        )
-        result["spec"] |= {
-            "address": "kubernetes.default.svc.cluster.local",
-            "proxy": {
-                "address": f"{host}:443",
-                "certificateAuthorityCertSecretRef": {
-                    "name": secret_name,
-                    "namespace": namespace,
-                },
-            },
-        }
+    return result
 
+
+def _web_app_spec(service_body: Body, namespace: str) -> dict:
+    meta = service_body.metadata
+    spec = service_body.spec
+    service_name = service_body.meta.name
+
+    if not (gateway_name := meta.annotations.get(GATEWAY_NAME_ANNOTATION)):
+        raise kopf.PermanentError(
+            f"{GATEWAY_NAME_ANNOTATION} annotation is required for WebApp resources."
+        )
+
+    tcp_ports = [
+        port_obj["port"]
+        for port_obj in spec.get("ports", [])
+        if port_obj.get("protocol", "TCP") == "TCP"
+    ]
+
+    # downstream is the client-facing port and is arbitrary, so an explicit value
+    # is not constrained to the Service's ports; it defaults to the Service's port.
+    if downstream_port := meta.annotations.get(DOWNSTREAM_PORT_ANNOTATION):
+        downstream = _parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
+    else:
+        downstream = _default_service_port(
+            tcp_ports, DOWNSTREAM_PORT_ANNOTATION, service_name
+        )
+
+    # upstream is the Service's target port, so an explicit value must match a port
+    # the Service exposes; it defaults to the Service's port.
+    if upstream_port := meta.annotations.get(UPSTREAM_PORT_ANNOTATION):
+        upstream = _parse_port_annotation(UPSTREAM_PORT_ANNOTATION, upstream_port)
+        if upstream not in tcp_ports:
+            raise kopf.PermanentError(
+                f"{UPSTREAM_PORT_ANNOTATION} annotation ({upstream}) must match a "
+                f"TCP port exposed by the Service {service_name}."
+            )
+    else:
+        upstream = _default_service_port(
+            tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name
+        )
+
+    return {
+        "gatewayRef": {
+            "name": gateway_name,
+            "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
+        },
+        "downstream": {"port": downstream},
+        "upstream": {"port": upstream},
+    }
+
+
+def _kubernetes_spec(service_body: Body, namespace: str) -> dict:
+    meta = service_body.metadata
+    spec = service_body.spec
+    status = service_body.status
+    service_name = service_body.meta.name
+
+    if not (secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
+        raise kopf.PermanentError(
+            f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
+        )
+
+    host = (
+        get_load_balancer_address(status, service_name)
+        if spec["type"] == ServiceType.LOAD_BALANCER
+        else f"{service_name}.{namespace}.svc.cluster.local"
+    )
+    return {
+        "address": "kubernetes.default.svc.cluster.local",
+        "proxy": {
+            "address": f"{host}:443",
+            "certificateAuthorityCertSecretRef": {
+                "name": secret_name,
+                "namespace": namespace,
+            },
+        },
+    }
+
+
+# Only Network resources use port-based protocols. Kubernetes and WebApp resources
+# configure upstream/downstream on the gateway instead.
+def _network_protocols(service_body: Body) -> dict:
     protocols: dict = {
         "allowIcmp": False,
         "tcp": {"policy": "RESTRICTED", "ports": []},
         "udp": {"policy": "RESTRICTED", "ports": []},
     }
-    for port_obj in spec.get("ports", []):
+    for port_obj in service_body.spec.get("ports", []):
         port = port_obj["port"]
-        if port_obj["protocol"] == "TCP":
+        protocol = port_obj.get("protocol", "TCP")
+        if protocol == "TCP":
             protocols["tcp"]["ports"].append({"start": port, "end": port})
-        elif port_obj["protocol"] == "UDP":
+        elif protocol == "UDP":
             protocols["udp"]["ports"].append({"start": port, "end": port})
+    return protocols
 
-    result["spec"]["protocols"] = protocols
 
-    return result
+def _default_service_port(
+    tcp_ports: list[int], annotation: str, service_name: str
+) -> int:
+    if len(tcp_ports) != 1:
+        raise kopf.PermanentError(
+            f"{annotation} annotation is required for WebApp resources unless the "
+            f"Service {service_name} exposes exactly one TCP port."
+        )
+    return tcp_ports[0]
+
+
+def _parse_port_annotation(annotation: str, value: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        raise kopf.PermanentError(
+            f"{annotation} annotation must be an integer."
+        ) from None
 
 
 # TODO: Remove once we release v1.0 (see https://github.com/Twingate/kubernetes-operator/issues/530)

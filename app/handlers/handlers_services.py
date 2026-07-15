@@ -112,10 +112,6 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
         raise kopf.PermanentError(
             f"{GATEWAY_NAME_ANNOTATION} annotation is required for WebApp resources."
         )
-    if not (downstream_port := meta.annotations.get(DOWNSTREAM_PORT_ANNOTATION)):
-        raise kopf.PermanentError(
-            f"{DOWNSTREAM_PORT_ANNOTATION} annotation is required for WebApp resources."
-        )
 
     tcp_ports = [
         port_obj["port"]
@@ -123,6 +119,17 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
         if port_obj.get("protocol", "TCP") == "TCP"
     ]
 
+    # downstream is the client-facing port and is arbitrary, so an explicit value
+    # is not constrained to the Service's ports; it defaults to the Service's port.
+    if downstream_port := meta.annotations.get(DOWNSTREAM_PORT_ANNOTATION):
+        downstream = _parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
+    else:
+        downstream = _default_service_port(
+            tcp_ports, DOWNSTREAM_PORT_ANNOTATION, service_name
+        )
+
+    # upstream is the Service's target port, so an explicit value must match a port
+    # the Service exposes; it defaults to the Service's port.
     if upstream_port := meta.annotations.get(UPSTREAM_PORT_ANNOTATION):
         upstream = _parse_port_annotation(UPSTREAM_PORT_ANNOTATION, upstream_port)
         if upstream not in tcp_ports:
@@ -140,9 +147,7 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
             "name": gateway_name,
             "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
         },
-        "downstream": {
-            "port": _parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
-        },
+        "downstream": {"port": downstream},
         "upstream": {"port": upstream},
     }
 

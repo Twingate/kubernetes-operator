@@ -368,18 +368,45 @@ class TestServiceToTwingateResource:
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
 
-    def test_webapp_resource_type_annotation_without_downstream_port(
+    def test_webapp_resource_downstream_port_defaults_to_single_service_port(
         self, example_webapp_service_body
     ):
         del example_webapp_service_body.metadata["annotations"][
             "resource.twingate.com/downstreamPort"
         ]
 
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        # The fixture Service exposes a single TCP port (8080).
+        assert result["spec"]["downstream"] == {"port": 8080}
+
+    def test_webapp_resource_downstream_port_required_when_multiple_service_ports(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ]
+        example_webapp_service_body.spec["ports"].append(
+            {"name": "https", "protocol": "TCP", "port": 9090, "targetPort": "https"}
+        )
+
         with pytest.raises(
             kopf.PermanentError,
             match=r"resource.twingate.com/downstreamPort annotation is required",
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_explicit_downstream_port_need_not_match_service_port(
+        self, example_webapp_service_body
+    ):
+        # downstream is client-facing and arbitrary; it need not be a Service port.
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ] = "12345"
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["downstream"] == {"port": 12345}
 
     def test_webapp_resource_upstream_port_defaults_to_single_service_port(
         self, example_webapp_service_body

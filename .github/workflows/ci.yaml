@@ -49,6 +49,7 @@ jobs:
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      id: setup_python
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     - name: Install and configure Poetry
@@ -64,12 +65,16 @@ jobs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .venv
-        key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-
 
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/pre-commit/
-        key: pre-commit-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        key: pre-commit-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        restore-keys: |
+          pre-commit-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-
 
     - run: make dev-deps
     - run: make check-pre-commit skip=shellcheck,markdownlint,no-commit-to-branch
@@ -110,6 +115,7 @@ jobs:
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      id: setup_python
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     - name: Install and configure Poetry
@@ -125,7 +131,9 @@ jobs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .venv
-        key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-
 
     - run: make dev-deps
     - run: ./scripts/minikube-smoketests.sh

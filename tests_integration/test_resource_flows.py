@@ -1,15 +1,11 @@
 import os
-import time
 from unittest.mock import ANY
 
 import pytest
 from kopf.testing import KopfRunner
 
-from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
 from tests_integration.utils import (
-    assert_log_message_contains,
     assert_log_message_starts_with,
-    create_tls_secret,
     kubectl_apply,
     kubectl_create,
     kubectl_delete_wait,
@@ -101,114 +97,6 @@ def test_resource_flows(kopf_settings, kopf_runner_args, unique_resource_name):
     # fmt: on
 
 
-def test_kubernetes_resource_flows(
-    kopf_settings, kopf_runner_args, unique_resource_name
-):
-    secret_name = "gateway-tls"  # noqa: S105
-    OBJ = f"""
-        apiVersion: twingate.com/v1beta
-        kind: TwingateResource
-        metadata:
-          name: {unique_resource_name}
-        spec:
-          name: My K8S Resource
-          address: kubernetes.default.svc.cluster.local
-          type: Kubernetes
-          proxy:
-            address: gateway.default.svc.cluster.local:443
-            certificateAuthorityCert: {BASE64_OF_VALID_CA_CERT}
-          protocols:
-            allowIcmp: false
-            tcp:
-              policy: RESTRICTED
-              ports:
-              - end: 443
-                start: 443
-            udp:
-              policy: RESTRICTED
-              ports: []
-    """
-
-    OBJ_UPDATED = f"""
-        apiVersion: twingate.com/v1beta
-        kind: TwingateResource
-        metadata:
-          name: {unique_resource_name}
-        spec:
-          name: My K8S Resource
-          address: kubernetes.default.svc.cluster.local
-          type: Kubernetes
-          proxy:
-            address: gateway.default.svc.cluster.local:443
-            certificateAuthorityCertSecretRef:
-                name: {secret_name}
-          protocols:
-            allowIcmp: false
-            tcp:
-              policy: RESTRICTED
-              ports:
-              - end: 443
-                start: 443
-            udp:
-              policy: RESTRICTED
-              ports: []
-        """
-
-    base64_ca_cert = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURKakNDQWc2Z0F3SUJBZ0lRQ3VzQW56OWxEcGcxY3d5TmhlU045VEFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKc2IyTmhiQzFyZFdKbGNtNWxkR1Z6TFdGalkyVnpjeTFuWVhSbGQyRjVMV05oTUI0WApEVEkxTVRBd09ERTFNekkwTjFvWERUSTJNREV3TmpFMU16STBOMW93TFRFck1Da0dBMVVFQXhNaWJHOWpZV3d0CmEzVmlaWEp1WlhSbGN5MWhZMk5sYzNNdFoyRjBaWGRoZVMxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFPdlNGUUdNejZtRnhYMFVDcXNkTWZMMUthUHUrR1Jpa0xkRDJMaUM4N1dpK3V3dQpyOXFpK1I3MU53VFd4cWFSeHZlcE5zVzBhZEYrdjhnd0c3Nm5KanU2S3dvNVV3M3EwSWg3WWp4cXFsN0taeGJlCkNMM0JYSzhtdW9Kbk5yUmt6MzJDTFNYajZUUXNZclNGcUZabW5OSS9ma2hRT3ZoWG85SldtaGxuYXY2WCtSRGUKYWdqc29Ed2VkV2J2eXZuZHpUd1ZodVJCR0VDelhFU0dSQXkyR1VrNXoxeTY1ZjNNUDdOVit1MFowdk53MEtSawpRcmNTVDA1V0t5RWZYZUpDOHM1czZZVm9zZE1xRnRzZ1drTzg0N01OR3ZYc01yY3RTN1hNUkdNeTRwVUl6VEI1CnRyK3JhNENkZTYwZFpNNHNJODMvVmh6bnU5enhidUFGTGRVNkdGTUNBd0VBQWFOQ01FQXdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdIUVlEVlIwT0JCWUVGSWVsd3dsWGNnUy9rakZZY2hqQwpZWU1zNFFDb01BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQUk2V3JiUzA2TEdxRDl4VDdTbnhYZjl6YlQrRGhqCjZDaFhOb3NSOEJKNnhEL3YwU3NEV3ZuNkdIeFY0ZEd6YXJwVTdROUpLM0d2NlJhcmJ6M2orU2syN2I2MURmNmsKRGM1QUQ3N1hRSVovOTExUm4rcFk3c3lGaG91dVpjdFNJQXRLOTVhVnNGeTNuWkk3UFU2c01sWjNPRG5iWEpORgpMQkYwemYxYVIrdTk4Y2ZFWEIxWFJneWVJajNTdUNiQVZSNjFZY0h5NEZTNmdRMzhkR2FkalFnNlN4QWZyUlpaCkR5dEoyL3YzdmJCNFFiYVdZOHNOTDBxRVpjUGQ1eHZVTldQOVZibnZlVW1OZXBhbllabXJGV3dGMlE3V1dnZWgKVUp6dDV2ZzFENVRUcnE0eDZ1aUVML3lDZXFjaU8vSFJISTdwRk13WnlFWTYySnNONE5CejkybWYKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
-    ca_cert = r"-----BEGIN CERTIFICATE-----\nMIIDJjCCAg6gAwIBAgIQCusAnz9lDpg1cwyNheSN9TANBgkqhkiG9w0BAQsFADAt\nMSswKQYDVQQDEyJsb2NhbC1rdWJlcm5ldGVzLWFjY2Vzcy1nYXRld2F5LWNhMB4X\nDTI1MTAwODE1MzI0N1oXDTI2MDEwNjE1MzI0N1owLTErMCkGA1UEAxMibG9jYWwt\na3ViZXJuZXRlcy1hY2Nlc3MtZ2F0ZXdheS1jYTCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBAOvSFQGMz6mFxX0UCqsdMfL1KaPu+GRikLdD2LiC87Wi+uwu\nr9qi+R71NwTWxqaRxvepNsW0adF+v8gwG76nJju6Kwo5Uw3q0Ih7Yjxqql7KZxbe\nCL3BXK8muoJnNrRkz32CLSXj6TQsYrSFqFZmnNI/fkhQOvhXo9JWmhlnav6X+RDe\nagjsoDwedWbvyvndzTwVhuRBGECzXESGRAy2GUk5z1y65f3MP7NV+u0Z0vNw0KRk\nQrcST05WKyEfXeJC8s5s6YVosdMqFtsgWkO847MNGvXsMrctS7XMRGMy4pUIzTB5\ntr+ra4Cde60dZM4sI83/Vhznu9zxbuAFLdU6GFMCAwEAAaNCMEAwDgYDVR0PAQH/\nBAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFIelwwlXcgS/kjFYchjC\nYYMs4QCoMA0GCSqGSIb3DQEBCwUAA4IBAQAI6WrbS06LGqD9xT7SnxXf9zbT+Dhj\n6ChXNosR8BJ6xD/v0SsDWvn6GHxV4dGzarpU7Q9JK3Gv6Rarbz3j+Sk27b61Df6k\nDc5AD77XQIZ/911Rn+pY7syFhouuZctSIAtK95aVsFy3nZI7PU6sMlZ3ODnbXJNF\nLBF0zf1aR+u98cfEXB1XRgyeIj3SuCbAVR61YcHy4FS6gQ38dGadjQg6SxAfrRZZ\nDytJ2/v3vbB4QbaWY8sNL0qEZcPd5xvUNWP9VbnveUmNepanYZmrFWwF2Q7WWgeh\nUJzt5vg1D5TTrq4x6uiEL/yCeqciO/HRHI7pFMwZyEY62JsN4NBz92mf\n-----END CERTIFICATE-----"
-
-    # fmt: off
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-        kubectl_create(create_tls_secret(secret_name, base64_ca_cert))
-
-        kubectl_wait_to_exist("Secret", secret_name)
-
-        kubectl_apply(OBJ)
-        created_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_create")
-
-        # Update the CA cert
-        kubectl_apply(OBJ_UPDATED)
-        updated_object = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_update")
-        assert "certificateAuthorityCertSecretRef" in updated_object["spec"]["proxy"]
-        assert updated_object["spec"]["proxy"]["certificateAuthorityCertSecretRef"]["name"] == secret_name
-
-        kubectl_delete_wait("tgr", unique_resource_name)
-        kubectl_delete_wait("Secret", secret_name)
-
-    # fmt: on
-
-    # Ensure that the operator did not die on start, or during the operation.
-    assert runner.exception is None
-    assert runner.exit_code == 0
-
-    logs = load_stdout(runner.output)
-
-    # fmt: off
-
-    assert "twingate_resource_create" in created_object["status"], f"status not updated: {created_object['status']}"
-
-    twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
-
-    expected_object = {"apiVersion": "twingate.com/v1beta", "kind": "TwingateResource", "name": unique_resource_name, "uid": ANY, "namespace": "default"}
-
-    # Create
-    assert {"message": "Handler 'twingate_resource_create' succeeded.", "timestamp": ANY, "object": expected_object, "severity": "info"} in logs
-    assert twingate_id
-
-    # Update
-    assert {"message": f"Updating resource {twingate_id}", "timestamp": ANY, "object": expected_object, "severity": "info"} in logs
-    assert_log_message_contains(logs, ca_cert)
-
-    # Delete
-    assert {"message": "Twingate API Result: {'resourceDelete': {'ok': True, 'error': None}}", "timestamp": ANY, "object": expected_object, "severity": "info"} in logs
-    assert {"message": "Handler 'twingate_resource_delete' succeeded.", "timestamp": ANY, "object": expected_object, "severity": "info"} in logs
-
-    # Shutdown
-    assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
-
-    # fmt: on
-
-
 def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
     OBJ = f"""
         apiVersion: twingate.com/v1beta
@@ -259,70 +147,6 @@ def test_resource_created_before_operator_runs(run_kopf, unique_resource_name):
     assert {"message": "Activity 'shutdown' succeeded.", "timestamp": ANY, "severity": "info"} in logs
 
     # fmt: on
-
-
-def test_kubernetes_resource_tls_secret_rotation(
-    kopf_settings, kopf_runner_args, unique_resource_name
-):
-    secret_name = "gateway-tls"  # noqa: S105
-
-    initial_ca_cert = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURKakNDQWc2Z0F3SUJBZ0lRQ3VzQW56OWxEcGcxY3d5TmhlU045VEFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKc2IyTmhiQzFyZFdKbGNtNWxkR1Z6TFdGalkyVnpjeTFuWVhSbGQyRjVMV05oTUI0WApEVEkxTVRBd09ERTFNekkwTjFvWERUSTJNREV3TmpFMU16STBOMW93TFRFck1Da0dBMVVFQXhNaWJHOWpZV3d0CmEzVmlaWEp1WlhSbGN5MWhZMk5sYzNNdFoyRjBaWGRoZVMxallUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFPdlNGUUdNejZtRnhYMFVDcXNkTWZMMUthUHUrR1Jpa0xkRDJMaUM4N1dpK3V3dQpyOXFpK1I3MU53VFd4cWFSeHZlcE5zVzBhZEYrdjhnd0c3Nm5KanU2S3dvNVV3M3EwSWg3WWp4cXFsN0taeGJlCkNMM0JYSzhtdW9Kbk5yUmt6MzJDTFNYajZUUXNZclNGcUZabW5OSS9ma2hRT3ZoWG85SldtaGxuYXY2WCtSRGUKYWdqc29Ed2VkV2J2eXZuZHpUd1ZodVJCR0VDelhFU0dSQXkyR1VrNXoxeTY1ZjNNUDdOVit1MFowdk53MEtSawpRcmNTVDA1V0t5RWZYZUpDOHM1czZZVm9zZE1xRnRzZ1drTzg0N01OR3ZYc01yY3RTN1hNUkdNeTRwVUl6VEI1CnRyK3JhNENkZTYwZFpNNHNJODMvVmh6bnU5enhidUFGTGRVNkdGTUNBd0VBQWFOQ01FQXdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdIUVlEVlIwT0JCWUVGSWVsd3dsWGNnUy9rakZZY2hqQwpZWU1zNFFDb01BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQUk2V3JiUzA2TEdxRDl4VDdTbnhYZjl6YlQrRGhqCjZDaFhOb3NSOEJKNnhEL3YwU3NEV3ZuNkdIeFY0ZEd6YXJwVTdROUpLM0d2NlJhcmJ6M2orU2syN2I2MURmNmsKRGM1QUQ3N1hRSVovOTExUm4rcFk3c3lGaG91dVpjdFNJQXRLOTVhVnNGeTNuWkk3UFU2c01sWjNPRG5iWEpORgpMQkYwemYxYVIrdTk4Y2ZFWEIxWFJneWVJajNTdUNiQVZSNjFZY0h5NEZTNmdRMzhkR2FkalFnNlN4QWZyUlpaCkR5dEoyL3YzdmJCNFFiYVdZOHNOTDBxRVpjUGQ1eHZVTldQOVZibnZlVW1OZXBhbllabXJGV3dGMlE3V1dnZWgKVUp6dDV2ZzFENVRUcnE0eDZ1aUVML3lDZXFjaU8vSFJISTdwRk13WnlFWTYySnNONE5CejkybWYKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
-
-    RESOURCE_OBJ = f"""
-        apiVersion: twingate.com/v1beta
-        kind: TwingateResource
-        metadata:
-          name: {unique_resource_name}
-        spec:
-          name: My K8S Resource
-          address: kubernetes.default.svc.cluster.local
-          type: Kubernetes
-          proxy:
-            address: gateway.default.svc.cluster.local:443
-            certificateAuthorityCertSecretRef:
-                name: {secret_name}
-                namespace: default
-          protocols:
-            allowIcmp: false
-            tcp:
-              policy: RESTRICTED
-              ports:
-              - end: 443
-                start: 443
-            udp:
-              policy: RESTRICTED
-              ports: []
-    """
-
-    with KopfRunner(kopf_runner_args, settings=kopf_settings) as runner:
-        # Create secret with initial CA cert, then create the TwingateResource
-        kubectl_create(create_tls_secret(secret_name, initial_ca_cert))
-        kubectl_wait_to_exist("Secret", secret_name)
-
-        kubectl_apply(RESOURCE_OBJ)
-        created_object = kubectl_wait_object_handler_success(
-            "tgr", unique_resource_name, "twingate_resource_create"
-        )
-
-        # Rotate the TLS secret with a different CA cert
-        kubectl_apply(create_tls_secret(secret_name, BASE64_OF_VALID_CA_CERT))
-
-        # Sleep to allow time for the secret watcher to detect the change and trigger an update
-        time.sleep(10)
-
-        kubectl_delete_wait("tgr", unique_resource_name)
-        kubectl_delete_wait("Secret", secret_name)
-
-    assert runner.exception is None
-    assert runner.exit_code == 0
-
-    logs = load_stdout(runner.output)
-
-    # Verify resource_update was called for the resource
-    twingate_id = created_object["status"]["twingate_resource_create"]["twingate_id"]
-    assert_log_message_contains(logs, f"Updating resource {twingate_id}")
-
-    assert_log_message_starts_with(logs, f"Got resource id='{twingate_id}'")
 
 
 ACCESS_OBJECTS = {

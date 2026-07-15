@@ -90,9 +90,6 @@ class KubernetesResourceFactory(BaseResourceFactory):
     class Meta:
         model = KubernetesResource
 
-    proxy_address = factory.Faker("hostname")
-    certificate_authority_cert = VALID_CA_CERT
-
 
 class ResourceDownstreamFactory(factory.Factory):
     class Meta:

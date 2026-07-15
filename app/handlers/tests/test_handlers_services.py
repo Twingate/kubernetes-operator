@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import kopf
 import kubernetes
@@ -9,7 +9,6 @@ from kopf._core.intents.causes import Reason
 from app.crds import ResourceType
 from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,
-    TLS_OBJECT_ANNOTATION,
     k8s_get_twingate_resource,
     service_to_twingate_resource,
     twingate_service_annotation_removed,
@@ -48,67 +47,6 @@ def example_service_body():
           port: 22
           targetPort: 9376
           name: ssh
-    """
-    return kopf.Body(yaml.safe_load(yaml_str))
-
-
-@pytest.fixture
-def example_cluster_ip_gateway_service_body():
-    yaml_str = """
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: kubernetes-gateway
-      labels:
-        env: dev
-      annotations:
-        resource.twingate.com: "true"
-        resource.twingate.com/type: "Kubernetes"
-        resource.twingate.com/tlsSecret: "gateway-tls"
-        resource.twingate.com/alias: "alias.int"
-    spec:
-      selector:
-        app.kubernetes.io/name: gateway
-        app.kubernetes.io/instance: kubernetes
-      type: ClusterIP
-      ports:
-        - name: https
-          protocol: TCP
-          port: 443
-          targetPort: https
-    """
-    return kopf.Body(yaml.safe_load(yaml_str))
-
-
-@pytest.fixture
-def example_load_balancer_gateway_service_body():
-    yaml_str = """
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: kubernetes-gateway
-      labels:
-        env: dev
-      annotations:
-        resource.twingate.com: "true"
-        resource.twingate.com/type: "Kubernetes"
-        resource.twingate.com/tlsSecret: "gateway-tls"
-        resource.twingate.com/alias: "alias.int"
-    spec:
-      selector:
-        app.kubernetes.io/name: gateway
-        app.kubernetes.io/instance: kubernetes
-      type: LoadBalancer
-      ports:
-        - name: https
-          protocol: TCP
-          port: 443
-          targetPort: https
-    status:
-      loadBalancer:
-        ingress:
-        - ip: 10.0.0.1
-          ipMode: VIP
     """
     return kopf.Body(yaml.safe_load(yaml_str))
 
@@ -200,116 +138,6 @@ class TestServiceToTwingateResource:
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected
 
-    def test_kubernetes_resource_type_annotation(
-        self, example_cluster_ip_gateway_service_body
-    ):
-        tls_object_name = "gateway-tls"
-        namespace = "custom-namespace"
-
-        result = service_to_twingate_resource(
-            example_cluster_ip_gateway_service_body, namespace
-        )
-
-        assert result["spec"] == {
-            "name": "kubernetes-gateway-resource",
-            "address": "kubernetes.default.svc.cluster.local",
-            "alias": "alias.int",
-            "proxy": {
-                "address": "kubernetes-gateway.custom-namespace.svc.cluster.local:443",
-                "certificateAuthorityCertSecretRef": {
-                    "name": tls_object_name,
-                    "namespace": namespace,
-                },
-            },
-            "type": ResourceType.KUBERNETES,
-        }
-
-    def test_kubernetes_resource_type_annotation_without_tls_secret_annotation(
-        self, example_cluster_ip_gateway_service_body
-    ):
-        example_cluster_ip_gateway_service_body.metadata["annotations"][
-            TLS_OBJECT_ANNOTATION
-        ] = None
-
-        with pytest.raises(
-            kopf.PermanentError,
-            match=r"resource.twingate.com/tlsSecret annotation is not provided",
-        ):
-            service_to_twingate_resource(
-                example_cluster_ip_gateway_service_body, "default"
-            )
-
-    @pytest.mark.parametrize(
-        ("status", "expected"),
-        [
-            ({"loadBalancer": {"ingress": [{"ip": "1.2.3.4"}]}}, "1.2.3.4:443"),
-            (
-                {"loadBalancer": {"ingress": [{"hostname": "gateway.hostname.int"}]}},
-                "gateway.hostname.int:443",
-            ),
-        ],
-    )
-    def test_kubernetes_resource_with_load_balancer_service_type(
-        self, example_load_balancer_gateway_service_body, status, expected
-    ):
-        tls_object_name = "gateway-tls"
-        namespace = "default"
-
-        with patch(
-            "kopf._cogs.structs.bodies.Body.status",
-            new_callable=PropertyMock,
-            return_value=status,
-        ):
-            result = service_to_twingate_resource(
-                example_load_balancer_gateway_service_body, namespace
-            )
-
-        assert result["spec"] == {
-            "name": "kubernetes-gateway-resource",
-            "address": "kubernetes.default.svc.cluster.local",
-            "alias": "alias.int",
-            "proxy": {
-                "address": expected,
-                "certificateAuthorityCertSecretRef": {
-                    "name": tls_object_name,
-                    "namespace": namespace,
-                },
-            },
-            "type": ResourceType.KUBERNETES,
-        }
-
-    @pytest.mark.parametrize(
-        "status",
-        [
-            {},
-            {"loadBalancer": {}},
-            {"loadBalancer": {"ingress": []}},
-            {"loadBalancer": {"ingress": [{"ip": None}]}},
-            {"loadBalancer": {"ingress": [{"hostname": None}]}},
-        ],
-    )
-    def test_kubernetes_resource_when_load_balancer_ip_is_not_ready(
-        self,
-        example_load_balancer_gateway_service_body,
-        kopf_handler_runner,
-        k8s_customobjects_client_mock,
-        status,
-    ):
-        with (
-            patch(
-                "kopf._cogs.structs.bodies.Body.status",
-                new_callable=PropertyMock,
-                return_value=status,
-            ),
-            pytest.raises(
-                kopf.TemporaryError,
-                match=r"Kubernetes Service: kubernetes-gateway LoadBalancer is not ready.",
-            ),
-        ):
-            service_to_twingate_resource(
-                example_load_balancer_gateway_service_body, "default"
-            )
-
     def test_webapp_resource_type_annotation(self, example_webapp_service_body):
         namespace = "custom-namespace"
 
@@ -344,14 +172,17 @@ class TestServiceToTwingateResource:
             "namespace": "gateway-namespace",
         }
 
-    def test_unsupported_resource_type_annotation(self, example_service_body):
+    @pytest.mark.parametrize("resource_type", ["Bogus", "Kubernetes"])
+    def test_unsupported_resource_type_annotation(
+        self, example_service_body, resource_type
+    ):
         example_service_body.metadata["annotations"]["resource.twingate.com/type"] = (
-            "Bogus"
+            resource_type
         )
 
         with pytest.raises(
             kopf.PermanentError,
-            match=r"Unsupported resource type 'Bogus'",
+            match=rf"Unsupported resource type '{resource_type}'",
         ):
             service_to_twingate_resource(example_service_body, "default")
 

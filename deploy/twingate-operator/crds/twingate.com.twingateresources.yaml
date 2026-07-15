@@ -20,8 +20,8 @@ spec:
               x-kubernetes-validations:
                 - rule: (self.isBrowserShortcutEnabled && !(self.address.contains('*') || self.address.contains('?'))) || (self.isBrowserShortcutEnabled == false)
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
-                - rule: (self.type == "Network" && !has(self.proxy) && !has(self.gatewayRef)) || (self.type == "Kubernetes" && (has(self.proxy) != has(self.gatewayRef))) || (self.type == "WebApp" && has(self.gatewayRef) && !has(self.proxy))
-                  message: "Kubernetes Resource requires exactly one of proxy (deprecated) or gatewayRef; WebApp Resource requires gatewayRef and no proxy; Network Resource allows neither"
+                - rule: (self.type == "Network" && !has(self.gatewayRef)) || ((self.type == "Kubernetes" || self.type == "WebApp") && has(self.gatewayRef))
+                  message: "Kubernetes and WebApp Resources require gatewayRef; Network Resources do not allow it"
                 - rule: (self.type == "WebApp" && has(self.downstream) && has(self.upstream)) || (self.type != "WebApp" && !has(self.downstream) && !has(self.upstream))
                   message: "WebApp Resource requires downstream and upstream; other Resource types allow neither"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
@@ -139,34 +139,10 @@ spec:
                   x-kubernetes-validations:
                     - rule: self == oldSelf
                       message: "Resource type is immutable"
-                proxy:
-                  type: object
-                  required: ["address"]
-                  oneOf:
-                    - required: ["certificateAuthorityCertSecretRef"]
-                    - required: ["certificateAuthorityCert"]
-                  properties:
-                    address:
-                      type: string
-                      description: "Address of the proxy."
-                    certificateAuthorityCert:
-                      type: string
-                      description: "Base64-encoded certificate of the Certificate Authority issuing the proxy's TLS certificate."
-                    certificateAuthorityCertSecretRef:
-                      type: object
-                      required: ["name"]
-                      properties:
-                        name:
-                          type: string
-                          description: "Name of the Secret object containing the certificate of the Certificate Authority issuing the proxy's TLS certificate."
-                        namespace:
-                          type: string
-                          default: default
-                          description: "Namespace of the Secret object."
                 gatewayRef:
                   type: object
                   required: ["name"]
-                  description: "Reference to the TwingateGateway this Kubernetes or WebApp Resource is served by. For Kubernetes Resources it replaces the deprecated proxy field."
+                  description: "Reference to the TwingateGateway this Kubernetes or WebApp Resource is served by."
                   properties:
                     name:
                       type: string

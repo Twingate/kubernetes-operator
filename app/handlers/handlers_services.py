@@ -154,18 +154,20 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
     }
 
     if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
+        invalid_msg = (
+            f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
+            "object mapping header names to string values."
+        )
         try:
             parsed = json.loads(rewrites)
         except json.JSONDecodeError as ex:
-            raise kopf.PermanentError(
-                f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
-                "object mapping header names to values."
-            ) from ex
-        if not isinstance(parsed, dict):
-            raise kopf.PermanentError(
-                f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
-                "object mapping header names to values."
-            )
+            raise kopf.PermanentError(invalid_msg) from ex
+
+        if not isinstance(parsed, dict) or not all(
+            isinstance(value, str) for value in parsed.values()
+        ):
+            raise kopf.PermanentError(invalid_msg)
+
         web_app_spec["requestHeaderRewrites"] = parsed
 
     return web_app_spec

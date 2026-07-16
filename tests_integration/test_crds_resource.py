@@ -715,6 +715,38 @@ def test_web_app_resource_request_header_rewrite_requires_name_and_value(
     assert "value" in stderr
 
 
+def test_web_app_resource_rejects_duplicate_request_header_rewrite_names(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+              requestHeaderRewrites:
+                - name: X-Forwarded-Host
+                  value: web-app.int
+                - name: X-Forwarded-Host
+                  value: other.int
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "duplicate" in stderr.lower()
+
+
 def test_non_web_app_resource_cannot_have_request_header_rewrites(
     unique_resource_name,
 ):

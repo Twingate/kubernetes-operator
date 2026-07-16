@@ -200,6 +200,8 @@ spec:
                 requestHeaderRewrites:
                   type: array
                   description: "HTTP headers to rewrite on requests to the upstream of a WebApp Resource."
+                  x-kubernetes-list-type: map
+                  x-kubernetes-list-map-keys: ["name"]
                   items:
                     type: object
                     required: ["name", "value"]

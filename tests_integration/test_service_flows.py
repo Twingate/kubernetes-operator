@@ -587,7 +587,9 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
                 "gatewayRef": {"name": gw_name, "namespace": "default"},
                 "downstream": {"port": 80},
                 "upstream": {"port": 8080},
-                "requestHeaderRewrites": {"X-Forwarded-Host": "web-app.int"},
+                "requestHeaderRewrites": [
+                    {"name": "X-Forwarded-Host", "value": "web-app.int"}
+                ],
                 "id": ANY,
                 "isBrowserShortcutEnabled": False,
                 "isVisible": True,

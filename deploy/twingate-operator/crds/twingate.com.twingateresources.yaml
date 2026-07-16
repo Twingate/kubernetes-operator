@@ -198,10 +198,18 @@ spec:
                       maximum: 65535
                       description: "The upstream port."
                 requestHeaderRewrites:
-                  type: object
-                  description: "HTTP headers to rewrite on requests to the upstream of a WebApp Resource. Maps header name to value."
-                  additionalProperties:
-                    type: string
+                  type: array
+                  description: "HTTP headers to rewrite on requests to the upstream of a WebApp Resource."
+                  items:
+                    type: object
+                    required: ["name", "value"]
+                    properties:
+                      name:
+                        type: string
+                        description: "The header name."
+                      value:
+                        type: string
+                        description: "The header value."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

@@ -573,7 +573,7 @@ def test_network_resource_rejects_request_header_rewrites():
         ResourceSpec(
             name="My Network Resource",
             address="network.default.cluster.local",
-            request_header_rewrites={"X-Foo": "bar"},
+            request_header_rewrites=[{"name": "X-Foo", "value": "bar"}],
         )
 
 
@@ -585,7 +585,7 @@ def test_web_app_resource_spec_to_graphql_arguments():
         gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
         downstream=ResourceDownstream(port=80),
         upstream=ResourceUpstream(port=8080),
-        request_header_rewrites={"X-Forwarded-Host": "web-app.int"},
+        request_header_rewrites=[{"name": "X-Forwarded-Host", "value": "web-app.int"}],
     )
 
     with patch(

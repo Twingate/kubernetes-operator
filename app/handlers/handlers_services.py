@@ -168,7 +168,9 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
         ):
             raise kopf.PermanentError(invalid_msg)
 
-        web_app_spec["requestHeaderRewrites"] = parsed
+        web_app_spec["requestHeaderRewrites"] = [
+            {"name": name, "value": value} for name, value in parsed.items()
+        ]
 
     return web_app_spec
 

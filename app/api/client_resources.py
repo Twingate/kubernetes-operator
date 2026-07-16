@@ -331,7 +331,7 @@ class WebAppResource(BaseResource):
                 gateway { id }
                 downstream { port }
                 upstream { port }
-                requestHeaderRewrites { key value }
+                requestHeaderRewrites { name: key value }
             }
             """
         )
@@ -365,10 +365,10 @@ class WebAppResource(BaseResource):
         if self.upstream.port != crd_upstream_port:
             diff["upstream"] = Diff(remote=self.upstream.port, local=crd_upstream_port)
 
-        # Header rewrites are an unordered map of header name -> value, so compare
-        # them as dicts to avoid spurious diffs from ordering.
-        remote_headers = {h.key: h.value for h in self.request_header_rewrites}
-        crd_headers = crd.request_header_rewrites or {}
+        # Header rewrites are unordered, so compare them as name -> value dicts to
+        # avoid spurious diffs from ordering.
+        remote_headers = {h.name: h.value for h in self.request_header_rewrites}
+        crd_headers = {h.name: h.value for h in (crd.request_header_rewrites or [])}
         if remote_headers != crd_headers:
             diff["request_header_rewrites"] = Diff(
                 remote=remote_headers, local=crd_headers
@@ -382,9 +382,7 @@ class WebAppResource(BaseResource):
                 "type": ResourceType.WEB_APP,
                 "downstream": self.downstream,
                 "upstream": self.upstream,
-                "request_header_rewrites": {
-                    h.key: h.value for h in self.request_header_rewrites
-                },
+                "request_header_rewrites": self.request_header_rewrites,
             }
             | super().to_spec_dict()
             | overrides
@@ -415,7 +413,7 @@ QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
                 gateway { id }
                 downstream { port }
                 upstream { port }
-                requestHeaderRewrites { key value }
+                requestHeaderRewrites { name: key value }
             }
         }
     }

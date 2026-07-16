@@ -497,10 +497,10 @@ class TestServiceToTwingateResource:
 
         result = service_to_twingate_resource(example_webapp_service_body, "default")
 
-        assert result["spec"]["requestHeaderRewrites"] == {
-            "Host": "example.com",
-            "X-Foo": "bar",
-        }
+        assert result["spec"]["requestHeaderRewrites"] == [
+            {"name": "Host", "value": "example.com"},
+            {"name": "X-Foo", "value": "bar"},
+        ]
 
     def test_webapp_resource_without_request_header_rewrites(
         self, example_webapp_service_body

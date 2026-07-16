@@ -214,7 +214,7 @@ class RequestHeaderRewrite(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    key: str
+    name: str
     value: str
 
 
@@ -250,9 +250,8 @@ class ResourceSpec(BaseModel):
     # (downstream = client-facing, upstream = backend).
     downstream: ResourceDownstream | None = None
     upstream: ResourceUpstream | None = None
-    # (WebApp only) HTTP headers to rewrite on requests to the upstream
-    # (header name -> value).
-    request_header_rewrites: dict[str, str] | None = None
+    # (WebApp only) HTTP headers to rewrite on requests to the upstream.
+    request_header_rewrites: list[RequestHeaderRewrite] | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -374,8 +373,8 @@ class ResourceSpec(BaseModel):
                     "downstream": downstream.model_dump(by_alias=True),
                     "upstream": upstream.model_dump(by_alias=True),
                     "request_header_rewrites": [
-                        {"key": key, "value": value}
-                        for key, value in (self.request_header_rewrites or {}).items()
+                        {"key": h.name, "value": h.value}
+                        for h in (self.request_header_rewrites or [])
                     ],
                 }
 

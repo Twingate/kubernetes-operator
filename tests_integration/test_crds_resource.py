@@ -678,11 +678,41 @@ def test_web_app_resource_with_request_header_rewrites_accepted(unique_resource_
           upstream:
             port: 8080
           requestHeaderRewrites:
-            X-Forwarded-Host: web-app.int
+            - name: X-Forwarded-Host
+              value: web-app.int
         """
     )
     assert result.returncode == 0
     kubectl_delete("tgr", unique_resource_name)
+
+
+def test_web_app_resource_request_header_rewrite_requires_name_and_value(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+              requestHeaderRewrites:
+                - name: X-Forwarded-Host
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "value" in stderr
 
 
 def test_non_web_app_resource_cannot_have_request_header_rewrites(
@@ -699,7 +729,8 @@ def test_non_web_app_resource_cannot_have_request_header_rewrites(
               name: My Network Resource
               address: "network.default.svc.cluster.local"
               requestHeaderRewrites:
-                X-Forwarded-Host: web-app.int
+                - name: X-Forwarded-Host
+                  value: web-app.int
             """
         )
 

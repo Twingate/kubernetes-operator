@@ -324,13 +324,16 @@ class TestWebAppResourceModel:
         resource = web_app_resource_factory(
             gateway=ResourceGateway(id="gw-1"),
             request_header_rewrites=[
-                RequestHeaderRewrite(key="X-A", value="1"),
-                RequestHeaderRewrite(key="X-B", value="2"),
+                RequestHeaderRewrite(name="X-A", value="1"),
+                RequestHeaderRewrite(name="X-B", value="2"),
             ],
         )
         crd = resource.to_spec(
             gateway_ref={"name": "my-gateway"},
-            request_header_rewrites={"X-B": "2", "X-A": "1"},
+            request_header_rewrites=[
+                {"name": "X-B", "value": "2"},
+                {"name": "X-A", "value": "1"},
+            ],
         )
 
         with patch(
@@ -341,11 +344,11 @@ class TestWebAppResourceModel:
     def test_get_spec_diff_for_header_rewrite_drift(self, web_app_resource_factory):
         resource = web_app_resource_factory(
             gateway=ResourceGateway(id="gw-1"),
-            request_header_rewrites=[RequestHeaderRewrite(key="X-A", value="1")],
+            request_header_rewrites=[RequestHeaderRewrite(name="X-A", value="1")],
         )
         crd = resource.to_spec(
             gateway_ref={"name": "my-gateway"},
-            request_header_rewrites={"X-A": "2"},
+            request_header_rewrites=[{"name": "X-A", "value": "2"}],
         )
 
         with patch(

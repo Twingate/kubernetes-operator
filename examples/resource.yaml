@@ -38,4 +38,4 @@ spec:
     port: 8080
   requestHeaderRewrites:
     - name: Authorization
-      value: "Bearer {{ twingate.jwt }}"
+      value: "Bearer {{ jwt }}"

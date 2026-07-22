@@ -28,8 +28,8 @@ def example_service_body():
       labels:
         env: dev
       annotations:
-        twingate.com/resource: "true"
-        twingate.com/resource-alias: "myapp.internal"
+        resource.twingate.com: "true"
+        resource.twingate.com/alias: "myapp.internal"
     spec:
       type: ClusterIP
       selector:
@@ -130,7 +130,7 @@ class TestServiceToTwingateResource:
         if annotation_name_converter is not None:
             name, _ = annotation_name_converter
             example_service_body.metadata["annotations"][
-                f"twingate.com/resource-{name}"
+                f"resource.twingate.com/{name}"
             ] = str(expected_annotation_values[name])
 
             expected["spec"][name] = expected_annotation_values[name]

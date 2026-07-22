@@ -435,14 +435,23 @@ def test_web_app_resource_requires_downstream_and_upstream():
 
 
 def test_network_resource_rejects_downstream_and_upstream():
-    with pytest.raises(
-        ValueError, match="Network resources cannot set `downstream` or `upstream`"
-    ):
+    with pytest.raises(ValueError, match="Network resources cannot set `downstream`"):
         ResourceSpec(
             name="My Network Resource",
             address="network.default.cluster.local",
             downstream=ResourceDownstream(port=80),
             upstream=ResourceUpstream(port=8080),
+        )
+
+
+def test_network_resource_rejects_request_header_rewrites():
+    with pytest.raises(
+        ValueError, match=r"Network resources cannot set .*`requestHeaderRewrites`"
+    ):
+        ResourceSpec(
+            name="My Network Resource",
+            address="network.default.cluster.local",
+            request_header_rewrites=[{"name": "X-Foo", "value": "bar"}],
         )
 
 
@@ -454,6 +463,7 @@ def test_web_app_resource_spec_to_graphql_arguments():
         gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
         downstream=ResourceDownstream(port=80),
         upstream=ResourceUpstream(port=8080),
+        request_header_rewrites=[{"name": "X-Forwarded-Host", "value": "web-app.int"}],
     )
 
     with patch(
@@ -467,10 +477,29 @@ def test_web_app_resource_spec_to_graphql_arguments():
     assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
     assert graphql_arguments["downstream"] == {"port": 80}
     assert graphql_arguments["upstream"] == {"port": 8080}
+    assert graphql_arguments["request_header_rewrites"] == [
+        {"key": "X-Forwarded-Host", "value": "web-app.int"}
+    ]
     assert "proxy_address" not in graphql_arguments
     assert "gateway_ref" not in graphql_arguments
     assert "type" not in graphql_arguments
     assert "protocols" not in graphql_arguments
+
+
+def test_web_app_resource_spec_to_graphql_arguments_without_header_rewrites():
+    resource_spec = ResourceSpec(
+        name="My WebApp Resource",
+        address="webapp.default.cluster.local",
+        type=ResourceType.WEB_APP,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        downstream=ResourceDownstream(port=80),
+        upstream=ResourceUpstream(port=8080),
+    )
+
+    with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+        graphql_arguments = resource_spec.to_graphql_arguments(labels={})
+
+    assert graphql_arguments["request_header_rewrites"] == []
 
 
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(

@@ -35,6 +35,8 @@ metadata:
     # Optional. Upstream (target) port. Defaults to the Service's port when it
     # exposes exactly one; required if the Service exposes multiple ports.
     # resource.twingate.com/upstreamPort: "8080"
+    # Optional. HTTP headers to rewrite on requests to the upstream (WebApp only).
+    # resource.twingate.com/requestHeaderRewrites: '{"Host":"example.com"}'
     resource.twingate.com/alias: "webapp.internal"
 spec:
   selector:

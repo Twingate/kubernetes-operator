@@ -583,6 +583,116 @@ def test_web_app_resource_rejects_out_of_range_port(unique_resource_name):
     assert "spec.downstream.port" in stderr
 
 
+def test_web_app_resource_with_request_header_rewrites_accepted(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My WebApp Resource
+          address: "webapp.default.svc.cluster.local"
+          type: WebApp
+          gatewayRef:
+            name: my-gateway
+          downstream:
+            port: 80
+          upstream:
+            port: 8080
+          requestHeaderRewrites:
+            - name: X-Forwarded-Host
+              value: web-app.int
+        """
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_web_app_resource_request_header_rewrite_requires_name_and_value(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+              requestHeaderRewrites:
+                - name: X-Forwarded-Host
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "value" in stderr
+
+
+def test_web_app_resource_rejects_duplicate_request_header_rewrite_names(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 80
+              upstream:
+                port: 8080
+              requestHeaderRewrites:
+                - name: X-Forwarded-Host
+                  value: web-app.int
+                - name: X-Forwarded-Host
+                  value: other.int
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "duplicate" in stderr.lower()
+
+
+def test_non_web_app_resource_cannot_have_request_header_rewrites(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My Network Resource
+              address: "network.default.svc.cluster.local"
+              requestHeaderRewrites:
+                - name: X-Forwarded-Host
+                  value: web-app.int
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "requestHeaderRewrites can only be set for WebApp Resources" in stderr
+
+
 def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(

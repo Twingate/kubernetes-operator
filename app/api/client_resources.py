@@ -10,6 +10,7 @@ from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import (
     ProtocolPolicy,
+    RequestHeaderRewrite,
     ResourceDownstream,
     ResourceSpec,
     ResourceType,
@@ -281,6 +282,7 @@ class WebAppResource(BaseResource):
     gateway: ResourceGateway | None = None
     downstream: ResourceDownstream
     upstream: ResourceUpstream
+    request_header_rewrites: list[RequestHeaderRewrite] = Field(default_factory=list)
 
     @staticmethod
     def get_graphql_fragment():
@@ -292,6 +294,7 @@ class WebAppResource(BaseResource):
                 gateway { id }
                 downstream { port }
                 upstream { port }
+                requestHeaderRewrites { name: key value }
             }
             """
         )
@@ -325,6 +328,15 @@ class WebAppResource(BaseResource):
         if self.upstream.port != crd_upstream_port:
             diff["upstream"] = Diff(remote=self.upstream.port, local=crd_upstream_port)
 
+        # Header rewrites are unordered, so compare them as name -> value dicts to
+        # avoid spurious diffs from ordering.
+        remote_headers = {h.name: h.value for h in self.request_header_rewrites}
+        crd_headers = {h.name: h.value for h in (crd.request_header_rewrites or [])}
+        if remote_headers != crd_headers:
+            diff["request_header_rewrites"] = Diff(
+                remote=remote_headers, local=crd_headers
+            )
+
         return diff
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
@@ -333,6 +345,7 @@ class WebAppResource(BaseResource):
                 "type": ResourceType.WEB_APP,
                 "downstream": self.downstream,
                 "upstream": self.upstream,
+                "request_header_rewrites": self.request_header_rewrites,
             }
             | super().to_spec_dict()
             | overrides
@@ -361,6 +374,7 @@ QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
                 gateway { id }
                 downstream { port }
                 upstream { port }
+                requestHeaderRewrites { name: key value }
             }
         }
     }
@@ -444,6 +458,7 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
         $gatewayId: ID!
         $downstream: WebAppDownstreamInput!
         $upstream: WebAppUpstreamInput!
+        $requestHeaderRewrites: [KeyValueInputObject!]
     ) {
         webAppResourceCreate(
             name: $name
@@ -456,6 +471,7 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             gatewayId: $gatewayId
             downstream: $downstream
             upstream: $upstream
+            requestHeaderRewrites: $requestHeaderRewrites
         ) {
             ok
             error
@@ -552,6 +568,7 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
         $gatewayId: ID
         $downstream: WebAppDownstreamInput
         $upstream: WebAppUpstreamInput
+        $requestHeaderRewrites: [KeyValueInputObject!]
     ) {
         webAppResourceUpdate(
             id: $id,
@@ -565,6 +582,7 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             gatewayId: $gatewayId
             downstream: $downstream
             upstream: $upstream
+            requestHeaderRewrites: $requestHeaderRewrites
         ) {
             ok
             error
@@ -705,6 +723,7 @@ class TwingateResourceAPIs:
         gateway_id: str,
         downstream: dict[str, Any],
         upstream: dict[str, Any],
+        request_header_rewrites: list[dict[str, str]],
     ) -> WebAppResource:
         result = self.execute_mutation(
             "webAppResourceCreate",
@@ -721,6 +740,7 @@ class TwingateResourceAPIs:
                     "gatewayId": gateway_id,
                     "downstream": downstream,
                     "upstream": upstream,
+                    "requestHeaderRewrites": request_header_rewrites,
                 },
             ),
         )
@@ -822,6 +842,7 @@ class TwingateResourceAPIs:
         gateway_id: str,
         downstream: dict[str, Any],
         upstream: dict[str, Any],
+        request_header_rewrites: list[dict[str, str]],
     ) -> WebAppResource | None:
         result = self.execute_mutation(
             "webAppResourceUpdate",
@@ -839,6 +860,7 @@ class TwingateResourceAPIs:
                     "gatewayId": gateway_id,
                     "downstream": downstream,
                     "upstream": upstream,
+                    "requestHeaderRewrites": request_header_rewrites,
                 },
             ),
         )

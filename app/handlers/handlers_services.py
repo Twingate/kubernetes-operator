@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 
 import kopf
@@ -35,6 +36,7 @@ GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
 UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
+REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 
 
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
@@ -115,7 +117,7 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
             tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name
         )
 
-    return {
+    web_app_spec: dict = {
         "gatewayRef": {
             "name": gateway_name,
             "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
@@ -123,6 +125,27 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
         "downstream": {"port": downstream},
         "upstream": {"port": upstream},
     }
+
+    if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
+        invalid_msg = (
+            f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
+            "object mapping header names to string values."
+        )
+        try:
+            parsed = json.loads(rewrites)
+        except json.JSONDecodeError as ex:
+            raise kopf.PermanentError(invalid_msg) from ex
+
+        if not isinstance(parsed, dict) or not all(
+            isinstance(value, str) for value in parsed.values()
+        ):
+            raise kopf.PermanentError(invalid_msg)
+
+        web_app_spec["requestHeaderRewrites"] = [
+            {"name": name, "value": value} for name, value in parsed.items()
+        ]
+
+    return web_app_spec
 
 
 # Only Network resources use port-based protocols. WebApp resources configure

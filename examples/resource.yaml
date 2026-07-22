@@ -36,3 +36,6 @@ spec:
     port: 80
   upstream:
     port: 8080
+  requestHeaderRewrites:
+    - name: Authorization
+      value: "Bearer {{ jwt }}"

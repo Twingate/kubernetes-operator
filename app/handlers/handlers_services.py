@@ -83,9 +83,6 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     }
 
     for key, convert_f in ALLOWED_EXTRA_ANNOTATIONS:
-        # TODO: Remove once we release v1.0 (see https://github.com/Twingate/kubernetes-operator/issues/530)
-        if value := meta.annotations.get(f"twingate.com/resource-{key}"):
-            result["spec"][key] = convert_f(value)
         if value := meta.annotations.get(f"resource.twingate.com/{key}"):
             result["spec"][key] = convert_f(value)
 
@@ -241,10 +238,6 @@ def _parse_port_annotation(annotation: str, value: str) -> int:
         ) from None
 
 
-# TODO: Remove once we release v1.0 (see https://github.com/Twingate/kubernetes-operator/issues/530)
-@kopf.on.resume("service", annotations={"twingate.com/resource": "true"})
-@kopf.on.create("service", annotations={"twingate.com/resource": "true"})
-@kopf.on.update("service", annotations={"twingate.com/resource": "true"})
 @kopf.on.resume("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.create("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.update("service", annotations={"resource.twingate.com": "true"})
@@ -294,9 +287,6 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
 
 
 # Use Tuple for the field to properly escape dots in the annotation key.
-@kopf.on.update(
-    "service", field=("metadata", "annotations", "twingate.com/resource"), old="true"
-)
 @kopf.on.update(
     "service", field=("metadata", "annotations", "resource.twingate.com"), old="true"
 )

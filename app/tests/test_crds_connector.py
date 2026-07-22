@@ -105,6 +105,20 @@ def test_deserialization_imagepolicy(sample_connector_object_imagepolicy):
     assert crd.spec.pod_labels == {"my-label": "my-value"}
 
 
+def test_remote_network_id_defaults_to_settings(sample_connector_object_image):
+    crd = TwingateConnectorCRD(**sample_connector_object_image)
+    # `_mock_settings` (app/conftest.py) sets the operator-wide default.
+    assert crd.spec.remote_network_id == "UmVtb3RlTmV0d29yazoxMjMK"
+
+
+def test_remote_network_id_override(sample_connector_object_image):
+    sample_connector_object_image["spec"]["remoteNetworkId"] = (
+        "UmVtb3RlTmV0d29yazo5OTkK"
+    )
+    crd = TwingateConnectorCRD(**sample_connector_object_image)
+    assert crd.spec.remote_network_id == "UmVtb3RlTmV0d29yazo5OTkK"
+
+
 def test_deserialization_imagepolicy_fails_on_invalid_version_specifier(
     sample_connector_object_imagepolicy,
 ):

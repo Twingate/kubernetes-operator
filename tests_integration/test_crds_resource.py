@@ -6,6 +6,7 @@ from tests_integration.utils import (
     kubectl_apply,
     kubectl_create,
     kubectl_delete,
+    kubectl_get,
 )
 
 
@@ -870,3 +871,80 @@ def test_kubernetes_resource_proxy_object_missing_either_ca_cert_string_or_secre
         '"spec.proxy" must validate one and only one schema (oneOf). Found none valid'
         in stderr
     )
+
+
+def test_remote_network_id(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My K8S Resource
+          address: "foo.default.cluster.local"
+          remoteNetworkId: "UmVtb3RlTmV0d29yazoxMjMK"
+        """
+    )
+
+    assert result.returncode == 0
+
+    data = kubectl_get("tgr", unique_resource_name)
+    assert data["spec"]["remoteNetworkId"] == "UmVtb3RlTmV0d29yazoxMjMK"
+
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_remote_network_id_invalid_pattern(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My K8S Resource
+              address: "foo.default.cluster.local"
+              remoteNetworkId: "not valid!"
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.remoteNetworkId in body should match" in stderr
+
+
+def test_remote_network_id_is_immutable(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My K8S Resource
+          address: "foo.default.cluster.local"
+          remoteNetworkId: "UmVtb3RlTmV0d29yazoxMjMK"
+        """
+    )
+    assert result.returncode == 0
+
+    try:
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_apply(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateResource
+                metadata:
+                  name: {unique_resource_name}
+                spec:
+                  name: My K8S Resource
+                  address: "foo.default.cluster.local"
+                  remoteNetworkId: "UmVtb3RlTmV0d29yazo0NTYK"
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "remoteNetworkId is immutable once set" in stderr
+    finally:
+        kubectl_delete("tgr", unique_resource_name)

@@ -28,6 +28,8 @@ spec:
                   message: "requestHeaderRewrites can only be set for WebApp Resources"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
                   message: "isBrowserShortcutEnabled can only be set to true for Network Resources"
+                - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
+                  message: "remoteNetworkId is immutable once set"
               required: ["name", "address"]
               properties:
                 id:
@@ -47,6 +49,10 @@ spec:
                   type: boolean
                   default: false
                   description: "isBrowserShortcutEnabled specifies whether the resource will display a browser shortcut in the Twingate client."
+                remoteNetworkId:
+                  type: string
+                  pattern: "^[-A-Za-z0-9+/]*={0,3}$"
+                  description: "ID of the Twingate Remote Network this Resource belongs to. Overrides the operator-wide default (TWINGATE_REMOTE_NETWORK_ID). Immutable once set."
                 securityPolicyId:
                   type: string
                   nullable: true

@@ -125,6 +125,8 @@ should enable Kubernetes Access Gateway:
         tls:
           certificateFile: "/etc/gateway/tls/tls.crt"
           privateKeyFile: "/etc/gateway/tls/tls.key"
+
+        kubernetes: {}
     kind: ConfigMap
     metadata:
       labels:
@@ -177,3 +179,57 @@ should enable Kubernetes Access Gateway:
     metadata:
       name: RELEASE-NAME-gateway-tls
     type: kubernetes.io/tls
+  8: |
+    apiVersion: twingate.com/v1beta
+    kind: TwingateCertificateAuthority
+    metadata:
+      labels:
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway-ca
+    spec:
+      name: RELEASE-NAME-gateway-ca
+      secretRef:
+        name: RELEASE-NAME-gateway-tls
+        namespace: NAMESPACE
+      type: X509
+  9: |
+    apiVersion: twingate.com/v1beta
+    kind: TwingateGateway
+    metadata:
+      labels:
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway
+    spec:
+      serviceRef:
+        name: RELEASE-NAME-gateway
+        namespace: NAMESPACE
+        port: 443
+      x509CertificateAuthorityRef:
+        name: RELEASE-NAME-gateway-ca
+        namespace: NAMESPACE
+  10: |
+    apiVersion: twingate.com/v1beta
+    kind: TwingateResource
+    metadata:
+      labels:
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/version: 1.0.0
+        helm.sh/chart: gateway-1.0.0
+      name: RELEASE-NAME-gateway-resource
+    spec:
+      address: kubernetes.default.svc.cluster.local
+      gatewayRef:
+        name: RELEASE-NAME-gateway
+        namespace: NAMESPACE
+      name: RELEASE-NAME-gateway Kubernetes cluster
+      type: Kubernetes

@@ -197,6 +197,21 @@ def test_deserialization(sample_network_resource_object):
     assert crd.metadata.uid == "c560d138-a93a-4463-8b44-d7717851a265"
 
 
+def test_remote_network_id_defaults_to_settings(sample_network_resource_object):
+    sample_network_resource_object["spec"].pop("remoteNetworkId", None)
+    crd = TwingateResourceCRD(**sample_network_resource_object)
+    # `_mock_settings` (app/conftest.py) sets the operator-wide default.
+    assert crd.spec.remote_network_id == "UmVtb3RlTmV0d29yazoxMjMK"
+
+
+def test_remote_network_id_override(sample_network_resource_object):
+    sample_network_resource_object["spec"]["remoteNetworkId"] = (
+        "UmVtb3RlTmV0d29yazo5OTkK"
+    )
+    crd = TwingateResourceCRD(**sample_network_resource_object)
+    assert crd.spec.remote_network_id == "UmVtb3RlTmV0d29yazo5OTkK"
+
+
 def test_is_browser_shortcut_enabled_disallowed_on_wildcard_resource():
     with pytest.raises(ValueError, match=r"isBrowserShortcutEnabled"):
         TwingateResourceCRD(

@@ -1,10 +1,9 @@
 import json
 from collections.abc import Callable
-from enum import StrEnum
 
 import kopf
 import kubernetes
-from kopf import Body, Status
+from kopf import Body
 
 from app.crds import ResourceType
 from app.utils import to_bool
@@ -33,35 +32,11 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("syncLabels", to_bool),
     ("type", str),
 ]
-TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
 GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
 UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
 REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
-
-
-def get_load_balancer_address(status: Status, service_name: str) -> str:
-    if not (ingress := status.get("loadBalancer", {}).get("ingress")):
-        raise kopf.TemporaryError(
-            f"Kubernetes Service: {service_name} LoadBalancer is not ready.",
-            delay=30,
-        )
-
-    ip = ingress[0].get("ip")
-    hostname = ingress[0].get("hostname")
-    if not ip and not hostname:
-        raise kopf.TemporaryError(
-            f"Kubernetes Service: {service_name} LoadBalancer is not ready.",
-            delay=30,
-        )
-
-    return ip or hostname
-
-
-class ServiceType(StrEnum):
-    CLUSTER_IP = "ClusterIP"
-    LOAD_BALANCER = "LoadBalancer"
 
 
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
@@ -89,14 +64,12 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     match result["spec"].get("type"):
         case ResourceType.WEB_APP:
             result["spec"] |= _web_app_spec(service_body, namespace)
-        case ResourceType.KUBERNETES:
-            result["spec"] |= _kubernetes_spec(service_body, namespace)
         case None | ResourceType.NETWORK:
             result["spec"]["protocols"] = _network_protocols(service_body)
         case unsupported:
             raise kopf.PermanentError(
-                f"Unsupported resource type {unsupported!r}; "
-                f"must be one of {[t.value for t in ResourceType]}."
+                f"Unsupported resource type {unsupported!r}; must be one of "
+                f"{[ResourceType.NETWORK.value, ResourceType.WEB_APP.value]}."
             )
 
     return result
@@ -172,36 +145,8 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
     return web_app_spec
 
 
-def _kubernetes_spec(service_body: Body, namespace: str) -> dict:
-    meta = service_body.metadata
-    spec = service_body.spec
-    status = service_body.status
-    service_name = service_body.meta.name
-
-    if not (secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
-        raise kopf.PermanentError(
-            f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
-        )
-
-    host = (
-        get_load_balancer_address(status, service_name)
-        if spec["type"] == ServiceType.LOAD_BALANCER
-        else f"{service_name}.{namespace}.svc.cluster.local"
-    )
-    return {
-        "address": "kubernetes.default.svc.cluster.local",
-        "proxy": {
-            "address": f"{host}:443",
-            "certificateAuthorityCertSecretRef": {
-                "name": secret_name,
-                "namespace": namespace,
-            },
-        },
-    }
-
-
-# Only Network resources use port-based protocols. Kubernetes and WebApp resources
-# configure upstream/downstream on the gateway instead.
+# Only Network resources use port-based protocols. WebApp resources configure
+# upstream/downstream on the gateway instead.
 def _network_protocols(service_body: Body) -> dict:
     protocols: dict = {
         "allowIcmp": False,

@@ -9,10 +9,7 @@ import kopf
 import kubernetes.client
 import pendulum
 from croniter import croniter
-from cryptography import x509
 from pydantic import (
-    AfterValidator,
-    Base64Str,
     BaseModel,
     ConfigDict,
     Field,
@@ -144,55 +141,6 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
-class ResourceProxy(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel
-    )
-
-    address: str
-    certificate_authority_cert: Annotated[
-        Base64Str | None, AfterValidator(lambda v: v.strip() if v is not None else None)
-    ] = None
-    certificate_authority_cert_secret_ref: _KubernetesObjectRef | None = None
-
-    def get_certificate_authority_cert(self) -> str | None:
-        if secret_ref := self.certificate_authority_cert_secret_ref:
-            if secret := k8s_read_namespaced_secret(
-                secret_ref.namespace, secret_ref.name
-            ):
-                return self.read_certificate_authority_cert_from_secret(secret)
-
-            return None
-
-        return self.certificate_authority_cert
-
-    @staticmethod
-    def read_certificate_authority_cert_from_secret(
-        secret: kubernetes.client.V1Secret,
-    ) -> str:
-        secret_name = secret.metadata.name
-        if not (ca_cert := secret.data.get("ca.crt")):
-            raise kopf.PermanentError(
-                f"Kubernetes Secret object: {secret_name} is missing ca.crt."
-            )
-
-        try:
-            ca_cert = base64.b64decode(ca_cert).decode()
-            validate_pem_x509_certificate(ca_cert)
-            return ca_cert
-        except ValueError as ex:
-            raise kopf.PermanentError(
-                f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
-            ) from ex
-
-    @property
-    def x509_ca_cert(self) -> x509.Certificate | None:
-        if certificate_authority_cert := self.get_certificate_authority_cert():
-            return x509.load_pem_x509_certificate(certificate_authority_cert.encode())
-
-        return None
-
-
 class ResourceDownstream(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
@@ -242,9 +190,7 @@ class ResourceSpec(BaseModel):
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
     sync_labels: bool = True
     type: ResourceType = ResourceType.NETWORK
-    # Deprecated for Kubernetes resources: use `gateway_ref` instead.
-    proxy: ResourceProxy | None = None
-    # Reference to a TwingateGateway, the replacement for `proxy`.
+    # Reference to the TwingateGateway serving this Kubernetes or WebApp resource.
     gateway_ref: _KubernetesObjectRef | None = None
     # (WebApp only) connection configuration relative to the gateway
     # (downstream = client-facing, upstream = backend).
@@ -266,8 +212,7 @@ class ResourceSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def check_proxy_and_gateway_ref(self):
-        has_proxy = self.proxy is not None
+    def check_gateway_ref(self):
         has_gateway_ref = self.gateway_ref is not None
         has_endpoints = (
             self.downstream is not None
@@ -277,29 +222,22 @@ class ResourceSpec(BaseModel):
 
         match self.type:
             case ResourceType.NETWORK:
-                if has_proxy or has_gateway_ref:
-                    raise ValueError(
-                        "Network resources cannot set `proxy` or `gatewayRef`."
-                    )
+                if has_gateway_ref:
+                    raise ValueError("Network resources cannot set `gatewayRef`.")
                 if has_endpoints:
                     raise ValueError(
                         "Network resources cannot set `downstream`, `upstream`, or "
                         "`requestHeaderRewrites`."
                     )
             case ResourceType.KUBERNETES:
-                if has_proxy == has_gateway_ref:
-                    raise ValueError(
-                        "Kubernetes resources require exactly one of `proxy` "
-                        "(deprecated) or `gatewayRef`."
-                    )
+                if not has_gateway_ref:
+                    raise ValueError("Kubernetes resources require `gatewayRef`.")
                 if has_endpoints:
                     raise ValueError(
                         "Kubernetes resources cannot set `downstream`, `upstream`, or "
                         "`requestHeaderRewrites`."
                     )
             case ResourceType.WEB_APP:
-                if has_proxy:
-                    raise ValueError("WebApp resources cannot set `proxy`.")
                 if not has_gateway_ref:
                     raise ValueError("WebApp resources require `gatewayRef`.")
                 if self.downstream is None or self.upstream is None:
@@ -316,7 +254,6 @@ class ResourceSpec(BaseModel):
         default_exclude_fields = {
             "is_browser_shortcut_enabled",
             "sync_labels",
-            "proxy",
             "type",
             "gateway_ref",
             "downstream",
@@ -339,25 +276,14 @@ class ResourceSpec(BaseModel):
                     "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
                 }
             case ResourceType.KUBERNETES:
-                if self.gateway_ref is not None:
-                    graphql_args |= {
-                        "gateway_id": resolve_ref_to_twingate_id(
-                            "twingategateways",
-                            self.gateway_ref.namespace,
-                            self.gateway_ref.name,
-                        ),
-                    }
-                else:
-                    resource_proxy = cast(ResourceProxy, self.proxy)
-                    ca_cert = resource_proxy.get_certificate_authority_cert()
-                    if ca_cert is None:
-                        raise kopf.PermanentError(
-                            "Certificate authority cert is not found for Kubernetes Resource type"
-                        )
-                    graphql_args |= {
-                        "proxy_address": resource_proxy.address,
-                        "certificate_authority_cert": ca_cert,
-                    }
+                gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
+                graphql_args |= {
+                    "gateway_id": resolve_ref_to_twingate_id(
+                        "twingategateways",
+                        gateway_ref.namespace,
+                        gateway_ref.name,
+                    ),
+                }
             case ResourceType.WEB_APP:
                 # WebApp Resources are not port-based, so protocols don't apply.
                 graphql_args.pop("protocols", None)
@@ -411,9 +337,28 @@ class CertificateAuthoritySpec(BaseModel):
         if secret := k8s_read_namespaced_secret(
             self.secret_ref.namespace, self.secret_ref.name
         ):
-            return ResourceProxy.read_certificate_authority_cert_from_secret(secret)
+            return self.read_certificate_authority_cert_from_secret(secret)
 
         return None
+
+    @staticmethod
+    def read_certificate_authority_cert_from_secret(
+        secret: kubernetes.client.V1Secret,
+    ) -> str:
+        secret_name = secret.metadata.name
+        if not (ca_cert := secret.data.get("ca.crt")):
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} is missing ca.crt."
+            )
+
+        try:
+            ca_cert = base64.b64decode(ca_cert).decode()
+            validate_pem_x509_certificate(ca_cert)
+            return ca_cert
+        except ValueError as ex:
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
+            ) from ex
 
 
 class TwingateCertificateAuthorityCRD(BaseK8sModel):

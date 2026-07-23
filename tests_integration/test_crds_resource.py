@@ -377,9 +377,8 @@ def test_resource_type_is_immutable(unique_resource_name):
               name: My K8S Resource
               address: "foo.default.cluster.local"
               type: Kubernetes
-              proxy:
-                address: "my-proxy.default.cluster.local"
-                certificateAuthorityCert: "base64-encoded-cert"
+              gatewayRef:
+                name: my-gateway
             """
         )
 
@@ -387,28 +386,6 @@ def test_resource_type_is_immutable(unique_resource_name):
     assert "Resource type is immutable" in stderr
 
     kubectl_delete("tgr", unique_resource_name)
-
-
-def test_network_resource_cannot_have_proxy_object(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My K8S Resource
-              address: "foo.default.cluster.local"
-              type: Network
-              proxy:
-                address: "my-proxy.default.cluster.local"
-                certificateAuthorityCert: "base64-encoded-cert"
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "Network Resource allows neither" in stderr
 
 
 def test_network_resource_cannot_have_gateway_ref(unique_resource_name):
@@ -429,10 +406,10 @@ def test_network_resource_cannot_have_gateway_ref(unique_resource_name):
         )
 
     stderr = ex.value.stderr.decode()
-    assert "Network Resource allows neither" in stderr
+    assert "Network Resources do not allow it" in stderr
 
 
-def test_kubernetes_resource_must_have_proxy_or_gateway_ref(unique_resource_name):
+def test_kubernetes_resource_must_have_gateway_ref(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
             f"""
@@ -448,33 +425,7 @@ def test_kubernetes_resource_must_have_proxy_or_gateway_ref(unique_resource_name
         )
 
     stderr = ex.value.stderr.decode()
-    assert "requires exactly one of proxy" in stderr
-
-
-def test_kubernetes_resource_cannot_have_both_proxy_and_gateway_ref(
-    unique_resource_name,
-):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My K8S Resource
-              address: "foo.default.cluster.local"
-              type: Kubernetes
-              proxy:
-                address: "my-proxy.default.cluster.local"
-                certificateAuthorityCert: "base64-encoded-cert"
-              gatewayRef:
-                name: my-gateway
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "requires exactly one of proxy" in stderr
+    assert "Kubernetes and WebApp Resources require gatewayRef" in stderr
 
 
 def test_kubernetes_resource_with_gateway_ref_accepted(unique_resource_name):
@@ -560,35 +511,7 @@ def test_web_app_resource_must_have_gateway_ref(unique_resource_name):
         )
 
     stderr = ex.value.stderr.decode()
-    assert "WebApp Resource requires gatewayRef" in stderr
-
-
-def test_web_app_resource_cannot_have_proxy(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My WebApp Resource
-              address: "webapp.default.svc.cluster.local"
-              type: WebApp
-              gatewayRef:
-                name: my-gateway
-              downstream:
-                port: 80
-              upstream:
-                port: 8080
-              proxy:
-                address: "my-proxy.default.cluster.local"
-                certificateAuthorityCert: "base64-encoded-cert"
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "WebApp Resource requires gatewayRef and no proxy" in stderr
+    assert "Kubernetes and WebApp Resources require gatewayRef" in stderr
 
 
 def test_web_app_resource_must_have_downstream_and_upstream(unique_resource_name):
@@ -784,91 +707,14 @@ def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
               address: "foo.default.cluster.local"
               isBrowserShortcutEnabled: true
               type: Kubernetes
-              proxy:
-                address: "my-proxy.default.cluster.local"
-                certificateAuthorityCert: "base64-encoded-cert"
+              gatewayRef:
+                name: my-gateway
             """
         )
 
     stderr = ex.value.stderr.decode()
     assert (
         "isBrowserShortcutEnabled can only be set to true for Network Resources"
-        in stderr
-    )
-
-
-def test_kubernetes_resource_proxy_object_must_have_address(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My K8S Resource
-              address: "foo.default.cluster.local"
-              type: Kubernetes
-              proxy:
-                certificateAuthorityCert: "base64-encoded-cert"
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "spec.proxy.address: Required value" in stderr
-
-
-def test_kubernetes_resource_proxy_object_has_both_ca_cert_string_and_secret_ref(
-    unique_resource_name,
-):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My K8S Resource
-              address: "foo.default.cluster.local"
-              type: Kubernetes
-              proxy:
-                address: "my-proxy.default.cluster.local"
-                certificateAuthorityCert: "base64-encoded-cert"
-                certificateAuthorityCertSecretRef:
-                    name: "tls-secret"
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert (
-        '"spec.proxy" must validate one and only one schema (oneOf). Found 2 valid alternatives'
-        in stderr
-    )
-
-
-def test_kubernetes_resource_proxy_object_missing_either_ca_cert_string_or_secret_ref(
-    unique_resource_name,
-):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My K8S Resource
-              address: "foo.default.cluster.local"
-              type: Kubernetes
-              proxy:
-                address: "my-proxy.default.cluster.local"
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert (
-        '"spec.proxy" must validate one and only one schema (oneOf). Found none valid'
         in stderr
     )
 

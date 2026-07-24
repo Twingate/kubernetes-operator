@@ -51,7 +51,7 @@ def _call_create(spec):
     patch_mock = MagicMock()
     patch_mock.spec = {}
     result = twingate_certificate_authority_create(
-        "", spec, MagicMock(), MagicMock(), patch_mock
+        "", "default", spec, MagicMock(), MagicMock(), patch_mock
     )
     return result, patch_mock
 
@@ -217,7 +217,7 @@ class TestCertificateAuthorityReconciler:
         patch_mock.spec = {}
 
         result = twingate_certificate_authority_reconciler(
-            "", _spec(), MagicMock(), MagicMock(), patch_mock
+            "", "default", _spec(), MagicMock(), MagicMock(), patch_mock
         )
 
         assert result == {"success": True, "twingate_id": "new-ca-id", "ts": ANY}

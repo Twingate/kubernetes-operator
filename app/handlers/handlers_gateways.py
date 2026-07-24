@@ -19,6 +19,7 @@ from app.utils_k8s import (
 
 def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
     gw_spec = GatewaySpec(**spec)
+    owner_namespace = body["metadata"]["namespace"]
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings, logger=logger)
 
@@ -26,13 +27,13 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
     # either resolver doesn't leave status advertising an address for a Gateway
     # that was never created/updated.
     address = resolve_service_address(
-        gw_spec.service_ref.namespace,
+        gw_spec.service_ref.resolve_namespace(owner_namespace),
         gw_spec.service_ref.name,
         gw_spec.service_ref.port,
     )
     x509_ca_id = resolve_ref_to_twingate_id(
         TwingateCertificateAuthorityCRD.PLURAL,
-        gw_spec.x509_certificate_authority_ref.namespace,
+        gw_spec.x509_certificate_authority_ref.resolve_namespace(owner_namespace),
         gw_spec.x509_certificate_authority_ref.name,
     )
     patch.status["address"] = address

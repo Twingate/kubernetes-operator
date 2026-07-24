@@ -32,8 +32,8 @@ spec:
                       description: "Name of the Service object."
                     namespace:
                       type: string
-                      default: default
-                      description: "Namespace of the Service object."
+                      nullable: true
+                      description: "Namespace of the Service object. Defaults to the TwingateGateway's own namespace when omitted."
                     port:
                       type: integer
                       minimum: 1
@@ -49,8 +49,8 @@ spec:
                       description: "Name of the TwingateCertificateAuthority object."
                     namespace:
                       type: string
-                      default: default
-                      description: "Namespace of the TwingateCertificateAuthority object."
+                      nullable: true
+                      description: "Namespace of the TwingateCertificateAuthority object. Defaults to the TwingateGateway's own namespace when omitted."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

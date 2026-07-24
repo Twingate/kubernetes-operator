@@ -36,7 +36,8 @@ def test_ca_deserialization(sample_ca_object):
     assert ca.spec.name == "My CA"
     assert ca.spec.type == CertificateAuthorityType.X509
     assert ca.spec.secret_ref.name == "gateway-tls"
-    assert ca.spec.secret_ref.namespace == "default"
+    assert ca.spec.secret_ref.namespace is None
+    assert ca.spec.secret_ref.resolve_namespace("default") == "default"
 
 
 def test_ca_type_defaults_to_x509():
@@ -74,8 +75,22 @@ def test_get_certificate_reads_cert_from_secret(read_secret_mock, k8s_secret_moc
     read_secret_mock.return_value = k8s_secret_mock
     spec = CertificateAuthoritySpec(name="My CA", secret_ref={"name": "gateway-tls"})
 
-    assert spec.get_certificate_from_secret() == VALID_CA_CERT
-    read_secret_mock.assert_called_once_with("default", "gateway-tls")
+    # secretRef omits namespace, so it resolves to the CA's own namespace.
+    assert spec.get_certificate_from_secret("myns") == VALID_CA_CERT
+    read_secret_mock.assert_called_once_with("myns", "gateway-tls")
+
+
+@patch("app.crds.k8s_read_namespaced_secret")
+def test_get_certificate_uses_secret_ref_namespace_when_set(
+    read_secret_mock, k8s_secret_mock
+):
+    read_secret_mock.return_value = k8s_secret_mock
+    spec = CertificateAuthoritySpec(
+        name="My CA", secret_ref={"name": "gateway-tls", "namespace": "secrets-ns"}
+    )
+
+    assert spec.get_certificate_from_secret("myns") == VALID_CA_CERT
+    read_secret_mock.assert_called_once_with("secrets-ns", "gateway-tls")
 
 
 @patch("app.crds.k8s_read_namespaced_secret")
@@ -83,7 +98,7 @@ def test_get_certificate_returns_none_when_secret_missing(read_secret_mock):
     read_secret_mock.return_value = None
     spec = CertificateAuthoritySpec(name="My CA", secret_ref={"name": "gateway-tls"})
 
-    assert spec.get_certificate_from_secret() is None
+    assert spec.get_certificate_from_secret("default") is None
 
 
 class TestReadCACertFromSecret:

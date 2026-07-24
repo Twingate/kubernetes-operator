@@ -26,10 +26,17 @@ def test_gateway_deserialization(sample_gateway_object):
 
     assert gateway.metadata.name == "my-gateway"
     assert gateway.spec.service_ref.name == "my-gateway-svc"
-    assert gateway.spec.service_ref.namespace == "default"
+    assert gateway.spec.service_ref.namespace is None
     assert gateway.spec.service_ref.port == 443
     assert gateway.spec.x509_certificate_authority_ref.name == "my-ca"
-    assert gateway.spec.x509_certificate_authority_ref.namespace == "default"
+    assert gateway.spec.x509_certificate_authority_ref.namespace is None
+
+    # Both refs omit a namespace, so they resolve to the gateway's own namespace.
+    assert gateway.spec.service_ref.resolve_namespace("gw-ns") == "gw-ns"
+    assert (
+        gateway.spec.x509_certificate_authority_ref.resolve_namespace("gw-ns")
+        == "gw-ns"
+    )
 
 
 def test_gateway_service_ref_required():

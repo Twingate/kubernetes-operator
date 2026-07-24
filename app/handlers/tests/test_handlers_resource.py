@@ -80,6 +80,7 @@ class TestResourceCreateHandler:
 
         result = twingate_resource_create(
             body="",
+            namespace="default",
             labels=mock_k8s_metadata["labels"],
             spec=spec,
             memo=mock_memo_with_default_resource_tags,
@@ -99,6 +100,7 @@ class TestResourceCreateHandler:
             resource_type=ResourceType.NETWORK,
             **resource_spec.to_graphql_arguments(
                 labels={"managed_by": "test", "env": "dev"},
+                owner_namespace="default",
                 exclude={"id"},
             ),
         )
@@ -128,6 +130,7 @@ class TestResourceCreateHandler:
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             result = twingate_resource_create(
                 body="",
+                namespace="default",
                 labels=mock_k8s_metadata["labels"],
                 spec=spec,
                 memo=mock_memo,
@@ -145,7 +148,7 @@ class TestResourceCreateHandler:
             mock_api_client.resource_create.assert_called_once_with(
                 resource_type=ResourceType.KUBERNETES,
                 **resource_spec.to_graphql_arguments(
-                    labels={"env": "dev"}, exclude={"id"}
+                    labels={"env": "dev"}, owner_namespace="default", exclude={"id"}
                 ),
             )
         mock_api_client.resource_update.assert_not_called()
@@ -175,6 +178,7 @@ class TestResourceCreateHandler:
 
         result = twingate_resource_create(
             body="",
+            namespace="default",
             labels=mock_k8s_metadata["labels"],
             spec=spec,
             memo=mock_memo,
@@ -192,7 +196,9 @@ class TestResourceCreateHandler:
 
         mock_api_client.resource_update.assert_called_once_with(
             resource_type=ResourceType.NETWORK,
-            **resource_spec.to_graphql_arguments(labels={"env": "dev"}),
+            **resource_spec.to_graphql_arguments(
+                labels={"env": "dev"}, owner_namespace="default"
+            ),
         )
         mock_api_client.resource_create.assert_not_called()
 
@@ -221,6 +227,7 @@ class TestResourceCreateHandler:
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             result = twingate_resource_create(
                 body="",
+                namespace="default",
                 labels=mock_k8s_metadata["labels"],
                 spec=spec,
                 memo=mock_memo,
@@ -238,7 +245,9 @@ class TestResourceCreateHandler:
 
             mock_api_client.resource_update.assert_called_once_with(
                 resource_type=ResourceType.KUBERNETES,
-                **resource_spec.to_graphql_arguments(labels={"env": "dev"}),
+                **resource_spec.to_graphql_arguments(
+                    labels={"env": "dev"}, owner_namespace="default"
+                ),
             )
         mock_api_client.resource_create.assert_not_called()
 
@@ -274,6 +283,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
+            "default",
             mock_k8s_metadata["labels"],
             spec,
             diff,
@@ -292,7 +302,7 @@ class TestResourceUpdateHandler:
         mock_api_client.resource_update.assert_called_once_with(
             resource_type=ResourceType.NETWORK,
             **new_resource_spec.to_graphql_arguments(
-                labels={"managed_by": "test", "env": "dev"}
+                labels={"managed_by": "test", "env": "dev"}, owner_namespace="default"
             ),
         )
         assert patch_mock.spec == {}
@@ -316,6 +326,7 @@ class TestResourceUpdateHandler:
         status_mock = MagicMock()
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             result = twingate_resource_update(
+                namespace="default",
                 labels=mock_k8s_metadata["labels"],
                 spec=spec,
                 diff=diff,
@@ -333,7 +344,9 @@ class TestResourceUpdateHandler:
             }
             mock_api_client.resource_update.assert_called_once_with(
                 resource_type=ResourceType.KUBERNETES,
-                **new_resource_spec.to_graphql_arguments(labels={"env": "dev"}),
+                **new_resource_spec.to_graphql_arguments(
+                    labels={"env": "dev"}, owner_namespace="default"
+                ),
             )
 
     def test_update_called_without_id_fails(self, mock_api_client, mock_k8s_metadata):
@@ -350,7 +363,13 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            mock_k8s_metadata["labels"], spec, diff, status, memo_mock, logger_mock
+            "default",
+            mock_k8s_metadata["labels"],
+            spec,
+            diff,
+            status,
+            memo_mock,
+            logger_mock,
         )
         assert result == {
             "success": False,
@@ -387,7 +406,13 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            mock_k8s_metadata["labels"], spec, diff, status, memo_mock, logger_mock
+            "default",
+            mock_k8s_metadata["labels"],
+            spec,
+            diff,
+            status,
+            memo_mock,
+            logger_mock,
         )
         assert result == {
             "success": True,
@@ -423,7 +448,13 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
-            mock_k8s_metadata["labels"], spec, diff, status, memo_mock, logger_mock
+            "default",
+            mock_k8s_metadata["labels"],
+            spec,
+            diff,
+            status,
+            memo_mock,
+            logger_mock,
         )
         assert result == {
             "success": True,
@@ -499,6 +530,7 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
+            "default",
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
@@ -533,6 +565,7 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
+            "default",
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
@@ -543,7 +576,9 @@ class TestResourceSyncTimer:
 
         mock_api_client.resource_update.assert_called_once_with(
             resource_type=ResourceType.NETWORK,
-            **resource_spec.to_graphql_arguments(labels=resource.to_metadata_labels()),
+            **resource_spec.to_graphql_arguments(
+                labels=resource.to_metadata_labels(), owner_namespace="default"
+            ),
         )
         assert patch_mock.spec == {}
 
@@ -571,6 +606,7 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
+            "default",
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
@@ -583,7 +619,8 @@ class TestResourceSyncTimer:
             resource_type=ResourceType.NETWORK,
             **resource_spec.to_graphql_arguments(
                 labels={"managed_by": "test", "env": "dev"}
-                | resource.to_metadata_labels()
+                | resource.to_metadata_labels(),
+                owner_namespace="default",
             ),
         )
         assert patch_mock.spec == {}
@@ -614,6 +651,7 @@ class TestResourceSyncTimer:
 
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             twingate_resource_sync(
+                "default",
                 mock_k8s_metadata["labels"],
                 resource_spec.model_dump(by_alias=True),
                 status,
@@ -627,6 +665,7 @@ class TestResourceSyncTimer:
                 resource_type=ResourceType.KUBERNETES,
                 **resource_spec.to_graphql_arguments(
                     labels={"managed_by": "test", "env": "dev"},
+                    owner_namespace="default",
                     exclude={"id"},
                 ),
             )
@@ -636,15 +675,16 @@ class TestResourceSyncTimer:
 
 class TestTwingateResourceGatewayIndex:
     def test_maps_gateway_to_resource(self):
+        # gatewayRef omits namespace, so it resolves to the resource's own namespace.
         result = twingate_resource_gateway_index(
-            namespace="default",
+            namespace="ns1",
             name="my-resource-crd",
             spec={"gatewayRef": {"name": "my-gw"}},
         )
 
         assert result == {
-            ("default", "my-gw"): {
-                "namespace": "default",
+            ("ns1", "my-gw"): {
+                "namespace": "ns1",
                 "name": "my-resource-crd",
             },
         }

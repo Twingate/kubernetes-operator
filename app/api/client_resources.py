@@ -137,7 +137,9 @@ class BaseResource(BaseModel):
             }
         """
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
+    def get_spec_diff(
+        self, crd: ResourceSpec, *, owner_namespace: str
+    ) -> dict[str, Diff]:
         diff = {}
         if self.name != crd.name:
             diff["name"] = Diff(remote=self.name, local=crd.name)
@@ -215,8 +217,10 @@ class NetworkResource(BaseResource):
             """
         )
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
-        diff = super().get_spec_diff(crd)
+    def get_spec_diff(
+        self, crd: ResourceSpec, *, owner_namespace: str
+    ) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd, owner_namespace=owner_namespace)
         if self.is_browser_shortcut_enabled != crd.is_browser_shortcut_enabled:
             diff["is_browser_shortcut_enabled"] = Diff(
                 remote=self.is_browser_shortcut_enabled,
@@ -253,14 +257,16 @@ class KubernetesResource(BaseResource):
             """
         )
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
-        diff = super().get_spec_diff(crd)
+    def get_spec_diff(
+        self, crd: ResourceSpec, *, owner_namespace: str
+    ) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd, owner_namespace=owner_namespace)
 
         remote_gateway_id = self.gateway.id if self.gateway else None
         crd_gateway_id = (
             resolve_ref_to_twingate_id(
                 "twingategateways",
-                crd.gateway_ref.namespace,
+                crd.gateway_ref.resolve_namespace(owner_namespace),
                 crd.gateway_ref.name,
             )
             if crd.gateway_ref
@@ -299,8 +305,10 @@ class WebAppResource(BaseResource):
             """
         )
 
-    def get_spec_diff(self, crd: ResourceSpec) -> dict[str, Diff]:
-        diff = super().get_spec_diff(crd)
+    def get_spec_diff(
+        self, crd: ResourceSpec, *, owner_namespace: str
+    ) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd, owner_namespace=owner_namespace)
         # WebApp is not port-based; protocols are not sent on update, so diffing
         # them would cause a non-converging reconcile loop.
         diff.pop("protocols", None)
@@ -309,7 +317,7 @@ class WebAppResource(BaseResource):
         crd_gateway_id = (
             resolve_ref_to_twingate_id(
                 "twingategateways",
-                crd.gateway_ref.namespace,
+                crd.gateway_ref.resolve_namespace(owner_namespace),
                 crd.gateway_ref.name,
             )
             if crd.gateway_ref

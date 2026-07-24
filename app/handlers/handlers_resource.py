@@ -9,12 +9,16 @@ from app.handlers.base import fail, success
 
 
 @kopf.on.create("twingateresource")
-def twingate_resource_create(body, labels, spec, memo, logger, patch, **kwargs):
+def twingate_resource_create(
+    body, namespace, labels, spec, memo, logger, patch, **kwargs
+):
     logger.info("Got a create request: %s. Labels: %s", spec, labels)
     resource = ResourceSpec(**spec)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
-    graphql_arguments = resource.to_graphql_arguments(labels=labels, exclude={"id"})
+    graphql_arguments = resource.to_graphql_arguments(
+        labels=labels, owner_namespace=namespace, exclude={"id"}
+    )
 
     # Support importing existing resources - if `id` already exist we assume it's already created
     if resource.id:
@@ -40,7 +44,9 @@ def twingate_resource_create(body, labels, spec, memo, logger, patch, **kwargs):
 
 
 @kopf.on.update("twingateresource")
-def twingate_resource_update(labels, spec, diff, status, memo, logger, **kwargs):
+def twingate_resource_update(
+    namespace, labels, spec, diff, status, memo, logger, **kwargs
+):
     logger.info(
         "Got TwingateResource update request: %s. Labels: %s. Diff: %s. Status: %s.",
         spec,
@@ -50,7 +56,9 @@ def twingate_resource_update(labels, spec, diff, status, memo, logger, **kwargs)
     )
     crd = ResourceSpec(**spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
-    graphql_arguments = crd.to_graphql_arguments(labels=labels)
+    graphql_arguments = crd.to_graphql_arguments(
+        labels=labels, owner_namespace=namespace
+    )
 
     if not crd.id:
         return fail(error="Resource ID is missing in the spec")
@@ -102,7 +110,9 @@ RESOURCE_RECONCILER_IDLE = int(os.environ.get("RESOURCE_RECONCILER_IDLE", 60))  
     initial_delay=RESOURCE_RECONCILER_INIT_DELAY,
     idle=RESOURCE_RECONCILER_IDLE,
 )
-def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
+def twingate_resource_sync(
+    namespace, labels, spec, status, memo, logger, patch, **kwargs
+):
     crd = ResourceSpec(**spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     if resource_id := crd.id:
@@ -110,13 +120,16 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         if resource := client.get_resource(resource_id):
             logger.info("Got resource %s", resource)
-            diff = resource.get_spec_diff(crd) | resource.get_labels_diff(labels)
+            diff = resource.get_spec_diff(
+                crd, owner_namespace=namespace
+            ) | resource.get_labels_diff(labels)
             if not diff:
                 return success(twingate_id=resource_id, message="No update required")
 
             logger.info("Resource %s is out of date. Diff: %s", resource_id, diff)
             client.resource_update(
-                resource_type=crd.type, **crd.to_graphql_arguments(labels=labels)
+                resource_type=crd.type,
+                **crd.to_graphql_arguments(labels=labels, owner_namespace=namespace),
             )
 
             return success(
@@ -127,7 +140,9 @@ def twingate_resource_sync(labels, spec, status, memo, logger, patch, **kwargs):
 
         # Resource was deleted, recreate it
         logger.info("Resource %s was deleted, recreating...", resource_id)
-        graphql_arguments = crd.to_graphql_arguments(labels=labels, exclude={"id"})
+        graphql_arguments = crd.to_graphql_arguments(
+            labels=labels, owner_namespace=namespace, exclude={"id"}
+        )
         resource = client.resource_create(resource_type=crd.type, **graphql_arguments)
         patch.spec["id"] = resource.id
         return success(

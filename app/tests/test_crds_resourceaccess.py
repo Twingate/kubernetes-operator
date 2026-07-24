@@ -262,6 +262,27 @@ def test_deserialization_with_group_ref():
     assert crd.spec.resource_ref.fullname("default") == "default/foo"
 
 
+def test_ref_namespace_defaults_to_owner_when_omitted():
+    data = {
+        "apiVersion": "twingate.com/v1",
+        "kind": "TwingateResourceAccess",
+        "metadata": {
+            "name": "foo-access-to-bar",
+            "namespace": "owner-ns",
+            "uid": "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c",
+        },
+        "spec": {
+            "resourceRef": {"name": "foo"},
+            "groupRef": {"name": "test-group"},
+        },
+    }
+    crd = TwingateResourceAccessCRD(**data)
+    assert crd.spec.resource_ref.namespace is None
+    assert crd.spec.group_ref.namespace is None
+    assert crd.spec.resource_ref.fullname("owner-ns") == "owner-ns/foo"
+    assert crd.spec.group_ref.fullname("owner-ns") == "owner-ns/test-group"
+
+
 def test_deserialization_with_principal_external_ref():
     data = {
         "apiVersion": "twingate.com/v1",

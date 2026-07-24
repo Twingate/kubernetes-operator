@@ -197,7 +197,7 @@ def test_deserialization(sample_resourceaccess_object):
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
     assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
-    assert crd.spec.resource_ref_fullname("default") == "default/foo"
+    assert crd.spec.resource_ref.fullname("default") == "default/foo"
 
 
 def test_deserialization_with_group_ref():
@@ -259,7 +259,7 @@ def test_deserialization_with_group_ref():
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
     assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
-    assert crd.spec.resource_ref_fullname("default") == "default/foo"
+    assert crd.spec.resource_ref.fullname("default") == "default/foo"
 
 
 def test_deserialization_with_principal_external_ref():
@@ -318,7 +318,7 @@ def test_deserialization_with_principal_external_ref():
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
     assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
-    assert crd.spec.resource_ref_fullname("default") == "default/foo"
+    assert crd.spec.resource_ref.fullname("default") == "default/foo"
 
 
 def test_deserialization_with_no_target_ref_fails_validation():

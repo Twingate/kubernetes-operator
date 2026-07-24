@@ -77,7 +77,7 @@ def twingate_resource_access_change(
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource(namespace)
     if not resource_crd:
-        err = f"Resource {access_crd.resource_ref_fullname(namespace)} not found"
+        err = f"Resource {access_crd.resource_ref.fullname(namespace)} not found"
         kopf.warn(body, reason="ResourceNotFound", message=err)
         raise kopf.TemporaryError(err, delay=15)
 

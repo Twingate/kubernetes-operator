@@ -75,6 +75,9 @@ class _KubernetesObjectRef(BaseModel):
         """Namespace of the referenced object, defaulting to the referrer's own."""
         return self.namespace or owner_namespace
 
+    def fullname(self, owner_namespace: str) -> str:
+        return f"{self.resolve_namespace(owner_namespace)}/{self.name}"
+
 
 # region TwingateResourceCRD
 
@@ -463,10 +466,6 @@ class ResourceAccessSpec(BaseModel):
             return self
 
         raise ValueError("Missing principal_id, group_ref or principal_external_ref")
-
-    def resource_ref_fullname(self, owner_namespace: str) -> str:
-        namespace = self.resource_ref.resolve_namespace(owner_namespace)
-        return f"{namespace}/{self.resource_ref.name}"
 
     def _get_ref_object(
         self, plural_type: str, namespace: str, name: str

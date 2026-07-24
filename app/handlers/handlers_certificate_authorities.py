@@ -41,12 +41,11 @@ def _reconcile_certificate_authority(body, namespace, spec, logger, memo, patch)
 
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
-    secret_namespace = ca_spec.secret_ref.resolve_namespace(namespace)
     certificate = ca_spec.get_certificate_from_secret(namespace)
     if certificate is None:
         raise kopf.TemporaryError(
             f"ca.crt not found yet in Secret "
-            f"'{secret_namespace}/{ca_spec.secret_ref.name}'.",
+            f"'{ca_spec.secret_ref.fullname(namespace)}'.",
             delay=30,
         )
 

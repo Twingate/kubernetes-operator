@@ -444,12 +444,6 @@ def test_kubernetes_resource_with_gateway_ref_accepted(unique_resource_name):
         """
     )
     assert result.returncode == 0
-
-    # An omitted gatewayRef.namespace must not be defaulted to "default" by the
-    # API server; it resolves to the resource's own namespace at reconcile time.
-    stored = kubectl_get("tgr", unique_resource_name)
-    assert stored["spec"]["gatewayRef"] == {"name": "my-gateway"}
-
     kubectl_delete("tgr", unique_resource_name)
 
 

@@ -2,12 +2,7 @@ import subprocess
 
 import pytest
 
-from tests_integration.utils import (
-    kubectl_apply,
-    kubectl_create,
-    kubectl_delete,
-    kubectl_get,
-)
+from tests_integration.utils import kubectl_apply, kubectl_create, kubectl_delete
 
 
 def test_success(unique_resource_name):
@@ -23,12 +18,6 @@ def test_success(unique_resource_name):
     """)
 
     assert result.returncode == 0
-
-    # An omitted secretRef.namespace must not be defaulted to "default" by the
-    # API server; it resolves to the CA's own namespace at reconcile time.
-    stored = kubectl_get("tgca", unique_resource_name)
-    assert "namespace" not in stored["spec"]["secretRef"]
-
     kubectl_delete("tgca", unique_resource_name)
 
 

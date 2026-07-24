@@ -13,8 +13,12 @@ from app.crds import (
 )
 from app.handlers.handlers_resource_access import (
     get_principal_id,
+    twingate_group_id_changed,
+    twingate_resource_access_by_group,
+    twingate_resource_access_by_resource,
     twingate_resource_access_delete,
     twingate_resource_access_sync,
+    twingate_resource_id_changed,
 )
 
 
@@ -309,8 +313,8 @@ class TestResourceAccessChangeHandler:
                 "false",
             ),
             patch(
-                "app.handlers.handlers_resource_access.twingate_resource_access_change",
-            ) as twingate_resource_access_change_mock,
+                "app.handlers.handlers_resource_access._reconcile_resource_access",
+            ) as reconcile_mock,
         ):
             result = twingate_resource_access_sync(
                 body={},
@@ -323,7 +327,7 @@ class TestResourceAccessChangeHandler:
             )
             assert result is None
 
-        twingate_resource_access_change_mock.assert_not_called()
+        reconcile_mock.assert_not_called()
 
     def test_create_passes_expires_at_to_client(
         self, network_resource_factory, kopf_info_mock, mock_api_client
@@ -529,3 +533,311 @@ class TestResourceAccessDelete:
             )
 
         mock_api_client.resource_access_remove.assert_not_called()
+
+
+class TestResourceAccessByResource:
+    def test_defaults_to_binding_namespace_when_ref_namespace_omitted(self):
+        result = twingate_resource_access_by_resource(
+            namespace="access-ns",
+            name="access-name",
+            spec={"resourceRef": {"name": "res"}},
+        )
+        assert result == {
+            ("access-ns", "res"): {"namespace": "access-ns", "name": "access-name"}
+        }
+
+    def test_uses_resource_namespace_when_set(self):
+        result = twingate_resource_access_by_resource(
+            namespace="access-ns",
+            name="access-name",
+            spec={"resourceRef": {"name": "res", "namespace": "res-ns"}},
+        )
+        assert result == {
+            ("res-ns", "res"): {"namespace": "access-ns", "name": "access-name"}
+        }
+
+    def test_none_without_resource_name(self):
+        result = twingate_resource_access_by_resource(
+            namespace="access-ns", name="access-name", spec={"resourceRef": {}}
+        )
+        assert result is None
+
+
+class TestResourceAccessByGroup:
+    def test_defaults_to_binding_namespace_when_ref_namespace_omitted(self):
+        result = twingate_resource_access_by_group(
+            namespace="access-ns",
+            name="access-name",
+            spec={"groupRef": {"name": "grp"}},
+        )
+        assert result == {
+            ("access-ns", "grp"): {"namespace": "access-ns", "name": "access-name"}
+        }
+
+    def test_uses_group_namespace_when_set(self):
+        result = twingate_resource_access_by_group(
+            namespace="access-ns",
+            name="access-name",
+            spec={"groupRef": {"name": "grp", "namespace": "grp-ns"}},
+        )
+        assert result == {
+            ("grp-ns", "grp"): {"namespace": "access-ns", "name": "access-name"}
+        }
+
+    def test_none_without_group_ref(self):
+        result = twingate_resource_access_by_group(
+            namespace="access-ns",
+            name="access-name",
+            spec={"principalId": "R3JvdXA6MTE1NzI2MA=="},
+        )
+        assert result is None
+
+
+def _access_obj(_plural=None, _namespace=None, name="access1", *, status=None):
+    obj = {"metadata": {"namespace": "access-ns", "name": name}, "spec": {"x": name}}
+    if status:
+        obj["status"] = status
+    return obj
+
+
+@patch("app.handlers.handlers_resource_access.k8s_patch_twingate_custom_object")
+@patch("app.handlers.handlers_resource_access.k8s_get_twingate_custom_object")
+@patch("app.handlers.handlers_resource_access._reconcile_resource_access")
+class TestResourceIdChanged:
+    @staticmethod
+    def _index(refs=None):
+        return {
+            ("ns", "res"): refs
+            if refs is not None
+            else [{"namespace": "access-ns", "name": "access1"}]
+        }
+
+    def _call(self, index, new="new-id"):
+        twingate_resource_id_changed(
+            namespace="ns",
+            name="res",
+            new=new,
+            memo=MagicMock(),
+            logger=MagicMock(),
+            twingate_resource_access_by_resource=index,
+        )
+
+    def test_reconciles_referencing_access(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        # Two bindings reference the same Resource - both must be reconciled, and each
+        # result persisted onto its own binding.
+        mock_get_obj.side_effect = _access_obj
+        mock_reconcile.return_value = {"success": True, "resource_id": "new-id"}
+
+        self._call(
+            self._index(
+                [
+                    {"namespace": "access-ns", "name": "access1"},
+                    {"namespace": "access-ns", "name": "access2"},
+                ]
+            )
+        )
+
+        assert mock_reconcile.call_count == 2
+        assert mock_patch_obj.call_count == 2
+        for call, name in zip(
+            mock_patch_obj.call_args_list, ("access1", "access2"), strict=True
+        ):
+            plural, namespace, obj_name, shim = call.args
+            assert (plural, namespace, obj_name) == (
+                "twingateresourceaccesses",
+                "access-ns",
+                name,
+            )
+            assert shim.status == {
+                "twingate_resource_access_change": {
+                    "success": True,
+                    "resource_id": "new-id",
+                }
+            }
+
+    def test_reconciles_with_the_bindings_own_namespace_and_status(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        # Refs resolve in the binding's namespace, not that of the Resource whose ID
+        # changed, and the status carries the principal_id cached for
+        # principalExternalRef bindings.
+        status = {
+            "twingate_resource_access_change": {
+                "success": True,
+                "resource_id": "stale-id",
+                "principal_id": "principal-id",
+            }
+        }
+        mock_get_obj.return_value = _access_obj(status=status)
+
+        self._call(self._index())
+
+        _body, namespace, _spec, passed_status = mock_reconcile.call_args.args[:4]
+        assert (namespace, passed_status) == ("access-ns", status)
+
+    def test_skips_binding_already_on_the_new_id(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        # Already reconciled onto the new id - nothing to re-issue.
+        mock_get_obj.return_value = _access_obj(
+            status={
+                "twingate_resource_access_change": {
+                    "success": True,
+                    "resource_id": "new-id",
+                }
+            }
+        )
+
+        self._call(self._index())
+
+        mock_reconcile.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_noop_when_id_unset(self, mock_reconcile, mock_get_obj, mock_patch_obj):
+        self._call(self._index(), new=None)
+        mock_get_obj.assert_not_called()
+        mock_reconcile.assert_not_called()
+
+    def test_noop_without_referencing_access(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        self._call({})
+        mock_get_obj.assert_not_called()
+        mock_reconcile.assert_not_called()
+
+    def test_does_not_persist_status_on_failed_reconcile(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        mock_get_obj.side_effect = _access_obj
+        mock_reconcile.return_value = {"success": False, "error": "boom"}
+
+        self._call(self._index())
+
+        mock_patch_obj.assert_not_called()
+
+    def test_skips_when_access_object_missing(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        mock_get_obj.return_value = None
+
+        self._call(self._index())
+
+        mock_reconcile.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_reraises_temporary_error_for_retry(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        mock_get_obj.side_effect = _access_obj
+        mock_reconcile.side_effect = kopf.TemporaryError("not ready")
+
+        with pytest.raises(kopf.TemporaryError):
+            self._call(self._index())
+
+    def test_continues_on_non_transient_failure(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        # Swallowed; the resource access timer is the backstop.
+        mock_get_obj.side_effect = _access_obj
+        mock_reconcile.side_effect = RuntimeError("boom")
+
+        self._call(self._index())
+
+        mock_patch_obj.assert_not_called()
+
+    def test_one_not_ready_does_not_starve_others(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        mock_get_obj.side_effect = _access_obj
+
+        def reconcile_side_effect(body, *args, **kwargs):
+            if body["spec"]["x"] == "access1":
+                raise kopf.TemporaryError("not ready")
+            return {"success": True, "resource_id": "new-id"}
+
+        mock_reconcile.side_effect = reconcile_side_effect
+
+        with pytest.raises(kopf.TemporaryError):
+            self._call(
+                self._index(
+                    [
+                        {"namespace": "access-ns", "name": "access1"},
+                        {"namespace": "access-ns", "name": "access2"},
+                    ]
+                )
+            )
+
+        # The second binding was still attempted, and persisted, after the first raised.
+        assert mock_reconcile.call_count == 2
+        assert mock_patch_obj.call_count == 1
+
+
+@patch("app.handlers.handlers_resource_access.k8s_patch_twingate_custom_object")
+@patch("app.handlers.handlers_resource_access.k8s_get_twingate_custom_object")
+@patch("app.handlers.handlers_resource_access._reconcile_resource_access")
+class TestGroupIdChanged:
+    def _call(self, index, new="new-id"):
+        twingate_group_id_changed(
+            namespace="ns",
+            name="grp",
+            new=new,
+            memo=MagicMock(),
+            logger=MagicMock(),
+            twingate_resource_access_by_group=index,
+        )
+
+    def test_reconciles_referencing_access(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        mock_get_obj.side_effect = _access_obj
+        mock_reconcile.return_value = {"success": True, "principal_id": "new-id"}
+
+        self._call({("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]})
+
+        mock_reconcile.assert_called_once()
+        plural, namespace, obj_name, shim = mock_patch_obj.call_args.args
+        assert (plural, namespace, obj_name) == (
+            "twingateresourceaccesses",
+            "access-ns",
+            "access1",
+        )
+        assert shim.status == {
+            "twingate_resource_access_change": {
+                "success": True,
+                "principal_id": "new-id",
+            }
+        }
+
+    def test_skips_binding_already_on_the_new_id(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        # The group handler compares principal_id, not resource_id.
+        mock_get_obj.return_value = _access_obj(
+            status={
+                "twingate_resource_access_change": {
+                    "success": True,
+                    "principal_id": "new-id",
+                }
+            }
+        )
+
+        self._call({("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]})
+
+        mock_reconcile.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_noop_when_id_unset(self, mock_reconcile, mock_get_obj, mock_patch_obj):
+        self._call(
+            {("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]}, new=None
+        )
+        mock_get_obj.assert_not_called()
+        mock_reconcile.assert_not_called()
+
+    def test_noop_without_referencing_access(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        self._call({})
+        mock_get_obj.assert_not_called()
+        mock_reconcile.assert_not_called()

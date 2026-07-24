@@ -157,8 +157,8 @@ spec:
                       description: "Name of the TwingateGateway object."
                     namespace:
                       type: string
-                      default: default
-                      description: "Namespace of the TwingateGateway object."
+                      nullable: true
+                      description: "Namespace of the TwingateGateway object. Defaults to the TwingateResource's own namespace when omitted."
                 downstream:
                   type: object
                   required: ["port"]

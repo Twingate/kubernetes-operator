@@ -36,16 +36,17 @@ def try_delete_ca(client, ca_id, logger):
             )
 
 
-def _reconcile_certificate_authority(body, spec, logger, memo, patch):
+def _reconcile_certificate_authority(body, namespace, spec, logger, memo, patch):
     ca_spec = CertificateAuthoritySpec(**spec)
 
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
-    certificate = ca_spec.get_certificate_from_secret()
+    secret_namespace = ca_spec.secret_ref.resolve_namespace(namespace)
+    certificate = ca_spec.get_certificate_from_secret(namespace)
     if certificate is None:
         raise kopf.TemporaryError(
             f"ca.crt not found yet in Secret "
-            f"'{ca_spec.secret_ref.namespace}/{ca_spec.secret_ref.name}'.",
+            f"'{secret_namespace}/{ca_spec.secret_ref.name}'.",
             delay=30,
         )
 
@@ -96,9 +97,11 @@ CA_HANDLER_TIMEOUT = int(os.environ.get("CA_HANDLER_TIMEOUT", timedelta(minutes=
 
 @kopf.on.resume(TwingateCertificateAuthorityCRD.PLURAL, timeout=CA_HANDLER_TIMEOUT)
 @kopf.on.create(TwingateCertificateAuthorityCRD.PLURAL, timeout=CA_HANDLER_TIMEOUT)
-def twingate_certificate_authority_create(body, spec, logger, memo, patch, **_):
+def twingate_certificate_authority_create(
+    body, namespace, spec, logger, memo, patch, **_
+):
     logger.info("twingate_certificate_authority_create: %s", spec)
-    return _reconcile_certificate_authority(body, spec, logger, memo, patch)
+    return _reconcile_certificate_authority(body, namespace, spec, logger, memo, patch)
 
 
 CA_RECONCILER_INTERVAL = int(os.environ.get("CA_RECONCILER_INTERVAL", timedelta(hours=10).seconds))  # fmt: skip
@@ -112,8 +115,10 @@ CA_RECONCILER_IDLE = int(os.environ.get("CA_RECONCILER_IDLE", 60))  # fmt: skip
     initial_delay=CA_RECONCILER_INIT_DELAY,
     idle=CA_RECONCILER_IDLE,
 )
-def twingate_certificate_authority_reconciler(body, spec, logger, memo, patch, **_):
-    return _reconcile_certificate_authority(body, spec, logger, memo, patch)
+def twingate_certificate_authority_reconciler(
+    body, namespace, spec, logger, memo, patch, **_
+):
+    return _reconcile_certificate_authority(body, namespace, spec, logger, memo, patch)
 
 
 @kopf.on.delete(  # type: ignore[arg-type]
@@ -195,7 +200,7 @@ def twingate_ca_tls_secret_update(
         patch = SimpleNamespace(spec={}, status={})
         try:
             _reconcile_certificate_authority(
-                ca_obj, ca_obj["spec"], logger, memo, patch
+                ca_obj, ca_namespace, ca_obj["spec"], logger, memo, patch
             )
         except Exception:
             logger.exception(

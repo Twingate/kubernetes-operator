@@ -17,11 +17,12 @@ def get_principal_id(
     access_crd: ResourceAccessSpec,
     create_status: dict | None,
     client: TwingateAPIClient,
+    owner_namespace: str,
 ) -> str:
     if principal_id := access_crd.principal_id:
         return principal_id
 
-    if group_ref_object := access_crd.get_group_ref_object():
+    if group_ref_object := access_crd.get_group_ref_object(owner_namespace):
         group_spec = group_ref_object["spec"]
         if group_id := group_spec.get("id"):
             return group_id
@@ -67,14 +68,16 @@ def check_status_created(status: dict | None) -> dict | None:
 
 @kopf.on.create("twingateresourceaccess")
 @kopf.on.update("twingateresourceaccess", field="spec")
-def twingate_resource_access_change(body, spec, memo, logger, patch, status, **kwargs):
+def twingate_resource_access_change(
+    body, namespace, spec, memo, logger, patch, status, **kwargs
+):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
     creation_status = check_status_created(status)
 
     access_crd = ResourceAccessSpec(**spec)
-    resource_crd = access_crd.get_resource()
+    resource_crd = access_crd.get_resource(namespace)
     if not resource_crd:
-        err = f"Resource {access_crd.resource_ref_fullname} not found"
+        err = f"Resource {access_crd.resource_ref_fullname(namespace)} not found"
         kopf.warn(body, reason="ResourceNotFound", message=err)
         raise kopf.TemporaryError(err, delay=15)
 
@@ -84,7 +87,7 @@ def twingate_resource_access_change(body, spec, memo, logger, patch, status, **k
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(access_crd, creation_status, client)
+        principal_id = get_principal_id(access_crd, creation_status, client, namespace)
         client.resource_access_add(
             resource_id,
             principal_id,
@@ -118,7 +121,9 @@ ENABLE_RESOURCE_ACCESS_RECONCILER = os.environ.get(
     initial_delay=60,
     idle=60,
 )
-def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwargs):
+def twingate_resource_access_sync(
+    body, namespace, spec, memo, logger, patch, status, **kwargs
+):
     # Allow the reconciler to be temporarily disabled because tenants with large numbers of
     # resource access CRD objects can generate many write operations and get throttled. We currently
     # don't have a way to diff the resource access CRD and make writes optional.
@@ -126,20 +131,20 @@ def twingate_resource_access_sync(body, spec, memo, logger, patch, status, **kwa
         return None
 
     return twingate_resource_access_change(
-        body, spec, memo, logger, patch, status, **kwargs
+        body, namespace, spec, memo, logger, patch, status, **kwargs
     )
 
 
 @kopf.on.delete("twingateresourceaccess")
-def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
+def twingate_resource_access_delete(namespace, spec, status, memo, logger, **kwargs):
     logger.info("Got a TwingateResourceAccess delete request: %s", spec)
     creation_status = check_status_created(status)
     if not creation_status:
         return
 
     access_crd = ResourceAccessSpec(**spec)
-    resource_crd = access_crd.get_resource()
+    resource_crd = access_crd.get_resource(namespace)
     if resource_id := resource_crd and resource_crd.spec.id:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(access_crd, creation_status, client)
+        principal_id = get_principal_id(access_crd, creation_status, client, namespace)
         client.resource_access_remove(resource_id, principal_id)

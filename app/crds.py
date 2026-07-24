@@ -69,7 +69,11 @@ class BaseK8sModel(BaseModel):
 
 class _KubernetesObjectRef(BaseModel):
     name: str
-    namespace: str = Field(default="default")
+    namespace: str | None = None
+
+    def resolve_namespace(self, owner_namespace: str) -> str:
+        """Namespace of the referenced object, defaulting to the referrer's own."""
+        return self.namespace or owner_namespace
 
 
 # region TwingateResourceCRD
@@ -248,7 +252,11 @@ class ResourceSpec(BaseModel):
         return self
 
     def to_graphql_arguments(
-        self, *, labels: dict[str, str], exclude: set[str] | None = None
+        self,
+        *,
+        labels: dict[str, str],
+        owner_namespace: str,
+        exclude: set[str] | None = None,
     ) -> dict[str, Any]:
         exclude = exclude or set()
         default_exclude_fields = {
@@ -280,7 +288,7 @@ class ResourceSpec(BaseModel):
                 graphql_args |= {
                     "gateway_id": resolve_ref_to_twingate_id(
                         "twingategateways",
-                        gateway_ref.namespace,
+                        gateway_ref.resolve_namespace(owner_namespace),
                         gateway_ref.name,
                     ),
                 }
@@ -293,7 +301,7 @@ class ResourceSpec(BaseModel):
                 graphql_args |= {
                     "gateway_id": resolve_ref_to_twingate_id(
                         "twingategateways",
-                        gateway_ref.namespace,
+                        gateway_ref.resolve_namespace(owner_namespace),
                         gateway_ref.name,
                     ),
                     "downstream": downstream.model_dump(by_alias=True),
@@ -333,9 +341,9 @@ class CertificateAuthoritySpec(BaseModel):
     # Secret (kubernetes.io/tls) the CA's public certificate (`ca.crt`) is read from.
     secret_ref: _KubernetesObjectRef
 
-    def get_certificate_from_secret(self) -> str | None:
+    def get_certificate_from_secret(self, owner_namespace: str) -> str | None:
         if secret := k8s_read_namespaced_secret(
-            self.secret_ref.namespace, self.secret_ref.name
+            self.secret_ref.resolve_namespace(owner_namespace), self.secret_ref.name
         ):
             return self.read_certificate_authority_cert_from_secret(secret)
 
@@ -456,9 +464,9 @@ class ResourceAccessSpec(BaseModel):
 
         raise ValueError("Missing principal_id, group_ref or principal_external_ref")
 
-    @property
-    def resource_ref_fullname(self) -> str:
-        return f"{self.resource_ref.namespace}/{self.resource_ref.name}"
+    def resource_ref_fullname(self, owner_namespace: str) -> str:
+        namespace = self.resource_ref.resolve_namespace(owner_namespace)
+        return f"{namespace}/{self.resource_ref.name}"
 
     def _get_ref_object(
         self, plural_type: str, namespace: str, name: str
@@ -489,21 +497,25 @@ class ResourceAccessSpec(BaseModel):
 
             return None
 
-    def get_resource_ref_object(self) -> OptionalK8sObject:
+    def get_resource_ref_object(self, owner_namespace: str) -> OptionalK8sObject:
         return self._get_ref_object(
-            "twingateresources", self.resource_ref.namespace, self.resource_ref.name
+            "twingateresources",
+            self.resource_ref.resolve_namespace(owner_namespace),
+            self.resource_ref.name,
         )
 
-    def get_group_ref_object(self) -> OptionalK8sObject:
+    def get_group_ref_object(self, owner_namespace: str) -> OptionalK8sObject:
         if not self.group_ref:
             return None
 
         return self._get_ref_object(
-            "twingategroups", self.group_ref.namespace, self.group_ref.name
+            "twingategroups",
+            self.group_ref.resolve_namespace(owner_namespace),
+            self.group_ref.name,
         )
 
-    def get_resource(self) -> TwingateResourceCRD | None:
-        resource_ref_object = self.get_resource_ref_object()
+    def get_resource(self, owner_namespace: str) -> TwingateResourceCRD | None:
+        resource_ref_object = self.get_resource_ref_object(owner_namespace)
         if not resource_ref_object:
             return None
 

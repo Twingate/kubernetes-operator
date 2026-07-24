@@ -346,7 +346,7 @@ def test_network_resource_spec_to_graphql_arguments(sample_network_resource_obje
         sync_labels=True,
     )
     graphql_arguments = resource_spec.to_graphql_arguments(
-        labels={"key": "value"}, exclude={"id"}
+        labels={"key": "value"}, owner_namespace="default", exclude={"id"}
     )
 
     assert graphql_arguments == {
@@ -377,7 +377,7 @@ def test_kubernetes_resource_spec_to_graphql_arguments(
         "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
     ) as resolve_mock:
         graphql_arguments = resource_spec.to_graphql_arguments(
-            labels={"key": "value"}, exclude={"id"}
+            labels={"key": "value"}, owner_namespace="default", exclude={"id"}
         )
 
     resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
@@ -485,7 +485,7 @@ def test_web_app_resource_spec_to_graphql_arguments():
         "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
     ) as resolve_mock:
         graphql_arguments = resource_spec.to_graphql_arguments(
-            labels={"key": "value"}, exclude={"id"}
+            labels={"key": "value"}, owner_namespace="default", exclude={"id"}
         )
 
     resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
@@ -512,7 +512,9 @@ def test_web_app_resource_spec_to_graphql_arguments_without_header_rewrites():
     )
 
     with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
-        graphql_arguments = resource_spec.to_graphql_arguments(labels={})
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={}, owner_namespace="default"
+        )
 
     assert graphql_arguments["request_header_rewrites"] == []
 
@@ -523,6 +525,8 @@ def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
     resource_spec = ResourceSpec(
         **sample_network_resource_object["spec"], sync_labels=False
     )
-    graphql_arguments = resource_spec.to_graphql_arguments(labels={"key": "value"})
+    graphql_arguments = resource_spec.to_graphql_arguments(
+        labels={"key": "value"}, owner_namespace="default"
+    )
 
     assert graphql_arguments["tags"] == []

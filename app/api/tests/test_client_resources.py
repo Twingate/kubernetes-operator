@@ -78,7 +78,7 @@ class TestBaseResourceModel:
         resource = BaseResource(**mock_resource_data)
         crd = ResourceSpec(**resource.to_spec_dict())
 
-        assert resource.get_spec_diff(crd) == {}
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff(self, mock_resource_data):
         resource = BaseResource(**mock_resource_data)
@@ -95,7 +95,7 @@ class TestBaseResourceModel:
             security_policy_id="new-sp-id",
         )
 
-        assert resource.get_spec_diff(crd) == {
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "name": Diff(remote="My K8S Resource", local="new-name"),
             "address": Diff(
                 remote="my-k8s-resource.default.cluster.local",
@@ -114,7 +114,7 @@ class TestBaseResourceModel:
         resource = BaseResource(**mock_resource_data)
         crd = ResourceSpec(**resource.to_spec_dict() | {"security_policy_id": None})
 
-        assert resource.get_spec_diff(crd) == {
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "security_policy_id": Diff(remote=resource.security_policy.id, local=None)
         }
 
@@ -136,7 +136,7 @@ class TestNetworkResourceModel:
         resource = network_resource_factory()
         crd = resource.to_spec()
 
-        assert resource.get_spec_diff(crd) == {}
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff_with_is_browser_shortcut_enabled(
         self, network_resource_factory
@@ -144,7 +144,7 @@ class TestNetworkResourceModel:
         resource = network_resource_factory(is_browser_shortcut_enabled=False)
         crd = resource.to_spec(is_browser_shortcut_enabled=True)
 
-        assert resource.get_spec_diff(crd) == {
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "is_browser_shortcut_enabled": Diff(remote=False, local=True)
         }
 
@@ -187,7 +187,7 @@ class TestNetworkResourceModel:
             }
         )
 
-        assert resource.get_spec_diff(crd) == {}
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
 
 class TestKubernetesResourceModel:
@@ -199,7 +199,7 @@ class TestKubernetesResourceModel:
             "app.api.client_resources.resolve_ref_to_twingate_id",
             return_value="gw-1",
         ) as resolve_mock:
-            assert resource.get_spec_diff(crd) == {}
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
         resolve_mock.assert_called_once_with(
             "twingategateways", "default", "my-gateway"
@@ -213,7 +213,7 @@ class TestKubernetesResourceModel:
             "app.api.client_resources.resolve_ref_to_twingate_id",
             return_value="gw-2",
         ):
-            assert resource.get_spec_diff(crd) == {
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
                 "gateway_id": Diff(remote="gw-1", local="gw-2"),
             }
 
@@ -226,7 +226,7 @@ class TestWebAppResourceModel:
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
-            assert resource.get_spec_diff(crd) == {}
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff_for_gateway_drift(self, web_app_resource_factory):
         resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
@@ -235,7 +235,7 @@ class TestWebAppResourceModel:
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-2"
         ):
-            assert resource.get_spec_diff(crd) == {
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
                 "gateway_id": Diff(remote="gw-1", local="gw-2"),
             }
 
@@ -250,7 +250,7 @@ class TestWebAppResourceModel:
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
-            assert resource.get_spec_diff(crd) == {
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
                 "downstream": Diff(remote=resource.downstream.port, local=8443),
                 "upstream": Diff(remote=resource.upstream.port, local=9090),
             }
@@ -269,7 +269,7 @@ class TestWebAppResourceModel:
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
-            assert resource.get_spec_diff(crd) == {}
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff_ignores_header_rewrite_ordering(
         self, web_app_resource_factory
@@ -292,7 +292,7 @@ class TestWebAppResourceModel:
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
-            assert resource.get_spec_diff(crd) == {}
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff_for_header_rewrite_drift(self, web_app_resource_factory):
         resource = web_app_resource_factory(
@@ -307,7 +307,7 @@ class TestWebAppResourceModel:
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
-            assert resource.get_spec_diff(crd) == {
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
                 "request_header_rewrites": Diff(
                     remote={"X-A": "1"}, local={"X-A": "2"}
                 ),
@@ -507,7 +507,9 @@ class TestTwingateResourceAPIs:
             api_client.resource_create(
                 resource_type=ResourceType.NETWORK,
                 **crd.to_graphql_arguments(
-                    labels=resource.to_metadata_labels(), exclude={"id"}
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
                 ),
             )
 
@@ -554,7 +556,9 @@ class TestTwingateResourceAPIs:
         )
         result = api_client.network_resource_create(
             **crd.to_graphql_arguments(
-                labels=resource.to_metadata_labels(), exclude={"id"}
+                labels=resource.to_metadata_labels(),
+                owner_namespace="default",
+                exclude={"id"},
             ),
         )
         assert result == resource
@@ -591,7 +595,9 @@ class TestTwingateResourceAPIs:
         ) as resolve_mock:
             result = api_client.kubernetes_resource_create(
                 **crd.to_graphql_arguments(
-                    labels=resource.to_metadata_labels(), exclude={"id"}
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
                 )
             )
 
@@ -667,7 +673,9 @@ class TestTwingateResourceAPIs:
             ],
         )
         result = api_client.network_resource_update(
-            **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+            **crd.to_graphql_arguments(
+                labels=resource.to_metadata_labels(), owner_namespace="default"
+            )
         )
         assert result == resource
 
@@ -704,7 +712,9 @@ class TestTwingateResourceAPIs:
             "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
         ) as resolve_mock:
             result = api_client.kubernetes_resource_update(
-                **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), owner_namespace="default"
+                )
             )
 
         resolve_mock.assert_called_once_with(
@@ -780,7 +790,9 @@ class TestTwingateResourceAPIs:
         ) as resolve_mock:
             result = api_client.web_app_resource_create(
                 **crd.to_graphql_arguments(
-                    labels=resource.to_metadata_labels(), exclude={"id"}
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
                 )
             )
 
@@ -818,7 +830,9 @@ class TestTwingateResourceAPIs:
         )
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             result = api_client.web_app_resource_update(
-                **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), owner_namespace="default"
+                )
             )
 
         assert result == resource

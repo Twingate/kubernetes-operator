@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from tests_integration.utils import kubectl_create, kubectl_delete
+from tests_integration.utils import kubectl_create, kubectl_delete, kubectl_get
 
 
 def test_success(unique_resource_name):
@@ -20,6 +20,13 @@ def test_success(unique_resource_name):
     """)
 
     assert result.returncode == 0
+
+    # Omitted ref namespaces must not be defaulted to "default" by the API server;
+    # they resolve to the gateway's own namespace at reconcile time.
+    stored = kubectl_get("tggw", unique_resource_name)
+    assert "namespace" not in stored["spec"]["serviceRef"]
+    assert "namespace" not in stored["spec"]["x509CertificateAuthorityRef"]
+
     kubectl_delete("tggw", unique_resource_name)
 
 

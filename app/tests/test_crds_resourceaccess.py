@@ -197,7 +197,7 @@ def test_deserialization(sample_resourceaccess_object):
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
     assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
-    assert crd.spec.resource_ref_fullname == "default/foo"
+    assert crd.spec.resource_ref_fullname("default") == "default/foo"
 
 
 def test_deserialization_with_group_ref():
@@ -259,7 +259,7 @@ def test_deserialization_with_group_ref():
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
     assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
-    assert crd.spec.resource_ref_fullname == "default/foo"
+    assert crd.spec.resource_ref_fullname("default") == "default/foo"
 
 
 def test_deserialization_with_principal_external_ref():
@@ -318,7 +318,7 @@ def test_deserialization_with_principal_external_ref():
     assert crd.spec.resource_ref.namespace == "default"
     assert crd.metadata.name == "foo-access-to-bar"
     assert crd.metadata.uid == "ad0298c5-b84f-4617-b4a2-d3cbbe9f6a4c"
-    assert crd.spec.resource_ref_fullname == "default/foo"
+    assert crd.spec.resource_ref_fullname("default") == "default/foo"
 
 
 def test_deserialization_with_no_target_ref_fails_validation():
@@ -381,7 +381,7 @@ def test_spec_get_resource_ref_object(
 ):
     mock_get_namespaced_custom_object.return_value = sample_resourceaccess_object
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
-    response = crd.spec.get_resource_ref_object()
+    response = crd.spec.get_resource_ref_object("default")
     assert response == sample_resourceaccess_object
 
 
@@ -392,7 +392,7 @@ def test_spec_get_resource_ref_object_handles_404(
         kubernetes.client.exceptions.ApiException(status=404)
     )
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
-    assert crd.spec.get_resource_ref_object() is None
+    assert crd.spec.get_resource_ref_object("default") is None
 
 
 def test_spec_get_resource_ref_object_handles_other_errors(
@@ -402,7 +402,7 @@ def test_spec_get_resource_ref_object_handles_other_errors(
         kubernetes.client.exceptions.ApiException(status=500)
     )
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
-    assert crd.spec.get_resource_ref_object() is None
+    assert crd.spec.get_resource_ref_object("default") is None
 
 
 def test_spec_get_resource(
@@ -412,7 +412,7 @@ def test_spec_get_resource(
 ):
     mock_get_namespaced_custom_object.return_value = sample_resource_object
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
-    response = crd.spec.get_resource()
+    response = crd.spec.get_resource("default")
     assert isinstance(response, TwingateResourceCRD), f"response is {response}"
     assert response.spec.id == "UmVzb3VyY2U6OTM3Mzkw"
     assert response.spec.address == "my.default.cluster.local"
@@ -428,7 +428,7 @@ def test_spec_get_resource_failure_returns_none(
         kubernetes.client.exceptions.ApiException()
     )
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
-    response = crd.spec.get_resource()
+    response = crd.spec.get_resource("default")
     assert response is None
 
 
@@ -450,7 +450,7 @@ def test_spec_get_group_ref_object(
 
     mock_get_namespaced_custom_object.return_value = sample_group_object
     crd = TwingateResourceAccessCRD(**resource_access_object)
-    response = crd.spec.get_group_ref_object()
+    response = crd.spec.get_group_ref_object("default")
     assert response == sample_group_object
 
 
@@ -458,7 +458,7 @@ def test_spec_get_group_ref_object_returns_none_if_no_group_ref(
     mock_get_namespaced_custom_object, sample_resourceaccess_object
 ):
     crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
-    response = crd.spec.get_group_ref_object()
+    response = crd.spec.get_group_ref_object("default")
     assert response is None
 
 

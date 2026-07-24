@@ -53,7 +53,7 @@ def call_create_update(mock_resolve_service_address, mock_resolve_ref_to_twingat
         patch_mock.spec = {}
         patch_mock.status = {}
         result = twingate_gateway_create_update(
-            "",
+            {"metadata": {"namespace": "default"}},
             spec,
             MagicMock(),
             MagicMock(),
@@ -209,7 +209,11 @@ class TestGatewayReconciler:
         patch_mock.status = {}
 
         result = twingate_gateway_reconciler(
-            "", _spec(), MagicMock(), MagicMock(), patch_mock
+            {"metadata": {"namespace": "default"}},
+            _spec(),
+            MagicMock(),
+            MagicMock(),
+            patch_mock,
         )
 
         assert result == {"success": True, "twingate_id": "new-gateway-id", "ts": ANY}

@@ -167,6 +167,10 @@ version_toml = [
 match = "(main|master)"
 prerelease = false
 
+[tool.semantic_release.branches.hotfix]
+match = "hotfix/.*"
+prerelease = false
+
 [tool.semantic_release.changelog]
 mode = "init"
 exclude_commit_patterns = [

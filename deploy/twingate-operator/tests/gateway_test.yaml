@@ -23,5 +23,20 @@ tests:
           cert: <tls cert>
           key: <tls key>
           ca: <ca cert>
+    # The subchart derives the Certificate Authority name from the kube-system namespace
+    # UID, unreadable without a cluster. Same UID as the subchart's own tests.
+    kubernetesProvider:
+      scheme:
+        "v1/Namespace":
+          gvr:
+            version: "v1"
+            resource: "namespaces"
+          namespaced: false
+      objects:
+        - kind: Namespace
+          apiVersion: v1
+          metadata:
+            name: kube-system
+            uid: 11111111-2222-3333-4444-555555555555
     asserts:
       - matchSnapshot: {}

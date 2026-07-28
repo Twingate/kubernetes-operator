@@ -44,7 +44,7 @@ def test_gateway_flows(run_kopf, random_name_generator):
         metadata:
           name: {ca_name}
         spec:
-          name: My CA
+          name: {ca_name}
           secretRef:
             name: {secret_name}
     """

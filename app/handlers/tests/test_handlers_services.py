@@ -656,6 +656,28 @@ class TestTwingateServiceAnnotationRemoved:
             "my-service-resource",
         )
 
+    def test_does_not_delete_kubernetes_twingate_resource(
+        self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
+    ):
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
+            "metadata": {"name": "my-service-resource"},
+            "spec": {
+                "id": "1",
+                "name": "my-service-resource",
+                "type": ResourceType.KUBERNETES,
+            },
+        }
+
+        twingate_service_annotation_removed(
+            example_service_body,
+            example_service_body.spec,
+            "default",
+            example_service_body.metadata,
+            MagicMock(),
+        )
+
+        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_not_called()
+
     def test_does_not_delete_when_twingate_resource_does_not_exist(
         self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
     ):

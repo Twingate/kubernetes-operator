@@ -12,13 +12,12 @@ from app.utils_k8s import k8s_get_twingate_custom_object
 def _repair_missing_gateway_ref(name, namespace, spec, patch, logger) -> bool:
     """Bind a Kubernetes Resource that the v2 upgrade left without a ``gatewayRef``.
 
-    Resources generated from a Service's annotations predate ``gatewayRef``, and Helm
+    Resources generated from a Service's annotations predate ``gatewayRef``, and Helm 3
     cannot fill it in on upgrade: it adopts the object once the ownership annotations
-    are present but never applies the manifest to it, because custom resources do not
-    get the three-way merge built-in types do (helm/helm#11650). The field's value is
-    identical in every chart revision too, so it never appears in a Helm diff either.
-    Server-side apply (Helm 4, Argo CD) does write it, so this only repairs the objects
-    left behind by clients that don't.
+    are present but never patches custom resources the way it does built-in types
+    (helm/helm#11650), so no later revision recovers the field either. Server-side apply
+    (Helm 4, Argo CD) does write it, so this only repairs the objects left behind by
+    clients that don't.
 
     Returns True when a repair was staged on ``patch``.
     """
@@ -42,17 +41,41 @@ def _repair_missing_gateway_ref(name, namespace, spec, patch, logger) -> bool:
             delay=30,
         )
 
-    # Only adopt a Gateway that fronts the Service this Resource was generated from,
-    # so a same-named but unrelated Gateway can't capture the cluster's access.
+    # Only adopt a Gateway whose serviceRef points at the Service this Resource was
+    # generated from, so a same-named but unrelated Gateway can't capture the access.
     if gateway.get("spec", {}).get("serviceRef", {}).get("name") != gateway_name:
         raise kopf.PermanentError(
-            f"TwingateGateway '{gateway_name}' does not front Service '{gateway_name}'; "
-            f"set gatewayRef on '{name}' explicitly."
+            f"TwingateGateway '{gateway_name}' does not reference Service "
+            f"'{gateway_name}'; set gatewayRef on '{name}' explicitly."
         )
 
     logger.info("Binding Resource %s to TwingateGateway %s", name, gateway_name)
     patch.spec["gatewayRef"] = {"name": gateway_name, "namespace": namespace}
     return True
+
+
+def _release_service_ownership(meta, spec, patch, logger):
+    """Drop the Service owner reference from a chart-declared Kubernetes Resource.
+
+    From v2 the Gateway chart declares the Resource the operator once generated from a
+    Service's annotations, so two owners claim one object: deleting the Service garbage
+    collects something the chart still declares, Helm or Argo CD applies it back without
+    a ``spec.id``, and the operator registers a second backend Resource.
+
+    v2 no longer generates a Kubernetes Resource from Service annotations, so only that
+    pre-v2 object matches. Network and WebApp Resources it still generates keep their
+    owner reference, since garbage collection is their only cleanup path.
+    """
+    if spec.get("type") != ResourceType.KUBERNETES:
+        return
+
+    owner_references = meta.get("ownerReferences") or []
+    remaining = [ref for ref in owner_references if ref.get("kind") != "Service"]
+    if len(remaining) == len(owner_references):
+        return
+
+    logger.info("Releasing Service ownership of Resource %s", meta.get("name"))
+    patch.meta["ownerReferences"] = remaining
 
 
 @kopf.on.create("twingateresource")
@@ -92,7 +115,7 @@ def twingate_resource_create(
 
 @kopf.on.update("twingateresource")
 def twingate_resource_update(
-    name, namespace, labels, spec, diff, status, memo, logger, patch, **kwargs
+    name, namespace, meta, labels, spec, diff, status, memo, logger, patch, **kwargs
 ):
     logger.info(
         "Got TwingateResource update request: %s. Labels: %s. Diff: %s. Status: %s.",
@@ -103,6 +126,8 @@ def twingate_resource_update(
     )
     if _repair_missing_gateway_ref(name, namespace, spec, patch, logger):
         raise kopf.TemporaryError("Staged gatewayRef; reconciling on retry.", delay=5)
+
+    _release_service_ownership(meta, spec, patch, logger)
 
     crd = ResourceSpec(**spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
@@ -161,10 +186,12 @@ RESOURCE_RECONCILER_IDLE = int(os.environ.get("RESOURCE_RECONCILER_IDLE", 60))  
     idle=RESOURCE_RECONCILER_IDLE,
 )
 def twingate_resource_sync(
-    name, namespace, labels, spec, status, memo, logger, patch, **kwargs
+    name, namespace, meta, labels, spec, status, memo, logger, patch, **kwargs
 ):
     if _repair_missing_gateway_ref(name, namespace, spec, patch, logger):
         raise kopf.TemporaryError("Staged gatewayRef; reconciling on retry.", delay=5)
+
+    _release_service_ownership(meta, spec, patch, logger)
 
     crd = ResourceSpec(**spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)

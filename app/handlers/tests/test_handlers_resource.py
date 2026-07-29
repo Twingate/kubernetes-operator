@@ -5,6 +5,7 @@ import pytest
 
 from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_resource import (
+    _release_service_ownership,
     _repair_missing_gateway_ref,
     twingate_resource_create,
     twingate_resource_delete,
@@ -75,7 +76,7 @@ class TestRepairMissingGatewayRef:
         mock.spec = {}
         return mock
 
-    def test_binds_to_the_gateway_fronting_the_same_service(
+    def test_binds_to_the_gateway_referencing_the_same_service(
         self, mock_get_custom_object, patch_mock
     ):
         mock_get_custom_object.return_value = {"spec": {"serviceRef": {"name": "gw"}}}
@@ -110,7 +111,7 @@ class TestRepairMissingGatewayRef:
 
         assert patch_mock.spec == {}
 
-    def test_refuses_a_gateway_fronting_a_different_service(
+    def test_refuses_a_gateway_referencing_a_different_service(
         self, mock_get_custom_object, patch_mock
     ):
         mock_get_custom_object.return_value = {
@@ -161,6 +162,77 @@ class TestRepairMissingGatewayRef:
         assert repaired is False
         assert patch_mock.spec == {}
         mock_get_custom_object.assert_not_called()
+
+
+SERVICE_OWNER_REF = {
+    "apiVersion": "v1",
+    "kind": "Service",
+    "name": "gw",
+    "uid": "3dee908b-1d75-4a34-a20a-36c08da0c39c",
+    "controller": True,
+}
+KUBERNETES_SPEC = {"type": ResourceType.KUBERNETES, "gatewayRef": {"name": "gw"}}
+
+
+class TestReleaseServiceOwnership:
+    @pytest.fixture
+    def patch_mock(self):
+        mock = MagicMock()
+        mock.meta = {}
+        return mock
+
+    def test_drops_the_service_owner_reference(self, patch_mock):
+        _release_service_ownership(
+            {"name": "gw-resource", "ownerReferences": [SERVICE_OWNER_REF]},
+            KUBERNETES_SPEC,
+            patch_mock,
+            MagicMock(),
+        )
+
+        assert patch_mock.meta == {"ownerReferences": []}
+
+    @pytest.mark.parametrize(
+        "resource_type", [ResourceType.NETWORK, ResourceType.WEB_APP]
+    )
+    def test_keeps_ownership_of_resources_the_operator_still_generates(
+        self, resource_type, patch_mock
+    ):
+        # An annotation-generated Resource has no other cleanup path: nothing watches
+        # Service deletions, so garbage collection is what deprovisions it.
+        _release_service_ownership(
+            {"name": "gw-resource", "ownerReferences": [SERVICE_OWNER_REF]},
+            {"type": resource_type},
+            patch_mock,
+            MagicMock(),
+        )
+
+        assert patch_mock.meta == {}
+
+    def test_keeps_owner_references_from_other_kinds(self, patch_mock):
+        other_ref = {"kind": "TwingateGateway", "name": "gw", "uid": "other-uid"}
+
+        _release_service_ownership(
+            {
+                "name": "gw-resource",
+                "ownerReferences": [SERVICE_OWNER_REF, other_ref],
+            },
+            KUBERNETES_SPEC,
+            patch_mock,
+            MagicMock(),
+        )
+
+        assert patch_mock.meta == {"ownerReferences": [other_ref]}
+
+    @pytest.mark.parametrize("owner_references", [[], None])
+    def test_is_a_no_op_once_already_released(self, owner_references, patch_mock):
+        _release_service_ownership(
+            {"name": "gw-resource", "ownerReferences": owner_references},
+            KUBERNETES_SPEC,
+            patch_mock,
+            MagicMock(),
+        )
+
+        assert patch_mock.meta == {}
 
 
 class TestResourceCreateHandler:
@@ -389,6 +461,7 @@ class TestResourceUpdateHandler:
         result = twingate_resource_update(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             spec,
             diff,
@@ -436,6 +509,7 @@ class TestResourceUpdateHandler:
             result = twingate_resource_update(
                 name="my-resource",
                 namespace="default",
+                meta=mock_k8s_metadata,
                 labels=mock_k8s_metadata["labels"],
                 spec=spec,
                 diff=diff,
@@ -475,6 +549,7 @@ class TestResourceUpdateHandler:
         result = twingate_resource_update(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             spec,
             diff,
@@ -520,6 +595,7 @@ class TestResourceUpdateHandler:
         result = twingate_resource_update(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             spec,
             diff,
@@ -564,6 +640,7 @@ class TestResourceUpdateHandler:
         result = twingate_resource_update(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             spec,
             diff,
@@ -643,6 +720,7 @@ class TestResourceSyncTimer:
             twingate_resource_sync(
                 "gw-resource",
                 "default",
+                mock_k8s_metadata,
                 mock_k8s_metadata["labels"],
                 {
                     "id": "UmVzb3VyY2U6OTMxODE3",
@@ -682,6 +760,7 @@ class TestResourceSyncTimer:
         twingate_resource_sync(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
@@ -718,6 +797,7 @@ class TestResourceSyncTimer:
         twingate_resource_sync(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
@@ -760,6 +840,7 @@ class TestResourceSyncTimer:
         twingate_resource_sync(
             "my-resource",
             "default",
+            mock_k8s_metadata,
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
             status,
@@ -806,6 +887,7 @@ class TestResourceSyncTimer:
             twingate_resource_sync(
                 "my-resource",
                 "default",
+                mock_k8s_metadata,
                 mock_k8s_metadata["labels"],
                 resource_spec.model_dump(by_alias=True),
                 status,

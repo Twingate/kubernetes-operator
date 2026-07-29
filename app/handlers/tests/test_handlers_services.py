@@ -18,6 +18,11 @@ from app.handlers.handlers_services import (
 
 # Ignore the fact we use _cogs here
 
+HELM_OWNERSHIP_METADATA = {
+    "meta.helm.sh/release-name": "twingate-operator",
+    "meta.helm.sh/release-namespace": "twingate",
+}
+
 
 @pytest.fixture
 def example_service_body():
@@ -199,6 +204,51 @@ class TestServiceToTwingateResource:
 
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected
+
+    def test_marks_kubernetes_resource_as_helm_owned(
+        self, example_cluster_ip_gateway_service_body
+    ):
+        example_cluster_ip_gateway_service_body.metadata["annotations"].update(
+            HELM_OWNERSHIP_METADATA
+        )
+
+        result = service_to_twingate_resource(
+            example_cluster_ip_gateway_service_body, "default"
+        )
+
+        assert result["metadata"]["annotations"] == HELM_OWNERSHIP_METADATA
+        assert result["metadata"]["labels"]["app.kubernetes.io/managed-by"] == "Helm"
+
+    @pytest.mark.parametrize("annotation", HELM_OWNERSHIP_METADATA)
+    def test_does_not_mark_as_helm_owned_on_partial_ownership_metadata(
+        self, example_cluster_ip_gateway_service_body, annotation
+    ):
+        # Helm won't adopt on a subset of the ownership annotations, so propagating one
+        # only sets the managed-by label, which makes v2's operator drop the Service
+        # owner reference without Helm ever taking over.
+        example_cluster_ip_gateway_service_body.metadata["annotations"][annotation] = (
+            HELM_OWNERSHIP_METADATA[annotation]
+        )
+
+        result = service_to_twingate_resource(
+            example_cluster_ip_gateway_service_body, "default"
+        )
+
+        assert "annotations" not in result["metadata"]
+        assert "app.kubernetes.io/managed-by" not in result["metadata"]["labels"]
+
+    def test_does_not_mark_other_resource_types_as_helm_owned(
+        self, example_service_body
+    ):
+        # Only the Kubernetes Resource is handed over to Helm. Marking any other one
+        # would make v2's operator drop its Service owner reference, which is the only
+        # thing that cleans it up when the Service goes away.
+        example_service_body.metadata["annotations"].update(HELM_OWNERSHIP_METADATA)
+
+        result = service_to_twingate_resource(example_service_body, "default")
+
+        assert "annotations" not in result["metadata"]
+        assert "app.kubernetes.io/managed-by" not in result["metadata"]["labels"]
 
     def test_kubernetes_resource_type_annotation(
         self, example_cluster_ip_gateway_service_body
@@ -626,6 +676,122 @@ class TestTwingateServiceCreate:
             updated_resource,
         )
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()
+
+    def test_create_drops_chart_revision_labels_from_kubernetes_resource(
+        self,
+        example_cluster_ip_gateway_service_body,
+        kopf_handler_runner,
+        kopf_adopt_mock,
+        k8s_customobjects_client_mock,
+    ):
+        example_cluster_ip_gateway_service_body.metadata["annotations"].update(
+            HELM_OWNERSHIP_METADATA
+        )
+        example_cluster_ip_gateway_service_body.metadata["labels"].update(
+            {
+                "helm.sh/chart": "gateway-0.21.1",
+                "app.kubernetes.io/version": "0.21.1",
+                "app.kubernetes.io/name": "gateway",
+            }
+        )
+        # Mirror kopf.adopt, which copies the owner's labels onto the child, so this
+        # covers the ordering: filtering before the adopt call would be undone by it.
+        kopf_adopt_mock.side_effect = lambda obj: [
+            obj["metadata"]["labels"].setdefault(key, value)
+            for key, value in example_cluster_ip_gateway_service_body.metadata[
+                "labels"
+            ].items()
+        ]
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
+
+        twingate_service_create(
+            example_cluster_ip_gateway_service_body,
+            example_cluster_ip_gateway_service_body.spec,
+            "default",
+            example_cluster_ip_gateway_service_body.metadata,
+            MagicMock(),
+            Reason.CREATE,
+        )
+
+        created = (
+            k8s_customobjects_client_mock.create_namespaced_custom_object.call_args[0][
+                4
+            ]
+        )
+        assert created["metadata"]["labels"] == {
+            "env": "dev",
+            "app.kubernetes.io/name": "gateway",
+            "app.kubernetes.io/managed-by": "Helm",
+        }
+
+    def test_create_keeps_chart_revision_labels_on_other_resource_types(
+        self,
+        example_service_body,
+        kopf_handler_runner,
+        kopf_adopt_mock,
+        k8s_customobjects_client_mock,
+    ):
+        # Labels become Twingate tags when syncLabels is on, so only the Resource handed
+        # over to Helm loses them.
+        chart_labels = {
+            "helm.sh/chart": "myapp-1.2.3",
+            "app.kubernetes.io/version": "1.2.3",
+        }
+        example_service_body.metadata["labels"].update(chart_labels)
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
+
+        twingate_service_create(
+            example_service_body,
+            example_service_body.spec,
+            "default",
+            example_service_body.metadata,
+            MagicMock(),
+            Reason.CREATE,
+        )
+
+        created = (
+            k8s_customobjects_client_mock.create_namespaced_custom_object.call_args[0][
+                4
+            ]
+        )
+        assert created["metadata"]["labels"] == {"env": "dev"} | chart_labels
+
+    def test_update_service_merges_helm_annotations_into_existing_resource(
+        self,
+        example_cluster_ip_gateway_service_body,
+        kopf_handler_runner,
+        k8s_customobjects_client_mock,
+    ):
+        example_cluster_ip_gateway_service_body.metadata["annotations"].update(
+            HELM_OWNERSHIP_METADATA
+        )
+        kopf_annotation = {"kopf.zalando.org/last-handled-configuration": "{}"}
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
+            "metadata": {
+                "name": "kubernetes-gateway-resource",
+                "labels": {},
+                "annotations": dict(kopf_annotation),
+            },
+            "spec": {"id": "1", "name": "kubernetes-gateway-resource"},
+        }
+
+        twingate_service_create(
+            example_cluster_ip_gateway_service_body,
+            example_cluster_ip_gateway_service_body.spec,
+            "default",
+            example_cluster_ip_gateway_service_body.metadata,
+            MagicMock(),
+            Reason.UPDATE,
+        )
+
+        replaced = (
+            k8s_customobjects_client_mock.replace_namespaced_custom_object.call_args[0][
+                5
+            ]
+        )
+        assert replaced["metadata"]["annotations"] == (
+            kopf_annotation | HELM_OWNERSHIP_METADATA
+        )
 
 
 class TestTwingateServiceAnnotationRemoved:

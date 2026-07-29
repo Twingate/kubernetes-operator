@@ -41,6 +41,25 @@ UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
 REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 
 
+# Metadata that lets Helm take over the generated Kubernetes Resource, which v2's Gateway
+# chart declares under the same name. This operator has to write it while it is still the
+# one running, since Helm checks ownership when the v2 chart is applied.
+# TODO: Remove in v2, which declares and owns the Resource from the start.
+HELM_OWNERSHIP_ANNOTATIONS = (
+    "meta.helm.sh/release-name",
+    "meta.helm.sh/release-namespace",
+)
+HELM_MANAGED_BY_LABEL = "app.kubernetes.io/managed-by"
+# Labels identifying the chart revision that rendered the Service. They describe the
+# Service rather than the Resource derived from it, and copying them makes the operator
+# the owning field manager of values that go stale on the next chart bump, which then
+# collides with Helm's server-side apply when it declares the same labels.
+HELM_CHART_REVISION_LABELS = (
+    "helm.sh/chart",
+    "app.kubernetes.io/version",
+)
+
+
 def get_load_balancer_address(status: Status, service_name: str) -> str:
     if not (ingress := status.get("loadBalancer", {}).get("ingress")):
         raise kopf.TemporaryError(
@@ -101,6 +120,24 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
                 f"Unsupported resource type {unsupported!r}; "
                 f"must be one of {[t.value for t in ResourceType]}."
             )
+
+    # v2's Gateway chart declares the Kubernetes Resource itself, under the same name
+    # this generates, and Helm refuses to take over an existing object that doesn't
+    # already carry both annotations and the managed-by label. Propagate them from the
+    # Helm-deployed Service so that upgrade doesn't fail on invalid ownership metadata.
+    # The label is set explicitly rather than relied on from the Service, which need not
+    # label itself even when Helm renders it.
+    #
+    # Only for the Kubernetes type: nothing else is handed over to Helm, and marking a
+    # Resource as Helm-owned tells v2's operator to drop its Service owner reference,
+    # which is the only thing that cleans up a Resource when its Service is deleted.
+    if result["spec"].get("type") == ResourceType.KUBERNETES and all(
+        key in meta.annotations for key in HELM_OWNERSHIP_ANNOTATIONS
+    ):
+        result["metadata"]["annotations"] = {
+            key: meta.annotations[key] for key in HELM_OWNERSHIP_ANNOTATIONS
+        }
+        result["metadata"]["labels"][HELM_MANAGED_BY_LABEL] = "Helm"
 
     return result
 
@@ -253,6 +290,15 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
 
     resource_subobject = service_to_twingate_resource(body, namespace)
     kopf.adopt(resource_subobject)
+    # Only the Kubernetes Resource is handed over to Helm, and only its labels collide
+    # with Helm's server-side apply. Labels also become Twingate tags when syncLabels is
+    # on, so dropping them from any other Resource would change its tags in Twingate.
+    #
+    # `kopf.adopt` copies the owner's labels onto the child, so this has to run after it
+    # rather than while building the object, or the Service's copies come straight back.
+    if resource_subobject["spec"].get("type") == ResourceType.KUBERNETES:
+        for label in HELM_CHART_REVISION_LABELS:
+            resource_subobject["metadata"]["labels"].pop(label, None)
 
     resource_object_name = resource_subobject["metadata"]["name"]
 
@@ -268,6 +314,12 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
         existing_resource_object["metadata"]["labels"] = resource_subobject["metadata"][
             "labels"
         ]
+        # Merge rather than replace: the existing object also carries kopf's own
+        # annotations, and dropping those would lose its handler state.
+        if helm_annotations := resource_subobject["metadata"].get("annotations"):
+            existing_resource_object["metadata"]["annotations"] = (
+                existing_resource_object["metadata"].get("annotations") or {}
+            ) | helm_annotations
         kapi.replace_namespaced_custom_object(
             "twingate.com",
             "v1beta",
@@ -313,17 +365,24 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
         # TwingateResource itself, so deleting here would deprovision the backend
         # Resource mid-upgrade. Leave it for the v2 chart to adopt. Deleting the Service
         # outright is unaffected: the owner reference still garbage-collects the object.
+        #
+        # v2 keeps this guard as a safety net. The annotations are expected to be removed
+        # while this operator is still running, but if the removal is only observed after
+        # the upgrade, the event lands on v2, which would then delete the Resource its
+        # chart now owns.
+        # TODO: Remove once no v1 operator is still running in the field, and in v3 at
+        # the latest.
         if existing_resource_object["spec"].get("type") == ResourceType.KUBERNETES:
             logger.warning(
-                "Not deleting TwingateResource %s: Kubernetes Resources are migrated to "
-                "TwingateGateway in v2. Delete it explicitly to deprovision.",
+                "Not deleting TwingateResource %s: Kubernetes Resources are kept so the "
+                "v2 Gateway chart can adopt them. Delete it explicitly to deprovision.",
                 resource_object_name,
             )
             kopf.info(
                 body,
                 reason="twingate_service_annotation_removed",
-                message=f"Kept Kubernetes TwingateResource {resource_object_name} "
-                "for migration to TwingateGateway",
+                message=f"Kept Kubernetes TwingateResource {resource_object_name}; "
+                "delete it explicitly to deprovision",
             )
             return
 

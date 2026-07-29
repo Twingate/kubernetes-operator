@@ -1,9 +1,11 @@
 from unittest.mock import ANY, MagicMock, patch
 
+import kopf
 import pytest
 
 from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_resource import (
+    _repair_missing_gateway_ref,
     twingate_resource_create,
     twingate_resource_delete,
     twingate_resource_gateway_index,
@@ -57,6 +59,108 @@ def mock_memo_with_default_resource_tags():
             },
         )
     )
+
+
+class TestRepairMissingGatewayRef:
+    @pytest.fixture
+    def mock_get_custom_object(self):
+        with patch(
+            "app.handlers.handlers_resource.k8s_get_twingate_custom_object"
+        ) as mock:
+            yield mock
+
+    @pytest.fixture
+    def patch_mock(self):
+        mock = MagicMock()
+        mock.spec = {}
+        return mock
+
+    def test_binds_to_the_gateway_fronting_the_same_service(
+        self, mock_get_custom_object, patch_mock
+    ):
+        mock_get_custom_object.return_value = {"spec": {"serviceRef": {"name": "gw"}}}
+
+        repaired = _repair_missing_gateway_ref(
+            "gw-resource",
+            "default",
+            {"type": ResourceType.KUBERNETES},
+            patch_mock,
+            MagicMock(),
+        )
+
+        assert repaired is True
+        assert patch_mock.spec == {"gatewayRef": {"name": "gw", "namespace": "default"}}
+        mock_get_custom_object.assert_called_once_with(
+            "twingategateways", "default", "gw"
+        )
+
+    def test_retries_while_the_gateway_does_not_exist_yet(
+        self, mock_get_custom_object, patch_mock
+    ):
+        mock_get_custom_object.return_value = None
+
+        with pytest.raises(kopf.TemporaryError):
+            _repair_missing_gateway_ref(
+                "gw-resource",
+                "default",
+                {"type": ResourceType.KUBERNETES},
+                patch_mock,
+                MagicMock(),
+            )
+
+        assert patch_mock.spec == {}
+
+    def test_refuses_a_gateway_fronting_a_different_service(
+        self, mock_get_custom_object, patch_mock
+    ):
+        mock_get_custom_object.return_value = {
+            "spec": {"serviceRef": {"name": "unrelated"}}
+        }
+
+        with pytest.raises(kopf.PermanentError):
+            _repair_missing_gateway_ref(
+                "gw-resource",
+                "default",
+                {"type": ResourceType.KUBERNETES},
+                patch_mock,
+                MagicMock(),
+            )
+
+        assert patch_mock.spec == {}
+
+    @pytest.mark.parametrize(
+        "spec",
+        [
+            {"type": ResourceType.NETWORK},
+            {"type": ResourceType.WEB_APP, "gatewayRef": {"name": "gw"}},
+            {"type": ResourceType.KUBERNETES, "gatewayRef": {"name": "gw"}},
+        ],
+    )
+    def test_leaves_resources_that_need_no_repair_alone(
+        self, spec, mock_get_custom_object, patch_mock
+    ):
+        repaired = _repair_missing_gateway_ref(
+            "gw-resource", "default", spec, patch_mock, MagicMock()
+        )
+
+        assert repaired is False
+        assert patch_mock.spec == {}
+        mock_get_custom_object.assert_not_called()
+
+    def test_leaves_hand_authored_names_alone(self, mock_get_custom_object, patch_mock):
+        # Only Resources the operator generated from a Service carry the `-resource`
+        # suffix; anything else is user-authored and they must set gatewayRef.
+        repaired = _repair_missing_gateway_ref(
+            "my-cluster",
+            "default",
+            {"type": ResourceType.KUBERNETES},
+            patch_mock,
+            MagicMock(),
+        )
+
+        assert repaired is False
+        assert patch_mock.spec == {}
+        mock_get_custom_object.assert_not_called()
 
 
 class TestResourceCreateHandler:
@@ -283,6 +387,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             spec,
@@ -290,6 +395,7 @@ class TestResourceUpdateHandler:
             status,
             mock_memo_with_default_resource_tags,
             logger_mock,
+            patch_mock,
         )
         assert result == {
             "success": True,
@@ -324,8 +430,11 @@ class TestResourceUpdateHandler:
 
         logger_mock = MagicMock()
         status_mock = MagicMock()
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             result = twingate_resource_update(
+                name="my-resource",
                 namespace="default",
                 labels=mock_k8s_metadata["labels"],
                 spec=spec,
@@ -333,6 +442,7 @@ class TestResourceUpdateHandler:
                 status=status_mock,
                 memo=mock_memo,
                 logger=logger_mock,
+                patch=patch_mock,
             )
 
             assert result == {
@@ -363,6 +473,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             spec,
@@ -370,6 +481,7 @@ class TestResourceUpdateHandler:
             status,
             memo_mock,
             logger_mock,
+            patch_mock,
         )
         assert result == {
             "success": False,
@@ -406,6 +518,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             spec,
@@ -413,6 +526,7 @@ class TestResourceUpdateHandler:
             status,
             memo_mock,
             logger_mock,
+            patch_mock,
         )
         assert result == {
             "success": True,
@@ -448,6 +562,7 @@ class TestResourceUpdateHandler:
         patch_mock.spec = {}
 
         result = twingate_resource_update(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             spec,
@@ -455,6 +570,7 @@ class TestResourceUpdateHandler:
             status,
             memo_mock,
             logger_mock,
+            patch_mock,
         )
         assert result == {
             "success": True,
@@ -509,6 +625,40 @@ class TestResourceDeleteHandler:
 
 
 class TestResourceSyncTimer:
+    def test_sync_repairs_a_resource_left_without_a_gateway_ref(
+        self, mock_api_client, mock_k8s_metadata, mock_memo
+    ):
+        # The timer is what reaches a pre-existing Resource, since no `on.resume`
+        # handler is registered for twingateresource.
+        patch_mock = MagicMock()
+        patch_mock.spec = {}
+
+        with (
+            patch(
+                "app.handlers.handlers_resource.k8s_get_twingate_custom_object",
+                return_value={"spec": {"serviceRef": {"name": "gw"}}},
+            ),
+            pytest.raises(kopf.TemporaryError),
+        ):
+            twingate_resource_sync(
+                "gw-resource",
+                "default",
+                mock_k8s_metadata["labels"],
+                {
+                    "id": "UmVzb3VyY2U6OTMxODE3",
+                    "address": "kubernetes.default.svc.cluster.local",
+                    "name": "my-cluster",
+                    "type": ResourceType.KUBERNETES,
+                },
+                {},
+                mock_memo,
+                MagicMock(),
+                patch_mock,
+            )
+
+        assert patch_mock.spec == {"gatewayRef": {"name": "gw", "namespace": "default"}}
+        mock_api_client.resource_update.assert_not_called()
+
     def test_sync_when_resource_exists_and_doesnt_need_update(
         self, network_resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
     ):
@@ -530,6 +680,7 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
@@ -565,6 +716,7 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
@@ -606,6 +758,7 @@ class TestResourceSyncTimer:
         patch_mock.spec = {}
 
         twingate_resource_sync(
+            "my-resource",
             "default",
             mock_k8s_metadata["labels"],
             resource_spec.model_dump(by_alias=True),
@@ -651,6 +804,7 @@ class TestResourceSyncTimer:
 
         with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
             twingate_resource_sync(
+                "my-resource",
                 "default",
                 mock_k8s_metadata["labels"],
                 resource_spec.model_dump(by_alias=True),

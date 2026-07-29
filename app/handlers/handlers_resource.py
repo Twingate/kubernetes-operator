@@ -4,8 +4,55 @@ from datetime import timedelta
 import kopf
 
 from app.api import TwingateAPIClient
-from app.crds import ResourceSpec
+from app.crds import ResourceSpec, ResourceType, TwingateGatewayCRD
 from app.handlers.base import fail, success
+from app.utils_k8s import k8s_get_twingate_custom_object
+
+
+def _repair_missing_gateway_ref(name, namespace, spec, patch, logger) -> bool:
+    """Bind a Kubernetes Resource that the v2 upgrade left without a ``gatewayRef``.
+
+    Resources generated from a Service's annotations predate ``gatewayRef``, and Helm
+    cannot fill it in on upgrade: it adopts the object once the ownership annotations
+    are present but never applies the manifest to it, because custom resources do not
+    get the three-way merge built-in types do (helm/helm#11650). The field's value is
+    identical in every chart revision too, so it never appears in a Helm diff either.
+    Server-side apply (Helm 4, Argo CD) does write it, so this only repairs the objects
+    left behind by clients that don't.
+
+    Returns True when a repair was staged on ``patch``.
+    """
+    if spec.get("type") != ResourceType.KUBERNETES or spec.get("gatewayRef"):
+        return False
+
+    # The Gateway chart renders the Service and the TwingateGateway from one name
+    # helper, and the operator appended `-resource` when it generated this Resource
+    # from that Service, so dropping the suffix gives the Gateway's name.
+    gateway_name = name.removesuffix("-resource")
+    if gateway_name == name:
+        return False
+
+    gateway = k8s_get_twingate_custom_object(
+        TwingateGatewayCRD.PLURAL, namespace, gateway_name
+    )
+    if gateway is None:
+        raise kopf.TemporaryError(
+            f"Kubernetes Resource '{name}' has no gatewayRef and TwingateGateway "
+            f"'{gateway_name}' does not exist yet.",
+            delay=30,
+        )
+
+    # Only adopt a Gateway that fronts the Service this Resource was generated from,
+    # so a same-named but unrelated Gateway can't capture the cluster's access.
+    if gateway.get("spec", {}).get("serviceRef", {}).get("name") != gateway_name:
+        raise kopf.PermanentError(
+            f"TwingateGateway '{gateway_name}' does not front Service '{gateway_name}'; "
+            f"set gatewayRef on '{name}' explicitly."
+        )
+
+    logger.info("Binding Resource %s to TwingateGateway %s", name, gateway_name)
+    patch.spec["gatewayRef"] = {"name": gateway_name, "namespace": namespace}
+    return True
 
 
 @kopf.on.create("twingateresource")
@@ -45,7 +92,7 @@ def twingate_resource_create(
 
 @kopf.on.update("twingateresource")
 def twingate_resource_update(
-    namespace, labels, spec, diff, status, memo, logger, **kwargs
+    name, namespace, labels, spec, diff, status, memo, logger, patch, **kwargs
 ):
     logger.info(
         "Got TwingateResource update request: %s. Labels: %s. Diff: %s. Status: %s.",
@@ -54,6 +101,9 @@ def twingate_resource_update(
         diff,
         status,
     )
+    if _repair_missing_gateway_ref(name, namespace, spec, patch, logger):
+        raise kopf.TemporaryError("Staged gatewayRef; reconciling on retry.", delay=5)
+
     crd = ResourceSpec(**spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     graphql_arguments = crd.to_graphql_arguments(
@@ -111,8 +161,11 @@ RESOURCE_RECONCILER_IDLE = int(os.environ.get("RESOURCE_RECONCILER_IDLE", 60))  
     idle=RESOURCE_RECONCILER_IDLE,
 )
 def twingate_resource_sync(
-    namespace, labels, spec, status, memo, logger, patch, **kwargs
+    name, namespace, labels, spec, status, memo, logger, patch, **kwargs
 ):
+    if _repair_missing_gateway_ref(name, namespace, spec, patch, logger):
+        raise kopf.TemporaryError("Staged gatewayRef; reconciling on retry.", delay=5)
+
     crd = ResourceSpec(**spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     if resource_id := crd.id:

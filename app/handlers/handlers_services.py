@@ -244,6 +244,24 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
     if existing_resource_object := k8s_get_twingate_resource(
         namespace, resource_object_name, kapi
     ):
+        # In v2 the Gateway chart drops these annotations and declares the
+        # TwingateResource itself, so deleting here would deprovision the backend
+        # Resource mid-upgrade. Leave it for the v2 chart to adopt. Deleting the Service
+        # outright is unaffected: the owner reference still garbage-collects the object.
+        if existing_resource_object["spec"].get("type") == ResourceType.KUBERNETES:
+            logger.warning(
+                "Not deleting TwingateResource %s: Kubernetes Resources are migrated to "
+                "TwingateGateway in v2. Delete it explicitly to deprovision.",
+                resource_object_name,
+            )
+            kopf.info(
+                body,
+                reason="twingate_service_annotation_removed",
+                message=f"Kept Kubernetes TwingateResource {resource_object_name} "
+                "for migration to TwingateGateway",
+            )
+            return
+
         logger.info("Deleting TwingateResource: %s", existing_resource_object)
         kapi.delete_namespaced_custom_object(
             "twingate.com",

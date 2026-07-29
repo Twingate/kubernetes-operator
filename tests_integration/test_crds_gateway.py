@@ -2,7 +2,12 @@ import subprocess
 
 import pytest
 
-from tests_integration.utils import kubectl_create, kubectl_delete
+from tests_integration.utils import (
+    kubectl_apply,
+    kubectl_create,
+    kubectl_delete,
+    kubectl_get,
+)
 
 
 def test_success(unique_resource_name):
@@ -34,6 +39,87 @@ def test_spec_is_required(unique_resource_name):
 
     stderr = ex.value.stderr.decode()
     assert "spec: Required value" in stderr
+
+
+def test_remote_network_id(unique_resource_name):
+    result = kubectl_create(f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateGateway
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          remoteNetworkId: "UmVtb3RlTmV0d29yazoxMjMK"
+          serviceRef:
+            name: my-gateway-svc
+            port: 443
+          x509CertificateAuthorityRef:
+            name: my-ca
+    """)
+
+    assert result.returncode == 0
+
+    data = kubectl_get("tggw", unique_resource_name)
+    assert data["spec"]["remoteNetworkId"] == "UmVtb3RlTmV0d29yazoxMjMK"
+
+    kubectl_delete("tggw", unique_resource_name)
+
+
+def test_remote_network_id_invalid_pattern(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateGateway
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              remoteNetworkId: "not valid!"
+              serviceRef:
+                name: my-gateway-svc
+                port: 443
+              x509CertificateAuthorityRef:
+                name: my-ca
+        """)
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.remoteNetworkId in body should match" in stderr
+
+
+def test_remote_network_id_is_immutable(unique_resource_name):
+    result = kubectl_create(f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateGateway
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          remoteNetworkId: "UmVtb3RlTmV0d29yazoxMjMK"
+          serviceRef:
+            name: my-gateway-svc
+            port: 443
+          x509CertificateAuthorityRef:
+            name: my-ca
+    """)
+    assert result.returncode == 0
+
+    try:
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_apply(f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateGateway
+                metadata:
+                  name: {unique_resource_name}
+                spec:
+                  remoteNetworkId: "UmVtb3RlTmV0d29yazo0NTYK"
+                  serviceRef:
+                    name: my-gateway-svc
+                    port: 443
+                  x509CertificateAuthorityRef:
+                    name: my-ca
+            """)
+
+        stderr = ex.value.stderr.decode()
+        assert "remoteNetworkId is immutable once set" in stderr
+    finally:
+        kubectl_delete("tggw", unique_resource_name)
 
 
 def test_service_ref_required(unique_resource_name):

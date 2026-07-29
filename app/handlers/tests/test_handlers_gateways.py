@@ -76,7 +76,7 @@ class TestGatewayCreateUpdateHandler:
         assert result == {"success": True, "twingate_id": gateway.id, "ts": ANY}
         mock_api_client.gateway_create.assert_called_once_with(
             address="gateway.default.svc.cluster.local:443",
-            remote_network_id=ANY,
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
             x509_ca_id="ca-backend-id",
         )
         mock_api_client.gateway_update.assert_not_called()
@@ -85,6 +85,21 @@ class TestGatewayCreateUpdateHandler:
             "address": "gateway.default.svc.cluster.local:443",
             "x509CaId": "ca-backend-id",
         }
+
+    def test_create_with_remote_network_id_override(
+        self, kopf_info_mock, mock_api_client, call_create_update
+    ):
+        mock_api_client.gateway_create.return_value = Gateway(
+            id="new-gateway-id", address="addr"
+        )
+
+        call_create_update(_spec() | {"remoteNetworkId": "UmVtb3RlTmV0d29yazo5OTkK"})
+
+        mock_api_client.gateway_create.assert_called_once_with(
+            address="gateway.default.svc.cluster.local:443",
+            remote_network_id="UmVtb3RlTmV0d29yazo5OTkK",
+            x509_ca_id="ca-backend-id",
+        )
 
     def test_update_existing(self, mock_api_client, call_create_update):
         mock_api_client.get_gateway.return_value = Gateway(
@@ -96,7 +111,7 @@ class TestGatewayCreateUpdateHandler:
         assert result == {"success": True, "twingate_id": "gateway-id", "ts": ANY}
         mock_api_client.gateway_update.assert_called_once_with(
             gateway_id="gateway-id",
-            remote_network_id=ANY,
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
             address="gateway.default.svc.cluster.local:443",
             x509_ca_id="ca-backend-id",
         )

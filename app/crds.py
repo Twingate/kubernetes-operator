@@ -396,6 +396,9 @@ class GatewaySpec(BaseModel):
     )
 
     id: str | None = None
+    remote_network_id: str = Field(
+        default_factory=lambda: get_settings().remote_network_id
+    )
     # Reference to the Service fronting the Gateway. The operator resolves the
     # host from the Service and combines it with `serviceRef.port` into the
     # `status.address` the Twingate Client connects to.

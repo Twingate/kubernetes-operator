@@ -76,10 +76,14 @@ class TestRepairMissingGatewayRef:
         mock.spec = {}
         return mock
 
+    @pytest.mark.parametrize(
+        "service_ref",
+        [{"name": "gw"}, {"name": "gw", "namespace": "default"}],
+    )
     def test_binds_to_the_gateway_referencing_the_same_service(
-        self, mock_get_custom_object, patch_mock
+        self, mock_get_custom_object, patch_mock, service_ref
     ):
-        mock_get_custom_object.return_value = {"spec": {"serviceRef": {"name": "gw"}}}
+        mock_get_custom_object.return_value = {"spec": {"serviceRef": service_ref}}
 
         repaired = _repair_missing_gateway_ref(
             "gw-resource",
@@ -111,12 +115,14 @@ class TestRepairMissingGatewayRef:
 
         assert patch_mock.spec == {}
 
+    @pytest.mark.parametrize(
+        "service_ref",
+        [{"name": "unrelated"}, {"name": "gw", "namespace": "other"}],
+    )
     def test_refuses_a_gateway_referencing_a_different_service(
-        self, mock_get_custom_object, patch_mock
+        self, mock_get_custom_object, patch_mock, service_ref
     ):
-        mock_get_custom_object.return_value = {
-            "spec": {"serviceRef": {"name": "unrelated"}}
-        }
+        mock_get_custom_object.return_value = {"spec": {"serviceRef": service_ref}}
 
         with pytest.raises(kopf.PermanentError):
             _repair_missing_gateway_ref(

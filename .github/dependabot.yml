@@ -22,6 +22,9 @@ updates:
       time: "13:00"
     commit-message:
       prefix: "chore: "
+    cooldown:
+      exclude:
+        - gateway
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

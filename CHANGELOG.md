@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.3.0 (2026-07-30)
+
+### Features
+
+- Keep the Kubernetes Resource when the Service annotation is removed
+  ([`92dc59c`](https://github.com/Twingate/kubernetes-operator/commit/92dc59cf97478c074b18c7415d753410d5d5166f))
+
+- Let Helm adopt the generated Kubernetes Resource
+  ([`bdf69f2`](https://github.com/Twingate/kubernetes-operator/commit/bdf69f24a556d398126c789d01b8d1e16c0cb2e5))
+
+
 ## v1.2.0 (2026-07-27)
 
 ### Chores

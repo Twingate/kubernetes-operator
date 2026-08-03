@@ -43,7 +43,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
         logger.info("Updating gateway %s", gw_spec.id)
         client.gateway_update(
             gateway_id=gw_spec.id,
-            remote_network_id=settings.remote_network_id,
+            remote_network_id=gw_spec.remote_network_id,
             address=address,
             x509_ca_id=x509_ca_id,
         )
@@ -58,7 +58,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
         logger.info("Creating gateway")
     gateway = client.gateway_create(
         address=address,
-        remote_network_id=settings.remote_network_id,
+        remote_network_id=gw_spec.remote_network_id,
         x509_ca_id=x509_ca_id,
     )
     patch.spec["id"] = gateway.id

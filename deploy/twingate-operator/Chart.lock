@@ -1,6 +1,6 @@
 dependencies:
 - name: gateway
   repository: oci://ghcr.io/twingate/helmcharts
-  version: 0.22.1
-digest: sha256:9b194f5065c0a7165e231f255e19e0c92c1f029433919dea643a5fab5144e3f2
-generated: "2026-07-27T23:29:40.477609712Z"
+  version: 1.0.0
+digest: sha256:f919eec3e0873c8a20bac187ede263143a43975b6f5220d344f91e05d26c35d7
+generated: "2026-08-03T17:20:17.797109954Z"

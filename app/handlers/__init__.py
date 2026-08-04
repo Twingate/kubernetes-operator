@@ -5,5 +5,4 @@ from .handlers_gateways import *
 from .handlers_groups import *
 from .handlers_resource import *
 from .handlers_resource_access import *
-from .handlers_secrets import *
 from .handlers_services import *

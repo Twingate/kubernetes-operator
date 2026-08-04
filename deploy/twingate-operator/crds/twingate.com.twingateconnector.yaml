@@ -20,6 +20,8 @@ spec:
               x-kubernetes-validations:
                 - rule: (!has(oldSelf.id) || self.id == oldSelf.id)
                   message: "id is immutable once set"
+                - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
+                  message: "remoteNetworkId is immutable once set"
                 - rule: (has(self.image) && !has(self.imagePolicy)) || (!has(self.image) && has(self.imagePolicy)) || (!has(self.image) && !has(self.imagePolicy))
                   message: "Can define either `image` or `imagePolicy`, not both."
               properties:
@@ -30,6 +32,10 @@ spec:
                   type: string
                   maxLength: 30
                   description: "Name of the Connector (optional, if not specified Twingate will give a random name)"
+                remoteNetworkId:
+                  type: string
+                  pattern: "^[-A-Za-z0-9+/]*={0,3}$"
+                  description: "ID of the Twingate Remote Network this Connector belongs to. Overrides the operator-wide default (TWINGATE_REMOTE_NETWORK_ID). Immutable once set."
                 logLevel:
                   type: integer
                   default: 3

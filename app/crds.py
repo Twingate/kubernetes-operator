@@ -9,10 +9,7 @@ import kopf
 import kubernetes.client
 import pendulum
 from croniter import croniter
-from cryptography import x509
 from pydantic import (
-    AfterValidator,
-    Base64Str,
     BaseModel,
     ConfigDict,
     Field,
@@ -25,13 +22,18 @@ from semantic_version import NpmSpec
 
 from app.settings import get_settings
 from app.utils import validate_pem_x509_certificate
-from app.utils_k8s import k8s_read_namespaced_secret
+from app.utils_k8s import k8s_read_namespaced_secret, resolve_ref_to_twingate_id
 from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
 OptionalK8sObject = K8sObject | None
 
 logger = logging.getLogger(__name__)
+
+MIN_PORT = 1
+MAX_PORT = 65535
+
+Port = Annotated[int, Field(ge=MIN_PORT, le=MAX_PORT)]
 
 
 class K8sMetadata(BaseModel):
@@ -67,7 +69,14 @@ class BaseK8sModel(BaseModel):
 
 class _KubernetesObjectRef(BaseModel):
     name: str
-    namespace: str = Field(default="default")
+    namespace: str | None = None
+
+    def resolve_namespace(self, owner_namespace: str) -> str:
+        """Namespace of the referenced object, defaulting to the referrer's own."""
+        return self.namespace or owner_namespace
+
+    def fullname(self, owner_namespace: str) -> str:
+        return f"{self.resolve_namespace(owner_namespace)}/{self.name}"
 
 
 # region TwingateResourceCRD
@@ -83,8 +92,8 @@ class ProtocolRange(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    start: int = Field(ge=1, le=65535)
-    end: int = Field(ge=1, le=65535)
+    start: Port
+    end: Port
 
     @model_validator(mode="after")
     def check_ports(self):
@@ -139,58 +148,35 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
-class ResourceProxy(BaseModel):
+class ResourceDownstream(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    address: str
-    certificate_authority_cert: Annotated[
-        Base64Str | None, AfterValidator(lambda v: v.strip() if v is not None else None)
-    ] = None
-    certificate_authority_cert_secret_ref: _KubernetesObjectRef | None = None
+    port: Port
 
-    def get_certificate_authority_cert(self) -> str | None:
-        if secret_ref := self.certificate_authority_cert_secret_ref:
-            if secret := k8s_read_namespaced_secret(
-                secret_ref.namespace, secret_ref.name
-            ):
-                return self.read_certificate_authority_cert_from_secret(secret)
 
-            return None
+class ResourceUpstream(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
 
-        return self.certificate_authority_cert
+    port: Port
 
-    @staticmethod
-    def read_certificate_authority_cert_from_secret(
-        secret: kubernetes.client.V1Secret,
-    ) -> str:
-        secret_name = secret.metadata.name
-        if not (ca_cert := secret.data.get("ca.crt")):
-            raise kopf.PermanentError(
-                f"Kubernetes Secret object: {secret_name} is missing ca.crt."
-            )
 
-        try:
-            ca_cert = base64.b64decode(ca_cert).decode()
-            validate_pem_x509_certificate(ca_cert)
-            return ca_cert
-        except ValueError as ex:
-            raise kopf.PermanentError(
-                f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
-            ) from ex
+class RequestHeaderRewrite(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
 
-    @property
-    def x509_ca_cert(self) -> x509.Certificate | None:
-        if certificate_authority_cert := self.get_certificate_authority_cert():
-            return x509.load_pem_x509_certificate(certificate_authority_cert.encode())
-
-        return None
+    name: str
+    value: str
 
 
 class ResourceType(StrEnum):
     NETWORK = "Network"
     KUBERNETES = "Kubernetes"
+    WEB_APP = "WebApp"
 
 
 class ResourceSpec(BaseModel):
@@ -211,7 +197,14 @@ class ResourceSpec(BaseModel):
     protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
     sync_labels: bool = True
     type: ResourceType = ResourceType.NETWORK
-    proxy: ResourceProxy | None = None
+    # Reference to the TwingateGateway serving this Kubernetes or WebApp resource.
+    gateway_ref: _KubernetesObjectRef | None = None
+    # (WebApp only) connection configuration relative to the gateway
+    # (downstream = client-facing, upstream = backend).
+    downstream: ResourceDownstream | None = None
+    upstream: ResourceUpstream | None = None
+    # (WebApp only) HTTP headers to rewrite on requests to the upstream.
+    request_header_rewrites: list[RequestHeaderRewrite] | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -225,15 +218,58 @@ class ResourceSpec(BaseModel):
 
         return self
 
+    @model_validator(mode="after")
+    def check_gateway_ref(self):
+        has_gateway_ref = self.gateway_ref is not None
+        has_endpoints = (
+            self.downstream is not None
+            or self.upstream is not None
+            or self.request_header_rewrites is not None
+        )
+
+        match self.type:
+            case ResourceType.NETWORK:
+                if has_gateway_ref:
+                    raise ValueError("Network resources cannot set `gatewayRef`.")
+                if has_endpoints:
+                    raise ValueError(
+                        "Network resources cannot set `downstream`, `upstream`, or "
+                        "`requestHeaderRewrites`."
+                    )
+            case ResourceType.KUBERNETES:
+                if not has_gateway_ref:
+                    raise ValueError("Kubernetes resources require `gatewayRef`.")
+                if has_endpoints:
+                    raise ValueError(
+                        "Kubernetes resources cannot set `downstream`, `upstream`, or "
+                        "`requestHeaderRewrites`."
+                    )
+            case ResourceType.WEB_APP:
+                if not has_gateway_ref:
+                    raise ValueError("WebApp resources require `gatewayRef`.")
+                if self.downstream is None or self.upstream is None:
+                    raise ValueError(
+                        "WebApp resources require `downstream` and `upstream`."
+                    )
+
+        return self
+
     def to_graphql_arguments(
-        self, *, labels: dict[str, str], exclude: set[str] | None = None
+        self,
+        *,
+        labels: dict[str, str],
+        owner_namespace: str,
+        exclude: set[str] | None = None,
     ) -> dict[str, Any]:
         exclude = exclude or set()
         default_exclude_fields = {
             "is_browser_shortcut_enabled",
             "sync_labels",
-            "proxy",
             "type",
+            "gateway_ref",
+            "downstream",
+            "upstream",
+            "request_header_rewrites",
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
@@ -251,15 +287,32 @@ class ResourceSpec(BaseModel):
                     "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
                 }
             case ResourceType.KUBERNETES:
-                resource_proxy = cast(ResourceProxy, self.proxy)
-                ca_cert = resource_proxy.get_certificate_authority_cert()
-                if ca_cert is None:
-                    raise kopf.PermanentError(
-                        "Certificate authority cert is not found for Kubernetes Resource type"
-                    )
+                gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
                 graphql_args |= {
-                    "proxy_address": resource_proxy.address,
-                    "certificate_authority_cert": ca_cert,
+                    "gateway_id": resolve_ref_to_twingate_id(
+                        "twingategateways",
+                        gateway_ref.resolve_namespace(owner_namespace),
+                        gateway_ref.name,
+                    ),
+                }
+            case ResourceType.WEB_APP:
+                # WebApp Resources are not port-based, so protocols don't apply.
+                graphql_args.pop("protocols", None)
+                gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
+                downstream = cast(ResourceDownstream, self.downstream)
+                upstream = cast(ResourceUpstream, self.upstream)
+                graphql_args |= {
+                    "gateway_id": resolve_ref_to_twingate_id(
+                        "twingategateways",
+                        gateway_ref.resolve_namespace(owner_namespace),
+                        gateway_ref.name,
+                    ),
+                    "downstream": downstream.model_dump(by_alias=True),
+                    "upstream": upstream.model_dump(by_alias=True),
+                    "request_header_rewrites": [
+                        {"key": h.name, "value": h.value}
+                        for h in (self.request_header_rewrites or [])
+                    ],
                 }
 
         return graphql_args
@@ -291,13 +344,32 @@ class CertificateAuthoritySpec(BaseModel):
     # Secret (kubernetes.io/tls) the CA's public certificate (`ca.crt`) is read from.
     secret_ref: _KubernetesObjectRef
 
-    def get_certificate_from_secret(self) -> str | None:
+    def get_certificate_from_secret(self, owner_namespace: str) -> str | None:
         if secret := k8s_read_namespaced_secret(
-            self.secret_ref.namespace, self.secret_ref.name
+            self.secret_ref.resolve_namespace(owner_namespace), self.secret_ref.name
         ):
-            return ResourceProxy.read_certificate_authority_cert_from_secret(secret)
+            return self.read_certificate_authority_cert_from_secret(secret)
 
         return None
+
+    @staticmethod
+    def read_certificate_authority_cert_from_secret(
+        secret: kubernetes.client.V1Secret,
+    ) -> str:
+        secret_name = secret.metadata.name
+        if not (ca_cert := secret.data.get("ca.crt")):
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} is missing ca.crt."
+            )
+
+        try:
+            ca_cert = base64.b64decode(ca_cert).decode()
+            validate_pem_x509_certificate(ca_cert)
+            return ca_cert
+        except ValueError as ex:
+            raise kopf.PermanentError(
+                f"Kubernetes Secret object: {secret_name} ca.crt is invalid."
+            ) from ex
 
 
 class TwingateCertificateAuthorityCRD(BaseK8sModel):
@@ -315,7 +387,7 @@ class TwingateCertificateAuthorityCRD(BaseK8sModel):
 
 class _ServiceRef(_KubernetesObjectRef):
     # Port the Gateway is reachable on. The host is resolved from the Service.
-    port: int = Field(ge=1, le=65535)
+    port: Port
 
 
 class GatewaySpec(BaseModel):
@@ -324,6 +396,9 @@ class GatewaySpec(BaseModel):
     )
 
     id: str | None = None
+    remote_network_id: str = Field(
+        default_factory=lambda: get_settings().remote_network_id
+    )
     # Reference to the Service fronting the Gateway. The operator resolves the
     # host from the Service and combines it with `serviceRef.port` into the
     # `status.address` the Twingate Client connects to.
@@ -395,10 +470,6 @@ class ResourceAccessSpec(BaseModel):
 
         raise ValueError("Missing principal_id, group_ref or principal_external_ref")
 
-    @property
-    def resource_ref_fullname(self) -> str:
-        return f"{self.resource_ref.namespace}/{self.resource_ref.name}"
-
     def _get_ref_object(
         self, plural_type: str, namespace: str, name: str
     ) -> OptionalK8sObject:
@@ -428,21 +499,25 @@ class ResourceAccessSpec(BaseModel):
 
             return None
 
-    def get_resource_ref_object(self) -> OptionalK8sObject:
+    def get_resource_ref_object(self, owner_namespace: str) -> OptionalK8sObject:
         return self._get_ref_object(
-            "twingateresources", self.resource_ref.namespace, self.resource_ref.name
+            "twingateresources",
+            self.resource_ref.resolve_namespace(owner_namespace),
+            self.resource_ref.name,
         )
 
-    def get_group_ref_object(self) -> OptionalK8sObject:
+    def get_group_ref_object(self, owner_namespace: str) -> OptionalK8sObject:
         if not self.group_ref:
             return None
 
         return self._get_ref_object(
-            "twingategroups", self.group_ref.namespace, self.group_ref.name
+            "twingategroups",
+            self.group_ref.resolve_namespace(owner_namespace),
+            self.group_ref.name,
         )
 
-    def get_resource(self) -> TwingateResourceCRD | None:
-        resource_ref_object = self.get_resource_ref_object()
+    def get_resource(self, owner_namespace: str) -> TwingateResourceCRD | None:
+        resource_ref_object = self.get_resource_ref_object(owner_namespace)
         if not resource_ref_object:
             return None
 

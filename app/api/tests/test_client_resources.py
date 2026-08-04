@@ -1,5 +1,4 @@
-import base64
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import orjson as json
 import pytest
@@ -12,11 +11,16 @@ from app.api.client_resources import (
     BaseResource,
     Diff,
     NetworkResource,
+    ResourceGateway,
     ResourceProtocol,
     ResourceProtocols,
 )
-from app.api.tests.factories import VALID_CA_CERT, VALID_CA_CERT_1
-from app.crds import ProtocolPolicy, ResourceProxy, ResourceSpec, ResourceType
+from app.crds import (
+    ProtocolPolicy,
+    RequestHeaderRewrite,
+    ResourceSpec,
+    ResourceType,
+)
 
 
 @pytest.fixture
@@ -74,7 +78,7 @@ class TestBaseResourceModel:
         resource = BaseResource(**mock_resource_data)
         crd = ResourceSpec(**resource.to_spec_dict())
 
-        assert resource.get_spec_diff(crd) == {}
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff(self, mock_resource_data):
         resource = BaseResource(**mock_resource_data)
@@ -91,7 +95,7 @@ class TestBaseResourceModel:
             security_policy_id="new-sp-id",
         )
 
-        assert resource.get_spec_diff(crd) == {
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "name": Diff(remote="My K8S Resource", local="new-name"),
             "address": Diff(
                 remote="my-k8s-resource.default.cluster.local",
@@ -110,7 +114,7 @@ class TestBaseResourceModel:
         resource = BaseResource(**mock_resource_data)
         crd = ResourceSpec(**resource.to_spec_dict() | {"security_policy_id": None})
 
-        assert resource.get_spec_diff(crd) == {
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "security_policy_id": Diff(remote=resource.security_policy.id, local=None)
         }
 
@@ -132,7 +136,7 @@ class TestNetworkResourceModel:
         resource = network_resource_factory()
         crd = resource.to_spec()
 
-        assert resource.get_spec_diff(crd) == {}
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
     def test_get_spec_diff_with_is_browser_shortcut_enabled(
         self, network_resource_factory
@@ -140,7 +144,7 @@ class TestNetworkResourceModel:
         resource = network_resource_factory(is_browser_shortcut_enabled=False)
         crd = resource.to_spec(is_browser_shortcut_enabled=True)
 
-        assert resource.get_spec_diff(crd) == {
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "is_browser_shortcut_enabled": Diff(remote=False, local=True)
         }
 
@@ -183,57 +187,131 @@ class TestNetworkResourceModel:
             }
         )
 
-        assert resource.get_spec_diff(crd) == {}
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
 
 class TestKubernetesResourceModel:
-    def test_get_spec_diff_when_no_diff(self, kubernetes_resource_factory):
-        resource = kubernetes_resource_factory()
-        crd = resource.to_spec()
+    def test_get_spec_diff_when_in_sync(self, kubernetes_resource_factory):
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
 
-        assert resource.get_spec_diff(crd) == {}
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id",
+            return_value="gw-1",
+        ) as resolve_mock:
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
-    def test_get_spec_diff_with_resource_proxy(self, kubernetes_resource_factory):
-        resource = kubernetes_resource_factory()
-        crd_proxy = ResourceProxy(
-            address="proxy.kubernetes.cluster.local",
-            certificate_authority_cert=base64.b64encode(
-                VALID_CA_CERT_1.encode()
-            ).decode(),
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
         )
-        crd = resource.to_spec(proxy=crd_proxy)
 
-        assert resource.get_spec_diff(crd) == {
-            "proxy_address": Diff(
-                remote=resource.proxy_address, local="proxy.kubernetes.cluster.local"
-            ),
-            "certificate_authority_cert": Diff(
-                remote=resource.x509_ca_cert,
-                local=crd_proxy.x509_ca_cert,
-            ),
-        }
+    def test_get_spec_diff_for_gateway_drift(self, kubernetes_resource_factory):
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
 
-    def test_get_spec_diff_with_empty_proxy(self, kubernetes_resource_factory):
-        resource = kubernetes_resource_factory()
-        crd = resource.to_spec(proxy=None)
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id",
+            return_value="gw-2",
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "gateway_id": Diff(remote="gw-1", local="gw-2"),
+            }
 
-        assert resource.get_spec_diff(crd) == {
-            "proxy_address": Diff(remote=resource.proxy_address, local=None),
-            "certificate_authority_cert": Diff(
-                remote=resource.x509_ca_cert, local=None
-            ),
-        }
 
-    def test_get_spec_diff_with_equivalent_certificate(
-        self, kubernetes_resource_factory
+class TestWebAppResourceModel:
+    def test_get_spec_diff_when_no_diff(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
+
+    def test_get_spec_diff_for_gateway_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-2"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "gateway_id": Diff(remote="gw-1", local="gw-2"),
+            }
+
+    def test_get_spec_diff_for_port_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            downstream={"port": 8443},
+            upstream={"port": 9090},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "downstream": Diff(remote=resource.downstream.port, local=8443),
+                "upstream": Diff(remote=resource.upstream.port, local=9090),
+            }
+
+    def test_get_spec_diff_ignores_protocols(self, web_app_resource_factory):
+        # WebApp is not port-based; protocols are not sent on update, so they must
+        # not appear in the diff even when the CRD sets non-default protocols.
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            protocols=ResourceProtocols(
+                tcp=ResourceProtocol(policy=ProtocolPolicy.RESTRICTED)
+            ).model_dump(),
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
+
+    def test_get_spec_diff_ignores_header_rewrite_ordering(
+        self, web_app_resource_factory
     ):
-        resource = kubernetes_resource_factory(certificate_authority_cert=VALID_CA_CERT)
-        crd = resource.to_spec()
+        resource = web_app_resource_factory(
+            gateway=ResourceGateway(id="gw-1"),
+            request_header_rewrites=[
+                RequestHeaderRewrite(name="X-A", value="1"),
+                RequestHeaderRewrite(name="X-B", value="2"),
+            ],
+        )
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            request_header_rewrites=[
+                {"name": "X-B", "value": "2"},
+                {"name": "X-A", "value": "1"},
+            ],
+        )
 
-        # This x509 cert is the same as VALID_CA_CERT but formatted differently in PEM.
-        resource.certificate_authority_cert = "-----BEGIN CERTIFICATE-----\nMIIFfzCCA2egAwIBAgIVALoOJAoSP1m81BQ3DAjRHcYXrLR8MA0GCSqGSIb3DQEB\nCwUAMHcxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDTzEQMA4GA1UEBxMHQm91bGRl\ncjESMBAGA1UEChMJSnVtcENsb3VkMRkwFwYDVQQLExBKdW1wQ2xvdWRTQU1MSWRQ\nMRowGAYDVQQDExFKdW1wQ2xvdWRTQU1MVXNlcjAeFw0yMTExMjkwMTAyMTRaFw0y\nNjExMjkwMTAyMTRaMHcxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDTzEQMA4GA1UE\nBxMHQm91bGRlcjESMBAGA1UEChMJSnVtcENsb3VkMRkwFwYDVQQLExBKdW1wQ2xv\ndWRTQU1MSWRQMRowGAYDVQQDExFKdW1wQ2xvdWRTQU1MVXNlcjCCAiIwDQYJKoZI\nhvcNAQEBBQADggIPADCCAgoCggIBALc6KJOG3Nm02vHfvoaWkr0sR94HOVwiK79j\ndxP4saCi5hL7Fj2EnEmz73BH/BxBFQ/uHcRjMO9uLn6WRcT2P8WDMtyUuBSIUL4l\nLxoTOm0/37qrYYAHfbYJuPWAbvIxne2Ns0iXYFkgHSZ6DudZ37SSdXnPBuR6caey\nmbovrCHPbETb3SpgcVMuuuG1XhCTN0lZ/xrpB1G8HqL37xVCmJAzmBmUgYpu9+zH\n1uBPwUoWa8THelXrp2CUZ3mtwo0uKnfyXJcJyC5rJv0RLo4oJRetU3miTF7/trcX\nMhXGsosM/U/a5sn79Eh3vx+BJCDdrJte5z0WCCR+FcLYtE9iweWpIKh98746rUoS\n4rMHpUae0Ns6eSpU+OwImMw6oUCHO8+x1gkcVBG2tfD0mv7TIdW5ib6M9L9T63L1\n5qeke9APPcpG0vG5IxeGbClRcjE4usiTg+iK8+ACT7h2htScSGlPsI3Dbln9D4LX\nRKNHCcyBcpVOHI06Z0D0hK7yclpiuILSHaTTCPl38xwUNFlJDqXjUvzLxM1sWzeb\nt4It3g886MkS4l0wZgaYHxmcmCdlJvyPqV8txgQZYBY3jT7EjgPFox4kLMVKA+jA\nzf9sHTh7zQnOgRE32rhj2NUAK3hBbHv1aOeUlhxSLDle7X6lXGxxHCvA3l1Npmo5\nA1OZhMBFAgMBAAGjAjAAMA0GCSqGSIb3DQEBCwUAA4ICAQCUIop2TSQJzsRhgwOG\nYkbpAblSjkNQ5TBZfrrZoFYOMA0ji62qlWD3C5OUaWQbBrvG/8LvCOXm4mPmp1e0\nJeli6DZBIn2Uo7ne29V+itvgB/du6+pkrIr0egAbkJfkS+f3lQjepjFakiQqK3YL\nJtXJUrKvwjWkdgTmWr8S1P9LX4fE4Rlr9i+pg6NVspSDezmDHg7jbgcq1tK8g3ra\nDpAM4LkyGJHCSE0tWmNDw6QKRb/ev6fBdz1UVTXaWZoA22rWcfMH35YwcCP5oXpi\nkISi+JmG6HojBs4ljpbZFYcRRu9P/i0mvpdJQtPRRnvNC5v5EwPuktE1Wi6qkp68\nN7j+QLl8jyaXLn6GHE6CjggE4YB8veqceLaDDYutxRjT77LhESxWN6XRBzhMcOrH\nFpNJQI1VlalABW2YjpJIPvo+iWlAZZx20k2+GFJVNiwe0Xzdyql1eGMxCkKpd5wB\nezJeBUurMQ+tqd+1dG10fEBL3gikBGlZLSWus3pFxSiwYzhSSoAqK9zF7T+A674p\n7EQB9fk8V4ZtR6Oo20R4NWOX4VrqszFcYaNJrpKuB8FaDvUqcE2aQ+vkYXfi0Fad\nLFmc7WeMePIMvkfinr9qEgYc+yq5Xa0WHb3Xe+1y7l0TKyuKHdBgHGJUBAbAEyau\n4UcIBjn1gX2YNQ/N1TRvqIbkcQ==\n-----END CERTIFICATE-----"
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
 
-        assert resource.get_spec_diff(crd) == {}
+    def test_get_spec_diff_for_header_rewrite_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(
+            gateway=ResourceGateway(id="gw-1"),
+            request_header_rewrites=[RequestHeaderRewrite(name="X-A", value="1")],
+        )
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            request_header_rewrites=[{"name": "X-A", "value": "2"}],
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "request_header_rewrites": Diff(
+                    remote={"X-A": "1"}, local={"X-A": "2"}
+                ),
+            }
 
 
 class TestResourceFactory:
@@ -368,6 +446,28 @@ class TestTwingateResourceAPIs:
         api_client.kubernetes_resource_create.assert_called_once_with(mock_argument=1)
         api_client.network_resource_create.assert_not_called()
 
+    def test_resource_create_with_web_app_type(self, api_client):
+        api_client.network_resource_create = MagicMock()
+        api_client.web_app_resource_create = MagicMock()
+
+        api_client.resource_create(resource_type=ResourceType.WEB_APP, mock_argument=1)
+
+        api_client.web_app_resource_create.assert_called_once_with(mock_argument=1)
+        api_client.network_resource_create.assert_not_called()
+
+    def test_resource_update_with_web_app_type(self, api_client):
+        api_client.network_resource_update = MagicMock()
+        api_client.web_app_resource_update = MagicMock()
+
+        api_client.resource_update(
+            id="1", resource_type=ResourceType.WEB_APP, mock_argument=1
+        )
+
+        api_client.web_app_resource_update.assert_called_once_with(
+            id="1", mock_argument=1
+        )
+        api_client.network_resource_update.assert_not_called()
+
     def test_resource_create_failure(
         self, test_url, api_client, network_resource_factory, mocked_responses
     ):
@@ -385,7 +485,15 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels", "type", "proxy"],
+                            exclude=[
+                                "id",
+                                "sync_labels",
+                                "type",
+                                "gateway_ref",
+                                "downstream",
+                                "upstream",
+                                "request_header_rewrites",
+                            ],
                             by_alias=True,
                         )
                     },
@@ -399,7 +507,9 @@ class TestTwingateResourceAPIs:
             api_client.resource_create(
                 resource_type=ResourceType.NETWORK,
                 **crd.to_graphql_arguments(
-                    labels=resource.to_metadata_labels(), exclude={"id"}
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
                 ),
             )
 
@@ -427,7 +537,15 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["id", "sync_labels", "type", "proxy"],
+                            exclude=[
+                                "id",
+                                "sync_labels",
+                                "type",
+                                "gateway_ref",
+                                "downstream",
+                                "upstream",
+                                "request_header_rewrites",
+                            ],
                             by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
@@ -438,7 +556,9 @@ class TestTwingateResourceAPIs:
         )
         result = api_client.network_resource_create(
             **crd.to_graphql_arguments(
-                labels=resource.to_metadata_labels(), exclude={"id"}
+                labels=resource.to_metadata_labels(),
+                owner_namespace="default",
+                exclude={"id"},
             ),
         )
         assert result == resource
@@ -446,8 +566,8 @@ class TestTwingateResourceAPIs:
     def test_kubernetes_resource_create(
         self, test_url, api_client, kubernetes_resource_factory, mocked_responses
     ):
-        resource = kubernetes_resource_factory()
-        crd = resource.to_spec(id=None)
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(id=None, gateway_ref={"name": "my-gateway"})
         success_response = json.dumps(
             {
                 "data": {
@@ -465,27 +585,24 @@ class TestTwingateResourceAPIs:
             body=success_response,
             match=[
                 responses.matchers.json_params_matcher(
-                    {
-                        "variables": crd.model_dump(
-                            exclude={
-                                "id",
-                                "is_browser_shortcut_enabled",
-                                "sync_labels",
-                                "type",
-                                "proxy",
-                            },
-                            by_alias=True,
-                        )
-                        | {"tags": [tag.model_dump() for tag in resource.tags]}
-                    },
+                    {"variables": {"gatewayId": "gw-1"}},
                     strict_match=False,
                 )
             ],
         )
-        result = api_client.kubernetes_resource_create(
-            **crd.to_graphql_arguments(
-                labels=resource.to_metadata_labels(), exclude={"id"}
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.kubernetes_resource_create(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
+                )
             )
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
         )
         assert result == resource
 
@@ -539,7 +656,15 @@ class TestTwingateResourceAPIs:
                 responses.matchers.json_params_matcher(
                     {
                         "variables": crd.model_dump(
-                            exclude=["sync_labels", "type", "proxy"], by_alias=True
+                            exclude=[
+                                "sync_labels",
+                                "type",
+                                "gateway_ref",
+                                "downstream",
+                                "upstream",
+                                "request_header_rewrites",
+                            ],
+                            by_alias=True,
                         )
                         | {"tags": [tag.model_dump() for tag in resource.tags]}
                     },
@@ -548,15 +673,17 @@ class TestTwingateResourceAPIs:
             ],
         )
         result = api_client.network_resource_update(
-            **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+            **crd.to_graphql_arguments(
+                labels=resource.to_metadata_labels(), owner_namespace="default"
+            )
         )
         assert result == resource
 
     def test_kubernetes_resource_update(
         self, test_url, api_client, kubernetes_resource_factory, mocked_responses
     ):
-        resource = kubernetes_resource_factory()
-        crd = resource.to_spec()
+        resource = kubernetes_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
 
         success_response = json.dumps(
             {
@@ -575,38 +702,65 @@ class TestTwingateResourceAPIs:
             body=success_response,
             match=[
                 responses.matchers.json_params_matcher(
-                    {
-                        "variables": crd.model_dump(
-                            exclude={
-                                "is_browser_shortcut_enabled",
-                                "sync_labels",
-                                "type",
-                                "proxy",
-                            },
-                            by_alias=True,
-                        )
-                        | {"tags": [tag.model_dump() for tag in resource.tags]}
-                    },
+                    {"variables": {"gatewayId": "gw-1"}},
                     strict_match=False,
                 )
             ],
         )
 
-        result = api_client.kubernetes_resource_update(
-            **crd.to_graphql_arguments(labels=resource.to_metadata_labels())
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.kubernetes_resource_update(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), owner_namespace="default"
+                )
+            )
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
         )
         assert result == resource
 
-    def test_kubernetes_resource_update_ca_cert(
-        self, test_url, api_client, kubernetes_resource_factory, mocked_responses
+    def test_get_web_app_resource(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
     ):
-        resource = kubernetes_resource_factory()
-        crd = resource.to_spec()
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
 
         success_response = json.dumps(
             {
                 "data": {
-                    "kubernetesResourceUpdate": {
+                    "resource": resource.model_dump(by_alias=True)
+                    | {"__typename": "WebAppResource"}
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": resource.id}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.get_resource(resource.id)
+        assert result == resource
+
+    def test_web_app_resource_create(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
+    ):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            id=None,
+            gateway_ref={"name": "my-gateway"},
+        )
+        success_response = json.dumps(
+            {
+                "data": {
+                    "webAppResourceCreate": {
                         "ok": True,
                         "entity": resource.model_dump(by_alias=True),
                     }
@@ -621,23 +775,66 @@ class TestTwingateResourceAPIs:
             match=[
                 responses.matchers.json_params_matcher(
                     {
-                        "variables": crd.model_dump(
-                            include={
-                                "id",
-                                "certificateAuthorityCert",
-                            },
-                            by_alias=True,
-                        )
+                        "variables": {
+                            "gatewayId": "gw-1",
+                            "downstream": {"port": resource.downstream.port},
+                            "upstream": {"port": resource.upstream.port},
+                        }
                     },
                     strict_match=False,
                 )
             ],
         )
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.web_app_resource_create(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
+                )
+            )
 
-        result = api_client.kubernetes_resource_update_ca_cert(
-            id=resource.id,
-            certificate_authority_cert=VALID_CA_CERT,
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
         )
+        assert result == resource
+
+    def test_web_app_resource_update(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
+    ):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+        success_response = json.dumps(
+            {
+                "data": {
+                    "webAppResourceUpdate": {
+                        "ok": True,
+                        "entity": resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"gatewayId": "gw-1"}},
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+            result = api_client.web_app_resource_update(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), owner_namespace="default"
+                )
+            )
+
         assert result == resource
 
     def test_resource_delete(self, test_url, api_client, mocked_responses):

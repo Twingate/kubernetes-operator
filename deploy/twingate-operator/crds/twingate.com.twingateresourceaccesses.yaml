@@ -44,8 +44,8 @@ spec:
                       description: "Name of the TwingateGroup object."
                     namespace:
                       type: string
-                      default: default
-                      description: "Namespace of TwingateGroup object."
+                      nullable: true
+                      description: "Namespace of the TwingateGroup object. Defaults to the TwingateResourceAccess's own namespace when omitted."
                 principalExternalRef:
                   type: object
                   required: ["type", "name"]
@@ -119,7 +119,7 @@ spec:
                     namespace:
                       type: string
                       nullable: true
-                      description: "Namespace of the resource."
+                      description: "Namespace of the TwingateResource object. Defaults to the TwingateResourceAccess's own namespace when omitted."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

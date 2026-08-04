@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import kopf
 import kubernetes
@@ -9,7 +9,6 @@ from kopf._core.intents.causes import Reason
 from app.crds import ResourceType
 from app.handlers.handlers_services import (
     ALLOWED_EXTRA_ANNOTATIONS,
-    TLS_OBJECT_ANNOTATION,
     k8s_get_twingate_resource,
     service_to_twingate_resource,
     twingate_service_annotation_removed,
@@ -29,8 +28,8 @@ def example_service_body():
       labels:
         env: dev
       annotations:
-        twingate.com/resource: "true"
-        twingate.com/resource-alias: "myapp.internal"
+        resource.twingate.com: "true"
+        resource.twingate.com/alias: "myapp.internal"
     spec:
       type: ClusterIP
       selector:
@@ -53,62 +52,30 @@ def example_service_body():
 
 
 @pytest.fixture
-def example_cluster_ip_gateway_service_body():
+def example_webapp_service_body():
     yaml_str = """
     apiVersion: v1
     kind: Service
     metadata:
-      name: kubernetes-gateway
+      name: web-app
       labels:
         env: dev
       annotations:
         resource.twingate.com: "true"
-        resource.twingate.com/type: "Kubernetes"
-        resource.twingate.com/tlsSecret: "gateway-tls"
+        resource.twingate.com/type: "WebApp"
+        resource.twingate.com/gatewayName: "example-gateway"
+        resource.twingate.com/downstreamPort: "80"
+        resource.twingate.com/upstreamPort: "8080"
         resource.twingate.com/alias: "alias.int"
     spec:
       selector:
-        app.kubernetes.io/name: gateway
-        app.kubernetes.io/instance: kubernetes
+        app.kubernetes.io/name: web-app
       type: ClusterIP
       ports:
-        - name: https
+        - name: http
           protocol: TCP
-          port: 443
-          targetPort: https
-    """
-    return kopf.Body(yaml.safe_load(yaml_str))
-
-
-@pytest.fixture
-def example_load_balancer_gateway_service_body():
-    yaml_str = """
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: kubernetes-gateway
-      labels:
-        env: dev
-      annotations:
-        resource.twingate.com: "true"
-        resource.twingate.com/type: "Kubernetes"
-        resource.twingate.com/tlsSecret: "gateway-tls"
-        resource.twingate.com/alias: "alias.int"
-    spec:
-      selector:
-        app.kubernetes.io/name: gateway
-        app.kubernetes.io/instance: kubernetes
-      type: LoadBalancer
-      ports:
-        - name: https
-          protocol: TCP
-          port: 443
-          targetPort: https
-    status:
-      loadBalancer:
-        ingress:
-        - ip: 10.0.0.1
-          ipMode: VIP
+          port: 8080
+          targetPort: http
     """
     return kopf.Body(yaml.safe_load(yaml_str))
 
@@ -163,7 +130,7 @@ class TestServiceToTwingateResource:
         if annotation_name_converter is not None:
             name, _ = annotation_name_converter
             example_service_body.metadata["annotations"][
-                f"twingate.com/resource-{name}"
+                f"resource.twingate.com/{name}"
             ] = str(expected_annotation_values[name])
 
             expected["spec"][name] = expected_annotation_values[name]
@@ -171,137 +138,233 @@ class TestServiceToTwingateResource:
         result = service_to_twingate_resource(example_service_body, "default")
         assert result == expected
 
-    def test_kubernetes_resource_type_annotation(
-        self, example_cluster_ip_gateway_service_body
-    ):
-        tls_object_name = "gateway-tls"
+    def test_webapp_resource_type_annotation(self, example_webapp_service_body):
         namespace = "custom-namespace"
 
-        result = service_to_twingate_resource(
-            example_cluster_ip_gateway_service_body, namespace
-        )
+        result = service_to_twingate_resource(example_webapp_service_body, namespace)
 
         assert result["spec"] == {
-            "name": "kubernetes-gateway-resource",
-            "address": "kubernetes.default.svc.cluster.local",
+            "name": "web-app-resource",
+            "address": "web-app.custom-namespace.svc.cluster.local",
             "alias": "alias.int",
-            "proxy": {
-                "address": "kubernetes-gateway.custom-namespace.svc.cluster.local:443",
-                "certificateAuthorityCertSecretRef": {
-                    "name": tls_object_name,
-                    "namespace": namespace,
-                },
+            "type": ResourceType.WEB_APP,
+            "gatewayRef": {
+                "name": "example-gateway",
+                "namespace": namespace,
             },
-            "protocols": {
-                "allowIcmp": False,
-                "tcp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 443, "end": 443}],
-                },
-                "udp": {
-                    "policy": "RESTRICTED",
-                    "ports": [],
-                },
-            },
-            "type": ResourceType.KUBERNETES,
+            "downstream": {"port": 80},
+            "upstream": {"port": 8080},
         }
 
-    def test_kubernetes_resource_type_annotation_without_tls_secret_annotation(
-        self, example_cluster_ip_gateway_service_body
+    def test_webapp_resource_type_annotation_with_explicit_gateway_namespace(
+        self, example_webapp_service_body
     ):
-        example_cluster_ip_gateway_service_body.metadata["annotations"][
-            TLS_OBJECT_ANNOTATION
-        ] = None
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/gatewayNamespace"
+        ] = "gateway-namespace"
+
+        result = service_to_twingate_resource(
+            example_webapp_service_body, "custom-namespace"
+        )
+
+        assert result["spec"]["gatewayRef"] == {
+            "name": "example-gateway",
+            "namespace": "gateway-namespace",
+        }
+
+    @pytest.mark.parametrize("resource_type", ["Bogus", "Kubernetes"])
+    def test_unsupported_resource_type_annotation(
+        self, example_service_body, resource_type
+    ):
+        example_service_body.metadata["annotations"]["resource.twingate.com/type"] = (
+            resource_type
+        )
 
         with pytest.raises(
             kopf.PermanentError,
-            match=r"resource.twingate.com/tlsSecret annotation is not provided",
+            match=rf"Unsupported resource type '{resource_type}'",
         ):
-            service_to_twingate_resource(
-                example_cluster_ip_gateway_service_body, "default"
-            )
+            service_to_twingate_resource(example_service_body, "default")
 
-    @pytest.mark.parametrize(
-        ("status", "expected"),
-        [
-            ({"loadBalancer": {"ingress": [{"ip": "1.2.3.4"}]}}, "1.2.3.4:443"),
-            (
-                {"loadBalancer": {"ingress": [{"hostname": "gateway.hostname.int"}]}},
-                "gateway.hostname.int:443",
-            ),
-        ],
-    )
-    def test_kubernetes_resource_with_load_balancer_service_type(
-        self, example_load_balancer_gateway_service_body, status, expected
+    def test_webapp_resource_type_annotation_without_gateway_name(
+        self, example_webapp_service_body
     ):
-        tls_object_name = "gateway-tls"
-        namespace = "default"
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/gatewayName"
+        ]
 
-        with patch(
-            "kopf._cogs.structs.bodies.Body.status",
-            new_callable=PropertyMock,
-            return_value=status,
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/gatewayName annotation is required",
         ):
-            result = service_to_twingate_resource(
-                example_load_balancer_gateway_service_body, namespace
-            )
+            service_to_twingate_resource(example_webapp_service_body, "default")
 
-        assert result["spec"] == {
-            "name": "kubernetes-gateway-resource",
-            "address": "kubernetes.default.svc.cluster.local",
-            "alias": "alias.int",
-            "proxy": {
-                "address": expected,
-                "certificateAuthorityCertSecretRef": {
-                    "name": tls_object_name,
-                    "namespace": namespace,
-                },
-            },
-            "protocols": {
-                "allowIcmp": False,
-                "tcp": {
-                    "policy": "RESTRICTED",
-                    "ports": [{"start": 443, "end": 443}],
-                },
-                "udp": {
-                    "policy": "RESTRICTED",
-                    "ports": [],
-                },
-            },
-            "type": ResourceType.KUBERNETES,
-        }
-
-    @pytest.mark.parametrize(
-        "status",
-        [
-            {},
-            {"loadBalancer": {}},
-            {"loadBalancer": {"ingress": []}},
-            {"loadBalancer": {"ingress": [{"ip": None}]}},
-            {"loadBalancer": {"ingress": [{"hostname": None}]}},
-        ],
-    )
-    def test_kubernetes_resource_when_load_balancer_ip_is_not_ready(
-        self,
-        example_load_balancer_gateway_service_body,
-        kopf_handler_runner,
-        k8s_customobjects_client_mock,
-        status,
+    def test_webapp_resource_downstream_port_defaults_to_single_service_port(
+        self, example_webapp_service_body
     ):
-        with (
-            patch(
-                "kopf._cogs.structs.bodies.Body.status",
-                new_callable=PropertyMock,
-                return_value=status,
-            ),
-            pytest.raises(
-                kopf.TemporaryError,
-                match=r"Kubernetes Service: kubernetes-gateway LoadBalancer is not ready.",
-            ),
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ]
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        # The fixture Service exposes a single TCP port (8080).
+        assert result["spec"]["downstream"] == {"port": 8080}
+
+    def test_webapp_resource_downstream_port_required_when_multiple_service_ports(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ]
+        example_webapp_service_body.spec["ports"].append(
+            {"name": "https", "protocol": "TCP", "port": 9090, "targetPort": "https"}
+        )
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/downstreamPort annotation is required",
         ):
-            service_to_twingate_resource(
-                example_load_balancer_gateway_service_body, "default"
-            )
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_explicit_downstream_port_need_not_match_service_port(
+        self, example_webapp_service_body
+    ):
+        # downstream is client-facing and arbitrary; it need not be a Service port.
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ] = "12345"
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["downstream"] == {"port": 12345}
+
+    def test_webapp_resource_upstream_port_defaults_to_single_service_port(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ]
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        # The fixture Service exposes a single TCP port (8080).
+        assert result["spec"]["upstream"] == {"port": 8080}
+
+    def test_webapp_resource_upstream_port_required_when_multiple_service_ports(
+        self, example_webapp_service_body
+    ):
+        del example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ]
+        example_webapp_service_body.spec["ports"].append(
+            {"name": "https", "protocol": "TCP", "port": 9090, "targetPort": "https"}
+        )
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamPort annotation is required",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_explicit_upstream_port_selects_among_service_ports(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.spec["ports"].append(
+            {"name": "https", "protocol": "TCP", "port": 9090, "targetPort": "https"}
+        )
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ] = "9090"
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["upstream"] == {"port": 9090}
+
+    def test_webapp_resource_explicit_upstream_port_not_exposed_by_service(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ] = "9999"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamPort annotation \(9999\) must match "
+            r"a TCP port exposed by the Service",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_non_integer_downstream_port(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamPort"
+        ] = "not-a-number"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/downstreamPort annotation must be an integer",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_non_integer_upstream_port(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamPort"
+        ] = "not-a-number"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamPort annotation must be an integer",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_request_header_rewrites(self, example_webapp_service_body):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/requestHeaderRewrites"
+        ] = '{"Host": "example.com", "X-Foo": "bar"}'
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["requestHeaderRewrites"] == [
+            {"name": "Host", "value": "example.com"},
+            {"name": "X-Foo", "value": "bar"},
+        ]
+
+    def test_webapp_resource_without_request_header_rewrites(
+        self, example_webapp_service_body
+    ):
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert "requestHeaderRewrites" not in result["spec"]
+
+    def test_webapp_resource_invalid_request_header_rewrites(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/requestHeaderRewrites"
+        ] = "not-json"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/requestHeaderRewrites annotation must be a JSON",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_non_object_request_header_rewrites(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/requestHeaderRewrites"
+        ] = '[{"key": "Host", "value": "example.com"}]'
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/requestHeaderRewrites annotation must be a JSON",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
 
 
 class TestK8sGetTwingateResource:
@@ -423,6 +486,28 @@ class TestTwingateServiceAnnotationRemoved:
             "twingateresources",
             "my-service-resource",
         )
+
+    def test_does_not_delete_kubernetes_twingate_resource(
+        self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock
+    ):
+        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
+            "metadata": {"name": "my-service-resource"},
+            "spec": {
+                "id": "1",
+                "name": "my-service-resource",
+                "type": ResourceType.KUBERNETES,
+            },
+        }
+
+        twingate_service_annotation_removed(
+            example_service_body,
+            example_service_body.spec,
+            "default",
+            example_service_body.metadata,
+            MagicMock(),
+        )
+
+        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_not_called()
 
     def test_does_not_delete_when_twingate_resource_does_not_exist(
         self, example_service_body, kopf_handler_runner, k8s_customobjects_client_mock

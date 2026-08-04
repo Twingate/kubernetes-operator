@@ -18,10 +18,17 @@ spec:
               type: object
               description: "TwingateGatewaySpec defines the desired state of TwingateGateway"
               required: ["serviceRef", "x509CertificateAuthorityRef"]
+              x-kubernetes-validations:
+                - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
+                  message: "remoteNetworkId is immutable once set"
               properties:
                 id:
                   type: string
                   nullable: true
+                remoteNetworkId:
+                  type: string
+                  pattern: "^[-A-Za-z0-9+/]*={0,3}$"
+                  description: "ID of the Twingate Remote Network this Gateway belongs to. Overrides the operator-wide default (TWINGATE_REMOTE_NETWORK_ID). Immutable once set."
                 serviceRef:
                   type: object
                   required: ["name", "port"]
@@ -32,8 +39,8 @@ spec:
                       description: "Name of the Service object."
                     namespace:
                       type: string
-                      default: default
-                      description: "Namespace of the Service object."
+                      nullable: true
+                      description: "Namespace of the Service object. Defaults to the TwingateGateway's own namespace when omitted."
                     port:
                       type: integer
                       minimum: 1
@@ -49,8 +56,8 @@ spec:
                       description: "Name of the TwingateCertificateAuthority object."
                     namespace:
                       type: string
-                      default: default
-                      description: "Namespace of the TwingateCertificateAuthority object."
+                      nullable: true
+                      description: "Namespace of the TwingateCertificateAuthority object. Defaults to the TwingateGateway's own namespace when omitted."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

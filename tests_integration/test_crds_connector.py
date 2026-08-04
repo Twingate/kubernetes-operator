@@ -3,7 +3,12 @@ from unittest.mock import ANY
 
 import pytest
 
-from tests_integration.utils import kubectl_create, kubectl_delete, kubectl_get
+from tests_integration.utils import (
+    kubectl_apply,
+    kubectl_create,
+    kubectl_delete,
+    kubectl_get,
+)
 
 
 @pytest.fixture
@@ -336,3 +341,73 @@ class TestConnectorCRD:
 
         stderr = ex.value.stderr.decode()
         assert "Google provider requires specifying repository." in stderr
+
+    def test_remote_network_id(self, unique_connector_name):
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateConnector
+            metadata:
+                name: {unique_connector_name}
+            spec:
+                name: {unique_connector_name}
+                remoteNetworkId: "UmVtb3RlTmV0d29yazoxMjMK"
+            """
+        )
+
+        assert result.returncode == 0
+
+        data = kubectl_get("tc", unique_connector_name)
+        assert data["spec"]["remoteNetworkId"] == "UmVtb3RlTmV0d29yazoxMjMK"
+
+        kubectl_delete("tc", unique_connector_name)
+
+    def test_remote_network_id_invalid_pattern(self, unique_connector_name):
+        with pytest.raises(subprocess.CalledProcessError) as ex:
+            kubectl_create(
+                f"""
+                apiVersion: twingate.com/v1beta
+                kind: TwingateConnector
+                metadata:
+                    name: {unique_connector_name}
+                spec:
+                    name: {unique_connector_name}
+                    remoteNetworkId: "not valid!"
+                """
+            )
+
+        stderr = ex.value.stderr.decode()
+        assert "spec.remoteNetworkId in body should match" in stderr
+
+    def test_remote_network_id_is_immutable(self, unique_connector_name):
+        result = kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateConnector
+            metadata:
+                name: {unique_connector_name}
+            spec:
+                name: {unique_connector_name}
+                remoteNetworkId: "UmVtb3RlTmV0d29yazoxMjMK"
+            """
+        )
+        assert result.returncode == 0
+
+        try:
+            with pytest.raises(subprocess.CalledProcessError) as ex:
+                kubectl_apply(
+                    f"""
+                    apiVersion: twingate.com/v1beta
+                    kind: TwingateConnector
+                    metadata:
+                        name: {unique_connector_name}
+                    spec:
+                        name: {unique_connector_name}
+                        remoteNetworkId: "UmVtb3RlTmV0d29yazo0NTYK"
+                    """
+                )
+
+            stderr = ex.value.stderr.decode()
+            assert "remoteNetworkId is immutable once set" in stderr
+        finally:
+            kubectl_delete("tc", unique_connector_name)

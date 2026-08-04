@@ -82,4 +82,4 @@ See [CHANGELOG](./CHANGELOG.md)
 
 ## Developers
 
-See [developer guide](./DEVELOPER.md)
+See [developer guide](./DEVELOPER.md) for development guide.

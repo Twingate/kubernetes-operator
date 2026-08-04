@@ -43,16 +43,23 @@ twingateOperator: {}
 
 gateway:
   enabled: false
-#  twingate:
-#    network: "<network slug>"
-#
-#    # Customize the `TwingateResource` to create for operator to sync to Twingate
-#    resource:
-#      # Enable/disable automatic Twingate Resource creation
-#      enabled: true
-#      extraAnnotations:
-#        # Resource alias is included in the auto-generated TLS cert
-#        resource.twingate.com/alias: "myk8s.int"
+  # twingate:
+  #   network: "<network slug>"
+
+  # Enabling the gateway (gateway.enabled=true) renders a TwingateGateway and
+  # its TwingateCertificateAuthority, and exposes the in-cluster Kubernetes API
+  # server as a TwingateResource bound to the gateway via gatewayRef. Both are
+  # turned on here so they auto-enable with the gateway.
+  twingateOperator:
+    gateway:
+      enabled: true
+    kubernetesResource:
+      enabled: true
+      # Any TwingateResource spec field passes straight through; uncomment to
+      # customize the in-cluster API server resource.
+      # name: "My cluster"
+      # alias: cluster.int
+      # securityPolicyId: "<security policy id>"
 
 image:
   repository: twingate/kubernetes-operator

@@ -11,12 +11,14 @@ from .factories import (
     ConnectorFactory,
     KubernetesResourceFactory,
     NetworkResourceFactory,
+    WebAppResourceFactory,
 )
 
 register(ConnectorFactory)
 register(BaseResourceFactory)
 register(NetworkResourceFactory)
 register(KubernetesResourceFactory)
+register(WebAppResourceFactory)
 
 
 @pytest.fixture

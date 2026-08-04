@@ -1,17 +1,15 @@
-import base64
 from unittest.mock import patch
 
-import kopf
 import pytest
 
-from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
 from app.crds import (
     ProtocolPolicy,
     ProtocolRange,
+    ResourceDownstream,
     ResourceProtocol,
-    ResourceProxy,
     ResourceSpec,
     ResourceType,
+    ResourceUpstream,
     TwingateResourceCRD,
     _KubernetesObjectRef,
 )
@@ -173,10 +171,7 @@ def sample_kubernetes_resource_object():
                 "tcp": {"policy": "RESTRICTED", "ports": [{"start": 80, "end": 80}]}
             },
             "type": ResourceType.KUBERNETES,
-            "proxy": {
-                "address": "proxy.default.cluster.local",
-                "certificate_authority_cert": BASE64_OF_VALID_CA_CERT,
-            },
+            "gatewayRef": {"name": "my-gateway", "namespace": "twingate"},
         },
         "status": {
             "twingate_resource_create": {
@@ -200,6 +195,21 @@ def test_deserialization(sample_network_resource_object):
     assert crd.spec.name == "My K8S Resource"
     assert crd.metadata.name == "foo"
     assert crd.metadata.uid == "c560d138-a93a-4463-8b44-d7717851a265"
+
+
+def test_remote_network_id_defaults_to_settings(sample_network_resource_object):
+    sample_network_resource_object["spec"].pop("remoteNetworkId", None)
+    crd = TwingateResourceCRD(**sample_network_resource_object)
+    # `_mock_settings` (app/conftest.py) sets the operator-wide default.
+    assert crd.spec.remote_network_id == "UmVtb3RlTmV0d29yazoxMjMK"
+
+
+def test_remote_network_id_override(sample_network_resource_object):
+    sample_network_resource_object["spec"]["remoteNetworkId"] = (
+        "UmVtb3RlTmV0d29yazo5OTkK"
+    )
+    crd = TwingateResourceCRD(**sample_network_resource_object)
+    assert crd.spec.remote_network_id == "UmVtb3RlTmV0d29yazo5OTkK"
 
 
 def test_is_browser_shortcut_enabled_disallowed_on_wildcard_resource():
@@ -330,64 +340,13 @@ class TestResourceProtocolNormalizePort:
         assert protocol.ports == []
 
 
-def test_resource_proxy_get_certificate_authority_cert_without_secret_ref():
-    proxy = ResourceProxy(
-        address="proxy.default.cluster.local",
-        certificate_authority_cert=BASE64_OF_VALID_CA_CERT,
-        certificate_authority_cert_secret_ref=None,
-    )
-
-    assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
-
-
-def test_resource_proxy_get_certificate_authority_cert_with_secret_ref(
-    k8s_core_client_mock, k8s_secret_mock
-):
-    proxy = ResourceProxy(
-        address="proxy.default.cluster.local",
-        certificate_authority_cert_secret_ref=_KubernetesObjectRef(name="gateway-tls"),
-        certificate_authority_cert=None,
-    )
-    k8s_core_client_mock.read_namespaced_secret.return_value = k8s_secret_mock
-
-    with patch(
-        "app.crds.ResourceProxy.read_certificate_authority_cert_from_secret",
-        wraps=proxy.read_certificate_authority_cert_from_secret,
-    ) as read_ca_cert_mock:
-        assert proxy.get_certificate_authority_cert() == VALID_CA_CERT
-        read_ca_cert_mock.assert_called_once_with(k8s_secret_mock)
-
-
-def test_resource_proxy_get_certificate_authority_cert_with_non_existing_secret(
-    k8s_core_client_mock, k8s_secret_mock
-):
-    proxy = ResourceProxy(
-        address="proxy.default.cluster.local",
-        certificate_authority_cert_secret_ref=_KubernetesObjectRef(name="gateway-tls"),
-        certificate_authority_cert=None,
-    )
-    k8s_core_client_mock.read_namespaced_secret.return_value = None
-
-    assert proxy.get_certificate_authority_cert() is None
-
-
-def test_resource_proxy_x509_ca_cert_returns_none_when_no_cert():
-    proxy = ResourceProxy(
-        address="proxy.default.cluster.local",
-        certificate_authority_cert=None,
-        certificate_authority_cert_secret_ref=None,
-    )
-
-    assert proxy.x509_ca_cert is None
-
-
 def test_network_resource_spec_to_graphql_arguments(sample_network_resource_object):
     resource_spec = ResourceSpec(
         **sample_network_resource_object["spec"],
         sync_labels=True,
     )
     graphql_arguments = resource_spec.to_graphql_arguments(
-        labels={"key": "value"}, exclude={"id"}
+        labels={"key": "value"}, owner_namespace="default", exclude={"id"}
     )
 
     assert graphql_arguments == {
@@ -414,10 +373,14 @@ def test_kubernetes_resource_spec_to_graphql_arguments(
         **sample_kubernetes_resource_object["spec"],
         sync_labels=True,
     )
-    graphql_arguments = resource_spec.to_graphql_arguments(
-        labels={"key": "value"}, exclude={"id"}
-    )
+    with patch(
+        "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
+    ) as resolve_mock:
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={"key": "value"}, owner_namespace="default", exclude={"id"}
+        )
 
+    resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
     assert graphql_arguments == {
         "name": "My K8S Resource",
         "address": "my.default.cluster.local",
@@ -431,24 +394,129 @@ def test_kubernetes_resource_spec_to_graphql_arguments(
             "udp": {"policy": "ALLOW_ALL", "ports": []},
         },
         "tags": [{"key": "key", "value": "value"}],
-        "proxy_address": "proxy.default.cluster.local",
-        "certificate_authority_cert": VALID_CA_CERT,
+        "gateway_id": "R2F0ZXdheTo5Nwo=",
     }
+    assert "gateway_ref" not in graphql_arguments
 
 
-def test_kubernetes_resource_spec_to_graphql_arguments_when_certificate_authority_cert_not_found(
-    sample_kubernetes_resource_object,
-):
-    sample_kubernetes_resource_object["spec"]["proxy"]["certificate_authority_cert"] = (
-        None
+def test_kubernetes_resource_requires_gateway_ref():
+    with pytest.raises(ValueError, match="Kubernetes resources require `gatewayRef`"):
+        ResourceSpec(
+            name="My K8S Resource",
+            address="kubernetes.default.svc.cluster.local",
+            type=ResourceType.KUBERNETES,
+        )
+
+
+def test_kubernetes_resource_accepts_gateway_ref():
+    resource_spec = ResourceSpec(
+        name="My K8S Resource",
+        address="kubernetes.default.svc.cluster.local",
+        type=ResourceType.KUBERNETES,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway"),
     )
-    resource_spec = ResourceSpec(**sample_kubernetes_resource_object["spec"])
+    assert resource_spec.gateway_ref is not None
 
+
+def test_network_resource_rejects_gateway_ref():
+    with pytest.raises(ValueError, match="Network resources cannot set `gatewayRef`"):
+        ResourceSpec(
+            name="My Network Resource",
+            address="my.default.cluster.local",
+            type=ResourceType.NETWORK,
+            gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        )
+
+
+def test_web_app_resource_requires_gateway_ref():
+    with pytest.raises(ValueError, match="WebApp resources require `gatewayRef`"):
+        ResourceSpec(
+            name="My WebApp Resource",
+            address="webapp.default.cluster.local",
+            type=ResourceType.WEB_APP,
+        )
+
+
+def test_web_app_resource_requires_downstream_and_upstream():
     with pytest.raises(
-        kopf.PermanentError,
-        match="Certificate authority cert is not found for Kubernetes Resource type",
+        ValueError, match="WebApp resources require `downstream` and `upstream`"
     ):
-        resource_spec.to_graphql_arguments(labels={"key": "value"})
+        ResourceSpec(
+            name="My WebApp Resource",
+            address="webapp.default.cluster.local",
+            type=ResourceType.WEB_APP,
+            gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        )
+
+
+def test_network_resource_rejects_downstream_and_upstream():
+    with pytest.raises(ValueError, match="Network resources cannot set `downstream`"):
+        ResourceSpec(
+            name="My Network Resource",
+            address="network.default.cluster.local",
+            downstream=ResourceDownstream(port=80),
+            upstream=ResourceUpstream(port=8080),
+        )
+
+
+def test_network_resource_rejects_request_header_rewrites():
+    with pytest.raises(
+        ValueError, match=r"Network resources cannot set .*`requestHeaderRewrites`"
+    ):
+        ResourceSpec(
+            name="My Network Resource",
+            address="network.default.cluster.local",
+            request_header_rewrites=[{"name": "X-Foo", "value": "bar"}],
+        )
+
+
+def test_web_app_resource_spec_to_graphql_arguments():
+    resource_spec = ResourceSpec(
+        name="My WebApp Resource",
+        address="webapp.default.cluster.local",
+        type=ResourceType.WEB_APP,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
+        downstream=ResourceDownstream(port=80),
+        upstream=ResourceUpstream(port=8080),
+        request_header_rewrites=[{"name": "X-Forwarded-Host", "value": "web-app.int"}],
+    )
+
+    with patch(
+        "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
+    ) as resolve_mock:
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={"key": "value"}, owner_namespace="default", exclude={"id"}
+        )
+
+    resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
+    assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
+    assert graphql_arguments["downstream"] == {"port": 80}
+    assert graphql_arguments["upstream"] == {"port": 8080}
+    assert graphql_arguments["request_header_rewrites"] == [
+        {"key": "X-Forwarded-Host", "value": "web-app.int"}
+    ]
+    assert "proxy_address" not in graphql_arguments
+    assert "gateway_ref" not in graphql_arguments
+    assert "type" not in graphql_arguments
+    assert "protocols" not in graphql_arguments
+
+
+def test_web_app_resource_spec_to_graphql_arguments_without_header_rewrites():
+    resource_spec = ResourceSpec(
+        name="My WebApp Resource",
+        address="webapp.default.cluster.local",
+        type=ResourceType.WEB_APP,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        downstream=ResourceDownstream(port=80),
+        upstream=ResourceUpstream(port=8080),
+    )
+
+    with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={}, owner_namespace="default"
+        )
+
+    assert graphql_arguments["request_header_rewrites"] == []
 
 
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
@@ -457,56 +525,8 @@ def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
     resource_spec = ResourceSpec(
         **sample_network_resource_object["spec"], sync_labels=False
     )
-    graphql_arguments = resource_spec.to_graphql_arguments(labels={"key": "value"})
+    graphql_arguments = resource_spec.to_graphql_arguments(
+        labels={"key": "value"}, owner_namespace="default"
+    )
 
     assert graphql_arguments["tags"] == []
-
-
-@pytest.mark.parametrize(
-    "certificate_authority_cert",
-    [
-        ("\n" + VALID_CA_CERT + "\n"),
-        ("\r\n" + VALID_CA_CERT + "\r\n"),
-        ("  " + VALID_CA_CERT + "  "),
-    ],
-)
-def test_resource_proxy_certificate_authority_cert_should_trim_whitespace(
-    sample_kubernetes_resource_object, certificate_authority_cert
-):
-    sample_kubernetes_resource_object["spec"]["proxy"]["certificate_authority_cert"] = (
-        base64.b64encode(certificate_authority_cert.encode()).decode()
-    )
-
-    resource_spec = ResourceSpec(
-        **sample_kubernetes_resource_object["spec"],
-    )
-
-    assert resource_spec.proxy.certificate_authority_cert == VALID_CA_CERT
-
-
-class TestResourceProxyReadCACertFromSecret:
-    def test_read_ca_cert_from_secret(self, k8s_secret_mock):
-        assert (
-            ResourceProxy.read_certificate_authority_cert_from_secret(k8s_secret_mock)
-            == VALID_CA_CERT
-        )
-
-    def test_read_ca_cert_from_secret_with_missing_ca_cert(self, k8s_secret_mock):
-        k8s_secret_mock.data = {}
-
-        with pytest.raises(
-            kopf.PermanentError,
-            match=r"Kubernetes Secret object: gateway-tls is missing ca.crt.",
-        ):
-            ResourceProxy.read_certificate_authority_cert_from_secret(k8s_secret_mock)
-
-    def test_read_ca_cert_from_secret_with_invalid_ca_cert(self, k8s_secret_mock):
-        k8s_secret_mock.data["ca.crt"] = (
-            "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tIE1JSUZmakNDQTJhZ0F3SUJBZ0lVQk50IC0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
-        )
-
-        with pytest.raises(
-            kopf.PermanentError,
-            match=r"Kubernetes Secret object: gateway-tls ca.crt is invalid.",
-        ):
-            ResourceProxy.read_certificate_authority_cert_from_secret(k8s_secret_mock)

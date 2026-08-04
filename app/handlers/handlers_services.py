@@ -1,9 +1,9 @@
+import json
 from collections.abc import Callable
-from enum import StrEnum
 
 import kopf
 import kubernetes
-from kopf import Body, Status
+from kopf import Body
 
 from app.crds import ResourceType
 from app.utils import to_bool
@@ -32,36 +32,15 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
     ("syncLabels", to_bool),
     ("type", str),
 ]
-TLS_OBJECT_ANNOTATION = "resource.twingate.com/tlsSecret"
-
-
-def get_load_balancer_address(status: Status, service_name: str) -> str:
-    if not (ingress := status.get("loadBalancer", {}).get("ingress")):
-        raise kopf.TemporaryError(
-            f"Kubernetes Service: {service_name} LoadBalancer is not ready.",
-            delay=30,
-        )
-
-    ip = ingress[0].get("ip")
-    hostname = ingress[0].get("hostname")
-    if not ip and not hostname:
-        raise kopf.TemporaryError(
-            f"Kubernetes Service: {service_name} LoadBalancer is not ready.",
-            delay=30,
-        )
-
-    return ip or hostname
-
-
-class ServiceType(StrEnum):
-    CLUSTER_IP = "ClusterIP"
-    LOAD_BALANCER = "LoadBalancer"
+GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
+GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
+DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
+UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
+REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 
 
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
-    spec = service_body.spec
-    status = service_body.status
     service_name = service_body.meta.name
     resource_object_name = f"{service_name}-resource"
 
@@ -79,55 +58,131 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     }
 
     for key, convert_f in ALLOWED_EXTRA_ANNOTATIONS:
-        # TODO: Remove once we release v1.0 (see https://github.com/Twingate/kubernetes-operator/issues/530)
-        if value := meta.annotations.get(f"twingate.com/resource-{key}"):
-            result["spec"][key] = convert_f(value)
         if value := meta.annotations.get(f"resource.twingate.com/{key}"):
             result["spec"][key] = convert_f(value)
 
-    if result["spec"].get("type") == ResourceType.KUBERNETES:
-        if not (secret_name := meta.annotations.get(TLS_OBJECT_ANNOTATION)):
+    match result["spec"].get("type"):
+        case ResourceType.WEB_APP:
+            result["spec"] |= _web_app_spec(service_body, namespace)
+        case None | ResourceType.NETWORK:
+            result["spec"]["protocols"] = _network_protocols(service_body)
+        case unsupported:
             raise kopf.PermanentError(
-                f"{TLS_OBJECT_ANNOTATION} annotation is not provided."
+                f"Unsupported resource type {unsupported!r}; must be one of "
+                f"{[ResourceType.NETWORK.value, ResourceType.WEB_APP.value]}."
             )
 
-        host = (
-            get_load_balancer_address(status, service_name)
-            if spec["type"] == ServiceType.LOAD_BALANCER
-            else f"{service_name}.{namespace}.svc.cluster.local"
-        )
-        result["spec"] |= {
-            "address": "kubernetes.default.svc.cluster.local",
-            "proxy": {
-                "address": f"{host}:443",
-                "certificateAuthorityCertSecretRef": {
-                    "name": secret_name,
-                    "namespace": namespace,
-                },
-            },
-        }
+    return result
 
+
+def _web_app_spec(service_body: Body, namespace: str) -> dict:
+    meta = service_body.metadata
+    spec = service_body.spec
+    service_name = service_body.meta.name
+
+    if not (gateway_name := meta.annotations.get(GATEWAY_NAME_ANNOTATION)):
+        raise kopf.PermanentError(
+            f"{GATEWAY_NAME_ANNOTATION} annotation is required for WebApp resources."
+        )
+
+    tcp_ports = [
+        port_obj["port"]
+        for port_obj in spec.get("ports", [])
+        if port_obj.get("protocol", "TCP") == "TCP"
+    ]
+
+    # downstream is the client-facing port and is arbitrary, so an explicit value
+    # is not constrained to the Service's ports; it defaults to the Service's port.
+    if downstream_port := meta.annotations.get(DOWNSTREAM_PORT_ANNOTATION):
+        downstream = _parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
+    else:
+        downstream = _default_service_port(
+            tcp_ports, DOWNSTREAM_PORT_ANNOTATION, service_name
+        )
+
+    # upstream is the Service's target port, so an explicit value must match a port
+    # the Service exposes; it defaults to the Service's port.
+    if upstream_port := meta.annotations.get(UPSTREAM_PORT_ANNOTATION):
+        upstream = _parse_port_annotation(UPSTREAM_PORT_ANNOTATION, upstream_port)
+        if upstream not in tcp_ports:
+            raise kopf.PermanentError(
+                f"{UPSTREAM_PORT_ANNOTATION} annotation ({upstream}) must match a "
+                f"TCP port exposed by the Service {service_name}."
+            )
+    else:
+        upstream = _default_service_port(
+            tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name
+        )
+
+    web_app_spec: dict = {
+        "gatewayRef": {
+            "name": gateway_name,
+            "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
+        },
+        "downstream": {"port": downstream},
+        "upstream": {"port": upstream},
+    }
+
+    if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
+        invalid_msg = (
+            f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
+            "object mapping header names to string values."
+        )
+        try:
+            parsed = json.loads(rewrites)
+        except json.JSONDecodeError as ex:
+            raise kopf.PermanentError(invalid_msg) from ex
+
+        if not isinstance(parsed, dict) or not all(
+            isinstance(value, str) for value in parsed.values()
+        ):
+            raise kopf.PermanentError(invalid_msg)
+
+        web_app_spec["requestHeaderRewrites"] = [
+            {"name": name, "value": value} for name, value in parsed.items()
+        ]
+
+    return web_app_spec
+
+
+# Only Network resources use port-based protocols. WebApp resources configure
+# upstream/downstream on the gateway instead.
+def _network_protocols(service_body: Body) -> dict:
     protocols: dict = {
         "allowIcmp": False,
         "tcp": {"policy": "RESTRICTED", "ports": []},
         "udp": {"policy": "RESTRICTED", "ports": []},
     }
-    for port_obj in spec.get("ports", []):
+    for port_obj in service_body.spec.get("ports", []):
         port = port_obj["port"]
-        if port_obj["protocol"] == "TCP":
+        protocol = port_obj.get("protocol", "TCP")
+        if protocol == "TCP":
             protocols["tcp"]["ports"].append({"start": port, "end": port})
-        elif port_obj["protocol"] == "UDP":
+        elif protocol == "UDP":
             protocols["udp"]["ports"].append({"start": port, "end": port})
-
-    result["spec"]["protocols"] = protocols
-
-    return result
+    return protocols
 
 
-# TODO: Remove once we release v1.0 (see https://github.com/Twingate/kubernetes-operator/issues/530)
-@kopf.on.resume("service", annotations={"twingate.com/resource": "true"})
-@kopf.on.create("service", annotations={"twingate.com/resource": "true"})
-@kopf.on.update("service", annotations={"twingate.com/resource": "true"})
+def _default_service_port(
+    tcp_ports: list[int], annotation: str, service_name: str
+) -> int:
+    if len(tcp_ports) != 1:
+        raise kopf.PermanentError(
+            f"{annotation} annotation is required for WebApp resources unless the "
+            f"Service {service_name} exposes exactly one TCP port."
+        )
+    return tcp_ports[0]
+
+
+def _parse_port_annotation(annotation: str, value: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        raise kopf.PermanentError(
+            f"{annotation} annotation must be an integer."
+        ) from None
+
+
 @kopf.on.resume("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.create("service", annotations={"resource.twingate.com": "true"})
 @kopf.on.update("service", annotations={"resource.twingate.com": "true"})
@@ -178,9 +233,6 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
 
 # Use Tuple for the field to properly escape dots in the annotation key.
 @kopf.on.update(
-    "service", field=("metadata", "annotations", "twingate.com/resource"), old="true"
-)
-@kopf.on.update(
     "service", field=("metadata", "annotations", "resource.twingate.com"), old="true"
 )
 def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_):
@@ -192,6 +244,24 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
     if existing_resource_object := k8s_get_twingate_resource(
         namespace, resource_object_name, kapi
     ):
+        # In v2 the Gateway chart drops these annotations and declares the
+        # TwingateResource itself, so deleting here would deprovision the backend
+        # Resource mid-upgrade. Leave it for the v2 chart to adopt. Deleting the Service
+        # outright is unaffected: the owner reference still garbage-collects the object.
+        if existing_resource_object["spec"].get("type") == ResourceType.KUBERNETES:
+            logger.warning(
+                "Not deleting TwingateResource %s: Kubernetes Resources are migrated to "
+                "TwingateGateway in v2. Delete it explicitly to deprovision.",
+                resource_object_name,
+            )
+            kopf.info(
+                body,
+                reason="twingate_service_annotation_removed",
+                message=f"Kept Kubernetes TwingateResource {resource_object_name} "
+                "for migration to TwingateGateway",
+            )
+            return
+
         logger.info("Deleting TwingateResource: %s", existing_resource_object)
         kapi.delete_namespaced_custom_object(
             "twingate.com",

@@ -32,7 +32,10 @@ class TestGetPrincipalId:
     def test_id_from_spec(self):
         access_crd = MagicMock()
         access_crd.principal_id = "R3JvdXA6MTE1NzI2MA=="
-        assert get_principal_id(access_crd, None, MagicMock()) == "R3JvdXA6MTE1NzI2MA=="
+        assert (
+            get_principal_id(access_crd, None, MagicMock(), "default")
+            == "R3JvdXA6MTE1NzI2MA=="
+        )
 
     def test_id_invalid_spec(self):
         access_crd = MagicMock()
@@ -42,14 +45,14 @@ class TestGetPrincipalId:
         with pytest.raises(
             ValueError, match=r"Missing principal_id or principal_external_ref"
         ):
-            get_principal_id(access_crd, None, MagicMock())
+            get_principal_id(access_crd, None, MagicMock(), "default")
 
     def test_id_from_group_ref_object(self):
         access_crd = MagicMock()
         access_crd.principal_id = None
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": "group-id"}}
-        assert get_principal_id(access_crd, None, MagicMock()) == "group-id"
+        assert get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
 
     def test_id_from_group_ref_object_not_ready_raises_temoraryerror(self):
         access_crd = MagicMock()
@@ -57,7 +60,9 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": None}}
         with pytest.raises(kopf.TemporaryError):
-            assert get_principal_id(access_crd, None, MagicMock()) == "group-id"
+            assert (
+                get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
+            )
 
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
@@ -70,7 +75,7 @@ class TestGetPrincipalId:
         mock_api_client.get_group_id.return_value = "R3JvdXA6MTE1NzI2MA=="
 
         assert (
-            get_principal_id(access_crd, None, mock_api_client)
+            get_principal_id(access_crd, None, mock_api_client, "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -85,7 +90,7 @@ class TestGetPrincipalId:
         mock_api_client.get_service_account_id.return_value = "R3JvdXA6MTE1NzI2MA=="
 
         assert (
-            get_principal_id(access_crd, None, mock_api_client)
+            get_principal_id(access_crd, None, mock_api_client, "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -102,7 +107,7 @@ class TestGetPrincipalId:
         with pytest.raises(
             ValueError, match=r"Principal serviceAccount sa-name not found"
         ):
-            get_principal_id(access_crd, None, mock_api_client)
+            get_principal_id(access_crd, None, mock_api_client, "default")
 
     def test_from_external_ref_invalid_type_returns_none(self, mock_api_client):
         access_crd = MagicMock()
@@ -113,7 +118,7 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref.name = "sa-name"
 
         with pytest.raises(ValueError, match=r"Unknown principal type: invalid"):
-            get_principal_id(access_crd, None, mock_api_client)
+            get_principal_id(access_crd, None, mock_api_client, "default")
 
     def test_from_external_ref_uses_created_status_principal_id(self):
         access_crd = MagicMock()
@@ -125,7 +130,7 @@ class TestGetPrincipalId:
 
         expected = "success"
         principal_id = get_principal_id(
-            access_crd, {"principal_id": expected}, mock_api_client
+            access_crd, {"principal_id": expected}, mock_api_client, "default"
         )
         assert principal_id == expected
 
@@ -159,6 +164,7 @@ class TestResourceAccessChangeHandler:
         ):
             result = twingate_resource_access_sync(
                 body="",
+                namespace="default",
                 spec=resource_access_spec,
                 memo=memo_mock,
                 logger=logger_mock,
@@ -198,6 +204,7 @@ class TestResourceAccessChangeHandler:
             ):
                 twingate_resource_access_sync(
                     body="",
+                    namespace="default",
                     spec=resource_access_spec,
                     memo=memo_mock,
                     logger=logger_mock,
@@ -239,6 +246,7 @@ class TestResourceAccessChangeHandler:
         ):
             twingate_resource_access_sync(
                 body="",
+                namespace="default",
                 spec=resource_access_spec,
                 memo=memo_mock,
                 logger=logger_mock,
@@ -280,6 +288,7 @@ class TestResourceAccessChangeHandler:
         ):
             result = twingate_resource_access_sync(
                 body="",
+                namespace="default",
                 spec=resource_access_spec,
                 memo=memo_mock,
                 logger=logger_mock,
@@ -305,6 +314,7 @@ class TestResourceAccessChangeHandler:
         ):
             result = twingate_resource_access_sync(
                 body={},
+                namespace="default",
                 spec={},
                 memo={},
                 logger={},
@@ -339,6 +349,7 @@ class TestResourceAccessChangeHandler:
         ):
             twingate_resource_access_sync(
                 body="",
+                namespace="default",
                 spec=resource_access_spec,
                 memo=MagicMock(),
                 logger=MagicMock(),
@@ -377,6 +388,7 @@ class TestResourceAccessChangeHandler:
         ):
             twingate_resource_access_sync(
                 body="",
+                namespace="default",
                 spec=resource_access_spec,
                 memo=MagicMock(),
                 logger=MagicMock(),
@@ -413,6 +425,7 @@ class TestResourceAccessChangeHandler:
         ):
             twingate_resource_access_sync(
                 body="",
+                namespace="default",
                 spec=resource_access_spec,
                 memo=MagicMock(),
                 logger=MagicMock(),
@@ -455,7 +468,7 @@ class TestResourceAccessDelete:
             return_value=resource_crd_mock,
         ):
             twingate_resource_access_delete(
-                resource_access_spec, status, memo_mock, logger_mock
+                "default", resource_access_spec, status, memo_mock, logger_mock
             )
 
         mock_api_client.resource_access_remove.assert_called_once_with(
@@ -482,7 +495,7 @@ class TestResourceAccessDelete:
             return_value=None,
         ):
             twingate_resource_access_delete(
-                resource_access_spec, status, memo_mock, logger_mock
+                "default", resource_access_spec, status, memo_mock, logger_mock
             )
 
         mock_api_client.resource_access_remove.assert_not_called()
@@ -512,7 +525,7 @@ class TestResourceAccessDelete:
             return_value=resource_crd_mock,
         ):
             twingate_resource_access_delete(
-                resource_access_spec, {}, memo_mock, logger_mock
+                "default", resource_access_spec, {}, memo_mock, logger_mock
             )
 
         mock_api_client.resource_access_remove.assert_not_called()

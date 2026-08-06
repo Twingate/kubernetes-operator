@@ -30,7 +30,6 @@ spec:
           command:
             - kubectl
             - delete
-            - --cascade=foreground
             - --timeout=30s
             - --ignore-not-found
             - -n

@@ -21,7 +21,6 @@ should enable pre-delete cleanup job:
             - command:
                 - kubectl
                 - delete
-                - --cascade=foreground
                 - --timeout=30s
                 - --ignore-not-found
                 - -n

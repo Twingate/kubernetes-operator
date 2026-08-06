@@ -24,16 +24,20 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: rancher/kubectl:v1.34.0
+          # Delete the Twingate custom resources while the operator is still running, so
+          # its delete handlers can deregister them from Twingate and drop
+          # `twingate.com/finalizer`.
           command:
             - kubectl
             - delete
-            - svc
             - --cascade=foreground
             - --timeout=30s
             - --ignore-not-found
             - -n
             - {{ .Release.Namespace }}
-            - {{ $gatewayName }}
+            - twingateresource/{{ $gatewayName }}-resource
+            - twingategateway/{{ $gatewayName }}
+            - twingatecertificateauthority/{{ $gatewayName }}-ca
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

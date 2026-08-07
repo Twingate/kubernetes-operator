@@ -59,14 +59,17 @@ def get_principal_id(
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
+def get_recorded_access(status: dict | None) -> dict | None:
+    """Return what the last reconcile recorded, whether or not it succeeded."""
+    # kopf 1.44 types the decorated handler as ChangingFn for mypy, but at
+    # runtime it's the plain function, so __name__ (the handler id) is valid.
+    handler_id = twingate_resource_access_change.__name__  # type: ignore[attr-defined]
+    return (status or {}).get(handler_id) or None
+
+
 def check_status_created(status: dict | None) -> dict | None:
-    if (
-        create_status := status
-        # kopf 1.44 types the decorated handler as ChangingFn for mypy, but at
-        # runtime it's the plain function, so __name__ (the handler id) is valid.
-        and status.get(twingate_resource_access_change.__name__, {})  # type: ignore[attr-defined]
-    ) and create_status["success"]:
-        return create_status
+    if (recorded := get_recorded_access(status)) and recorded["success"]:
+        return recorded
 
     return None
 
@@ -89,7 +92,9 @@ def _reconcile_resource_access(body, namespace, spec, status, memo, logger) -> d
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         principal_id = get_principal_id(access_crd, creation_status, client, namespace)
         # Delete before adding so that a failure leaves less access than intended.
-        delete_old_access(client, creation_status, resource_id, principal_id, logger)
+        delete_old_access(
+            client, get_recorded_access(status), resource_id, principal_id, logger
+        )
         client.resource_access_add(
             resource_id,
             principal_id,
@@ -114,16 +119,19 @@ def _reconcile_resource_access(body, namespace, spec, status, memo, logger) -> d
 
 def delete_old_access(
     client: TwingateAPIClient,
-    creation_status: dict | None,
+    recorded_access: dict | None,
     resource_id: str,
     principal_id: str,
     logger,
 ) -> None:
-    if not creation_status:
+    # Recorded IDs are read even when the last reconcile failed: a failure result carries no
+    # IDs of its own, so whatever is recorded was granted by an earlier reconcile and is still
+    # outstanding. Ignoring it would strand the old access when a removal is rejected once.
+    if not recorded_access:
         return
 
-    old_resource_id = creation_status.get("resource_id")
-    old_principal_id = creation_status.get("principal_id")
+    old_resource_id = recorded_access.get("resource_id")
+    old_principal_id = recorded_access.get("principal_id")
     if not old_resource_id or not old_principal_id:
         return
 
@@ -168,9 +176,9 @@ def twingate_resource_access_sync(
     # Kopf files each handler's result under its own handler id, so the timer's result lands
     # in `twingate_resource_access_sync` while `check_status_created` reads only
     # `twingate_resource_access_change`. Copy successes across, or the timer never records the
-    # IDs it reconciled and every tick re-issues the same removal. Failures are left out on
-    # purpose: writing `success: False` here would hide the recorded IDs from the next
-    # reconcile, which would then skip the removal and strand the old access.
+    # IDs it reconciled and every tick re-issues the same removal. Failures are left out
+    # because the timer has no grant of its own to record, and marking the create handler's
+    # result as failed would make the next reconcile re-query the principal ID needlessly.
     if result.get("success"):
         patch.status[twingate_resource_access_change.__name__] = result
 

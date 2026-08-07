@@ -559,31 +559,36 @@ class TestDeleteOldAccess:
 
         mock_api_client.resource_access_remove.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "status",
-        [
-            pytest.param({}, id="no_previous_status"),
-            pytest.param(
-                {
-                    "twingate_resource_access_change": {
-                        "success": False,
-                        "resource_id": "old-resource-id",
-                        "principal_id": PRINCIPAL_ID,
-                    }
-                },
-                id="previous_reconcile_failed",
-            ),
-        ],
-    )
-    def test_keeps_access_without_a_usable_previous_status(
-        self, status, network_resource_factory, kopf_info_mock, mock_api_client
+    def test_keeps_access_without_a_previous_status(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
     ):
-        # Neither status records IDs we can trust, so the existing access is left alone.
+        # Nothing records an earlier grant, so there is no access to take away.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
 
-        self._sync(self._access_spec(resource_spec), resource_spec, status)
+        self._sync(self._access_spec(resource_spec), resource_spec, {})
 
         mock_api_client.resource_access_remove.assert_not_called()
+
+    def test_retries_the_removal_after_a_failed_reconcile(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # A failure result carries no IDs of its own, so the recorded pair still describes a
+        # grant that was made and has to be taken away.
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+
+        self._sync(
+            self._access_spec(resource_spec),
+            resource_spec,
+            self._status("old-resource-id", success=False),
+        )
+
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            "old-resource-id", self.PRINCIPAL_ID
+        )
+        assert [call[0] for call in mock_api_client.mock_calls] == [
+            "resource_access_remove",
+            "resource_access_add",
+        ]
 
     def test_fails_when_the_deletion_is_rejected(
         self, network_resource_factory, kopf_info_mock, mock_api_client

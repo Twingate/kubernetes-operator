@@ -44,7 +44,7 @@ def test_gateway_flows(run_kopf, random_name_generator):
         metadata:
           name: {ca_name}
         spec:
-          name: My CA
+          name: {ca_name}
           secretRef:
             name: {secret_name}
     """
@@ -151,6 +151,21 @@ def test_gateway_flows(run_kopf, random_name_generator):
             #    referenced, so each handler retries (rather than leaking the
             #    backend entity) until its dependent is gone.
             kubectl(f"delete twingategateway/{gw_name} tgca/{ca_name} --wait=false")
+
+            # Wait for the Gateway's in-use rejection before freeing it - otherwise
+            # the concurrent Resource delete can land first in the backend and the
+            # Gateway delete succeeds on its first attempt.
+            kubectl_wait_object(
+                "twingategateway",
+                gw_name,
+                lambda o: (
+                    "still in use by a Resource"
+                    in o["metadata"]["annotations"].get(
+                        "twingate.com/twingate_gateway_delete", ""
+                    )
+                ),
+                description="a recorded in-use delete retry",
+            )
 
             # Removing the Resource frees the Gateway, whose removal frees the CA.
             kubectl_delete_wait("tgr", resource_name)

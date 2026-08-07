@@ -1,4 +1,4 @@
-should enable Kubernetes Access Gateway:
+should enable Gateway:
   1: |
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
@@ -191,7 +191,7 @@ should enable Kubernetes Access Gateway:
         helm.sh/chart: gateway-1.0.0
       name: RELEASE-NAME-gateway-ca
     spec:
-      name: RELEASE-NAME-gateway-ca
+      name: RELEASE-NAME-gateway-ca-ae3f578ff6303ac5
       secretRef:
         name: RELEASE-NAME-gateway-tls
         namespace: NAMESPACE

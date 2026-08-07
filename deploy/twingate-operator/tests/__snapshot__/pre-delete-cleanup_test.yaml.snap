@@ -21,13 +21,13 @@ should enable pre-delete cleanup job:
             - command:
                 - kubectl
                 - delete
-                - svc
-                - --cascade=foreground
                 - --timeout=30s
                 - --ignore-not-found
                 - -n
                 - NAMESPACE
-                - RELEASE-NAME-gateway
+                - twingateresource/RELEASE-NAME-gateway-resource
+                - twingategateway/RELEASE-NAME-gateway
+                - twingatecertificateauthority/RELEASE-NAME-gateway-ca
               image: rancher/kubectl:v1.34.0
               name: cleanup
               securityContext:

@@ -398,6 +398,7 @@ class TestTwingateServiceCreate:
         )
 
         k8s_customobjects_client_mock.patch_namespaced_custom_object.assert_not_called()
+        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_not_called()
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_called_once_with(
             "twingate.com",
             "v1beta",
@@ -458,19 +459,35 @@ class TestTwingateServiceCreate:
         )
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()
 
+    @pytest.mark.parametrize(
+        ("type_annotation", "existing_type", "new_type"),
+        [
+            ("WebApp", "Network", "WebApp"),
+            # Removing the annotation falls back to the CRD's Network default.
+            (None, "WebApp", "Network"),
+        ],
+    )
     def test_resource_type_change_deletes_twingate_resource(
         self,
         example_webapp_service_body,
         kopf_handler_runner,
         kopf_warn_mock,
         k8s_customobjects_client_mock,
+        type_annotation,
+        existing_type,
+        new_type,
     ):
+        annotations = example_webapp_service_body.metadata["annotations"]
+        if type_annotation:
+            annotations["resource.twingate.com/type"] = type_annotation
+        else:
+            del annotations["resource.twingate.com/type"]
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
             "metadata": {"name": "web-app-resource", "labels": {}},
-            "spec": {"id": "1", "name": "web-app-resource", "type": "Network"},
+            "spec": {"id": "1", "name": "web-app-resource", "type": existing_type},
         }
 
-        with pytest.raises(kopf.TemporaryError, match=r"recreate it as WebApp"):
+        with pytest.raises(kopf.TemporaryError, match=rf"recreate it as {new_type}"):
             twingate_service_create(
                 example_webapp_service_body,
                 example_webapp_service_body.spec,
@@ -485,65 +502,6 @@ class TestTwingateServiceCreate:
         )
         k8s_customobjects_client_mock.replace_namespaced_custom_object.assert_not_called()
         k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()
-
-    def test_removed_resource_type_annotation_deletes_twingate_resource(
-        self,
-        example_service_body,
-        kopf_handler_runner,
-        kopf_warn_mock,
-        k8s_customobjects_client_mock,
-    ):
-        # Without the annotation the new type falls back to the CRD's Network default.
-        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
-            "metadata": {"name": "my-service-resource", "labels": {}},
-            "spec": {"id": "1", "name": "my-service-resource", "type": "WebApp"},
-        }
-
-        with pytest.raises(kopf.TemporaryError, match=r"recreate it as Network"):
-            twingate_service_create(
-                example_service_body,
-                example_service_body.spec,
-                "default",
-                example_service_body.metadata,
-                MagicMock(),
-                Reason.UPDATE,
-            )
-
-        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_called_once_with(
-            "twingate.com",
-            "v1beta",
-            "default",
-            "twingateresources",
-            "my-service-resource",
-        )
-        k8s_customobjects_client_mock.replace_namespaced_custom_object.assert_not_called()
-        k8s_customobjects_client_mock.create_namespaced_custom_object.assert_not_called()
-
-    def test_resource_type_change_recreates_twingate_resource_once_deleted(
-        self,
-        example_webapp_service_body,
-        kopf_handler_runner,
-        k8s_customobjects_client_mock,
-    ):
-        k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = None
-
-        twingate_service_create(
-            example_webapp_service_body,
-            example_webapp_service_body.spec,
-            "default",
-            example_webapp_service_body.metadata,
-            MagicMock(),
-            Reason.UPDATE,
-        )
-
-        k8s_customobjects_client_mock.delete_namespaced_custom_object.assert_not_called()
-        k8s_customobjects_client_mock.create_namespaced_custom_object.assert_called_once_with(
-            "twingate.com",
-            "v1beta",
-            "default",
-            "twingateresources",
-            service_to_twingate_resource(example_webapp_service_body, "default"),
-        )
 
 
 class TestTwingateServiceAnnotationRemoved:

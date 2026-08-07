@@ -493,7 +493,7 @@ class TestTwingateServiceCreate:
         kopf_warn_mock,
         k8s_customobjects_client_mock,
     ):
-        # Without the annotation the desired type falls back to the CRD's Network default.
+        # Without the annotation the new type falls back to the CRD's Network default.
         k8s_customobjects_client_mock.get_namespaced_custom_object.return_value = {
             "metadata": {"name": "my-service-resource", "labels": {}},
             "spec": {"id": "1", "name": "my-service-resource", "type": "WebApp"},

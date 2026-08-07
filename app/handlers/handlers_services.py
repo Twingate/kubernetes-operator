@@ -239,7 +239,7 @@ def _delete_if_resource_type_changes(
     kapi: kubernetes.client.CustomObjectsApi,
     namespace: str,
     existing_resource_object: dict,
-    resource_subobject: dict,
+    new_resource_object: dict,
     service_body: Body,
     logger,
 ) -> None:
@@ -250,14 +250,14 @@ def _delete_if_resource_type_changes(
     """
     resource_object_name = existing_resource_object["metadata"]["name"]
     existing_type = existing_resource_object["spec"].get("type", ResourceType.NETWORK)
-    desired_type = resource_subobject["spec"].get("type", ResourceType.NETWORK)
-    if existing_type == desired_type:
+    new_type = new_resource_object["spec"].get("type", ResourceType.NETWORK)
+    if existing_type == new_type:
         return
 
     logger.info(
         "Deleting TwingateResource %s to recreate it as %s",
         resource_object_name,
-        desired_type,
+        new_type,
     )
     kapi.delete_namespaced_custom_object(
         "twingate.com", "v1beta", namespace, "twingateresources", resource_object_name
@@ -265,13 +265,13 @@ def _delete_if_resource_type_changes(
     kopf.warn(
         service_body,
         reason="twingate_service_create",
-        message=f"Recreating TwingateResource {resource_object_name} as {desired_type}: "
+        message=f"Recreating TwingateResource {resource_object_name} as {new_type}: "
         "the Twingate Resource is deprovisioned and recreated with a new ID, and group "
         "access is re-granted on the next TwingateResourceAccess reconcile",
     )
     raise kopf.TemporaryError(
         f"Deleting TwingateResource {resource_object_name} to recreate it as "
-        f"{desired_type}.",
+        f"{new_type}.",
         delay=5,
     )
 

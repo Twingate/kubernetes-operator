@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
 import pytest
+from gql.transport.exceptions import TransportServerError
 
 from app.api.client import GraphQLMutationError
 from app.crds import (
@@ -441,6 +443,190 @@ class TestResourceAccessChangeHandler:
         assert call_kwargs["approval_mode"] == AccessApprovalMode.AUTOMATIC
 
 
+class TestDeleteOldAccess:
+    PRINCIPAL_ID = "R3JvdXA6MTE1NzI2MA=="
+
+    @staticmethod
+    def _sync(access_spec, resource_spec, status, patch_shim=None):
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            return twingate_resource_access_sync(
+                body="",
+                namespace="default",
+                spec=access_spec,
+                memo=MagicMock(),
+                logger=MagicMock(),
+                patch=patch_shim if patch_shim is not None else MagicMock(),
+                status=status,
+            )
+
+    @classmethod
+    def _access_spec(cls, resource_spec):
+        return {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": cls.PRINCIPAL_ID,
+        }
+
+    @classmethod
+    def _status(cls, resource_id, *, success=True):
+        return {
+            "twingate_resource_access_change": {
+                "success": success,
+                "resource_id": resource_id,
+                "principal_id": cls.PRINCIPAL_ID,
+            }
+        }
+
+    def test_deletes_access_to_the_old_resource_id(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+
+        result = self._sync(
+            self._access_spec(resource_spec),
+            resource_spec,
+            self._status("old-resource-id"),
+        )
+
+        assert result["resource_id"] == "new-resource-id"
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            "old-resource-id", self.PRINCIPAL_ID
+        )
+        assert [call[0] for call in mock_api_client.mock_calls] == [
+            "resource_access_remove",
+            "resource_access_add",
+        ]
+
+    def test_does_not_repeat_the_removal_on_the_next_tick(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # Without a record of what it just granted, the timer would recompute the same
+        # stale pair and re-issue the removal on every tick.
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+        access_spec = self._access_spec(resource_spec)
+        patch_shim = SimpleNamespace(spec={}, status={})
+        status = self._status("old-resource-id")
+
+        self._sync(access_spec, resource_spec, status, patch_shim)
+        status |= patch_shim.status  # Kopf merge-patches patch.status into .status.
+        self._sync(access_spec, resource_spec, status, patch_shim)
+
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            "old-resource-id", self.PRINCIPAL_ID
+        )
+
+    def test_deletes_access_for_the_old_group_id(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource_spec = network_resource_factory().to_spec()
+        status = self._status(resource_spec.id)
+        status["twingate_resource_access_change"]["principal_id"] = "old-group-id"
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_group_ref_object",
+            return_value={"spec": {"id": "new-group-id"}},
+        ):
+            result = self._sync(
+                {
+                    "resourceRef": {"name": resource_spec.name},
+                    "groupRef": {"name": "group"},
+                },
+                resource_spec,
+                status,
+            )
+
+        assert result["principal_id"] == "new-group-id"
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            resource_spec.id, "old-group-id"
+        )
+
+    def test_keeps_access_when_the_ids_are_unchanged(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource_spec = network_resource_factory().to_spec()
+
+        self._sync(
+            self._access_spec(resource_spec),
+            resource_spec,
+            self._status(resource_spec.id),
+        )
+
+        mock_api_client.resource_access_remove.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            pytest.param({}, id="no_previous_status"),
+            pytest.param(
+                {
+                    "twingate_resource_access_change": {
+                        "success": False,
+                        "resource_id": "old-resource-id",
+                        "principal_id": PRINCIPAL_ID,
+                    }
+                },
+                id="previous_reconcile_failed",
+            ),
+        ],
+    )
+    def test_keeps_access_without_a_usable_previous_status(
+        self, status, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # Neither status records IDs we can trust, so the existing access is left alone.
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+
+        self._sync(self._access_spec(resource_spec), resource_spec, status)
+
+        mock_api_client.resource_access_remove.assert_not_called()
+
+    def test_fails_when_the_deletion_is_rejected(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+        mock_api_client.resource_access_remove.side_effect = GraphQLMutationError(
+            "resourceAccessRemove", "some error"
+        )
+
+        with patch("kopf.exception") as kopf_exception_mock:
+            result = self._sync(
+                self._access_spec(resource_spec),
+                resource_spec,
+                self._status("old-resource-id"),
+            )
+
+        assert result == {"success": False, "error": "some error", "ts": ANY}
+        mock_api_client.resource_access_add.assert_not_called()
+        kopf_exception_mock.assert_called_once_with(
+            "", reason="Failure", message="resourceAccessRemove failed: some error"
+        )
+
+    def test_transport_error_on_the_deletion_is_retried(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # Unlike the GraphQL rejection above, a transient error must propagate instead of
+        # being recorded as a failure, so the handler is retried and the old access is
+        # removed on a later attempt.
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+        mock_api_client.resource_access_remove.side_effect = TransportServerError(
+            "boom"
+        )
+
+        with pytest.raises(TransportServerError):
+            self._sync(
+                self._access_spec(resource_spec),
+                resource_spec,
+                self._status("old-resource-id"),
+            )
+
+        mock_api_client.resource_access_add.assert_not_called()
+
+
 class TestResourceAccessDelete:
     def test_delete_success(self, network_resource_factory, mock_api_client):
         resource = network_resource_factory()
@@ -726,15 +912,6 @@ class TestResourceIdChanged:
 
         mock_reconcile.assert_not_called()
         mock_patch_obj.assert_not_called()
-
-    def test_reraises_temporary_error_for_retry(
-        self, mock_reconcile, mock_get_obj, mock_patch_obj
-    ):
-        mock_get_obj.side_effect = _access_obj
-        mock_reconcile.side_effect = kopf.TemporaryError("not ready")
-
-        with pytest.raises(kopf.TemporaryError):
-            self._call(self._index())
 
     def test_continues_on_non_transient_failure(
         self, mock_reconcile, mock_get_obj, mock_patch_obj

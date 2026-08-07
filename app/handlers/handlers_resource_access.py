@@ -88,6 +88,8 @@ def _reconcile_resource_access(body, namespace, spec, status, memo, logger) -> d
     try:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
         principal_id = get_principal_id(access_crd, creation_status, client, namespace)
+        # Delete before adding so that a failure leaves less access than intended.
+        delete_old_access(client, creation_status, resource_id, principal_id, logger)
         client.resource_access_add(
             resource_id,
             principal_id,
@@ -108,6 +110,28 @@ def _reconcile_resource_access(body, namespace, spec, status, memo, logger) -> d
             body, reason="Failure", message=f"{mex.mutation_name} failed: {mex.error}"
         )
         return fail(error=mex.error)
+
+
+def delete_old_access(
+    client: TwingateAPIClient,
+    creation_status: dict | None,
+    resource_id: str,
+    principal_id: str,
+    logger,
+) -> None:
+    if not creation_status:
+        return
+
+    old_resource_id = creation_status.get("resource_id")
+    old_principal_id = creation_status.get("principal_id")
+    if not old_resource_id or not old_principal_id:
+        return
+
+    if (old_resource_id, old_principal_id) == (resource_id, principal_id):
+        return
+
+    logger.info("Deleting old access %s<>%s", old_resource_id, old_principal_id)
+    client.resource_access_remove(old_resource_id, old_principal_id)
 
 
 @kopf.on.create("twingateresourceaccess")
@@ -131,7 +155,7 @@ ENABLE_RESOURCE_ACCESS_RECONCILER = os.environ.get(
     idle=60,
 )
 def twingate_resource_access_sync(
-    body, namespace, spec, memo, logger, status, **kwargs
+    body, namespace, spec, memo, logger, patch, status, **kwargs
 ):
     # Allow the reconciler to be temporarily disabled because tenants with large numbers of
     # resource access CRD objects can generate many write operations and get throttled. We currently
@@ -139,7 +163,18 @@ def twingate_resource_access_sync(
     if not to_bool(ENABLE_RESOURCE_ACCESS_RECONCILER):
         return None
 
-    return _reconcile_resource_access(body, namespace, spec, status, memo, logger)
+    result = _reconcile_resource_access(body, namespace, spec, status, memo, logger)
+
+    # Kopf files each handler's result under its own handler id, so the timer's result lands
+    # in `twingate_resource_access_sync` while `check_status_created` reads only
+    # `twingate_resource_access_change`. Copy successes across, or the timer never records the
+    # IDs it reconciled and every tick re-issues the same removal. Failures are left out on
+    # purpose: writing `success: False` here would hide the recorded IDs from the next
+    # reconcile, which would then skip the removal and strand the old access.
+    if result.get("success"):
+        patch.status[twingate_resource_access_change.__name__] = result
+
+    return result
 
 
 @kopf.on.delete("twingateresourceaccess")

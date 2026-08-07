@@ -339,10 +339,7 @@ def test_resource_access_reconciled_when_resource_id_changes(
         access = kubectl_wait_object_handler_success(
             "tacc", unique_resource_name, "twingate_resource_access_change"
         )
-        assert (
-            access["status"]["twingate_resource_access_change"]["resource_id"]
-            == original_resource_id
-        )
+        assert _access_status(access)["resource_id"] == original_resource_id
 
         # Recreate the Resource so it is assigned a new backend id.
         kubectl_delete_wait("tgr", unique_resource_name)
@@ -368,6 +365,9 @@ def test_resource_access_reconciled_when_resource_id_changes(
 
     logs = load_stdout(runner.output)
     assert_log_message_contains(logs, "ID changed, reconciling resource access")
+    assert_log_message_contains(
+        logs, f"Deleting old access {original_resource_id}<>{principal_id}"
+    )
 
 
 def test_resource_access_reconciled_when_group_id_changes(
@@ -398,9 +398,10 @@ def test_resource_access_reconciled_when_group_id_changes(
 
     with run_kopf(enable_connector_reconciler=False) as runner:
         kubectl_create(resource_obj)
-        kubectl_wait_object_handler_success(
+        resource = kubectl_wait_object_handler_success(
             "tgr", unique_resource_name, "twingate_resource_create"
         )
+        resource_id = resource["spec"]["id"]
 
         kubectl_create(group_obj)
         group = kubectl_wait_object_handler_success(
@@ -413,10 +414,7 @@ def test_resource_access_reconciled_when_group_id_changes(
         access = kubectl_wait_object_handler_success(
             "tacc", unique_resource_name, "twingate_resource_access_change"
         )
-        assert (
-            access["status"]["twingate_resource_access_change"]["principal_id"]
-            == original_group_id
-        )
+        assert _access_status(access)["principal_id"] == original_group_id
 
         # Recreate the Group so it is assigned a new backend id.
         kubectl_delete_wait("tgg", "test-group")
@@ -443,6 +441,9 @@ def test_resource_access_reconciled_when_group_id_changes(
 
     logs = load_stdout(runner.output)
     assert_log_message_contains(logs, "ID changed, reconciling resource access")
+    assert_log_message_contains(
+        logs, f"Deleting old access {resource_id}<>{original_group_id}"
+    )
 
 
 def _access_status(access_object: dict) -> dict:

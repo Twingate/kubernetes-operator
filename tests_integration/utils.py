@@ -241,4 +241,8 @@ def kubectl_wait_object(
                 f"{resource_type}/{resource_name} did not reach {description}"
             )
         time.sleep(sleep_time)
-        obj = kubectl_get(resource_type, resource_name)
+        # Tolerate the object being absent mid-poll: an operator that recreates an object
+        # deletes it first, so it is briefly missing.
+        obj = kubectl_wait_to_exist(
+            resource_type, resource_name, max_retries=max_retries
+        )

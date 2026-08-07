@@ -198,6 +198,10 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
     if existing_resource_object := k8s_get_twingate_resource(
         namespace, resource_object_name, kapi
     ):
+        _delete_if_resource_type_changes(
+            kapi, namespace, existing_resource_object, resource_subobject, body, logger
+        )
+
         logger.info("TwingateResource already exists: %s", existing_resource_object)
         existing_resource_object["spec"] = {
             "id": existing_resource_object["spec"]["id"],
@@ -229,6 +233,47 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
             reason=f"twingate_service_create ({reason.value})",
             message=f"Created TwingateResource {resource_object_name}",
         )
+
+
+def _delete_if_resource_type_changes(
+    kapi: kubernetes.client.CustomObjectsApi,
+    namespace: str,
+    existing_resource_object: dict,
+    resource_subobject: dict,
+    service_body: Body,
+    logger,
+) -> None:
+    """Delete a generated TwingateResource whose type no longer matches the Service.
+
+    ``spec.type`` is immutable, so the type change is applied by deleting the Resource
+    and raising ``kopf.TemporaryError`` so a later retry registers the replacement.
+    """
+    resource_object_name = existing_resource_object["metadata"]["name"]
+    existing_type = existing_resource_object["spec"].get("type", ResourceType.NETWORK)
+    desired_type = resource_subobject["spec"].get("type", ResourceType.NETWORK)
+    if existing_type == desired_type:
+        return
+
+    logger.info(
+        "Deleting TwingateResource %s to recreate it as %s",
+        resource_object_name,
+        desired_type,
+    )
+    kapi.delete_namespaced_custom_object(
+        "twingate.com", "v1beta", namespace, "twingateresources", resource_object_name
+    )
+    kopf.warn(
+        service_body,
+        reason="twingate_service_create",
+        message=f"Recreating TwingateResource {resource_object_name} as {desired_type}: "
+        "the Twingate Resource is deprovisioned and recreated with a new ID, and group "
+        "access is re-granted on the next TwingateResourceAccess reconcile",
+    )
+    raise kopf.TemporaryError(
+        f"Deleting TwingateResource {resource_object_name} to recreate it as "
+        f"{desired_type}.",
+        delay=5,
+    )
 
 
 # Use Tuple for the field to properly escape dots in the annotation key.

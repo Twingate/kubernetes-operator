@@ -63,9 +63,9 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
 
     match result["spec"].get("type"):
         case ResourceType.WEB_APP:
-            result["spec"] |= _web_app_spec(service_body, namespace)
+            result["spec"] |= web_app_spec(service_body, namespace)
         case None | ResourceType.NETWORK:
-            result["spec"]["protocols"] = _network_protocols(service_body)
+            result["spec"]["protocols"] = network_protocols(service_body)
         case unsupported:
             raise kopf.PermanentError(
                 f"Unsupported resource type {unsupported!r}; must be one of "
@@ -75,7 +75,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     return result
 
 
-def _web_app_spec(service_body: Body, namespace: str) -> dict:
+def web_app_spec(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
     service_name = service_body.meta.name
@@ -94,27 +94,27 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
     # downstream is the client-facing port and is arbitrary, so an explicit value
     # is not constrained to the Service's ports; it defaults to the Service's port.
     if downstream_port := meta.annotations.get(DOWNSTREAM_PORT_ANNOTATION):
-        downstream = _parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
+        downstream = parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
     else:
-        downstream = _default_service_port(
+        downstream = default_service_port(
             tcp_ports, DOWNSTREAM_PORT_ANNOTATION, service_name
         )
 
     # upstream is the Service's target port, so an explicit value must match a port
     # the Service exposes; it defaults to the Service's port.
     if upstream_port := meta.annotations.get(UPSTREAM_PORT_ANNOTATION):
-        upstream = _parse_port_annotation(UPSTREAM_PORT_ANNOTATION, upstream_port)
+        upstream = parse_port_annotation(UPSTREAM_PORT_ANNOTATION, upstream_port)
         if upstream not in tcp_ports:
             raise kopf.PermanentError(
                 f"{UPSTREAM_PORT_ANNOTATION} annotation ({upstream}) must match a "
                 f"TCP port exposed by the Service {service_name}."
             )
     else:
-        upstream = _default_service_port(
+        upstream = default_service_port(
             tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name
         )
 
-    web_app_spec: dict = {
+    result: dict = {
         "gatewayRef": {
             "name": gateway_name,
             "namespace": meta.annotations.get(GATEWAY_NAMESPACE_ANNOTATION, namespace),
@@ -138,16 +138,16 @@ def _web_app_spec(service_body: Body, namespace: str) -> dict:
         ):
             raise kopf.PermanentError(invalid_msg)
 
-        web_app_spec["requestHeaderRewrites"] = [
+        result["requestHeaderRewrites"] = [
             {"name": name, "value": value} for name, value in parsed.items()
         ]
 
-    return web_app_spec
+    return result
 
 
 # Only Network resources use port-based protocols. WebApp resources configure
 # upstream/downstream on the gateway instead.
-def _network_protocols(service_body: Body) -> dict:
+def network_protocols(service_body: Body) -> dict:
     protocols: dict = {
         "allowIcmp": False,
         "tcp": {"policy": "RESTRICTED", "ports": []},
@@ -163,7 +163,7 @@ def _network_protocols(service_body: Body) -> dict:
     return protocols
 
 
-def _default_service_port(
+def default_service_port(
     tcp_ports: list[int], annotation: str, service_name: str
 ) -> int:
     if len(tcp_ports) != 1:
@@ -174,7 +174,7 @@ def _default_service_port(
     return tcp_ports[0]
 
 
-def _parse_port_annotation(annotation: str, value: str) -> int:
+def parse_port_annotation(annotation: str, value: str) -> int:
     try:
         return int(value)
     except ValueError:
@@ -198,6 +198,10 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
     if existing_resource_object := k8s_get_twingate_resource(
         namespace, resource_object_name, kapi
     ):
+        delete_if_resource_type_changes(
+            kapi, namespace, existing_resource_object, resource_subobject, body, logger
+        )
+
         logger.info("TwingateResource already exists: %s", existing_resource_object)
         existing_resource_object["spec"] = {
             "id": existing_resource_object["spec"]["id"],
@@ -229,6 +233,47 @@ def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
             reason=f"twingate_service_create ({reason.value})",
             message=f"Created TwingateResource {resource_object_name}",
         )
+
+
+def delete_if_resource_type_changes(
+    kapi: kubernetes.client.CustomObjectsApi,
+    namespace: str,
+    existing_resource_object: dict,
+    new_resource_object: dict,
+    service_body: Body,
+    logger,
+) -> None:
+    """Delete a generated TwingateResource whose type no longer matches the Service.
+
+    ``spec.type`` is immutable, so the type change is applied by deleting the Resource
+    and raising ``kopf.TemporaryError`` so a later retry registers the replacement.
+    """
+    resource_object_name = existing_resource_object["metadata"]["name"]
+    existing_type = existing_resource_object["spec"].get("type", ResourceType.NETWORK)
+    new_type = new_resource_object["spec"].get("type", ResourceType.NETWORK)
+    if existing_type == new_type:
+        return
+
+    logger.info(
+        "Deleting TwingateResource %s to recreate it as %s",
+        resource_object_name,
+        new_type,
+    )
+    kapi.delete_namespaced_custom_object(
+        "twingate.com", "v1beta", namespace, "twingateresources", resource_object_name
+    )
+    kopf.warn(
+        service_body,
+        reason="twingate_service_create",
+        message=f"Recreating TwingateResource {resource_object_name} as {new_type}: "
+        "the Twingate Resource is deprovisioned and recreated with a new ID, and group "
+        "access is re-granted on the next TwingateResourceAccess reconcile",
+    )
+    raise kopf.TemporaryError(
+        f"Deleting TwingateResource {resource_object_name} to recreate it as "
+        f"{new_type}.",
+        delay=5,
+    )
 
 
 # Use Tuple for the field to properly escape dots in the annotation key.

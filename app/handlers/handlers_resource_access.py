@@ -149,21 +149,23 @@ def twingate_resource_access_change(
     return reconcile_resource_access(body, namespace, spec, status, memo, logger, patch)
 
 
-def iter_unmigrated_recorded_ids(status: dict | None):
-    """Yield the (root field, ID) pairs the legacy status records and the root does not."""
+def get_unmigrated_recorded_ids(status: dict | None) -> dict[str, str]:
+    """Return the recorded IDs the legacy status carries and the status root does not."""
     status = status or {}
     legacy = status.get(LEGACY_ACCESS_STATUS_KEY) or {}
-    for root_field, legacy_field in (
-        ("resourceId", "resource_id"),
-        ("principalId", "principal_id"),
-    ):
-        # An ID already at the root came from a later reconcile; don't move it backwards.
-        if legacy.get(legacy_field) and not status.get(root_field):
-            yield root_field, legacy[legacy_field]
+    # Skip an ID already at the root: it came from a later reconcile than the legacy one.
+    return {
+        root_field: legacy[legacy_field]
+        for root_field, legacy_field in (
+            ("resourceId", "resource_id"),
+            ("principalId", "principal_id"),
+        )
+        if legacy.get(legacy_field) and not status.get(root_field)
+    }
 
 
 def has_unmigrated_recorded_access(status, **_) -> bool:
-    return any(iter_unmigrated_recorded_ids(status))
+    return bool(get_unmigrated_recorded_ids(status))
 
 
 @kopf.on.resume("twingateresourceaccess", when=has_unmigrated_recorded_access)
@@ -175,7 +177,7 @@ def twingate_resource_access_migrate_status(status, patch, logger, **_):
     moving the record needs no Twingate call. The filter matches exactly what this handler
     writes, so Kopf skips it once a binding is migrated.
     """
-    patch.status.update(iter_unmigrated_recorded_ids(status))
+    patch.status.update(get_unmigrated_recorded_ids(status))
     logger.info("Migrated the recorded access IDs to the root of the status: %s", patch.status)  # fmt: skip
 
 

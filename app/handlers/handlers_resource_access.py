@@ -37,7 +37,7 @@ def get_principal_id(
         )
 
     if ref := access_crd.principal_external_ref:
-        # Once a reconcile recorded the principal ID we reuse it and do not re-query the API.
+        # Reuse the ID an earlier reconcile recorded instead of resolving the name again.
         if recorded_principal_id:
             return recorded_principal_id
 
@@ -56,13 +56,13 @@ def get_principal_id(
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
-# Operator versions before the IDs moved to the root of the status recorded them under the
-# create handler's result.
+# Operator versions before the IDs moved to the status root recorded them under the create
+# handler's result.
 LEGACY_ACCESS_STATUS_KEY = "twingate_resource_access_change"
 
 
 def get_recorded_access(status: dict | None) -> dict[str, str | None]:
-    """Return the resource and principal IDs of the access grant recorded on the object."""
+    """Return the resource and principal IDs recorded for the access grant."""
     status = status or {}
     legacy = status.get(LEGACY_ACCESS_STATUS_KEY) or {}
     return {
@@ -103,8 +103,8 @@ def reconcile_resource_access(
             approval_mode=access_crd.approval_mode,
         )
 
-        # Recorded only once the grant landed: a failed add has to leave the pair granted
-        # earlier in the status so the next reconcile still knows to take it away.
+        # Recorded only after the grant lands: a failed add has to leave the pair granted
+        # earlier in the status so the next reconcile still takes it away.
         patch.status["resourceId"] = resource_id
         patch.status["principalId"] = principal_id
 
@@ -128,9 +128,6 @@ def delete_old_access(
     principal_id: str,
     logger,
 ) -> None:
-    # The IDs are recorded only on success, so whatever is recorded is still outstanding even
-    # when the last reconcile failed. Ignoring it would strand the old access when a removal
-    # is rejected once.
     old_resource_id = recorded_access["resourceId"]
     old_principal_id = recorded_access["principalId"]
     if not old_resource_id or not old_principal_id:
@@ -160,8 +157,7 @@ def iter_unmigrated_recorded_ids(status: dict | None):
         ("resourceId", "resource_id"),
         ("principalId", "principal_id"),
     ):
-        # An ID the root already carries was recorded by a later reconcile than the legacy
-        # one, so it must not be moved backwards.
+        # An ID already at the root came from a later reconcile; don't move it backwards.
         if legacy.get(legacy_field) and not status.get(root_field):
             yield root_field, legacy[legacy_field]
 
@@ -175,9 +171,9 @@ def twingate_resource_access_migrate_status(status, patch, logger, **_):
     """Copy IDs recorded by earlier operator versions to the root of the status.
 
     Kept out of the reconcile handlers because re-granting every binding on each operator
-    restart is the API throttling that `ENABLE_RESOURCE_ACCESS_RECONCILER` exists to avoid,
-    and moving the record needs no Twingate call. The filter matches exactly what this
-    handler writes, so Kopf skips the handler once a binding is migrated.
+    restart is the API throttling `ENABLE_RESOURCE_ACCESS_RECONCILER` exists to avoid, and
+    moving the record needs no Twingate call. The filter matches exactly what this handler
+    writes, so Kopf skips it once a binding is migrated.
     """
     patch.status.update(iter_unmigrated_recorded_ids(status))
     logger.info("Migrated the recorded access IDs to the root of the status: %s", patch.status)  # fmt: skip
@@ -303,7 +299,6 @@ def twingate_group_id_changed(
 def reconcile_access_refs(
     access_refs, trigger: str, recorded_id_field: str, new_id: str, memo, logger
 ) -> None:
-    """Reconcile each TwingateResourceAccess binding named in access_refs."""
     # Re-raise after attempting every binding so Kopf retries, without letting one
     # not-yet-ready binding starve the others.
     retry_exc: kopf.TemporaryError | None = None
@@ -359,9 +354,8 @@ def reconcile_access_refs(
             continue
 
         # These handlers fire on the referenced object, so Kopf won't persist the patch onto
-        # the binding for us; the recorded IDs (and the status printer columns) would
-        # otherwise keep showing stale values. A failed reconcile records nothing, which
-        # leaves the patch empty and makes this a no-op.
+        # the binding for us. A failed reconcile records nothing, leaving the patch empty,
+        # which makes this a no-op.
         k8s_patch_twingate_custom_object(
             "twingateresourceaccesses", ra_namespace, ra_name, patch
         )

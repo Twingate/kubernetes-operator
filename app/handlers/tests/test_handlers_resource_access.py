@@ -576,7 +576,6 @@ class TestDeleteOldAccess:
     def test_keeps_access_without_a_previous_status(
         self, network_resource_factory, kopf_info_mock, mock_api_client
     ):
-        # Nothing records an earlier grant, so there is no access to take away.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
 
         self.run_sync(self.build_access_spec(resource_spec), resource_spec, {})
@@ -586,8 +585,8 @@ class TestDeleteOldAccess:
     def test_retries_the_removal_after_a_failed_reconcile(
         self, network_resource_factory, kopf_info_mock, mock_api_client
     ):
-        # The IDs are recorded only on success, so a failed reconcile does not hide the
-        # grant that an earlier one made and that still has to be taken away.
+        # The IDs are recorded only on success, so a failed reconcile must not hide the grant
+        # an earlier one made.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
         status = self.recorded_status("old-resource-id") | {
             "twingate_resource_access_change": {"success": False, "error": "boom"}
@@ -701,8 +700,8 @@ class TestMigrateStatus:
         assert not has_unmigrated_recorded_access(status=status)
 
     def test_skips_a_partial_record_already_at_the_root(self):
-        # Bindings recorded before the resource ID was, so the missing root resourceId is
-        # nothing this handler can supply and must not keep it matching on every restart.
+        # A record that never carried a resource ID must not keep matching on every restart,
+        # since there is nothing left for the handler to copy.
         status = self.legacy_status(resource_id=None) | {
             "principalId": self.PRINCIPAL_ID
         }
@@ -947,8 +946,8 @@ class TestResourceIdChanged:
     def test_reconciles_referencing_access(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        # Two bindings reference the same Resource - both must be reconciled, and what each
-        # reconcile recorded persisted onto its own binding.
+        # Two bindings reference the same Resource: both must be reconciled, and each binding
+        # gets what its own reconcile recorded.
         mock_get_obj.side_effect = make_access_obj
         mock_reconcile.side_effect = record_id("resourceId")
 
@@ -991,7 +990,6 @@ class TestResourceIdChanged:
     def test_skips_binding_already_on_the_new_id(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        # Already reconciled onto the new id - nothing to re-issue.
         mock_get_obj.return_value = make_access_obj(status={"resourceId": "new-id"})
 
         self.call_handler(self.build_index())
@@ -1031,8 +1029,8 @@ class TestResourceIdChanged:
     def test_records_nothing_when_the_reconcile_fails(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        # A failed reconcile writes no IDs, so the patch stays empty and persisting it is a
-        # no-op rather than an overwrite with stale values.
+        # A failed reconcile writes no IDs, so persisting the patch cannot overwrite the
+        # recorded pair with stale values.
         mock_get_obj.side_effect = make_access_obj
         mock_reconcile.return_value = {"success": False, "error": "boom"}
 

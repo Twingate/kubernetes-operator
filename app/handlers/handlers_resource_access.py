@@ -20,7 +20,7 @@ K8sObject = MutableMapping[Any, Any]
 
 def get_principal_id(
     access_crd: ResourceAccessSpec,
-    create_status: dict | None,
+    recorded_principal_id: str | None,
     client: TwingateAPIClient,
     owner_namespace: str,
 ) -> str:
@@ -37,12 +37,9 @@ def get_principal_id(
         )
 
     if ref := access_crd.principal_external_ref:
-        # Once `twingate_resource_access_change` ran and we have the principal_id
-        # we dont use it and do not re-query the API
-        if principal_id_already_fetched := create_status and create_status.get(
-            "principal_id"
-        ):
-            return principal_id_already_fetched
+        # Once a reconcile recorded the principal ID we reuse it and do not re-query the API.
+        if recorded_principal_id:
+            return recorded_principal_id
 
         if ref.type == PrincipalTypeEnum.Group:
             principal_id = client.get_group_id(ref.name)
@@ -59,23 +56,25 @@ def get_principal_id(
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
-def get_recorded_access(status: dict | None) -> dict | None:
-    """Return what the last reconcile recorded, whether or not it succeeded."""
-    # kopf 1.44 types the decorated handler as ChangingFn for mypy, but at
-    # runtime it's the plain function, so __name__ (the handler id) is valid.
-    handler_id = twingate_resource_access_change.__name__  # type: ignore[attr-defined]
-    return (status or {}).get(handler_id) or None
+# Operator versions before the IDs moved to the root of the status recorded them under the
+# create handler's result.
+LEGACY_ACCESS_STATUS_KEY = "twingate_resource_access_change"
 
 
-def check_status_created(status: dict | None) -> dict | None:
-    if (recorded := get_recorded_access(status)) and recorded["success"]:
-        return recorded
+def get_recorded_access(status: dict | None) -> dict[str, str | None]:
+    """Return the resource and principal IDs of the access grant recorded on the object."""
+    status = status or {}
+    legacy = status.get(LEGACY_ACCESS_STATUS_KEY) or {}
+    return {
+        "resourceId": status.get("resourceId") or legacy.get("resource_id"),
+        "principalId": status.get("principalId") or legacy.get("principal_id"),
+    }
 
-    return None
 
-
-def reconcile_resource_access(body, namespace, spec, status, memo, logger) -> dict:
-    creation_status = check_status_created(status)
+def reconcile_resource_access(
+    body, namespace, spec, status, memo, logger, patch
+) -> dict:
+    recorded_access = get_recorded_access(status)
 
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource(namespace)
@@ -90,11 +89,11 @@ def reconcile_resource_access(body, namespace, spec, status, memo, logger) -> di
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(access_crd, creation_status, client, namespace)
-        # Delete before adding so that a failure leaves less access than intended.
-        delete_old_access(
-            client, get_recorded_access(status), resource_id, principal_id, logger
+        principal_id = get_principal_id(
+            access_crd, recorded_access["principalId"], client, namespace
         )
+        # Delete before adding so that a failure leaves less access than intended.
+        delete_old_access(client, recorded_access, resource_id, principal_id, logger)
         client.resource_access_add(
             resource_id,
             principal_id,
@@ -103,6 +102,11 @@ def reconcile_resource_access(body, namespace, spec, status, memo, logger) -> di
             access_policy=access_crd.access_policy,
             approval_mode=access_crd.approval_mode,
         )
+
+        # Recorded only once the grant landed: a failed add has to leave the pair granted
+        # earlier in the status so the next reconcile still knows to take it away.
+        patch.status["resourceId"] = resource_id
+        patch.status["principalId"] = principal_id
 
         kopf.info(
             body,
@@ -119,19 +123,16 @@ def reconcile_resource_access(body, namespace, spec, status, memo, logger) -> di
 
 def delete_old_access(
     client: TwingateAPIClient,
-    recorded_access: dict | None,
+    recorded_access: dict[str, str | None],
     resource_id: str,
     principal_id: str,
     logger,
 ) -> None:
-    # Recorded IDs are read even when the last reconcile failed: a failure result carries no
-    # IDs of its own, so whatever is recorded was granted by an earlier reconcile and is still
-    # outstanding. Ignoring it would strand the old access when a removal is rejected once.
-    if not recorded_access:
-        return
-
-    old_resource_id = recorded_access.get("resource_id")
-    old_principal_id = recorded_access.get("principal_id")
+    # The IDs are recorded only on success, so whatever is recorded is still outstanding even
+    # when the last reconcile failed. Ignoring it would strand the old access when a removal
+    # is rejected once.
+    old_resource_id = recorded_access["resourceId"]
+    old_principal_id = recorded_access["principalId"]
     if not old_resource_id or not old_principal_id:
         return
 
@@ -145,10 +146,10 @@ def delete_old_access(
 @kopf.on.create("twingateresourceaccess")
 @kopf.on.update("twingateresourceaccess", field="spec")
 def twingate_resource_access_change(
-    body, namespace, spec, memo, logger, status, **kwargs
+    body, namespace, spec, memo, logger, status, patch, **kwargs
 ):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
-    return reconcile_resource_access(body, namespace, spec, status, memo, logger)
+    return reconcile_resource_access(body, namespace, spec, status, memo, logger, patch)
 
 
 ENABLE_RESOURCE_ACCESS_RECONCILER = os.environ.get(
@@ -171,32 +172,23 @@ def twingate_resource_access_sync(
     if not to_bool(ENABLE_RESOURCE_ACCESS_RECONCILER):
         return None
 
-    result = reconcile_resource_access(body, namespace, spec, status, memo, logger)
-
-    # Kopf files each handler's result under its own handler id, so the timer's result lands
-    # in `twingate_resource_access_sync` while `check_status_created` reads only
-    # `twingate_resource_access_change`. Copy successes across, or the timer never records the
-    # IDs it reconciled and every tick re-issues the same removal. Failures are left out
-    # because the timer has no grant of its own to record, and marking the create handler's
-    # result as failed would make the next reconcile re-query the principal ID needlessly.
-    if result.get("success"):
-        patch.status[twingate_resource_access_change.__name__] = result
-
-    return result
+    return reconcile_resource_access(body, namespace, spec, status, memo, logger, patch)
 
 
 @kopf.on.delete("twingateresourceaccess")
 def twingate_resource_access_delete(namespace, spec, status, memo, logger, **kwargs):
     logger.info("Got a TwingateResourceAccess delete request: %s", spec)
-    creation_status = check_status_created(status)
-    if not creation_status:
+    recorded_access = get_recorded_access(status)
+    if not recorded_access["principalId"]:
         return
 
     access_crd = ResourceAccessSpec(**spec)
     resource_crd = access_crd.get_resource(namespace)
     if resource_id := resource_crd and resource_crd.spec.id:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(access_crd, creation_status, client, namespace)
+        principal_id = get_principal_id(
+            access_crd, recorded_access["principalId"], client, namespace
+        )
         client.resource_access_remove(resource_id, principal_id)
 
 
@@ -254,7 +246,7 @@ def twingate_resource_id_changed(
         return
 
     reconcile_access_refs(
-        access_refs, f"Resource {name}", "resource_id", new, memo, logger
+        access_refs, f"Resource {name}", "resourceId", new, memo, logger
     )
 
 
@@ -273,12 +265,12 @@ def twingate_group_id_changed(
         return
 
     reconcile_access_refs(
-        access_refs, f"Group {name}", "principal_id", new, memo, logger
+        access_refs, f"Group {name}", "principalId", new, memo, logger
     )
 
 
 def reconcile_access_refs(
-    access_refs, trigger: str, status_id_field: str, new_id: str, memo, logger
+    access_refs, trigger: str, recorded_id_field: str, new_id: str, memo, logger
 ) -> None:
     """Reconcile each TwingateResourceAccess binding named in access_refs."""
     # Re-raise after attempting every binding so Kopf retries, without letting one
@@ -296,8 +288,7 @@ def reconcile_access_refs(
 
         # Skip bindings already on the new ID so a retry, or an ID change only some
         # bindings were waiting on, doesn't re-write the ones that are current.
-        creation_status = check_status_created(ra_obj.get("status"))
-        if creation_status and creation_status.get(status_id_field) == new_id:
+        if get_recorded_access(ra_obj.get("status"))[recorded_id_field] == new_id:
             continue
 
         logger.info(
@@ -306,14 +297,16 @@ def reconcile_access_refs(
             ra_namespace,
             ra_name,
         )
+        patch = SimpleNamespace(spec={}, status={})
         try:
-            result = reconcile_resource_access(
+            reconcile_resource_access(
                 ra_obj,
                 ra_namespace,
                 ra_obj["spec"],
                 ra_obj.get("status"),
                 memo,
                 logger,
+                patch,
             )
         except kopf.TemporaryError as err:
             logger.warning(
@@ -334,19 +327,13 @@ def reconcile_access_refs(
             )
             continue
 
-        # These handlers fire on the referenced object, so Kopf won't persist the result
-        # onto the binding for us; record it ourselves, otherwise the stored IDs (and the
-        # status printer columns) would keep showing stale values.
-        if result and result.get("success"):
-            k8s_patch_twingate_custom_object(
-                "twingateresourceaccesses",
-                ra_namespace,
-                ra_name,
-                SimpleNamespace(
-                    spec={},
-                    status={twingate_resource_access_change.__name__: result},  # type: ignore[attr-defined]
-                ),
-            )
+        # These handlers fire on the referenced object, so Kopf won't persist the patch onto
+        # the binding for us; the recorded IDs (and the status printer columns) would
+        # otherwise keep showing stale values. A failed reconcile records nothing, which
+        # leaves the patch empty and makes this a no-op.
+        k8s_patch_twingate_custom_object(
+            "twingateresourceaccesses", ra_namespace, ra_name, patch
+        )
 
     if retry_exc is not None:
         raise retry_exc

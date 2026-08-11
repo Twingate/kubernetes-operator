@@ -126,7 +126,7 @@ class TestGetPrincipalId:
         with pytest.raises(ValueError, match=r"Unknown principal type: invalid"):
             get_principal_id(access_crd, None, mock_api_client, "default")
 
-    def test_from_external_ref_uses_created_status_principal_id(self):
+    def test_from_external_ref_uses_recorded_principal_id(self):
         access_crd = MagicMock()
         access_crd.principal_id = None
         access_crd.get_group_ref_object.return_value = None
@@ -134,9 +134,9 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref.type = "invalid"
         access_crd.principal_external_ref.name = "sa-name"
 
-        expected = "success"
+        expected = "R3JvdXA6MTE1NzI2MA=="
         principal_id = get_principal_id(
-            access_crd, {"principal_id": expected}, mock_api_client, "default"
+            access_crd, expected, mock_api_client, "default"
         )
         assert principal_id == expected
 
@@ -157,8 +157,7 @@ class TestResourceAccessChangeHandler:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        patch_mock = MagicMock()
-        patch_mock.metadata = {}
+        patch_shim = SimpleNamespace(spec={}, status={}, metadata={})
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -174,7 +173,7 @@ class TestResourceAccessChangeHandler:
                 spec=resource_access_spec,
                 memo=memo_mock,
                 logger=logger_mock,
-                patch=patch_mock,
+                patch=patch_shim,
                 status={},
             )
             assert result == {
@@ -184,6 +183,10 @@ class TestResourceAccessChangeHandler:
                 "resource_id": ANY,
             }
 
+        assert patch_shim.status == {
+            "resourceId": resource_spec.id,
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+        }
         kopf_info_mock.assert_called_once_with("", reason="Success", message=ANY)
 
     def test_create_invalid_ref(self, mock_api_client):
@@ -277,9 +280,9 @@ class TestResourceAccessChangeHandler:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        patch_mock = MagicMock()
-        patch_mock.metadata = {}
-        patch_mock.metadata["ownerReferences"] = []
+        patch_shim = SimpleNamespace(
+            spec={}, status={}, metadata={"ownerReferences": []}
+        )
 
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
@@ -298,7 +301,7 @@ class TestResourceAccessChangeHandler:
                 spec=resource_access_spec,
                 memo=memo_mock,
                 logger=logger_mock,
-                patch=patch_mock,
+                patch=patch_shim,
                 status={},
             )
             assert result == {"success": False, "error": "some error", "ts": ANY}
@@ -306,7 +309,9 @@ class TestResourceAccessChangeHandler:
         kopf_exception_mock.assert_called_once_with(
             "", reason="Failure", message="resourceCreate failed: some error"
         )
-        assert patch_mock.metadata["ownerReferences"] == []
+        # A failed grant records nothing, leaving any previously recorded pair in place.
+        assert patch_shim.status == {}
+        assert patch_shim.metadata["ownerReferences"] == []
 
     def test_skip_reconciler(self):
         with (
@@ -462,7 +467,9 @@ class TestDeleteOldAccess:
                 spec=access_spec,
                 memo=MagicMock(),
                 logger=MagicMock(),
-                patch=patch_shim if patch_shim is not None else MagicMock(),
+                patch=patch_shim
+                if patch_shim is not None
+                else SimpleNamespace(spec={}, status={}),
                 status=status,
             )
 
@@ -474,7 +481,11 @@ class TestDeleteOldAccess:
         }
 
     @classmethod
-    def recorded_status(cls, resource_id, *, success=True):
+    def recorded_status(cls, resource_id):
+        return {"resourceId": resource_id, "principalId": cls.PRINCIPAL_ID}
+
+    @classmethod
+    def legacy_recorded_status(cls, resource_id, *, success=True):
         return {
             "twingate_resource_access_change": {
                 "success": success,
@@ -525,8 +536,9 @@ class TestDeleteOldAccess:
         self, network_resource_factory, kopf_info_mock, mock_api_client
     ):
         resource_spec = network_resource_factory().to_spec()
-        status = self.recorded_status(resource_spec.id)
-        status["twingate_resource_access_change"]["principal_id"] = "old-group-id"
+        status = self.recorded_status(resource_spec.id) | {
+            "principalId": "old-group-id"
+        }
 
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_group_ref_object",
@@ -572,15 +584,14 @@ class TestDeleteOldAccess:
     def test_retries_the_removal_after_a_failed_reconcile(
         self, network_resource_factory, kopf_info_mock, mock_api_client
     ):
-        # A failure result carries no IDs of its own, so the recorded pair still describes a
-        # grant that was made and has to be taken away.
+        # The IDs are recorded only on success, so a failed reconcile does not hide the
+        # grant that an earlier one made and that still has to be taken away.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+        status = self.recorded_status("old-resource-id") | {
+            "twingate_resource_access_change": {"success": False, "error": "boom"}
+        }
 
-        self.run_sync(
-            self.build_access_spec(resource_spec),
-            resource_spec,
-            self.recorded_status("old-resource-id", success=False),
-        )
+        self.run_sync(self.build_access_spec(resource_spec), resource_spec, status)
 
         mock_api_client.resource_access_remove.assert_called_once_with(
             "old-resource-id", self.PRINCIPAL_ID
@@ -589,6 +600,29 @@ class TestDeleteOldAccess:
             "resource_access_remove",
             "resource_access_add",
         ]
+
+    def test_deletes_access_recorded_by_an_earlier_operator_version(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # Bindings last reconciled before the IDs moved to the root of the status carry them
+        # under the create handler's result.
+        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
+        patch_shim = SimpleNamespace(spec={}, status={})
+
+        self.run_sync(
+            self.build_access_spec(resource_spec),
+            resource_spec,
+            self.legacy_recorded_status("old-resource-id"),
+            patch_shim,
+        )
+
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            "old-resource-id", self.PRINCIPAL_ID
+        )
+        assert patch_shim.status == {
+            "resourceId": "new-resource-id",
+            "principalId": self.PRINCIPAL_ID,
+        }
 
     def test_fails_when_the_deletion_is_rejected(
         self, network_resource_factory, kopf_info_mock, mock_api_client
@@ -651,6 +685,38 @@ class TestResourceAccessDelete:
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
 
+        status = {"principalId": resource_access_spec["principalId"]}
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            twingate_resource_access_delete(
+                "default", resource_access_spec, status, memo_mock, logger_mock
+            )
+
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            resource.id, resource_access_spec["principalId"]
+        )
+
+    def test_delete_with_a_principal_recorded_by_an_earlier_operator_version(
+        self, network_resource_factory, mock_api_client
+    ):
+        resource = network_resource_factory()
+        resource_spec = resource.to_spec()
+
+        resource_access_spec = {
+            "resourceRef": {"name": resource_spec.name},
+            "principalId": "R3JvdXA6MTE1NzI2MA==",
+        }
+
+        logger_mock = MagicMock()
+        memo_mock = MagicMock()
+
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
         status = {
             "twingate_resource_access_change": {
                 "success": True,
@@ -678,12 +744,7 @@ class TestResourceAccessDelete:
 
         logger_mock = MagicMock()
         memo_mock = MagicMock()
-        status = {
-            "twingate_resource_access_change": {
-                "success": True,
-                "principal_id": resource_access_spec["principalId"],
-            }
-        }
+        status = {"principalId": resource_access_spec["principalId"]}
 
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
@@ -791,6 +852,15 @@ def make_access_obj(_plural=None, _namespace=None, name="access1", *, status=Non
     return obj
 
 
+def record_id(field, new_id="new-id"):
+    """Stand in for a reconcile that recorded an ID on the patch shim it was passed."""
+
+    def side_effect(*args):
+        args[-1].status[field] = new_id
+
+    return side_effect
+
+
 @patch("app.handlers.handlers_resource_access.k8s_patch_twingate_custom_object")
 @patch("app.handlers.handlers_resource_access.k8s_get_twingate_custom_object")
 @patch("app.handlers.handlers_resource_access.reconcile_resource_access")
@@ -816,10 +886,10 @@ class TestResourceIdChanged:
     def test_reconciles_referencing_access(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        # Two bindings reference the same Resource - both must be reconciled, and each
-        # result persisted onto its own binding.
+        # Two bindings reference the same Resource - both must be reconciled, and what each
+        # reconcile recorded persisted onto its own binding.
         mock_get_obj.side_effect = make_access_obj
-        mock_reconcile.return_value = {"success": True, "resource_id": "new-id"}
+        mock_reconcile.side_effect = record_id("resourceId")
 
         self.call_handler(
             self.build_index(
@@ -841,26 +911,15 @@ class TestResourceIdChanged:
                 "access-ns",
                 name,
             )
-            assert shim.status == {
-                "twingate_resource_access_change": {
-                    "success": True,
-                    "resource_id": "new-id",
-                }
-            }
+            assert shim.status == {"resourceId": "new-id"}
 
     def test_reconciles_with_the_bindings_own_namespace_and_status(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
         # Refs resolve in the binding's namespace, not that of the Resource whose ID
-        # changed, and the status carries the principal_id cached for
+        # changed, and the status carries the principal ID recorded for
         # principalExternalRef bindings.
-        status = {
-            "twingate_resource_access_change": {
-                "success": True,
-                "resource_id": "stale-id",
-                "principal_id": "principal-id",
-            }
-        }
+        status = {"resourceId": "stale-id", "principalId": "principal-id"}
         mock_get_obj.return_value = make_access_obj(status=status)
 
         self.call_handler(self.build_index())
@@ -872,6 +931,16 @@ class TestResourceIdChanged:
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
         # Already reconciled onto the new id - nothing to re-issue.
+        mock_get_obj.return_value = make_access_obj(status={"resourceId": "new-id"})
+
+        self.call_handler(self.build_index())
+
+        mock_reconcile.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_skips_binding_recorded_by_an_earlier_operator_version(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
         mock_get_obj.return_value = make_access_obj(
             status={
                 "twingate_resource_access_change": {
@@ -898,15 +967,17 @@ class TestResourceIdChanged:
         mock_get_obj.assert_not_called()
         mock_reconcile.assert_not_called()
 
-    def test_does_not_persist_status_on_failed_reconcile(
+    def test_records_nothing_when_the_reconcile_fails(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
+        # A failed reconcile writes no IDs, so the patch stays empty and persisting it is a
+        # no-op rather than an overwrite with stale values.
         mock_get_obj.side_effect = make_access_obj
         mock_reconcile.return_value = {"success": False, "error": "boom"}
 
         self.call_handler(self.build_index())
 
-        mock_patch_obj.assert_not_called()
+        assert mock_patch_obj.call_args.args[3].status == {}
 
     def test_skips_when_access_object_missing(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
@@ -934,10 +1005,10 @@ class TestResourceIdChanged:
     ):
         mock_get_obj.side_effect = make_access_obj
 
-        def reconcile_side_effect(body, *args, **kwargs):
+        def reconcile_side_effect(body, *args):
             if body["spec"]["x"] == "access1":
                 raise kopf.TemporaryError("not ready")
-            return {"success": True, "resource_id": "new-id"}
+            args[-1].status["resourceId"] = "new-id"
 
         mock_reconcile.side_effect = reconcile_side_effect
 
@@ -974,7 +1045,7 @@ class TestGroupIdChanged:
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
         mock_get_obj.side_effect = make_access_obj
-        mock_reconcile.return_value = {"success": True, "principal_id": "new-id"}
+        mock_reconcile.side_effect = record_id("principalId")
 
         self.call_handler(
             {("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]}
@@ -987,25 +1058,13 @@ class TestGroupIdChanged:
             "access-ns",
             "access1",
         )
-        assert shim.status == {
-            "twingate_resource_access_change": {
-                "success": True,
-                "principal_id": "new-id",
-            }
-        }
+        assert shim.status == {"principalId": "new-id"}
 
     def test_skips_binding_already_on_the_new_id(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        # The group handler compares principal_id, not resource_id.
-        mock_get_obj.return_value = make_access_obj(
-            status={
-                "twingate_resource_access_change": {
-                    "success": True,
-                    "principal_id": "new-id",
-                }
-            }
-        )
+        # The group handler compares the principal ID, not the resource ID.
+        mock_get_obj.return_value = make_access_obj(status={"principalId": "new-id"})
 
         self.call_handler(
             {("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]}

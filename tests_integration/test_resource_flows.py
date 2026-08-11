@@ -10,6 +10,7 @@ from tests_integration.utils import (
     kubectl_apply,
     kubectl_create,
     kubectl_delete_wait,
+    kubectl_patch,
     kubectl_wait_object,
     kubectl_wait_object_handler_success,
     kubectl_wait_to_exist,
@@ -444,6 +445,68 @@ def test_resource_access_reconciled_when_group_id_changes(
     assert_log_message_contains(
         logs, f"Deleting old access {resource_id}<>{original_group_id}"
     )
+
+
+def test_recorded_access_migrated_from_an_earlier_operator_version(
+    run_kopf, unique_resource_name
+):
+    principal_id = os.environ["TWINGATE_TEST_PRINCIPAL_ID"]
+
+    resource_obj = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My K8S Resource
+          address: my.default.cluster.local
+    """
+
+    access_obj = ACCESS_OBJECTS["OBJ_ACCESS_BY_PRINCIPAL_ID"].format(
+        resource_name=unique_resource_name, principal_id=principal_id
+    )
+
+    with run_kopf(cleanup=False):
+        kubectl_create(resource_obj)
+        resource = kubectl_wait_object_handler_success(
+            "tgr", unique_resource_name, "twingate_resource_create"
+        )
+        kubectl_create(access_obj)
+        access = kubectl_wait_object_handler_success(
+            "tacc", unique_resource_name, "twingate_resource_access_change"
+        )
+        assert access_status(access)["resourceId"] == resource["spec"]["id"]
+
+    # Put the binding back into the shape an earlier operator version left it in.
+    kubectl_patch(
+        f"tacc/{unique_resource_name}",
+        {
+            "status": {
+                "resourceId": None,
+                "principalId": None,
+                "twingate_resource_access_change": {
+                    "resource_id": resource["spec"]["id"],
+                    "principal_id": principal_id,
+                },
+            }
+        },
+    )
+
+    # The reconciler is off, so only the resume handler can restore the recorded IDs.
+    with run_kopf(enable_resource_access_reconciler=False) as runner:
+        migrated = kubectl_wait_object(
+            "tacc",
+            unique_resource_name,
+            lambda obj: access_status(obj).get("resourceId") == resource["spec"]["id"],
+            description=f"resourceId {resource['spec']['id']}",
+        )
+        assert access_status(migrated)["principalId"] == principal_id
+
+        kubectl_delete_wait("tacc", unique_resource_name)
+        kubectl_delete_wait("tgr", unique_resource_name)
+
+    logs = load_stdout(runner.output)
+    assert_log_message_contains(logs, "Migrated the recorded access IDs")
 
 
 def access_status(access_object: dict) -> dict:

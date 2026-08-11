@@ -15,10 +15,12 @@ from app.crds import (
 )
 from app.handlers.handlers_resource_access import (
     get_principal_id,
+    has_unmigrated_recorded_access,
     twingate_group_id_changed,
     twingate_resource_access_by_group,
     twingate_resource_access_by_resource,
     twingate_resource_access_delete,
+    twingate_resource_access_migrate_status,
     twingate_resource_access_sync,
     twingate_resource_id_changed,
 )
@@ -664,6 +666,65 @@ class TestDeleteOldAccess:
             )
 
         mock_api_client.resource_access_add.assert_not_called()
+
+
+class TestMigrateStatus:
+    PRINCIPAL_ID = "R3JvdXA6MTE1NzI2MA=="
+
+    @classmethod
+    def legacy_status(cls, **overrides):
+        return {
+            "twingate_resource_access_change": {
+                "success": True,
+                "resource_id": "resource-id",
+                "principal_id": cls.PRINCIPAL_ID,
+            }
+            | overrides
+        }
+
+    @classmethod
+    def migrate(cls, status):
+        patch_shim = SimpleNamespace(spec={}, status={})
+        twingate_resource_access_migrate_status(
+            status=status, patch=patch_shim, logger=MagicMock()
+        )
+        return patch_shim.status
+
+    def test_selects_bindings_recorded_by_an_earlier_operator_version(self):
+        assert has_unmigrated_recorded_access(status=self.legacy_status())
+
+    def test_skips_already_migrated_bindings(self):
+        status = self.legacy_status() | {
+            "resourceId": "resource-id",
+            "principalId": self.PRINCIPAL_ID,
+        }
+        assert not has_unmigrated_recorded_access(status=status)
+
+    def test_skips_a_partial_record_already_at_the_root(self):
+        # Bindings recorded before the resource ID was, so the missing root resourceId is
+        # nothing this handler can supply and must not keep it matching on every restart.
+        status = self.legacy_status(resource_id=None) | {
+            "principalId": self.PRINCIPAL_ID
+        }
+        assert not has_unmigrated_recorded_access(status=status)
+
+    def test_skips_bindings_without_a_recorded_access(self):
+        assert not has_unmigrated_recorded_access(status={})
+        assert not has_unmigrated_recorded_access(status=None)
+
+    def test_migrates_both_ids(self):
+        assert self.migrate(self.legacy_status()) == {
+            "resourceId": "resource-id",
+            "principalId": self.PRINCIPAL_ID,
+        }
+
+    def test_migrates_a_principal_recorded_without_a_resource_id(self):
+        status = self.legacy_status(resource_id=None)
+        assert self.migrate(status) == {"principalId": self.PRINCIPAL_ID}
+
+    def test_keeps_an_id_a_reconcile_already_recorded(self):
+        status = self.legacy_status() | {"resourceId": "newer-resource-id"}
+        assert self.migrate(status) == {"principalId": self.PRINCIPAL_ID}
 
 
 class TestResourceAccessDelete:

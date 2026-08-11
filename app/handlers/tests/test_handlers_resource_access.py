@@ -315,7 +315,7 @@ class TestResourceAccessChangeHandler:
                 "false",
             ),
             patch(
-                "app.handlers.handlers_resource_access._reconcile_resource_access",
+                "app.handlers.handlers_resource_access.reconcile_resource_access",
             ) as reconcile_mock,
         ):
             result = twingate_resource_access_sync(
@@ -447,7 +447,7 @@ class TestDeleteOldAccess:
     PRINCIPAL_ID = "R3JvdXA6MTE1NzI2MA=="
 
     @staticmethod
-    def _sync(access_spec, resource_spec, status, patch_shim=None):
+    def run_sync(access_spec, resource_spec, status, patch_shim=None):
         resource_crd_mock = MagicMock()
         resource_crd_mock.spec = resource_spec
         resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
@@ -467,14 +467,14 @@ class TestDeleteOldAccess:
             )
 
     @classmethod
-    def _access_spec(cls, resource_spec):
+    def build_access_spec(cls, resource_spec):
         return {
             "resourceRef": {"name": resource_spec.name},
             "principalId": cls.PRINCIPAL_ID,
         }
 
     @classmethod
-    def _status(cls, resource_id, *, success=True):
+    def recorded_status(cls, resource_id, *, success=True):
         return {
             "twingate_resource_access_change": {
                 "success": success,
@@ -488,10 +488,10 @@ class TestDeleteOldAccess:
     ):
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
 
-        result = self._sync(
-            self._access_spec(resource_spec),
+        result = self.run_sync(
+            self.build_access_spec(resource_spec),
             resource_spec,
-            self._status("old-resource-id"),
+            self.recorded_status("old-resource-id"),
         )
 
         assert result["resource_id"] == "new-resource-id"
@@ -509,13 +509,13 @@ class TestDeleteOldAccess:
         # Without a record of what it just granted, the timer would recompute the same
         # stale pair and re-issue the removal on every tick.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
-        access_spec = self._access_spec(resource_spec)
+        access_spec = self.build_access_spec(resource_spec)
         patch_shim = SimpleNamespace(spec={}, status={})
-        status = self._status("old-resource-id")
+        status = self.recorded_status("old-resource-id")
 
-        self._sync(access_spec, resource_spec, status, patch_shim)
+        self.run_sync(access_spec, resource_spec, status, patch_shim)
         status |= patch_shim.status  # Kopf merge-patches patch.status into .status.
-        self._sync(access_spec, resource_spec, status, patch_shim)
+        self.run_sync(access_spec, resource_spec, status, patch_shim)
 
         mock_api_client.resource_access_remove.assert_called_once_with(
             "old-resource-id", self.PRINCIPAL_ID
@@ -525,14 +525,14 @@ class TestDeleteOldAccess:
         self, network_resource_factory, kopf_info_mock, mock_api_client
     ):
         resource_spec = network_resource_factory().to_spec()
-        status = self._status(resource_spec.id)
+        status = self.recorded_status(resource_spec.id)
         status["twingate_resource_access_change"]["principal_id"] = "old-group-id"
 
         with patch(
             "app.handlers.handlers_resource_access.ResourceAccessSpec.get_group_ref_object",
             return_value={"spec": {"id": "new-group-id"}},
         ):
-            result = self._sync(
+            result = self.run_sync(
                 {
                     "resourceRef": {"name": resource_spec.name},
                     "groupRef": {"name": "group"},
@@ -551,10 +551,10 @@ class TestDeleteOldAccess:
     ):
         resource_spec = network_resource_factory().to_spec()
 
-        self._sync(
-            self._access_spec(resource_spec),
+        self.run_sync(
+            self.build_access_spec(resource_spec),
             resource_spec,
-            self._status(resource_spec.id),
+            self.recorded_status(resource_spec.id),
         )
 
         mock_api_client.resource_access_remove.assert_not_called()
@@ -565,7 +565,7 @@ class TestDeleteOldAccess:
         # Nothing records an earlier grant, so there is no access to take away.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
 
-        self._sync(self._access_spec(resource_spec), resource_spec, {})
+        self.run_sync(self.build_access_spec(resource_spec), resource_spec, {})
 
         mock_api_client.resource_access_remove.assert_not_called()
 
@@ -576,10 +576,10 @@ class TestDeleteOldAccess:
         # grant that was made and has to be taken away.
         resource_spec = network_resource_factory().to_spec(id="new-resource-id")
 
-        self._sync(
-            self._access_spec(resource_spec),
+        self.run_sync(
+            self.build_access_spec(resource_spec),
             resource_spec,
-            self._status("old-resource-id", success=False),
+            self.recorded_status("old-resource-id", success=False),
         )
 
         mock_api_client.resource_access_remove.assert_called_once_with(
@@ -599,10 +599,10 @@ class TestDeleteOldAccess:
         )
 
         with patch("kopf.exception") as kopf_exception_mock:
-            result = self._sync(
-                self._access_spec(resource_spec),
+            result = self.run_sync(
+                self.build_access_spec(resource_spec),
                 resource_spec,
-                self._status("old-resource-id"),
+                self.recorded_status("old-resource-id"),
             )
 
         assert result == {"success": False, "error": "some error", "ts": ANY}
@@ -623,10 +623,10 @@ class TestDeleteOldAccess:
         )
 
         with pytest.raises(TransportServerError):
-            self._sync(
-                self._access_spec(resource_spec),
+            self.run_sync(
+                self.build_access_spec(resource_spec),
                 resource_spec,
-                self._status("old-resource-id"),
+                self.recorded_status("old-resource-id"),
             )
 
         mock_api_client.resource_access_add.assert_not_called()
@@ -784,7 +784,7 @@ class TestResourceAccessByGroup:
         assert result is None
 
 
-def _access_obj(_plural=None, _namespace=None, name="access1", *, status=None):
+def make_access_obj(_plural=None, _namespace=None, name="access1", *, status=None):
     obj = {"metadata": {"namespace": "access-ns", "name": name}, "spec": {"x": name}}
     if status:
         obj["status"] = status
@@ -793,17 +793,17 @@ def _access_obj(_plural=None, _namespace=None, name="access1", *, status=None):
 
 @patch("app.handlers.handlers_resource_access.k8s_patch_twingate_custom_object")
 @patch("app.handlers.handlers_resource_access.k8s_get_twingate_custom_object")
-@patch("app.handlers.handlers_resource_access._reconcile_resource_access")
+@patch("app.handlers.handlers_resource_access.reconcile_resource_access")
 class TestResourceIdChanged:
     @staticmethod
-    def _index(refs=None):
+    def build_index(refs=None):
         return {
             ("ns", "res"): refs
             if refs is not None
             else [{"namespace": "access-ns", "name": "access1"}]
         }
 
-    def _call(self, index, new="new-id"):
+    def call_handler(self, index, new="new-id"):
         twingate_resource_id_changed(
             namespace="ns",
             name="res",
@@ -818,11 +818,11 @@ class TestResourceIdChanged:
     ):
         # Two bindings reference the same Resource - both must be reconciled, and each
         # result persisted onto its own binding.
-        mock_get_obj.side_effect = _access_obj
+        mock_get_obj.side_effect = make_access_obj
         mock_reconcile.return_value = {"success": True, "resource_id": "new-id"}
 
-        self._call(
-            self._index(
+        self.call_handler(
+            self.build_index(
                 [
                     {"namespace": "access-ns", "name": "access1"},
                     {"namespace": "access-ns", "name": "access2"},
@@ -861,9 +861,9 @@ class TestResourceIdChanged:
                 "principal_id": "principal-id",
             }
         }
-        mock_get_obj.return_value = _access_obj(status=status)
+        mock_get_obj.return_value = make_access_obj(status=status)
 
-        self._call(self._index())
+        self.call_handler(self.build_index())
 
         _body, namespace, _spec, passed_status = mock_reconcile.call_args.args[:4]
         assert (namespace, passed_status) == ("access-ns", status)
@@ -872,7 +872,7 @@ class TestResourceIdChanged:
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
         # Already reconciled onto the new id - nothing to re-issue.
-        mock_get_obj.return_value = _access_obj(
+        mock_get_obj.return_value = make_access_obj(
             status={
                 "twingate_resource_access_change": {
                     "success": True,
@@ -881,30 +881,30 @@ class TestResourceIdChanged:
             }
         )
 
-        self._call(self._index())
+        self.call_handler(self.build_index())
 
         mock_reconcile.assert_not_called()
         mock_patch_obj.assert_not_called()
 
     def test_noop_when_id_unset(self, mock_reconcile, mock_get_obj, mock_patch_obj):
-        self._call(self._index(), new=None)
+        self.call_handler(self.build_index(), new=None)
         mock_get_obj.assert_not_called()
         mock_reconcile.assert_not_called()
 
     def test_noop_without_referencing_access(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        self._call({})
+        self.call_handler({})
         mock_get_obj.assert_not_called()
         mock_reconcile.assert_not_called()
 
     def test_does_not_persist_status_on_failed_reconcile(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        mock_get_obj.side_effect = _access_obj
+        mock_get_obj.side_effect = make_access_obj
         mock_reconcile.return_value = {"success": False, "error": "boom"}
 
-        self._call(self._index())
+        self.call_handler(self.build_index())
 
         mock_patch_obj.assert_not_called()
 
@@ -913,7 +913,7 @@ class TestResourceIdChanged:
     ):
         mock_get_obj.return_value = None
 
-        self._call(self._index())
+        self.call_handler(self.build_index())
 
         mock_reconcile.assert_not_called()
         mock_patch_obj.assert_not_called()
@@ -922,17 +922,17 @@ class TestResourceIdChanged:
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
         # Swallowed; the resource access timer is the backstop.
-        mock_get_obj.side_effect = _access_obj
+        mock_get_obj.side_effect = make_access_obj
         mock_reconcile.side_effect = RuntimeError("boom")
 
-        self._call(self._index())
+        self.call_handler(self.build_index())
 
         mock_patch_obj.assert_not_called()
 
     def test_one_not_ready_does_not_starve_others(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        mock_get_obj.side_effect = _access_obj
+        mock_get_obj.side_effect = make_access_obj
 
         def reconcile_side_effect(body, *args, **kwargs):
             if body["spec"]["x"] == "access1":
@@ -942,8 +942,8 @@ class TestResourceIdChanged:
         mock_reconcile.side_effect = reconcile_side_effect
 
         with pytest.raises(kopf.TemporaryError):
-            self._call(
-                self._index(
+            self.call_handler(
+                self.build_index(
                     [
                         {"namespace": "access-ns", "name": "access1"},
                         {"namespace": "access-ns", "name": "access2"},
@@ -958,9 +958,9 @@ class TestResourceIdChanged:
 
 @patch("app.handlers.handlers_resource_access.k8s_patch_twingate_custom_object")
 @patch("app.handlers.handlers_resource_access.k8s_get_twingate_custom_object")
-@patch("app.handlers.handlers_resource_access._reconcile_resource_access")
+@patch("app.handlers.handlers_resource_access.reconcile_resource_access")
 class TestGroupIdChanged:
-    def _call(self, index, new="new-id"):
+    def call_handler(self, index, new="new-id"):
         twingate_group_id_changed(
             namespace="ns",
             name="grp",
@@ -973,10 +973,12 @@ class TestGroupIdChanged:
     def test_reconciles_referencing_access(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        mock_get_obj.side_effect = _access_obj
+        mock_get_obj.side_effect = make_access_obj
         mock_reconcile.return_value = {"success": True, "principal_id": "new-id"}
 
-        self._call({("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]})
+        self.call_handler(
+            {("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]}
+        )
 
         mock_reconcile.assert_called_once()
         plural, namespace, obj_name, shim = mock_patch_obj.call_args.args
@@ -996,7 +998,7 @@ class TestGroupIdChanged:
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
         # The group handler compares principal_id, not resource_id.
-        mock_get_obj.return_value = _access_obj(
+        mock_get_obj.return_value = make_access_obj(
             status={
                 "twingate_resource_access_change": {
                     "success": True,
@@ -1005,13 +1007,15 @@ class TestGroupIdChanged:
             }
         )
 
-        self._call({("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]})
+        self.call_handler(
+            {("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]}
+        )
 
         mock_reconcile.assert_not_called()
         mock_patch_obj.assert_not_called()
 
     def test_noop_when_id_unset(self, mock_reconcile, mock_get_obj, mock_patch_obj):
-        self._call(
+        self.call_handler(
             {("ns", "grp"): [{"namespace": "access-ns", "name": "access1"}]}, new=None
         )
         mock_get_obj.assert_not_called()
@@ -1020,6 +1024,6 @@ class TestGroupIdChanged:
     def test_noop_without_referencing_access(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        self._call({})
+        self.call_handler({})
         mock_get_obj.assert_not_called()
         mock_reconcile.assert_not_called()

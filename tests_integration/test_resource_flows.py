@@ -339,7 +339,7 @@ def test_resource_access_reconciled_when_resource_id_changes(
         access = kubectl_wait_object_handler_success(
             "tacc", unique_resource_name, "twingate_resource_access_change"
         )
-        assert _access_status(access)["resource_id"] == original_resource_id
+        assert access_status(access)["resource_id"] == original_resource_id
 
         # Recreate the Resource so it is assigned a new backend id.
         kubectl_delete_wait("tgr", unique_resource_name)
@@ -356,7 +356,7 @@ def test_resource_access_reconciled_when_resource_id_changes(
         kubectl_wait_object(
             "tacc",
             unique_resource_name,
-            lambda obj: _access_status(obj).get("resource_id") == new_resource_id,
+            lambda obj: access_status(obj).get("resource_id") == new_resource_id,
             description=f"resource_id {new_resource_id}",
         )
 
@@ -414,7 +414,7 @@ def test_resource_access_reconciled_when_group_id_changes(
         access = kubectl_wait_object_handler_success(
             "tacc", unique_resource_name, "twingate_resource_access_change"
         )
-        assert _access_status(access)["principal_id"] == original_group_id
+        assert access_status(access)["principal_id"] == original_group_id
 
         # Recreate the Group so it is assigned a new backend id.
         kubectl_delete_wait("tgg", "test-group")
@@ -431,7 +431,7 @@ def test_resource_access_reconciled_when_group_id_changes(
         kubectl_wait_object(
             "tacc",
             unique_resource_name,
-            lambda obj: _access_status(obj).get("principal_id") == new_group_id,
+            lambda obj: access_status(obj).get("principal_id") == new_group_id,
             description=f"principal_id {new_group_id}",
         )
 
@@ -446,5 +446,5 @@ def test_resource_access_reconciled_when_group_id_changes(
     )
 
 
-def _access_status(access_object: dict) -> dict:
+def access_status(access_object: dict) -> dict:
     return access_object.get("status", {}).get("twingate_resource_access_change", {})

@@ -74,7 +74,7 @@ def check_status_created(status: dict | None) -> dict | None:
     return None
 
 
-def _reconcile_resource_access(body, namespace, spec, status, memo, logger) -> dict:
+def reconcile_resource_access(body, namespace, spec, status, memo, logger) -> dict:
     creation_status = check_status_created(status)
 
     access_crd = ResourceAccessSpec(**spec)
@@ -148,7 +148,7 @@ def twingate_resource_access_change(
     body, namespace, spec, memo, logger, status, **kwargs
 ):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
-    return _reconcile_resource_access(body, namespace, spec, status, memo, logger)
+    return reconcile_resource_access(body, namespace, spec, status, memo, logger)
 
 
 ENABLE_RESOURCE_ACCESS_RECONCILER = os.environ.get(
@@ -171,7 +171,7 @@ def twingate_resource_access_sync(
     if not to_bool(ENABLE_RESOURCE_ACCESS_RECONCILER):
         return None
 
-    result = _reconcile_resource_access(body, namespace, spec, status, memo, logger)
+    result = reconcile_resource_access(body, namespace, spec, status, memo, logger)
 
     # Kopf files each handler's result under its own handler id, so the timer's result lands
     # in `twingate_resource_access_sync` while `check_status_created` reads only
@@ -253,7 +253,7 @@ def twingate_resource_id_changed(
     if not access_refs:
         return
 
-    _reconcile_access_refs(
+    reconcile_access_refs(
         access_refs, f"Resource {name}", "resource_id", new, memo, logger
     )
 
@@ -272,12 +272,12 @@ def twingate_group_id_changed(
     if not access_refs:
         return
 
-    _reconcile_access_refs(
+    reconcile_access_refs(
         access_refs, f"Group {name}", "principal_id", new, memo, logger
     )
 
 
-def _reconcile_access_refs(
+def reconcile_access_refs(
     access_refs, trigger: str, status_id_field: str, new_id: str, memo, logger
 ) -> None:
     """Reconcile each TwingateResourceAccess binding named in access_refs."""
@@ -307,7 +307,7 @@ def _reconcile_access_refs(
             ra_name,
         )
         try:
-            result = _reconcile_resource_access(
+            result = reconcile_resource_access(
                 ra_obj,
                 ra_namespace,
                 ra_obj["spec"],

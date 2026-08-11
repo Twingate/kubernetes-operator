@@ -487,7 +487,7 @@ class TestDeleteOldAccess:
         return {"resourceId": resource_id, "principalId": cls.PRINCIPAL_ID}
 
     @classmethod
-    def legacy_recorded_status(cls, resource_id, *, success=True):
+    def handler_recorded_status(cls, resource_id, *, success=True):
         return {
             "twingate_resource_access_change": {
                 "success": success,
@@ -613,7 +613,7 @@ class TestDeleteOldAccess:
         self.run_sync(
             self.build_access_spec(resource_spec),
             resource_spec,
-            self.legacy_recorded_status("old-resource-id"),
+            self.handler_recorded_status("old-resource-id"),
             patch_shim,
         )
 
@@ -671,7 +671,7 @@ class TestMigrateStatus:
     PRINCIPAL_ID = "R3JvdXA6MTE1NzI2MA=="
 
     @classmethod
-    def legacy_status(cls, **overrides):
+    def handler_status(cls, **overrides):
         return {
             "twingate_resource_access_change": {
                 "success": True,
@@ -690,10 +690,10 @@ class TestMigrateStatus:
         return patch_shim.status
 
     def test_selects_bindings_recorded_by_an_earlier_operator_version(self):
-        assert has_unmigrated_recorded_access(status=self.legacy_status())
+        assert has_unmigrated_recorded_access(status=self.handler_status())
 
     def test_skips_already_migrated_bindings(self):
-        status = self.legacy_status() | {
+        status = self.handler_status() | {
             "resourceId": "resource-id",
             "principalId": self.PRINCIPAL_ID,
         }
@@ -702,7 +702,7 @@ class TestMigrateStatus:
     def test_skips_a_partial_record_already_at_the_root(self):
         # A record that never carried a resource ID must not keep matching on every restart,
         # since there is nothing left for the handler to copy.
-        status = self.legacy_status(resource_id=None) | {
+        status = self.handler_status(resource_id=None) | {
             "principalId": self.PRINCIPAL_ID
         }
         assert not has_unmigrated_recorded_access(status=status)
@@ -712,17 +712,17 @@ class TestMigrateStatus:
         assert not has_unmigrated_recorded_access(status=None)
 
     def test_migrates_both_ids(self):
-        assert self.migrate(self.legacy_status()) == {
+        assert self.migrate(self.handler_status()) == {
             "resourceId": "resource-id",
             "principalId": self.PRINCIPAL_ID,
         }
 
     def test_migrates_a_principal_recorded_without_a_resource_id(self):
-        status = self.legacy_status(resource_id=None)
+        status = self.handler_status(resource_id=None)
         assert self.migrate(status) == {"principalId": self.PRINCIPAL_ID}
 
     def test_keeps_an_id_a_reconcile_already_recorded(self):
-        status = self.legacy_status() | {"resourceId": "newer-resource-id"}
+        status = self.handler_status() | {"resourceId": "newer-resource-id"}
         assert self.migrate(status) == {"principalId": self.PRINCIPAL_ID}
 
 

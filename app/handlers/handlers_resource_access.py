@@ -56,19 +56,15 @@ def get_principal_id(
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
-# The create handler's result, which Kopf keeps writing, was where the IDs were recorded
-# before they moved to the root of the status. It is only read as a fallback because Kopf
-# replaces the whole result on the next run, losing the IDs when a reconcile fails.
-LEGACY_ACCESS_STATUS_KEY = "twingate_resource_access_change"
-
-
 def get_recorded_access(status: dict | None) -> dict[str, str | None]:
     """Return the resource and principal IDs recorded for the access grant."""
     status = status or {}
-    legacy = status.get(LEGACY_ACCESS_STATUS_KEY) or {}
+    # Fall back to where the IDs were recorded before they moved to the status root:
+    # Kopf replaces the whole handler result each run, so a failed reconcile loses them.
+    handler_values = status.get(twingate_resource_access_change.__name__) or {}  # type: ignore[attr-defined]
     return {
-        "resourceId": status.get("resourceId") or legacy.get("resource_id"),
-        "principalId": status.get("principalId") or legacy.get("principal_id"),
+        "resourceId": status.get("resourceId") or handler_values.get("resource_id"),
+        "principalId": status.get("principalId") or handler_values.get("principal_id"),
     }
 
 
@@ -151,17 +147,17 @@ def twingate_resource_access_change(
 
 
 def get_unmigrated_recorded_ids(status: dict | None) -> dict[str, str]:
-    """Return the recorded IDs the legacy status carries and the status root does not."""
+    """Return the recorded IDs the handler's values carry and the status root does not."""
     status = status or {}
-    legacy = status.get(LEGACY_ACCESS_STATUS_KEY) or {}
-    # Skip an ID already at the root: it came from a later reconcile than the legacy one.
+    handler_values = status.get(twingate_resource_access_change.__name__) or {}  # type: ignore[attr-defined]
+    # Skip an ID already at the root: it came from a later reconcile than the handler's.
     return {
-        root_field: legacy[legacy_field]
-        for root_field, legacy_field in (
+        root_field: handler_values[handler_field]
+        for root_field, handler_field in (
             ("resourceId", "resource_id"),
             ("principalId", "principal_id"),
         )
-        if legacy.get(legacy_field) and not status.get(root_field)
+        if handler_values.get(handler_field) and not status.get(root_field)
     }
 
 
@@ -171,13 +167,7 @@ def has_unmigrated_recorded_access(status, **_) -> bool:
 
 @kopf.on.resume("twingateresourceaccess", when=has_unmigrated_recorded_access)
 def twingate_resource_access_migrate_status(status, patch, logger, **_):
-    """Copy IDs recorded by earlier operator versions to the root of the status.
-
-    Kept out of the reconcile handlers because re-granting every binding on each operator
-    restart is the API throttling `ENABLE_RESOURCE_ACCESS_RECONCILER` exists to avoid, and
-    moving the record needs no Twingate call. The filter matches exactly what this handler
-    writes, so Kopf skips it once a binding is migrated.
-    """
+    """Copy IDs recorded by earlier operator versions to the root of the status."""
     patch.status.update(get_unmigrated_recorded_ids(status))
     logger.info("Migrated the recorded access IDs to the root of the status: %s", patch.status)  # fmt: skip
 

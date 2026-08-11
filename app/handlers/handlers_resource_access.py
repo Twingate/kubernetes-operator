@@ -56,8 +56,9 @@ def get_principal_id(
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
-# Operator versions before the IDs moved to the status root recorded them under the create
-# handler's result.
+# The create handler's result, which Kopf keeps writing, was where the IDs were recorded
+# before they moved to the root of the status. It is only read as a fallback because Kopf
+# replaces the whole result on the next run, losing the IDs when a reconcile fails.
 LEGACY_ACCESS_STATUS_KEY = "twingate_resource_access_change"
 
 
@@ -205,20 +206,16 @@ def twingate_resource_access_sync(
 
 
 @kopf.on.delete("twingateresourceaccess")
-def twingate_resource_access_delete(namespace, spec, status, memo, logger, **kwargs):
+def twingate_resource_access_delete(spec, status, memo, logger, **kwargs):
     logger.info("Got a TwingateResourceAccess delete request: %s", spec)
     recorded_access = get_recorded_access(status)
-    if not recorded_access["principalId"]:
+    resource_id = recorded_access["resourceId"]
+    principal_id = recorded_access["principalId"]
+    if not (resource_id and principal_id):
         return
 
-    access_crd = ResourceAccessSpec(**spec)
-    resource_crd = access_crd.get_resource(namespace)
-    if resource_id := resource_crd and resource_crd.spec.id:
-        client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(
-            access_crd, recorded_access["principalId"], client, namespace
-        )
-        client.resource_access_remove(resource_id, principal_id)
+    client = TwingateAPIClient(memo.twingate_settings, logger=logger)
+    client.resource_access_remove(resource_id, principal_id)
 
 
 @kopf.index("twingateresourceaccess")
@@ -314,9 +311,15 @@ def reconcile_access_refs(
         if not ra_obj:
             continue
 
+        recorded_id = get_recorded_access(ra_obj.get("status"))[recorded_id_field]
+        # A binding that was never granted is driven by its own create handler, which keeps
+        # retrying until the reference syncs; granting it here too would double the writes.
+        if not recorded_id:
+            continue
+
         # Skip bindings already on the new ID so a retry, or an ID change only some
         # bindings were waiting on, doesn't re-write the ones that are current.
-        if get_recorded_access(ra_obj.get("status"))[recorded_id_field] == new_id:
+        if recorded_id == new_id:
             continue
 
         logger.info(
@@ -327,7 +330,7 @@ def reconcile_access_refs(
         )
         patch = SimpleNamespace(spec={}, status={})
         try:
-            reconcile_resource_access(
+            result = reconcile_resource_access(
                 ra_obj,
                 ra_namespace,
                 ra_obj["spec"],
@@ -335,6 +338,11 @@ def reconcile_access_refs(
                 memo,
                 logger,
                 patch,
+            )
+
+            # Kopf patches the object the handler is bound to, not the binding.
+            k8s_patch_twingate_custom_object(
+                "twingateresourceaccesses", ra_namespace, ra_name, patch
             )
         except kopf.TemporaryError as err:
             logger.warning(
@@ -355,12 +363,15 @@ def reconcile_access_refs(
             )
             continue
 
-        # These handlers fire on the referenced object, so Kopf won't persist the patch onto
-        # the binding for us. A failed reconcile records nothing, leaving the patch empty,
-        # which makes this a no-op.
-        k8s_patch_twingate_custom_object(
-            "twingateresourceaccesses", ra_namespace, ra_name, patch
-        )
+        if not result["success"]:
+            # A rejected mutation is recorded rather than raised, and the old access is
+            # already gone by then, so ask for a retry instead of leaving the binding
+            # without access until the sync timer.
+            retry_exc = kopf.TemporaryError(
+                f"Reconciling resource access {ra_namespace}/{ra_name} after the {trigger} "
+                f"ID change failed, will retry: {result['error']}",
+                delay=15,
+            )
 
     if retry_exc is not None:
         raise retry_exc

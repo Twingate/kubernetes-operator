@@ -41,7 +41,7 @@ class TestGetPrincipalId:
         access_crd = MagicMock()
         access_crd.principal_id = "R3JvdXA6MTE1NzI2MA=="
         assert (
-            get_principal_id(access_crd, MagicMock(), "default")
+            get_principal_id(access_crd, None, MagicMock(), "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -53,14 +53,14 @@ class TestGetPrincipalId:
         with pytest.raises(
             ValueError, match=r"Missing principal_id or principal_external_ref"
         ):
-            get_principal_id(access_crd, MagicMock(), "default")
+            get_principal_id(access_crd, None, MagicMock(), "default")
 
     def test_id_from_group_ref_object(self):
         access_crd = MagicMock()
         access_crd.principal_id = None
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": "group-id"}}
-        assert get_principal_id(access_crd, MagicMock(), "default") == "group-id"
+        assert get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
 
     def test_id_from_group_ref_object_not_ready_raises_temoraryerror(self):
         access_crd = MagicMock()
@@ -68,7 +68,9 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": None}}
         with pytest.raises(kopf.TemporaryError):
-            assert get_principal_id(access_crd, MagicMock(), "default") == "group-id"
+            assert (
+                get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
+            )
 
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
@@ -81,7 +83,7 @@ class TestGetPrincipalId:
         mock_api_client.get_group_id.return_value = "R3JvdXA6MTE1NzI2MA=="
 
         assert (
-            get_principal_id(access_crd, mock_api_client, "default")
+            get_principal_id(access_crd, None, mock_api_client, "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -96,7 +98,7 @@ class TestGetPrincipalId:
         mock_api_client.get_service_account_id.return_value = "R3JvdXA6MTE1NzI2MA=="
 
         assert (
-            get_principal_id(access_crd, mock_api_client, "default")
+            get_principal_id(access_crd, None, mock_api_client, "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -113,7 +115,7 @@ class TestGetPrincipalId:
         with pytest.raises(
             ValueError, match=r"Principal serviceAccount sa-name not found"
         ):
-            get_principal_id(access_crd, mock_api_client, "default")
+            get_principal_id(access_crd, None, mock_api_client, "default")
 
     def test_from_external_ref_invalid_type_returns_none(self, mock_api_client):
         access_crd = MagicMock()
@@ -124,7 +126,24 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref.name = "sa-name"
 
         with pytest.raises(ValueError, match=r"Unknown principal type: invalid"):
-            get_principal_id(access_crd, mock_api_client, "default")
+            get_principal_id(access_crd, None, mock_api_client, "default")
+
+    def test_from_external_ref_uses_recorded_principal_id(self, mock_api_client):
+        access_crd = MagicMock()
+        access_crd.principal_id = None
+        access_crd.get_group_ref_object.return_value = None
+        access_crd.principal_external_ref = MagicMock()
+        access_crd.principal_external_ref.type = "group"
+        access_crd.principal_external_ref.name = "group-name"
+
+        expected = "R3JvdXA6MTE1NzI2MA=="
+        status = {
+            "principalId": expected,
+            "twingate_resource_access_change": {"success": True},
+        }
+
+        assert get_principal_id(access_crd, status, mock_api_client, "default") == expected  # fmt: skip
+        mock_api_client.get_group_id.assert_not_called()
 
 
 class TestResourceAccessChangeHandler:
@@ -298,6 +317,45 @@ class TestResourceAccessChangeHandler:
         # A failed grant records nothing, leaving any previously recorded pair in place.
         assert patch_shim.status == {}
         assert patch_shim.metadata["ownerReferences"] == []
+
+    def test_resolves_the_external_ref_again_after_a_failed_reconcile(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # The recorded principal is one reason the last grant can have failed, so it is not
+        # reused until a reconcile succeeds with it again.
+        resource_spec = network_resource_factory().to_spec()
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        mock_api_client.get_group_id.return_value = "new-group-id"
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            result = twingate_resource_access_sync(
+                body="",
+                namespace="default",
+                spec={
+                    "resourceRef": {"name": resource_spec.name},
+                    "principalExternalRef": {"type": "group", "name": "group-name"},
+                },
+                memo=MagicMock(),
+                logger=MagicMock(),
+                patch=SimpleNamespace(spec={}, status={}),
+                status={
+                    "principalId": "old-group-id",
+                    "resourceId": resource_spec.id,
+                    "twingate_resource_access_change": {"success": False},
+                },
+            )
+
+        assert result["success"] is True
+        mock_api_client.get_group_id.assert_called_once_with("group-name")
+        mock_api_client.resource_access_remove.assert_called_once_with(
+            resource_spec.id, "old-group-id"
+        )
 
     def test_skip_reconciler(self):
         with (

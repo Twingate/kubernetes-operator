@@ -20,6 +20,7 @@ K8sObject = MutableMapping[Any, Any]
 
 def get_principal_id(
     access_crd: ResourceAccessSpec,
+    status: dict | None,
     client: TwingateAPIClient,
     owner_namespace: str,
 ) -> str:
@@ -36,6 +37,11 @@ def get_principal_id(
         )
 
     if ref := access_crd.principal_external_ref:
+        # Once `twingate_resource_access_change` ran and we have the principal_id we reuse it
+        # and do not re-query the API.
+        if principal_id := fetched_principal_id(status):
+            return principal_id
+
         if ref.type == PrincipalTypeEnum.Group:
             principal_id = client.get_group_id(ref.name)
         elif ref.type == PrincipalTypeEnum.ServiceAccount:
@@ -63,6 +69,14 @@ def get_recorded_access(status: dict | None) -> dict[str, str | None]:
     }
 
 
+def fetched_principal_id(status: dict | None) -> str | None:
+    handler_values = (status or {}).get(twingate_resource_access_change.__name__) or {}  # type: ignore[attr-defined]
+    if not handler_values.get("success"):
+        return None
+
+    return get_recorded_access(status)["principalId"]
+
+
 def reconcile_resource_access(
     body, namespace, spec, status, memo, logger, patch
 ) -> dict:
@@ -81,7 +95,7 @@ def reconcile_resource_access(
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(access_crd, client, namespace)
+        principal_id = get_principal_id(access_crd, status, client, namespace)
         # Delete before adding so that a failure leaves less access than intended.
         delete_old_access(client, recorded_access, resource_id, principal_id, logger)
         client.resource_access_add(

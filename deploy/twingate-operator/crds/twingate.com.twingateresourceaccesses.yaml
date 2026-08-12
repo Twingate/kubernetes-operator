@@ -131,11 +131,11 @@ spec:
         - name: Resource ID
           type: string
           description: "The ID of the Twingate resource."
-          jsonPath: .status.twingate_resource_access_change.resource_id
+          jsonPath: .status.resourceId
         - name: Principal ID
           type: string
           description: "The ID of the principal (Group/ServiceAccount)."
-          jsonPath: .status.twingate_resource_access_change.principal_id
+          jsonPath: .status.principalId
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp

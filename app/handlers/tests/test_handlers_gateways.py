@@ -425,7 +425,7 @@ class TestGatewayCaIdChanged:
 
         mock_patch_obj.assert_not_called()
 
-    def test_continues_on_non_transient_failure(
+    def test_retries_on_an_unrecognized_failure(
         self,
         mock_get_obj,
         mock_patch_obj,
@@ -433,14 +433,37 @@ class TestGatewayCaIdChanged:
         mock_resolve_service_address,
         mock_resolve_ref_to_twingate_id,
     ):
-        # A non-transient error is logged and swallowed (timer is the backstop),
-        # so the handler does not re-raise and the patch is not persisted.
+        # The CA ID changed because the CA was re-created, so the Gateway is pointing at one
+        # that no longer exists; leaving it for the timer keeps it broken for hours.
         mock_get_obj.return_value = {
             "metadata": {"namespace": "default", "name": "my-gw"},
             "spec": {**_spec(with_id=True)},
         }
         mock_api_client.get_gateway.side_effect = GraphQLMutationError(
             "GetGateway", "boom"
+        )
+
+        with pytest.raises(kopf.TemporaryError, match=r"will retry: GetGateway"):
+            self._call(self._index())
+
+        mock_patch_obj.assert_not_called()
+
+    def test_does_not_retry_a_permanent_error(
+        self,
+        mock_get_obj,
+        mock_patch_obj,
+        mock_api_client,
+        mock_resolve_service_address,
+        mock_resolve_ref_to_twingate_id,
+    ):
+        # Retrying a Gateway whose serviceRef cannot resolve would burn the handler timeout
+        # to reach the same answer.
+        mock_get_obj.return_value = {
+            "metadata": {"namespace": "default", "name": "my-gw"},
+            "spec": {**_spec(with_id=True)},
+        }
+        mock_resolve_service_address.side_effect = kopf.PermanentError(
+            "unsupported type"
         )
 
         self._call(self._index())

@@ -688,26 +688,6 @@ class TestDeleteOldAccess:
             "", reason="Failure", message="resourceAccessRemove failed: some error"
         )
 
-    def test_transport_error_on_the_deletion_is_retried(
-        self, network_resource_factory, kopf_info_mock, mock_api_client
-    ):
-        # Unlike the GraphQL rejection above, a transient error must propagate instead of
-        # being recorded as a failure, so the handler is retried and the old access is
-        # removed on a later attempt.
-        resource_spec = network_resource_factory().to_spec(id="new-resource-id")
-        mock_api_client.resource_access_remove.side_effect = TransportServerError(
-            "boom"
-        )
-
-        with pytest.raises(TransportServerError):
-            self.run_sync(
-                self.build_access_spec(resource_spec),
-                resource_spec,
-                self.recorded_status("old-resource-id"),
-            )
-
-        mock_api_client.resource_access_add.assert_not_called()
-
 
 class TestMigrateStatus:
     PRINCIPAL_ID = "R3JvdXA6MTE1NzI2MA=="

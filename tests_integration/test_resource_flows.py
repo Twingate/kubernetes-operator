@@ -400,7 +400,10 @@ def test_resource_access_reconciled_when_group_id_changes(
         resource_name=unique_resource_name
     )
 
-    with run_kopf(enable_connector_reconciler=False) as runner:
+    # The sync timer is off so re-applying the access can only be the group ID handler's doing.
+    with run_kopf(
+        enable_connector_reconciler=False, enable_resource_access_reconciler=False
+    ) as runner:
         kubectl_create(resource_obj)
         resource = kubectl_wait_object_handler_success(
             "tgr", unique_resource_name, "twingate_resource_create"

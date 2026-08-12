@@ -57,6 +57,14 @@ def get_principal_id(
     raise ValueError("Missing principal_id or principal_external_ref")
 
 
+def fetched_principal_id(status: dict | None) -> str | None:
+    handler_values = (status or {}).get(twingate_resource_access_change.__name__) or {}  # type: ignore[attr-defined]
+    if not handler_values.get("success"):
+        return None
+
+    return get_recorded_access(status)["principalId"]
+
+
 def get_recorded_access(status: dict | None) -> dict[str, str | None]:
     """Return the resource and principal IDs recorded for the access grant."""
     status = status or {}
@@ -67,14 +75,6 @@ def get_recorded_access(status: dict | None) -> dict[str, str | None]:
         "resourceId": status.get("resourceId") or handler_values.get("resource_id"),
         "principalId": status.get("principalId") or handler_values.get("principal_id"),
     }
-
-
-def fetched_principal_id(status: dict | None) -> str | None:
-    handler_values = (status or {}).get(twingate_resource_access_change.__name__) or {}  # type: ignore[attr-defined]
-    if not handler_values.get("success"):
-        return None
-
-    return get_recorded_access(status)["principalId"]
 
 
 def reconcile_resource_access(

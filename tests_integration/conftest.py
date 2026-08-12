@@ -69,6 +69,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
         enable_connector_reconciler=False,
         enable_group_reconciler=False,
         enable_resource_reconciler=False,
+        enable_resource_access_reconciler=True,
         cleanup=True,
     ):
         unload_operator_modules()
@@ -86,6 +87,9 @@ def run_kopf(kopf_runner_args, kopf_settings):
             env["RESOURCE_RECONCILER_INTERVAL"] = "1"
             env["RESOURCE_RECONCILER_INIT_DELAY"] = "1"
             env["RESOURCE_RECONCILER_IDLE"] = "5"
+
+        if not enable_resource_access_reconciler:
+            env["ENABLE_RESOURCE_ACCESS_RECONCILER"] = "false"
 
         with KopfRunner(
             kopf_runner_args,

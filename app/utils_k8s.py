@@ -83,9 +83,9 @@ def k8s_patch_twingate_custom_object(
 ) -> None:
     """Persist a reconcile patch-shim's ``.spec`` / ``.status`` to a Twingate object.
 
-    Lets the cross-resource event handlers drive the shared ``_reconcile_*``
-    functions (which only mutate ``patch.spec`` / ``patch.status``) even though they
-    have no kopf ``patch`` of their own.
+    Lets the cross-resource event handlers drive the shared reconcile functions
+    (which only mutate ``patch.spec`` / ``patch.status``) even though they have no
+    kopf ``patch`` of their own.
     """
     body = {
         key: value

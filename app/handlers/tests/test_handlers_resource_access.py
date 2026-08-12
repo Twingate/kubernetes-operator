@@ -41,7 +41,7 @@ class TestGetPrincipalId:
         access_crd = MagicMock()
         access_crd.principal_id = "R3JvdXA6MTE1NzI2MA=="
         assert (
-            get_principal_id(access_crd, None, MagicMock(), "default")
+            get_principal_id(access_crd, MagicMock(), "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -53,14 +53,14 @@ class TestGetPrincipalId:
         with pytest.raises(
             ValueError, match=r"Missing principal_id or principal_external_ref"
         ):
-            get_principal_id(access_crd, None, MagicMock(), "default")
+            get_principal_id(access_crd, MagicMock(), "default")
 
     def test_id_from_group_ref_object(self):
         access_crd = MagicMock()
         access_crd.principal_id = None
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": "group-id"}}
-        assert get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
+        assert get_principal_id(access_crd, MagicMock(), "default") == "group-id"
 
     def test_id_from_group_ref_object_not_ready_raises_temoraryerror(self):
         access_crd = MagicMock()
@@ -68,9 +68,7 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": None}}
         with pytest.raises(kopf.TemporaryError):
-            assert (
-                get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
-            )
+            assert get_principal_id(access_crd, MagicMock(), "default") == "group-id"
 
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
@@ -83,7 +81,7 @@ class TestGetPrincipalId:
         mock_api_client.get_group_id.return_value = "R3JvdXA6MTE1NzI2MA=="
 
         assert (
-            get_principal_id(access_crd, None, mock_api_client, "default")
+            get_principal_id(access_crd, mock_api_client, "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -98,7 +96,7 @@ class TestGetPrincipalId:
         mock_api_client.get_service_account_id.return_value = "R3JvdXA6MTE1NzI2MA=="
 
         assert (
-            get_principal_id(access_crd, None, mock_api_client, "default")
+            get_principal_id(access_crd, mock_api_client, "default")
             == "R3JvdXA6MTE1NzI2MA=="
         )
 
@@ -115,7 +113,7 @@ class TestGetPrincipalId:
         with pytest.raises(
             ValueError, match=r"Principal serviceAccount sa-name not found"
         ):
-            get_principal_id(access_crd, None, mock_api_client, "default")
+            get_principal_id(access_crd, mock_api_client, "default")
 
     def test_from_external_ref_invalid_type_returns_none(self, mock_api_client):
         access_crd = MagicMock()
@@ -126,21 +124,7 @@ class TestGetPrincipalId:
         access_crd.principal_external_ref.name = "sa-name"
 
         with pytest.raises(ValueError, match=r"Unknown principal type: invalid"):
-            get_principal_id(access_crd, None, mock_api_client, "default")
-
-    def test_from_external_ref_uses_recorded_principal_id(self):
-        access_crd = MagicMock()
-        access_crd.principal_id = None
-        access_crd.get_group_ref_object.return_value = None
-        access_crd.principal_external_ref = MagicMock()
-        access_crd.principal_external_ref.type = "invalid"
-        access_crd.principal_external_ref.name = "sa-name"
-
-        expected = "R3JvdXA6MTE1NzI2MA=="
-        principal_id = get_principal_id(
-            access_crd, expected, mock_api_client, "default"
-        )
-        assert principal_id == expected
+            get_principal_id(access_crd, mock_api_client, "default")
 
 
 class TestResourceAccessChangeHandler:

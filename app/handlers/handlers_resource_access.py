@@ -20,7 +20,6 @@ K8sObject = MutableMapping[Any, Any]
 
 def get_principal_id(
     access_crd: ResourceAccessSpec,
-    recorded_principal_id: str | None,
     client: TwingateAPIClient,
     owner_namespace: str,
 ) -> str:
@@ -37,10 +36,6 @@ def get_principal_id(
         )
 
     if ref := access_crd.principal_external_ref:
-        # Reuse the ID an earlier reconcile recorded instead of resolving the name again.
-        if recorded_principal_id:
-            return recorded_principal_id
-
         if ref.type == PrincipalTypeEnum.Group:
             principal_id = client.get_group_id(ref.name)
         elif ref.type == PrincipalTypeEnum.ServiceAccount:
@@ -86,9 +81,7 @@ def reconcile_resource_access(
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(
-            access_crd, recorded_access["principalId"], client, namespace
-        )
+        principal_id = get_principal_id(access_crd, client, namespace)
         # Delete before adding so that a failure leaves less access than intended.
         delete_old_access(client, recorded_access, resource_id, principal_id, logger)
         client.resource_access_add(

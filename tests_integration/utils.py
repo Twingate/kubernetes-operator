@@ -230,9 +230,15 @@ def kubectl_wait_object(
 ) -> dict:
     """Poll an object until ``predicate(obj)`` is truthy, then return it."""
     retry = 0
-    obj = kubectl_wait_to_exist(resource_type, resource_name, max_retries=max_retries)
     while True:
-        if predicate(obj):
+        try:
+            obj = kubectl_get(resource_type, resource_name)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            # Tolerate the object being absent: it may not exist yet, and an operator
+            # that recreates an object deletes it first, so it is briefly missing.
+            obj = None
+
+        if obj is not None and predicate(obj):
             return obj
 
         retry += 1
@@ -241,4 +247,3 @@ def kubectl_wait_object(
                 f"{resource_type}/{resource_name} did not reach {description}"
             )
         time.sleep(sleep_time)
-        obj = kubectl_get(resource_type, resource_name)

@@ -344,12 +344,27 @@ def reconcile_access_refs(
             )
             retry_exc = err
             continue
-        except Exception:
+        except kopf.PermanentError:
             logger.exception(
                 "Failed to reconcile resource access %s/%s after %s ID change",
                 ra_namespace,
                 ra_name,
                 trigger,
+            )
+            continue
+        except Exception as err:
+            # Unknown failures are retried too: a failure part-way through leaves the
+            # binding without the access it already revoked.
+            logger.exception(
+                "Failed to reconcile resource access %s/%s after %s ID change, will retry",
+                ra_namespace,
+                ra_name,
+                trigger,
+            )
+            retry_exc = kopf.TemporaryError(
+                f"Reconciling resource access {ra_namespace}/{ra_name} after the {trigger} "
+                f"ID change failed, will retry: {err}",
+                delay=15,
             )
             continue
 

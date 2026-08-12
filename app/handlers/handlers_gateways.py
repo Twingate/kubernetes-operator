@@ -228,12 +228,25 @@ def twingate_ca_id_changed(
             )
             retry_exc = err
             continue
-        except Exception:
-            # Non-transient: log and let the Gateway timer be the backstop.
+        except kopf.PermanentError:
             logger.exception(
                 "Failed to reconcile gateway %s/%s after CA change",
                 gw_namespace,
                 gw_name,
+            )
+            continue
+        except Exception as err:
+            # Unknown failures are retried too: the CA ID only changes on re-creation, so
+            # the Gateway is still pointing at a CA that no longer exists.
+            logger.exception(
+                "Failed to reconcile gateway %s/%s after CA change, will retry",
+                gw_namespace,
+                gw_name,
+            )
+            retry_exc = kopf.TemporaryError(
+                f"Reconciling gateway {gw_namespace}/{gw_name} after the certificate "
+                f"authority {name} ID change failed, will retry: {err}",
+                delay=15,
             )
             continue
 

@@ -1027,12 +1027,25 @@ class TestResourceIdChanged:
         mock_reconcile.assert_not_called()
         mock_patch_obj.assert_not_called()
 
-    def test_continues_on_non_transient_failure(
+    def test_retries_on_an_unrecognized_failure(
         self, mock_reconcile, mock_get_obj, mock_patch_obj
     ):
-        # Swallowed; the resource access timer is the backstop.
+        # A transport error lands here rather than in the TemporaryError branch, and the old
+        # access may already be revoked, so waiting for the sync timer is not good enough.
         mock_get_obj.side_effect = make_access_obj
-        mock_reconcile.side_effect = RuntimeError("boom")
+        mock_reconcile.side_effect = TransportServerError("boom")
+
+        with pytest.raises(kopf.TemporaryError, match=r"will retry: boom"):
+            self.call_handler(self.build_index())
+
+        mock_patch_obj.assert_not_called()
+
+    def test_does_not_retry_a_permanent_error(
+        self, mock_reconcile, mock_get_obj, mock_patch_obj
+    ):
+        # Retrying would burn the handler timeout to reach the same answer.
+        mock_get_obj.side_effect = make_access_obj
+        mock_reconcile.side_effect = kopf.PermanentError("nope")
 
         self.call_handler(self.build_index())
 

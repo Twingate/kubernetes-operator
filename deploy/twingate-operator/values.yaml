@@ -145,6 +145,14 @@ priorityClassName: ""
 #   - name: FOO
 #     value: "bar"
 #
+# The operator relaxes ssl.VERIFY_X509_STRICT on connections to the Kubernetes
+# API server, because Amazon EKS cluster CAs have no Authority Key Identifier
+# and Python 3.13+ rejects them. Certificate chain, expiry and hostname
+# verification are unaffected. On a cluster with an RFC 5280 compliant CA you
+# can keep the strict Python default with:
+#   - name: TWINGATE_STRICT_X509_VERIFICATION
+#     value: "true"
+#
 extraEnvVars: []
 
 

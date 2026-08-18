@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from app.handlers import *  # noqa: F403
 from app.settings import TwingateOperatorSettings
+from app.ssl_compat import apply_x509_strict_workaround
 
 
 class TwingateSmartProgressStorage(kopf.SmartProgressStorage):
@@ -31,6 +32,10 @@ def startup(
     **kwargs,
 ):
     logger.info("Operator is starting up...")
+
+    # Must run before kopf authenticates: Python 3.13+ rejects the EKS cluster CA
+    # for lacking an Authority Key Identifier (see app/ssl_compat.py).
+    apply_x509_strict_workaround(logger=logger)
 
     # Fixes issue where operator stops detecting changes (see https://github.com/nolar/kopf/issues/1120)
     settings.watching.connect_timeout = 60

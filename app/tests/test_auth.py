@@ -15,12 +15,14 @@ from app.auth import (
 
 
 def test_non_strict_connection_info_clears_only_the_strict_flag():
-    info = NonStrictX509ConnectionInfo(server="https://localhost")
+    baseline = kopf.ConnectionInfo(server="https://localhost").as_ssl_context()
 
-    context = info.as_ssl_context()
+    context = NonStrictX509ConnectionInfo(server="https://localhost").as_ssl_context()
 
     assert not context.verify_flags & ssl.VERIFY_X509_STRICT
-    assert context.verify_flags & ssl.VERIFY_X509_PARTIAL_CHAIN
+    # Guard against over-clearing: only the strict bit may go — intermediate-CA
+    # trust, certificate validation, and hostname checks must stay enforced.
+    assert context.verify_flags == baseline.verify_flags & ~ssl.VERIFY_X509_STRICT
     assert context.verify_mode == ssl.CERT_REQUIRED
     assert context.check_hostname is True
 

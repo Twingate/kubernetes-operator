@@ -64,12 +64,16 @@ jobs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .venv
-        key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-
 
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/pre-commit/
-        key: pre-commit-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        key: pre-commit-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        restore-keys: |
+          pre-commit-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-
 
     - run: make dev-deps
     - run: make check-pre-commit skip=shellcheck,markdownlint,no-commit-to-branch
@@ -125,7 +129,9 @@ jobs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .venv
-        key: poetry-dev-deps-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-dev-deps-${{ github.job }}-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-poetry${{ env.POETRY_VERSION }}-
 
     - run: make dev-deps
     - run: ./scripts/minikube-smoketests.sh

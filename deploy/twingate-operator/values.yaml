@@ -151,8 +151,8 @@ priorityClassName: ""
 # (https://github.com/Twingate/kubernetes-operator/issues/1128). Opt out of
 # the strict check:
 # extraEnvVars:
-#   - name: TWINGATE_STRICT_X509_VERIFICATION
-#     value: "false"
+#   - name: TWINGATE_K8S_API_SERVER_STRICT_X509_VERIFICATION_DISABLED
+#     value: "true"
 #
 extraEnvVars: []
 

@@ -7,7 +7,7 @@ import kopf
 import pytest
 
 from app.auth import (
-    STRICT_X509_VERIFICATION_ENV,
+    K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV,
     NonStrictX509ConnectionInfo,
     is_strict_x509_verification_disabled,
     login_without_strict_x509,
@@ -29,13 +29,13 @@ def test_non_strict_connection_info_clears_only_the_strict_flag():
 
 @pytest.mark.parametrize(
     ("value", "expected"),
-    [(None, False), ("true", False), ("false", True), ("not-a-bool", False)],
+    [(None, False), ("true", True), ("false", False), ("not-a-bool", False)],
 )
 def test_is_strict_x509_verification_disabled(monkeypatch, value, expected):
     if value is None:
-        monkeypatch.delenv(STRICT_X509_VERIFICATION_ENV, raising=False)
+        monkeypatch.delenv(K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV, raising=False)
     else:
-        monkeypatch.setenv(STRICT_X509_VERIFICATION_ENV, value)
+        monkeypatch.setenv(K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV, value)
 
     assert is_strict_x509_verification_disabled() == expected
 

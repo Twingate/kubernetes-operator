@@ -19,8 +19,7 @@ def test_non_strict_connection_info_clears_only_the_strict_flag():
 
     context = NonStrictX509ConnectionInfo(server="https://localhost").as_ssl_context()
 
-    assert not context.verify_flags & ssl.VERIFY_X509_STRICT
-    # Guard against over-clearing: only the strict bit may go — intermediate-CA
+    # Guard against over-clearing: only the strict bit may go, while the intermediate-CA
     # trust, certificate validation, and hostname checks must stay enforced.
     assert context.verify_flags == baseline.verify_flags & ~ssl.VERIFY_X509_STRICT
     assert context.verify_mode == ssl.CERT_REQUIRED

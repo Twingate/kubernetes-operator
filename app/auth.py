@@ -51,7 +51,7 @@ def login_without_strict_x509(
         return None
 
     logger.warning(
-        "%s=false: strict X.509 verification (RFC 5280) is disabled for the "
+        "%s=true: strict X.509 verification (RFC 5280) is disabled for the "
         "Kubernetes API connection.",
         K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV,
     )

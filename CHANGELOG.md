@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.3.1 (2026-08-24)
+
+### Bug Fixes
+
+- Relax `ssl.VERIFY_X509_STRICT` so the operator can reach the API server on EKS
+  ([#1134](https://github.com/Twingate/kubernetes-operator/pull/1134),
+  [`fe574b3`](https://github.com/Twingate/kubernetes-operator/commit/fe574b3c2f1405e7bca7240b5e0063f1e858029e))
+
+
 ## v1.3.0 (2026-07-30)
 
 ### Features

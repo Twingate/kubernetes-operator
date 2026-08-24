@@ -76,7 +76,6 @@ jobs:
           installer-parallel: true
 
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
-      - uses: chrisdickinson/setup-yq@3d931309f27270ebbafd53f2daee773a82ea1822 # v1.0.1
 
       - name: Set env vars
         run: |

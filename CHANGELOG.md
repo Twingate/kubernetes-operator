@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v2.0.1 (2026-08-24)
+
+### Bug Fixes
+
+- Relax `ssl.VERIFY_X509_STRICT` so the operator can reach the API server on EKS
+  ([#1134](https://github.com/Twingate/kubernetes-operator/pull/1134),
+  [`2f7444b`](https://github.com/Twingate/kubernetes-operator/commit/2f7444b053b22c4e7b23f2430446068cb7eec793))
+
+### Chores
+
+- Bump docker/setup-buildx-action from 4.2.0 to 4.3.0
+  ([#1133](https://github.com/Twingate/kubernetes-operator/pull/1133),
+  [`8eddac2`](https://github.com/Twingate/kubernetes-operator/commit/8eddac286be1147d12224fa668ae856b6cb9c765))
+
+- Bump mypy from 2.3.0 to 2.3.1 ([#1131](https://github.com/Twingate/kubernetes-operator/pull/1131),
+  [`90b4ca7`](https://github.com/Twingate/kubernetes-operator/commit/90b4ca7d07072d6f97fd238aec55a54e44820501))
+
+- Bump orjson from 3.11.9 to 3.12.0
+  ([#1132](https://github.com/Twingate/kubernetes-operator/pull/1132),
+  [`ea1a63d`](https://github.com/Twingate/kubernetes-operator/commit/ea1a63d39dff184878f09af5393a0833271863fd))
+
+- Bump pre-commit from 4.6.1 to 4.6.2
+  ([#1126](https://github.com/Twingate/kubernetes-operator/pull/1126),
+  [`337b3d7`](https://github.com/Twingate/kubernetes-operator/commit/337b3d782df1c42ca782d29734b1436d4ea79ba6))
+
+- Bump ruff from 0.16.2 to 0.16.3
+  ([#1127](https://github.com/Twingate/kubernetes-operator/pull/1127),
+  [`82f7be7`](https://github.com/Twingate/kubernetes-operator/commit/82f7be7bb7e759d8cd0a45377590b85f4f2a53ad))
+
+- Bump ruff from 0.16.3 to 0.16.4
+  ([#1135](https://github.com/Twingate/kubernetes-operator/pull/1135),
+  [`427a0df`](https://github.com/Twingate/kubernetes-operator/commit/427a0dfb8e92171322700a0b91bbd28404115c74))
+
+- Bump types-pyyaml from 6.0.12.20260724 to 6.0.12.20260815
+  ([#1130](https://github.com/Twingate/kubernetes-operator/pull/1130),
+  [`21cb935`](https://github.com/Twingate/kubernetes-operator/commit/21cb9351579a8bb4580e13bec509a8009b416a34))
+
+
 ## v2.0.0 (2026-08-12)
 
 ### Bug Fixes

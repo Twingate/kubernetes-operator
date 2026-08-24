@@ -54,6 +54,8 @@
 - Use unique CA names in integration tests
   ([#1106](https://github.com/Twingate/kubernetes-operator/pull/1106),
   [`ceb02fd`](https://github.com/Twingate/kubernetes-operator/commit/ceb02fd91baa605eae6120a1ae1640a93dba8c39))
+
+
 ## v1.3.1 (2026-08-24)
 
 ### Bug Fixes

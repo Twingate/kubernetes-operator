@@ -55,6 +55,29 @@
   ([#1106](https://github.com/Twingate/kubernetes-operator/pull/1106),
   [`ceb02fd`](https://github.com/Twingate/kubernetes-operator/commit/ceb02fd91baa605eae6120a1ae1640a93dba8c39))
 
+
+## v1.3.1 (2026-08-24)
+
+### Bug Fixes
+
+- Relax `ssl.VERIFY_X509_STRICT` so the operator can reach the API server on EKS
+  ([#1134](https://github.com/Twingate/kubernetes-operator/pull/1134),
+  [`fe574b3`](https://github.com/Twingate/kubernetes-operator/commit/fe574b3c2f1405e7bca7240b5e0063f1e858029e))
+
+
+## v1.3.0 (2026-07-30)
+
+### Features
+
+- Keep the Kubernetes Resource when the Service annotation is removed
+  ([`92dc59c`](https://github.com/Twingate/kubernetes-operator/commit/92dc59cf97478c074b18c7415d753410d5d5166f))
+
+- Let Helm adopt the generated Kubernetes Resource
+  ([`bdf69f2`](https://github.com/Twingate/kubernetes-operator/commit/bdf69f24a556d398126c789d01b8d1e16c0cb2e5))
+
+
+## v1.2.0 (2026-07-27)
+
 ### Chores
 
 - Bump actions/cache from 5.0.5 to 6.0.0

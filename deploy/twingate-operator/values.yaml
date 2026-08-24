@@ -145,6 +145,15 @@ priorityClassName: ""
 #   - name: FOO
 #     value: "bar"
 #
+# On EKS clusters created before Kubernetes 1.17, the cluster CA lacks the
+# RFC 5280 extensions that Python 3.13+ requires by default, so the operator
+# cannot connect to the Kubernetes API server
+# (https://github.com/Twingate/kubernetes-operator/issues/1128). Opt out of
+# the strict check:
+# extraEnvVars:
+#   - name: TWINGATE_DISABLE_API_SERVER_STRICT_X509_VERIFICATION
+#     value: "true"
+#
 extraEnvVars: []
 
 

@@ -4,8 +4,15 @@ from typing import Any
 import kopf
 from pydantic import ValidationError
 
+from app.auth import (
+    is_strict_x509_verification_disabled,
+    login_without_strict_x509,
+)
 from app.handlers import *  # noqa: F403
 from app.settings import TwingateOperatorSettings
+
+if is_strict_x509_verification_disabled():
+    kopf.on.login()(login_without_strict_x509)
 
 
 class TwingateSmartProgressStorage(kopf.SmartProgressStorage):

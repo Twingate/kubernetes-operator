@@ -9,20 +9,14 @@ updates:
     commit-message:
       prefix: "chore: "
     groups:
-      # Collapse the dev toolchain into a single PR. Runtime dependencies are
-      # deliberately left ungrouped so they stay individually reviewable.
+      # Every dependency in a non-main Poetry group (i.e. `tool.poetry.group.*`)
+      # is classified as `development` by Dependabot, so this matches the dev
+      # toolchain by construction rather than by name, and picks up new dev deps
+      # automatically. Runtime deps in `[tool.poetry.dependencies]` are
+      # classified `production` and stay ungrouped so they remain individually
+      # reviewable.
       dev-dependencies:
-        patterns:
-          - "bandit"
-          - "factory-boy"
-          - "mypy"
-          - "pre-commit"
-          - "pytest*"
-          - "pyupgrade"
-          - "responses"
-          - "ruff"
-          - "syrupy"
-          - "types-*"
+        dependency-type: development
 
   - package-ecosystem: pre-commit
     directory: "/"

@@ -17,6 +17,16 @@ from app.utils_k8s import (
 
 K8sObject = MutableMapping[Any, Any]
 
+# Bound the principal lookup so a binding pointing at a principal that cannot be resolved
+# stops re-querying the API forever. The attempts are counted by Kopf per cause, so the
+# budget resets whenever the object's spec changes.
+PRINCIPAL_LOOKUP_MAX_ATTEMPTS = int(os.environ.get("PRINCIPAL_LOOKUP_MAX_ATTEMPTS", 3))
+PRINCIPAL_LOOKUP_RETRY_DELAY = int(os.environ.get("PRINCIPAL_LOOKUP_RETRY_DELAY", 15))
+
+
+class PrincipalLookupError(ValueError):
+    """The access grant's principal could not be resolved (yet)."""
+
 
 def get_principal_id(
     access_crd: ResourceAccessSpec,
@@ -32,9 +42,7 @@ def get_principal_id(
         if group_id := group_spec.get("id"):
             return group_id
 
-        raise kopf.TemporaryError(
-            "TwingateGroup object doesn't have an id yet. retrying...", delay=15
-        )
+        raise PrincipalLookupError("TwingateGroup object doesn't have an id yet.")
 
     if ref := access_crd.principal_external_ref:
         # Once `twingate_resource_access_change` ran and we have the principal_id we reuse it
@@ -47,14 +55,14 @@ def get_principal_id(
         elif ref.type == PrincipalTypeEnum.ServiceAccount:
             principal_id = client.get_service_account_id(ref.name)
         else:
-            raise ValueError(f"Unknown principal type: {ref.type}")
+            raise PrincipalLookupError(f"Unknown principal type: {ref.type}")
 
         if not principal_id:
-            raise ValueError(f"Principal {ref.type} {ref.name} not found.")
+            raise PrincipalLookupError(f"Principal {ref.type} {ref.name} not found.")
 
         return principal_id
 
-    raise ValueError("Missing principal_id or principal_external_ref")
+    raise PrincipalLookupError("Missing principal_id or principal_external_ref")
 
 
 def fetched_principal_id(status: dict | None) -> str | None:
@@ -63,6 +71,11 @@ def fetched_principal_id(status: dict | None) -> str | None:
         return None
 
     return get_recorded_access(status)["principalId"]
+
+
+def principal_lookup_failure(status: dict | None) -> dict | None:
+    """Return the give-up recorded for the current spec, if the lookup budget ran out."""
+    return (status or {}).get("principalLookupFailure")
 
 
 def get_recorded_access(status: dict | None) -> dict[str, str | None]:
@@ -77,8 +90,42 @@ def get_recorded_access(status: dict | None) -> dict[str, str | None]:
     }
 
 
+def resolve_principal_id(
+    access_crd: ResourceAccessSpec,
+    status: dict | None,
+    client: TwingateAPIClient,
+    owner_namespace: str,
+    body,
+    patch,
+    retry: int,
+) -> str:
+    """Resolve the principal, giving up for good after ``PRINCIPAL_LOOKUP_MAX_ATTEMPTS``."""
+    try:
+        return get_principal_id(access_crd, status, client, owner_namespace)
+    except PrincipalLookupError as err:
+        attempts = retry + 1
+        if attempts < PRINCIPAL_LOOKUP_MAX_ATTEMPTS:
+            raise kopf.TemporaryError(
+                f"{err} Retrying (attempt {attempts}/{PRINCIPAL_LOOKUP_MAX_ATTEMPTS}).",
+                delay=PRINCIPAL_LOOKUP_RETRY_DELAY,
+            ) from err
+
+        # Recorded so the sync timer, which starts each tick with a fresh attempt count,
+        # does not pick the same doomed lookup back up.
+        patch.status["principalLookupFailure"] = {
+            "attempts": attempts,
+            "error": str(err),
+        }
+        message = (
+            f"{err} Gave up after {attempts} attempts; "
+            "retrying only when the spec changes."
+        )
+        kopf.warn(body, reason="PrincipalLookupFailed", message=message)
+        raise kopf.PermanentError(message) from err
+
+
 def reconcile_resource_access(
-    body, namespace, spec, status, memo, logger, patch
+    body, namespace, spec, status, memo, logger, patch, retry=0
 ) -> dict:
     recorded_access = get_recorded_access(status)
 
@@ -95,7 +142,9 @@ def reconcile_resource_access(
     resource_id = resource_crd.spec.id
     try:
         client = TwingateAPIClient(memo.twingate_settings, logger=logger)
-        principal_id = get_principal_id(access_crd, status, client, namespace)
+        principal_id = resolve_principal_id(
+            access_crd, status, client, namespace, body, patch, retry
+        )
         # Delete before adding so that a failure leaves less access than intended.
         delete_old_access(client, recorded_access, resource_id, principal_id, logger)
         client.resource_access_add(
@@ -111,6 +160,7 @@ def reconcile_resource_access(
         # earlier in the status so the next reconcile still takes it away.
         patch.status["resourceId"] = resource_id
         patch.status["principalId"] = principal_id
+        patch.status["principalLookupFailure"] = None
 
         kopf.info(
             body,
@@ -147,10 +197,12 @@ def delete_old_access(
 @kopf.on.create("twingateresourceaccess")
 @kopf.on.update("twingateresourceaccess", field="spec")
 def twingate_resource_access_change(
-    body, namespace, spec, memo, logger, status, patch, **kwargs
+    body, namespace, spec, memo, logger, status, patch, retry=0, **kwargs
 ):
     logger.info("Got a TwingateResourceAccess create request: %s", spec)
-    return reconcile_resource_access(body, namespace, spec, status, memo, logger, patch)
+    return reconcile_resource_access(
+        body, namespace, spec, status, memo, logger, patch, retry
+    )
 
 
 def get_unmigrated_recorded_ids(status: dict | None) -> dict[str, str]:
@@ -191,7 +243,7 @@ ENABLE_RESOURCE_ACCESS_RECONCILER = os.environ.get(
     idle=60,
 )
 def twingate_resource_access_sync(
-    body, namespace, spec, memo, logger, patch, status, **kwargs
+    body, namespace, spec, memo, logger, patch, status, retry=0, **kwargs
 ):
     # Allow the reconciler to be temporarily disabled because tenants with large numbers of
     # resource access CRD objects can generate many write operations and get throttled. We currently
@@ -199,7 +251,20 @@ def twingate_resource_access_sync(
     if not to_bool(ENABLE_RESOURCE_ACCESS_RECONCILER):
         return None
 
-    return reconcile_resource_access(body, namespace, spec, status, memo, logger, patch)
+    # `twingate_resource_access_change` already exhausted the lookup budget for this spec.
+    # Reconciling here would only repeat the failed lookup on every tick, forever.
+    if failure := principal_lookup_failure(status):
+        logger.warning(
+            "Skipping sync: the principal lookup was given up after %s attempts (%s). "
+            "It is retried when the spec changes.",
+            failure["attempts"],
+            failure["error"],
+        )
+        return None
+
+    return reconcile_resource_access(
+        body, namespace, spec, status, memo, logger, patch, retry
+    )
 
 
 @kopf.on.delete("twingateresourceaccess")

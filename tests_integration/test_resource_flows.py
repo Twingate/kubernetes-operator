@@ -1,4 +1,5 @@
 import os
+import time
 from unittest.mock import ANY
 
 import pytest
@@ -10,6 +11,7 @@ from tests_integration.utils import (
     kubectl_apply,
     kubectl_create,
     kubectl_delete_wait,
+    kubectl_get,
     kubectl_patch,
     kubectl_wait_object,
     kubectl_wait_object_handler_success,
@@ -513,6 +515,101 @@ def test_recorded_access_migrated_from_an_earlier_operator_version(
 
     logs = load_stdout(runner.output)
     assert_log_message_contains(logs, "Migrated the recorded access IDs")
+
+
+# The sync timer's idle/initial delays are both 60s, so this is how long the test has to
+# wait to prove the timer saw the object and declined to retry the lookup.
+SYNC_TIMER_WINDOW = 75
+
+
+def test_resource_access_stops_retrying_a_missing_principal(
+    run_kopf, unique_resource_name
+):
+    """A principal that cannot be resolved is retried 3 times, then left until the spec changes."""
+    assert "TWINGATE_TEST_PRINCIPAL_ID" in os.environ
+    principal_id = os.environ["TWINGATE_TEST_PRINCIPAL_ID"]
+    missing_group = f"no-such-group-{unique_resource_name}"
+
+    resource_obj = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My K8S Resource
+          address: my.default.cluster.local
+    """
+
+    access_obj = ACCESS_OBJECTS["OBJ_ACCESS_BY_PRINCIPAL_NAME_GROUP"].format(
+        resource_name=unique_resource_name, principal_name=missing_group
+    )
+
+    # The sync timer is left on its default schedule so the test proves it stands down;
+    # only the retry delay is shortened so the 3 attempts do not take 30 seconds.
+    with run_kopf(extra_env={"PRINCIPAL_LOOKUP_RETRY_DELAY": "2"}) as runner:
+        kubectl_create(resource_obj)
+        resource = kubectl_wait_object_handler_success("tgr", unique_resource_name, "twingate_resource_create")  # fmt: skip
+        assert resource["spec"]["id"] is not None
+
+        kubectl_create(access_obj)
+        access = kubectl_wait_object(
+            "tacc",
+            unique_resource_name,
+            lambda obj: access_status(obj).get("principalLookupFailure") is not None,
+            description="a recorded principal-lookup give-up",
+        )
+        failure = access_status(access)["principalLookupFailure"]
+        assert failure["attempts"] == 3
+        assert missing_group in failure["error"]
+        assert "principalId" not in access_status(access)
+
+        # Nothing retries the lookup while the spec is unchanged - not even the sync timer.
+        time.sleep(SYNC_TIMER_WINDOW)
+        access = kubectl_get("tacc", unique_resource_name)
+        assert access_status(access)["principalLookupFailure"] == failure
+        assert "principalId" not in access_status(access)
+
+        # Changing the spec starts a new attempt budget. Patched rather than re-applied so
+        # `principalExternalRef` is actually removed - the CRD rejects it next to a principalId.
+        kubectl_patch(
+            f"tacc/{unique_resource_name}",
+            {
+                "spec": {
+                    "principalExternalRef": None,
+                    "principalId": principal_id,
+                }
+            },
+        )
+        # Polled on the recorded ID rather than the handler result: kopf suffixes the
+        # field-filtered update handler's id, so its result lands under
+        # `twingate_resource_access_change/spec`.
+        access = kubectl_wait_object(
+            "tacc",
+            unique_resource_name,
+            lambda obj: access_status(obj).get("principalId") == principal_id,
+            description=f"principalId {principal_id}",
+        )
+        assert "principalLookupFailure" not in access_status(access)
+
+        kubectl_delete_wait("tacc", unique_resource_name)
+        kubectl_delete_wait("tgr", unique_resource_name)
+
+    logs = load_stdout(runner.output)
+
+    # The group name only ever reaches the API as a GraphQL variable, so the outgoing
+    # queries are an exact count of how often the doomed lookup was attempted.
+    lookups = [
+        log
+        for log in logs
+        if log["message"].startswith(">>>") and missing_group in log["message"]
+    ]
+    assert len(lookups) == 3, f"expected 3 API lookups, got {len(lookups)}"
+
+    assert_log_message_contains(logs, "Retrying (attempt 1/3)")
+    assert_log_message_contains(logs, "Retrying (attempt 2/3)")
+    assert_log_message_contains(logs, "Gave up after 3 attempts")
+    # The sync timer ticked during the sleep above and declined to retry the lookup.
+    assert_log_message_contains(logs, "Skipping sync")
 
 
 def access_status(access_object: dict) -> dict:

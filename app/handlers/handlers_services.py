@@ -35,8 +35,8 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
 GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
-UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
 DOWNSTREAM_TLS_ANNOTATION = "resource.twingate.com/downstreamTLS"
+UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
 UPSTREAM_TLS_ANNOTATION = "resource.twingate.com/upstreamTLS"
 REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 

@@ -8,24 +8,54 @@ updates:
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore: "
-  - package-ecosystem: docker
+    groups:
+      # Collapse the dev toolchain into a single PR. Runtime dependencies are
+      # deliberately left ungrouped so they stay individually reviewable.
+      dev-dependencies:
+        patterns:
+          - "bandit"
+          - "factory-boy"
+          - "mypy"
+          - "pre-commit"
+          - "pytest*"
+          - "pyupgrade"
+          - "responses"
+          - "ruff"
+          - "syrupy"
+          - "types-*"
+
+  - package-ecosystem: pre-commit
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: weekly
       time: "13:00"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore: "
+
   - package-ecosystem: helm
     directory: "deploy/twingate-operator"
     schedule:
       interval: daily
       time: "13:00"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore: "
     cooldown:
       exclude:
         - gateway
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: daily
+      time: "13:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore: "
+
+# NOTE: There is deliberately no `docker` entry. The Dockerfile builds from
+# `python:${PYTHON_VERSION}-slim`, and Dependabot's Docker parser does not
+# substitute ARG values into FROM lines (dependabot-core#4597), so the entry
+# never resolved a dependency and produced zero PRs. The Python version is
+# pinned in `.tool-versions` and mirrored into the CI workflows instead.

@@ -628,11 +628,13 @@ def test_web_app_resource_rejects_non_boolean_tls(unique_resource_name):
                 tls: "not-a-boolean"
               upstream:
                 port: 8080
+                tls: "not-a-boolean"
             """
         )
 
     stderr = ex.value.stderr.decode()
     assert "spec.downstream.tls" in stderr
+    assert "spec.upstream.tls" in stderr
 
 
 def test_web_app_resource_with_request_header_rewrites_accepted(unique_resource_name):

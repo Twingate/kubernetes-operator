@@ -558,8 +558,8 @@ def test_service_flows_resource_type_change(run_kopf, random_name_generator):
                 "namespace": "default",
             }
             # Both ports default to the Service's single TCP port.
-            assert tgr["spec"]["downstream"] == {"port": 8080}
-            assert tgr["spec"]["upstream"] == {"port": 8080}
+            assert tgr["spec"]["downstream"] == {"port": 8080, "tls": False}
+            assert tgr["spec"]["upstream"] == {"port": 8080, "tls": False}
             assert "protocols" not in tgr["spec"]
             web_app_resource_id = tgr["spec"]["id"]
 

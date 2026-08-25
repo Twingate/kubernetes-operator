@@ -27,7 +27,7 @@ updates:
   - package-ecosystem: pre-commit
     directory: "/"
     schedule:
-      interval: weekly
+      interval: daily
       time: "13:00"
     open-pull-requests-limit: 5
     commit-message:
@@ -53,9 +53,3 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore: "
-
-# NOTE: There is deliberately no `docker` entry. The Dockerfile builds from
-# `python:${PYTHON_VERSION}-slim`, and Dependabot's Docker parser does not
-# substitute ARG values into FROM lines (dependabot-core#4597), so the entry
-# never resolved a dependency and produced zero PRs. The Python version is
-# pinned in `.tool-versions` and mirrored into the CI workflows instead.

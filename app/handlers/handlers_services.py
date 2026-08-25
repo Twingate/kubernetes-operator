@@ -36,6 +36,8 @@ GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
 UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
+DOWNSTREAM_TLS_ANNOTATION = "resource.twingate.com/downstreamTLS"
+UPSTREAM_TLS_ANNOTATION = "resource.twingate.com/upstreamTLS"
 REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 
 
@@ -123,6 +125,13 @@ def web_app_spec(service_body: Body, namespace: str) -> dict:
         "upstream": {"port": upstream},
     }
 
+    for key, annotation in (
+        ("downstream", DOWNSTREAM_TLS_ANNOTATION),
+        ("upstream", UPSTREAM_TLS_ANNOTATION),
+    ):
+        if tls := meta.annotations.get(annotation):
+            result[key]["tls"] = parse_bool_annotation(annotation, tls)
+
     if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
         invalid_msg = (
             f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
@@ -180,6 +189,15 @@ def parse_port_annotation(annotation: str, value: str) -> int:
     except ValueError:
         raise kopf.PermanentError(
             f"{annotation} annotation must be an integer."
+        ) from None
+
+
+def parse_bool_annotation(annotation: str, value: str) -> bool:
+    try:
+        return to_bool(value)
+    except ValueError:
+        raise kopf.PermanentError(
+            f"{annotation} annotation must be a boolean."
         ) from None
 
 

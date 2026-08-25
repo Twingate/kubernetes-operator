@@ -365,7 +365,9 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
             resource.twingate.com: "true"
             resource.twingate.com/type: "WebApp"
             resource.twingate.com/gatewayName: "{gw_name}"
-            resource.twingate.com/downstreamPort: "80"
+            resource.twingate.com/downstreamPort: "443"
+            resource.twingate.com/downstreamTLS: "true"
+            resource.twingate.com/upstreamTLS: "false"
             resource.twingate.com/alias: "webapp.internal"
             resource.twingate.com/requestHeaderRewrites: '{{"X-Forwarded-Host": "web-app.int", "Authorization": "Bearer {{{{ jwt }}}}"}}'
         spec:
@@ -406,8 +408,8 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
                 "address": f"{service_name}.default.svc.cluster.local",
                 "alias": "webapp.internal",
                 "gatewayRef": {"name": gw_name, "namespace": "default"},
-                "downstream": {"port": 80},
-                "upstream": {"port": 8080},
+                "downstream": {"port": 443, "tls": True},
+                "upstream": {"port": 8080, "tls": False},
                 "requestHeaderRewrites": [
                     {"name": "X-Forwarded-Host", "value": "web-app.int"},
                     {"name": "Authorization", "value": "Bearer {{ jwt }}"},

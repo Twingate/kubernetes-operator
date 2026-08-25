@@ -298,8 +298,8 @@ class WebAppResource(BaseResource):
             fragment WebAppResourceFields on WebAppResource {
                 ...BaseResourceFields
                 gateway { id }
-                downstream { port }
-                upstream { port }
+                downstream { port tls }
+                upstream { port tls }
                 requestHeaderRewrites { name: key value }
             }
             """
@@ -326,15 +326,15 @@ class WebAppResource(BaseResource):
         if remote_gateway_id != crd_gateway_id:
             diff["gateway_id"] = Diff(remote=remote_gateway_id, local=crd_gateway_id)
 
-        crd_downstream_port = crd.downstream.port if crd.downstream else None
-        if self.downstream.port != crd_downstream_port:
-            diff["downstream"] = Diff(
-                remote=self.downstream.port, local=crd_downstream_port
-            )
+        downstream = self.downstream.model_dump()
+        crd_downstream = crd.downstream.model_dump() if crd.downstream else None
+        if downstream != crd_downstream:
+            diff["downstream"] = Diff(remote=downstream, local=crd_downstream)
 
-        crd_upstream_port = crd.upstream.port if crd.upstream else None
-        if self.upstream.port != crd_upstream_port:
-            diff["upstream"] = Diff(remote=self.upstream.port, local=crd_upstream_port)
+        upstream = self.upstream.model_dump()
+        crd_upstream = crd.upstream.model_dump() if crd.upstream else None
+        if upstream != crd_upstream:
+            diff["upstream"] = Diff(remote=upstream, local=crd_upstream)
 
         # Header rewrites are unordered, so compare them as name -> value dicts to
         # avoid spurious diffs from ordering.
@@ -380,8 +380,8 @@ QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
             }
             ... on WebAppResource {
                 gateway { id }
-                downstream { port }
-                upstream { port }
+                downstream { port tls }
+                upstream { port tls }
                 requestHeaderRewrites { name: key value }
             }
         }

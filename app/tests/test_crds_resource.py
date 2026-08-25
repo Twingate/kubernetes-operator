@@ -476,8 +476,8 @@ def test_web_app_resource_spec_to_graphql_arguments():
         address="webapp.default.cluster.local",
         type=ResourceType.WEB_APP,
         gateway_ref=_KubernetesObjectRef(name="my-gateway", namespace="twingate"),
-        downstream=ResourceDownstream(port=80),
-        upstream=ResourceUpstream(port=8080),
+        downstream=ResourceDownstream(port=443, tls=True),
+        upstream=ResourceUpstream(port=8080, tls=True),
         request_header_rewrites=[{"name": "X-Forwarded-Host", "value": "web-app.int"}],
     )
 
@@ -490,8 +490,8 @@ def test_web_app_resource_spec_to_graphql_arguments():
 
     resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
     assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
-    assert graphql_arguments["downstream"] == {"port": 80}
-    assert graphql_arguments["upstream"] == {"port": 8080}
+    assert graphql_arguments["downstream"] == {"port": 443, "tls": True}
+    assert graphql_arguments["upstream"] == {"port": 8080, "tls": True}
     assert graphql_arguments["request_header_rewrites"] == [
         {"key": "X-Forwarded-Host", "value": "web-app.int"}
     ]
@@ -517,6 +517,25 @@ def test_web_app_resource_spec_to_graphql_arguments_without_header_rewrites():
         )
 
     assert graphql_arguments["request_header_rewrites"] == []
+
+
+def test_web_app_resource_spec_to_graphql_arguments_defaults_tls_to_false():
+    resource_spec = ResourceSpec(
+        name="My WebApp Resource",
+        address="webapp.default.cluster.local",
+        type=ResourceType.WEB_APP,
+        gateway_ref=_KubernetesObjectRef(name="my-gateway"),
+        downstream=ResourceDownstream(port=80),
+        upstream=ResourceUpstream(port=8080),
+    )
+
+    with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={}, owner_namespace="default"
+        )
+
+    assert graphql_arguments["downstream"] == {"port": 80, "tls": False}
+    assert graphql_arguments["upstream"] == {"port": 8080, "tls": False}
 
 
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(

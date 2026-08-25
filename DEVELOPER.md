@@ -40,6 +40,11 @@
    ```
 
 1. Run `make test-int` to see integration tests pass.
+
+   As a safeguard, integration tests apply CRDs and delete Twingate objects
+   cluster-wide, so they refuse to run unless the current kubectl context is
+   `minikube`. To deliberately target another cluster, set
+   `TWINGATE_ALLOWED_KUBE_CONTEXTS` to a comma-separated list of extra contexts.
 1. You can now edit code and run `make run` to run the operator locally.
    1. You'll also want to `poetry run pre-commit install` to make sure you have
       the pre-commit checks running locally.

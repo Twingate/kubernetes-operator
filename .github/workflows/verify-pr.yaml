@@ -26,7 +26,7 @@ jobs:
       - name: Checkout main repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Danger
-        uses: danger/danger-js@e9b58820039524318198d8059ec98b0c02b7875c # v13.0.10
+        uses: danger/danger-js@afbc4c7b224879449ccdf8e23d622c925f96b0f9 # v14.0.4
         if: github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]'
         with:
           args: "--failOnErrors --dangerfile ./scripts/dangerfile.js"

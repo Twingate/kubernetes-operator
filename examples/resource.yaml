@@ -34,8 +34,10 @@ spec:
     name: example-gateway
   downstream:
     port: 80
+    tls: false
   upstream:
     port: 8080
+    tls: false
   requestHeaderRewrites:
     - name: Authorization
       value: "Bearer {{ jwt }}"

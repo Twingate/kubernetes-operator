@@ -154,6 +154,7 @@ class ResourceDownstream(BaseModel):
     )
 
     port: Port
+    tls: bool = False
 
 
 class ResourceUpstream(BaseModel):
@@ -162,6 +163,7 @@ class ResourceUpstream(BaseModel):
     )
 
     port: Port
+    tls: bool = False
 
 
 class RequestHeaderRewrite(BaseModel):

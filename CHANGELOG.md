@@ -1,6 +1,64 @@
 # CHANGELOG
 
 
+## v2.0.2 (2026-09-04)
+
+### Chores
+
+- Bump cryptography from 50.0.0 to 50.0.1
+  ([#1150](https://github.com/Twingate/kubernetes-operator/pull/1150),
+  [`cc320bf`](https://github.com/Twingate/kubernetes-operator/commit/cc320bfee2f0f73c0c4862bacd36db2459eef278))
+
+- Bump danger/danger-js from 13.0.10 to 14.0.4
+  ([#1144](https://github.com/Twingate/kubernetes-operator/pull/1144),
+  [`c3974bf`](https://github.com/Twingate/kubernetes-operator/commit/c3974bf5323fbc7ea7f2c3df1ced373eae9c3cb8))
+
+- Bump danger/danger-js from 14.0.4 to 14.0.5
+  ([#1146](https://github.com/Twingate/kubernetes-operator/pull/1146),
+  [`b971cd9`](https://github.com/Twingate/kubernetes-operator/commit/b971cd915a37290c6c56bcc54a1233830a7dcfe2))
+
+- Bump docker/setup-qemu-action from 4.2.0 to 4.3.0
+  ([#1154](https://github.com/Twingate/kubernetes-operator/pull/1154),
+  [`a914735`](https://github.com/Twingate/kubernetes-operator/commit/a9147356ba550913294c7574674cd8341072c2c1))
+
+- Bump gateway from 1.0.0 to 1.1.0 in /deploy/twingate-operator
+  ([#1148](https://github.com/Twingate/kubernetes-operator/pull/1148),
+  [`f439cbc`](https://github.com/Twingate/kubernetes-operator/commit/f439cbc49ce64b3e517e1d4df6169e419b657094))
+
+- Bump hadolint/hadolint-action from 3.4.0 to 3.5.0
+  ([#1147](https://github.com/Twingate/kubernetes-operator/pull/1147),
+  [`3bf7c78`](https://github.com/Twingate/kubernetes-operator/commit/3bf7c787c68d7cc8abe1228af526c8fc95a3720f))
+
+- Bump pydantic from 2.13.4 to 2.13.5
+  ([#1153](https://github.com/Twingate/kubernetes-operator/pull/1153),
+  [`e06348b`](https://github.com/Twingate/kubernetes-operator/commit/e06348bb9717dd07b7eac4ca257fb57ca382c2ee))
+
+- Bump responses from 0.26.2 to 0.26.3
+  ([#1151](https://github.com/Twingate/kubernetes-operator/pull/1151),
+  [`e65b361`](https://github.com/Twingate/kubernetes-operator/commit/e65b361310bbf450062d6438b8c3aaabedafd9da))
+
+- Bump ruff from 0.16.4 to 0.16.5
+  ([#1152](https://github.com/Twingate/kubernetes-operator/pull/1152),
+  [`4354b41`](https://github.com/Twingate/kubernetes-operator/commit/4354b41dd558f3d85ed77d280e3a3b2decfd8073))
+
+- Bump syrupy from 5.5.3 to 6.0.0
+  ([#1145](https://github.com/Twingate/kubernetes-operator/pull/1145),
+  [`b65ee02`](https://github.com/Twingate/kubernetes-operator/commit/b65ee0277c1fa4b9572ecb59748becdf1f1ddff9))
+
+- Remove `yq` github action ([#1137](https://github.com/Twingate/kubernetes-operator/pull/1137),
+  [`45e9ac7`](https://github.com/Twingate/kubernetes-operator/commit/45e9ac7e5a14d912535cf6a08eebccc2caf51ae7))
+
+- Upgrade Python from 3.14.5 to 3.14.7
+  ([#1139](https://github.com/Twingate/kubernetes-operator/pull/1139),
+  [`b7ae8b8`](https://github.com/Twingate/kubernetes-operator/commit/b7ae8b84a30c9378d65587ef07250b49ccc238d0))
+
+### Documentation
+
+- Add hotfix v1.3.1 to CHANGELOG
+  ([#1136](https://github.com/Twingate/kubernetes-operator/pull/1136),
+  [`ad8e6ec`](https://github.com/Twingate/kubernetes-operator/commit/ad8e6ec0859ff3427e56cbb668eddb7db81589e4))
+
+
 ## v2.0.1 (2026-08-24)
 
 ### Bug Fixes
@@ -54,29 +112,6 @@
 - Use unique CA names in integration tests
   ([#1106](https://github.com/Twingate/kubernetes-operator/pull/1106),
   [`ceb02fd`](https://github.com/Twingate/kubernetes-operator/commit/ceb02fd91baa605eae6120a1ae1640a93dba8c39))
-
-
-## v1.3.1 (2026-08-24)
-
-### Bug Fixes
-
-- Relax `ssl.VERIFY_X509_STRICT` so the operator can reach the API server on EKS
-  ([#1134](https://github.com/Twingate/kubernetes-operator/pull/1134),
-  [`fe574b3`](https://github.com/Twingate/kubernetes-operator/commit/fe574b3c2f1405e7bca7240b5e0063f1e858029e))
-
-
-## v1.3.0 (2026-07-30)
-
-### Features
-
-- Keep the Kubernetes Resource when the Service annotation is removed
-  ([`92dc59c`](https://github.com/Twingate/kubernetes-operator/commit/92dc59cf97478c074b18c7415d753410d5d5166f))
-
-- Let Helm adopt the generated Kubernetes Resource
-  ([`bdf69f2`](https://github.com/Twingate/kubernetes-operator/commit/bdf69f24a556d398126c789d01b8d1e16c0cb2e5))
-
-
-## v1.2.0 (2026-07-27)
 
 ### Chores
 

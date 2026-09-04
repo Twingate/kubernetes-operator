@@ -10,7 +10,12 @@ import kopf
 import pytest
 from kopf.testing import KopfRunner
 
-from .utils import kubectl
+from .utils import (
+    ALLOWED_KUBE_CONTEXTS_ENV,
+    get_allowed_kube_contexts,
+    get_current_kube_context,
+    kubectl,
+)
 
 
 @pytest.fixture(scope="session")
@@ -20,7 +25,24 @@ def kopf_runner_args():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _load_crds():
+def _require_safe_kube_context():
+    allowed = get_allowed_kube_contexts()
+    current = get_current_kube_context()
+    if current in allowed:
+        return
+
+    pytest.exit(
+        f"Refusing to run integration tests against kube context {current!r}. "
+        f"They apply CRDs and delete Twingate objects cluster-wide, so they may "
+        f"only run against: {', '.join(sorted(allowed))}. "
+        f"Run `minikube start && kubectl config use-context minikube`, or set "
+        f"{ALLOWED_KUBE_CONTEXTS_ENV}=<context> to override deliberately.",
+        returncode=1,
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _load_crds(_require_safe_kube_context):
     kubectl("apply -f ./deploy/twingate-operator/crds/")
 
 

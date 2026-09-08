@@ -8,13 +8,24 @@ updates:
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore: "
-  - package-ecosystem: docker
+    groups:
+      # Every dependency in a non-main Poetry group (i.e. `tool.poetry.group.*`)
+      # is classified as `development` by Dependabot, so this matches the dev
+      # toolchain by construction rather than by name, and picks up new dev deps
+      # automatically. Runtime deps in `[tool.poetry.dependencies]` are
+      # classified `production` and stay ungrouped so they remain individually
+      # reviewable.
+      dev-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: pre-commit
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: daily
       time: "13:00"
     commit-message:
       prefix: "chore: "
+
   - package-ecosystem: helm
     directory: "deploy/twingate-operator"
     schedule:
@@ -25,7 +36,11 @@ updates:
     cooldown:
       exclude:
         - gateway
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: daily
+      time: "13:00"
+    commit-message:
+      prefix: "chore: "

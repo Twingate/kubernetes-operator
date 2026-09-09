@@ -63,6 +63,7 @@ pinned versions. Keep this file as the single source of truth — when bumping P
 
 - Unit tests use `mocked_responses` and fixtures from `app/conftest.py`
 - Integration tests need `TWINGATE_API_KEY`, `TWINGATE_NETWORK`, `TWINGATE_REMOTE_NETWORK_ID`
+- Integration tests only run against the `minikube` kubectl context (override with `TWINGATE_ALLOWED_KUBE_CONTEXTS`)
 - Mock settings before importing handlers (loaded at module import time)
 
 ## Code Quality

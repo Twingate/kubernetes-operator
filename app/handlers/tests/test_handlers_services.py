@@ -321,6 +321,38 @@ class TestServiceToTwingateResource:
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
 
+    def test_webapp_resource_tls_annotations(self, example_webapp_service_body):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamTLS"
+        ] = "true"
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamTLS"
+        ] = "false"
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["downstream"] == {"port": 80, "tls": True}
+        assert result["spec"]["upstream"] == {"port": 8080, "tls": False}
+
+    def test_webapp_resource_without_tls_annotations(self, example_webapp_service_body):
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["downstream"] == {"port": 80}
+        assert result["spec"]["upstream"] == {"port": 8080}
+
+    def test_webapp_resource_non_boolean_tls_annotation(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamTLS"
+        ] = "definitely"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/downstreamTLS annotation must be a boolean",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
     def test_webapp_resource_request_header_rewrites(self, example_webapp_service_body):
         example_webapp_service_body.metadata["annotations"][
             "resource.twingate.com/requestHeaderRewrites"

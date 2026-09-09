@@ -169,6 +169,10 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "The downstream port."
+                    tls:
+                      type: boolean
+                      default: false
+                      description: "Whether TLS is enabled on the downstream (client-facing) connection."
                 upstream:
                   type: object
                   required: ["port"]
@@ -179,6 +183,10 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "The upstream port."
+                    tls:
+                      type: boolean
+                      default: false
+                      description: "Whether TLS is enabled on the upstream (target) connection."
                 requestHeaderRewrites:
                   type: array
                   description: "HTTP headers to rewrite on requests to the upstream of a WebApp Resource."

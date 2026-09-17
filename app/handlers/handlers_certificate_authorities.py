@@ -41,11 +41,11 @@ def _reconcile_certificate_authority(body, namespace, spec, logger, memo, patch)
 
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
 
-    certificate = ca_spec.get_certificate_from_secret(namespace)
+    certificate = ca_spec.get_certificate(namespace)
     if certificate is None:
+        kind, ref = ca_spec.certificate_ref
         raise kopf.TemporaryError(
-            f"ca.crt not found yet in Secret "
-            f"'{ca_spec.secret_ref.fullname(namespace)}'.",
+            f"ca.crt not found yet in {kind} '{ref.fullname(namespace)}'.",
             delay=30,
         )
 
@@ -89,8 +89,8 @@ def _reconcile_certificate_authority(body, namespace, spec, logger, memo, patch)
     return success(twingate_id=ca.id)
 
 
-# Bound retries so a misspelled secretRef eventually fails instead of retrying
-# forever; the timer reconciler still recovers it if the ref is later fixed.
+# Bound retries so a misspelled secretRef/configMapRef eventually fails instead of
+# retrying forever; the timer reconciler still recovers it if the ref is later fixed.
 CA_HANDLER_TIMEOUT = int(os.environ.get("CA_HANDLER_TIMEOUT", timedelta(minutes=5).seconds))  # fmt: skip
 
 
@@ -154,34 +154,30 @@ def twingate_certificate_authority_delete(
 
 
 @kopf.index(TwingateCertificateAuthorityCRD.PLURAL)
-def twingate_ca_secret_index(namespace, name, spec, **_):
-    secret_ref = spec.get("secretRef", {})
-    secret_name = secret_ref.get("name")
-    secret_namespace = secret_ref.get("namespace") or namespace
+def twingate_ca_source_index(namespace, name, spec, **_):
+    """Index CAs by ``(kind, namespace, name)`` of the object their `ca.crt` is read from.
 
-    if not secret_name:
-        return None
+    The kind is part of the key because a Secret and a ConfigMap may share a name.
+    """
+    for kind, ref_key in (("Secret", "secretRef"), ("ConfigMap", "configMapRef")):
+        ref = spec.get(ref_key, {})
+        if ref_name := ref.get("name"):
+            return {
+                (kind, ref.get("namespace") or namespace, ref_name): {
+                    "namespace": namespace,
+                    "name": name,
+                },
+            }
 
-    return {
-        (secret_namespace, secret_name): {
-            "namespace": namespace,
-            "name": name,
-        },
-    }
+    return None
 
 
-@kopf.on.event("", "v1", "secrets", field=("data", "ca.crt"))  # type: ignore[arg-type]
-def twingate_ca_tls_secret_update(
-    event, namespace, name, memo, logger, twingate_ca_secret_index, **_
-):
+def reconcile_cas_referencing(kind, event, namespace, name, memo, logger, index):
+    """Re-reconcile every CA that reads `ca.crt` from the modified ``kind`` object."""
     if event.get("type") != "MODIFIED":
         return
 
-    ca_refs = twingate_ca_secret_index.get((namespace, name), [])
-    if not ca_refs:
-        return
-
-    for ca_ref in ca_refs:
+    for ca_ref in index.get((kind, namespace, name), []):
         ca_namespace = ca_ref["namespace"]
         ca_name = ca_ref["name"]
         ca_obj = k8s_get_twingate_custom_object(
@@ -191,7 +187,9 @@ def twingate_ca_tls_secret_update(
             continue
 
         logger.info(
-            "Secret %s changed, reconciling certificate authority %s/%s.",
+            "%s %s/%s changed, reconciling certificate authority %s/%s.",
+            kind,
+            namespace,
             name,
             ca_namespace,
             ca_name,
@@ -203,9 +201,10 @@ def twingate_ca_tls_secret_update(
             )
         except Exception:
             logger.exception(
-                "Failed to reconcile certificate authority %s/%s after secret change",
+                "Failed to reconcile certificate authority %s/%s after %s change",
                 ca_namespace,
                 ca_name,
+                kind,
             )
             continue
 
@@ -214,3 +213,24 @@ def twingate_ca_tls_secret_update(
         k8s_patch_twingate_custom_object(
             TwingateCertificateAuthorityCRD.PLURAL, ca_namespace, ca_name, patch
         )
+
+
+@kopf.on.event("", "v1", "secrets", field=("data", "ca.crt"))  # type: ignore[arg-type]
+def twingate_ca_tls_secret_update(
+    event, namespace, name, memo, logger, twingate_ca_source_index, **_
+):
+    reconcile_cas_referencing(
+        "Secret", event, namespace, name, memo, logger, twingate_ca_source_index
+    )
+
+
+@kopf.on.event("", "v1", "configmaps", field=("data", "ca.crt"))  # type: ignore[arg-type]
+def twingate_ca_config_map_update(
+    event, namespace, name, memo, logger, twingate_ca_source_index, **_
+):
+    # Every namespace has a kube-root-ca.crt ConfigMap with data.ca.crt, so this
+    # fires for far more objects than CAs reference; the index lookup is what keeps
+    # those a no-op.
+    reconcile_cas_referencing(
+        "ConfigMap", event, namespace, name, memo, logger, twingate_ca_source_index
+    )

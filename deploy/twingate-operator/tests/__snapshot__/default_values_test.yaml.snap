@@ -47,6 +47,7 @@ should render:
           - pods
           - services
           - secrets
+          - configmaps
           - services/status
         verbs:
           - list

@@ -5,9 +5,12 @@ metadata:
 spec:
   name: Example Gateway CA
   type: X509
-  # kubernetes.io/tls Secret whose `ca.crt` is registered with Twingate as the
-  # X509 CA. Provisioned by the gateway chart (self-signed or cert-manager) or
-  # an external tool - the operator only reads the public certificate.
+  # Exactly one of `secretRef` or `configMapRef` names the object whose `ca.crt`
+  # is registered with Twingate as the X509 CA. Both are immutable, and the choice
+  # between them cannot be changed after creation.
   secretRef:
     name: gateway-tls
     namespace: twingate
+  # configMapRef:
+  #   name: gateway-ca
+  #   namespace: twingate

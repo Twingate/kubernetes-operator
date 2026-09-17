@@ -57,6 +57,20 @@ def k8s_read_namespaced_secret(
         raise
 
 
+def k8s_read_namespaced_config_map(
+    namespace: str, name: str, kapi: kubernetes.client.CoreV1Api | None = None
+) -> kubernetes.client.V1ConfigMap | None:
+    try:
+        kapi = kapi or kubernetes.client.CoreV1Api()
+
+        return kapi.read_namespaced_config_map(name=name, namespace=namespace)
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            return None
+
+        raise
+
+
 def k8s_get_twingate_custom_object(
     plural: str,
     namespace: str,

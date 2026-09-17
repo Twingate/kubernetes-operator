@@ -1,6 +1,7 @@
 import datetime
 import os
 import subprocess
+import textwrap
 import time
 from base64 import b64encode
 
@@ -31,7 +32,8 @@ def assert_log_message_contains(logs, message):
     )
 
 
-def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
+def generate_ca_cert(common_name: str = "Test CA") -> str:
+    """Self-signed CA certificate, PEM-encoded."""
     key = ed25519.Ed25519PrivateKey.generate()
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
     now = datetime.datetime.now(datetime.UTC)
@@ -46,7 +48,11 @@ def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(key, None)
     )
-    return b64encode(cert.public_bytes(Encoding.PEM)).decode()
+    return cert.public_bytes(Encoding.PEM).decode()
+
+
+def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
+    return b64encode(generate_ca_cert(common_name).encode()).decode()
 
 
 def create_tls_secret(secret_name, base64_ca_cert):
@@ -63,6 +69,19 @@ def create_tls_secret(secret_name, base64_ca_cert):
       ca.crt: {base64_ca_cert}
       tls.crt: ZHVtbXk=
       tls.key: ZHVtbXk=
+"""
+
+
+def create_ca_config_map(config_map_name, ca_cert):
+    return f"""
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: {config_map_name}
+      namespace: default
+    data:
+      ca.crt: |
+{textwrap.indent(ca_cert, " " * 8)}
 """
 
 

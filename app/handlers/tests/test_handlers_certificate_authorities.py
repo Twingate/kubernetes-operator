@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import ANY, MagicMock, patch
 
 import kopf
@@ -6,7 +7,8 @@ import pytest
 from app.api.client_certificate_authorities import CertificateAuthority
 from app.api.exceptions import GraphQLMutationError
 from app.handlers.handlers_certificate_authorities import (
-    twingate_ca_secret_index,
+    twingate_ca_config_map_update,
+    twingate_ca_source_index,
     twingate_ca_tls_secret_update,
     twingate_certificate_authority_create,
     twingate_certificate_authority_delete,
@@ -25,8 +27,8 @@ def mock_api_client():
 
 
 @pytest.fixture
-def mock_get_certificate_from_secret():
-    with patch("app.crds.CertificateAuthoritySpec.get_certificate_from_secret") as m:
+def mock_get_certificate():
+    with patch("app.crds.CertificateAuthoritySpec.get_certificate") as m:
         m.return_value = "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
         yield m
 
@@ -40,8 +42,15 @@ def mock_fingerprint():
         yield m
 
 
-def _spec(*, with_id=False):
+def secret_spec(*, with_id=False):
     spec = {"name": "My CA", "secretRef": {"name": "gateway-tls"}}
+    if with_id:
+        spec["id"] = "ca-id"
+    return spec
+
+
+def config_map_spec(*, with_id=False):
+    spec = {"name": "My CA", "configMapRef": {"name": "gateway-ca"}}
     if with_id:
         spec["id"] = "ca-id"
     return spec
@@ -57,35 +66,35 @@ def _call_create(spec):
 
 
 class TestCertificateAuthorityCreateHandler:
-    def test_create(
+    def test_create_from_secret(
         self,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
             CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
         )
 
-        result, patch_mock = _call_create(_spec())
+        result, patch_mock = _call_create(secret_spec())
 
         assert result == {"success": True, "twingate_id": "new-ca-id", "ts": ANY}
         # First create uses the clean name (no timestamp suffix).
         mock_api_client.x509_certificate_authority_create.assert_called_once_with(
-            name="My CA", certificate=mock_get_certificate_from_secret.return_value
+            name="My CA", certificate=mock_get_certificate.return_value
         )
         assert patch_mock.spec == {"id": "new-ca-id"}
 
     def test_already_registered_is_noop(
-        self, mock_api_client, mock_get_certificate_from_secret, mock_fingerprint
+        self, mock_api_client, mock_get_certificate, mock_fingerprint
     ):
         # Backend CA exists with the same fingerprint - nothing to do.
         mock_api_client.get_x509_certificate_authority.return_value = (
             CertificateAuthority(id="ca-id", name="My CA", fingerprint="AB:CD")
         )
 
-        result, patch_mock = _call_create(_spec(with_id=True))
+        result, patch_mock = _call_create(secret_spec(with_id=True))
 
         assert result == {"success": True, "twingate_id": "ca-id", "ts": ANY}
         mock_api_client.x509_certificate_authority_create.assert_not_called()
@@ -96,7 +105,7 @@ class TestCertificateAuthorityCreateHandler:
         self,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
     ):
         # spec.id is set but the backend CA is gone - recreate, nothing to delete.
@@ -105,12 +114,12 @@ class TestCertificateAuthorityCreateHandler:
             CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
-        result, patch_mock = _call_create(_spec(with_id=True))
+        result, patch_mock = _call_create(secret_spec(with_id=True))
 
         assert result == {"success": True, "twingate_id": "recreated-id", "ts": ANY}
         # Backend CA already gone - no name collision, so keep the clean name.
         mock_api_client.x509_certificate_authority_create.assert_called_once_with(
-            name="My CA", certificate=mock_get_certificate_from_secret.return_value
+            name="My CA", certificate=mock_get_certificate.return_value
         )
         mock_api_client.x509_certificate_authority_delete.assert_not_called()
         assert patch_mock.spec == {"id": "recreated-id"}
@@ -119,7 +128,7 @@ class TestCertificateAuthorityCreateHandler:
         self,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
     ):
         # Cert rotated: backend fingerprint differs - recreate, then best-effort
@@ -131,15 +140,13 @@ class TestCertificateAuthorityCreateHandler:
             CertificateAuthority(id="recreated-id", name="My CA", fingerprint="AB:CD")
         )
 
-        result, patch_mock = _call_create(_spec(with_id=True))
+        result, patch_mock = _call_create(secret_spec(with_id=True))
 
         assert result == {"success": True, "twingate_id": "recreated-id", "ts": ANY}
         # Old CA still holds the name - the re-create gets a timestamp suffix.
         call = mock_api_client.x509_certificate_authority_create.call_args
         assert call.kwargs["name"].startswith("My CA (")
-        assert (
-            call.kwargs["certificate"] == mock_get_certificate_from_secret.return_value
-        )
+        assert call.kwargs["certificate"] == mock_get_certificate.return_value
         mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
             "ca-id"
         )
@@ -149,7 +156,7 @@ class TestCertificateAuthorityCreateHandler:
         self,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
     ):
         # The orphaned CA is still gateway-referenced, so the backend rejects the
@@ -167,7 +174,7 @@ class TestCertificateAuthorityCreateHandler:
             )
         )
 
-        result, patch_mock = _call_create(_spec(with_id=True))
+        result, patch_mock = _call_create(secret_spec(with_id=True))
 
         assert result == {"success": True, "twingate_id": "recreated-id", "ts": ANY}
         mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
@@ -178,7 +185,7 @@ class TestCertificateAuthorityCreateHandler:
     def test_create_failure_propagates(
         self,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
     ):
         # GraphQL errors propagate so Kopf retries (bounded by the handler
@@ -189,15 +196,45 @@ class TestCertificateAuthorityCreateHandler:
         )
 
         with pytest.raises(GraphQLMutationError, match="boom"):
-            _call_create(_spec())
+            _call_create(secret_spec())
+
+    def test_create_from_config_map_ref(
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_get_certificate,
+        mock_fingerprint,
+    ):
+        mock_api_client.x509_certificate_authority_create.return_value = (
+            CertificateAuthority(id="new-ca-id", name="My CA", fingerprint="AB:CD")
+        )
+
+        result, patch_mock = _call_create(config_map_spec())
+
+        assert result == {"success": True, "twingate_id": "new-ca-id", "ts": ANY}
+        mock_get_certificate.assert_called_once_with("default")
+        mock_api_client.x509_certificate_authority_create.assert_called_once_with(
+            name="My CA", certificate=mock_get_certificate.return_value
+        )
+        assert patch_mock.spec == {"id": "new-ca-id"}
 
     def test_missing_certificate_raises_temporary_error(
-        self, mock_api_client, mock_get_certificate_from_secret
+        self, mock_api_client, mock_get_certificate
     ):
-        mock_get_certificate_from_secret.return_value = None
+        mock_get_certificate.return_value = None
 
-        with pytest.raises(kopf.TemporaryError):
-            _call_create(_spec())
+        with pytest.raises(kopf.TemporaryError, match="Secret 'default/gateway-tls'"):
+            _call_create(secret_spec())
+
+        mock_api_client.x509_certificate_authority_create.assert_not_called()
+
+    def test_missing_config_map_certificate_raises_temporary_error(
+        self, mock_api_client, mock_get_certificate
+    ):
+        mock_get_certificate.return_value = None
+
+        with pytest.raises(kopf.TemporaryError, match="ConfigMap 'default/gateway-ca'"):
+            _call_create(config_map_spec())
 
         mock_api_client.x509_certificate_authority_create.assert_not_called()
 
@@ -207,7 +244,7 @@ class TestCertificateAuthorityReconciler:
         self,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
     ):
         mock_api_client.x509_certificate_authority_create.return_value = (
@@ -217,7 +254,7 @@ class TestCertificateAuthorityReconciler:
         patch_mock.spec = {}
 
         result = twingate_certificate_authority_reconciler(
-            "", "default", _spec(), MagicMock(), MagicMock(), patch_mock
+            "", "default", secret_spec(), MagicMock(), MagicMock(), patch_mock
         )
 
         assert result == {"success": True, "twingate_id": "new-ca-id", "ts": ANY}
@@ -241,17 +278,17 @@ def _call_delete(spec, status, *, gateway_index=None):
 
 class TestCertificateAuthorityDeleteHandler:
     def test_delete(self, mock_api_client):
-        _call_delete(_spec(with_id=True), _STATUS)
+        _call_delete(secret_spec(with_id=True), _STATUS)
         mock_api_client.x509_certificate_authority_delete.assert_called_once_with(
             "ca-id"
         )
 
     def test_delete_without_status_does_nothing(self, mock_api_client):
-        _call_delete(_spec(with_id=True), {})
+        _call_delete(secret_spec(with_id=True), {})
         mock_api_client.x509_certificate_authority_delete.assert_not_called()
 
     def test_delete_without_id_does_nothing(self, mock_api_client):
-        _call_delete(_spec(), {"foo": "bar"})
+        _call_delete(secret_spec(), {"foo": "bar"})
         mock_api_client.x509_certificate_authority_delete.assert_not_called()
 
     def test_delete_in_use_retries_while_referenced(self, mock_api_client):
@@ -265,7 +302,7 @@ class TestCertificateAuthorityDeleteHandler:
 
         with pytest.raises(kopf.TemporaryError):
             _call_delete(
-                _spec(with_id=True),
+                secret_spec(with_id=True),
                 _STATUS,
                 gateway_index={
                     ("default", "my-ca"): [{"namespace": "default", "name": "gw"}]
@@ -281,7 +318,7 @@ class TestCertificateAuthorityDeleteHandler:
             )
         )
 
-        _call_delete(_spec(with_id=True), _STATUS)
+        _call_delete(secret_spec(with_id=True), _STATUS)
 
     def test_delete_other_error_propagates(self, mock_api_client):
         # An unexpected backend error propagates so kopf retries (matching the other
@@ -291,73 +328,112 @@ class TestCertificateAuthorityDeleteHandler:
         )
 
         with pytest.raises(GraphQLMutationError, match="boom"):
-            _call_delete(_spec(with_id=True), _STATUS)
+            _call_delete(secret_spec(with_id=True), _STATUS)
 
 
-class TestCertificateAuthoritySecretIndex:
+class TestCertificateAuthoritySourceIndex:
     def test_maps_secret_to_ca(self):
-        result = twingate_ca_secret_index(
-            namespace="default", name="my-ca", spec=_spec()
+        result = twingate_ca_source_index(
+            namespace="default", name="my-ca", spec=secret_spec()
         )
         assert result == {
-            ("default", "gateway-tls"): {"namespace": "default", "name": "my-ca"}
+            ("Secret", "default", "gateway-tls"): {
+                "namespace": "default",
+                "name": "my-ca",
+            }
         }
 
-    def test_uses_secret_namespace_when_set(self):
-        result = twingate_ca_secret_index(
+    def test_maps_config_map_to_ca(self):
+        result = twingate_ca_source_index(
+            namespace="default", name="my-ca", spec=config_map_spec()
+        )
+        assert result == {
+            ("ConfigMap", "default", "gateway-ca"): {
+                "namespace": "default",
+                "name": "my-ca",
+            }
+        }
+
+    def test_uses_ref_namespace_when_set(self):
+        result = twingate_ca_source_index(
             namespace="ns1",
             name="my-ca",
-            spec={"name": "My CA", "secretRef": {"name": "tls", "namespace": "ns2"}},
+            spec={"name": "My CA", "configMapRef": {"name": "ca", "namespace": "ns2"}},
         )
-        assert result == {("ns2", "tls"): {"namespace": "ns1", "name": "my-ca"}}
+        assert result == {
+            ("ConfigMap", "ns2", "ca"): {"namespace": "ns1", "name": "my-ca"}
+        }
 
-    def test_none_without_secret_name(self):
+    def test_none_without_source(self):
         assert (
-            twingate_ca_secret_index(namespace="default", name="my-ca", spec={}) is None
+            twingate_ca_source_index(
+                namespace="default", name="my-ca", spec={"name": "My CA"}
+            )
+            is None
+        )
+        assert (
+            twingate_ca_source_index(namespace="default", name="my-ca", spec={}) is None
         )
 
 
+# The Secret and ConfigMap watchers share reconcile_cas_referencing; run the same
+# scenarios through each.
+CA_SOURCES = [
+    SimpleNamespace(
+        kind="Secret",
+        name="gateway-tls",
+        handler=twingate_ca_tls_secret_update,
+        spec=secret_spec,
+    ),
+    SimpleNamespace(
+        kind="ConfigMap",
+        name="gateway-ca",
+        handler=twingate_ca_config_map_update,
+        spec=config_map_spec,
+    ),
+]
+
+
+@pytest.mark.parametrize("source", CA_SOURCES, ids=lambda s: s.kind)
 @patch("app.handlers.handlers_certificate_authorities.k8s_patch_twingate_custom_object")
 @patch("app.handlers.handlers_certificate_authorities.k8s_get_twingate_custom_object")
-class TestCertificateAuthoritySecretWatch:
+class TestCertificateAuthoritySourceWatch:
     @staticmethod
-    def _index(refs=None):
-        key = ("default", "gateway-tls")
+    def _index(source, refs=None, kind=None):
+        key = (kind or source.kind, "default", source.name)
         return {
             key: refs
             if refs is not None
             else [{"namespace": "default", "name": "my-ca"}]
         }
 
-    def _call(self, index, event_type="MODIFIED"):
-        twingate_ca_tls_secret_update(
+    @staticmethod
+    def _call(source, index, event_type="MODIFIED"):
+        source.handler(
             event={"type": event_type},
             namespace="default",
-            name="gateway-tls",
+            name=source.name,
             memo=MagicMock(),
             logger=MagicMock(),
-            twingate_ca_secret_index=index,
+            twingate_ca_source_index=index,
         )
 
-    def test_reconciles_referenced_ca_on_drift(
+    def test_reconciles_referenced_cas_on_drift(
         self,
         mock_get_obj,
         mock_patch_obj,
         kopf_info_mock,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
+        source,
     ):
-        # Two CAs reference the same Secret - the handler must reconcile both, not
+        # Two CAs reference the same object - the handler must reconcile both, not
         # just the first ref.
         mock_get_obj.side_effect = [
             {
                 "metadata": {"namespace": "default", "name": name},
-                "spec": {
-                    "name": "My CA",
-                    "secretRef": {"name": "gateway-tls"},
-                    "id": "ca-id",
-                },
+                "spec": source.spec(with_id=True),
             }
             for name in ("my-ca", "my-ca-2")
         ]
@@ -369,12 +445,14 @@ class TestCertificateAuthoritySecretWatch:
         )
 
         self._call(
+            source,
             self._index(
+                source,
                 [
                     {"namespace": "default", "name": "my-ca"},
                     {"namespace": "default", "name": "my-ca-2"},
-                ]
-            )
+                ],
+            ),
         )
 
         assert mock_get_obj.call_count == 2
@@ -386,26 +464,38 @@ class TestCertificateAuthoritySecretWatch:
             assert shim.spec == {"id": "recreated-id"}
 
     def test_skips_non_modified_events(
-        self, mock_get_obj, mock_patch_obj, mock_api_client
+        self, mock_get_obj, mock_patch_obj, mock_api_client, source
     ):
-        self._call(self._index(), event_type="ADDED")
+        # E.g. every namespace has a kube-root-ca.crt ConfigMap with data.ca.crt; only
+        # MODIFIED events for objects a CA references do any work.
+        self._call(source, self._index(source), event_type="ADDED")
         mock_get_obj.assert_not_called()
         mock_patch_obj.assert_not_called()
 
-    def test_skips_unreferenced_secret(
-        self, mock_get_obj, mock_patch_obj, mock_api_client
+    def test_skips_unreferenced_object(
+        self, mock_get_obj, mock_patch_obj, mock_api_client, source
     ):
-        self._call({})
+        self._call(source, {})
+        mock_get_obj.assert_not_called()
+        mock_patch_obj.assert_not_called()
+
+    def test_skips_same_named_object_of_other_kind(
+        self, mock_get_obj, mock_patch_obj, mock_api_client, source
+    ):
+        # A CA reading from a same-named object of the other kind must not be
+        # reconciled - the index key carries the kind.
+        other_kind = "ConfigMap" if source.kind == "Secret" else "Secret"
+        self._call(source, self._index(source, kind=other_kind))
         mock_get_obj.assert_not_called()
         mock_patch_obj.assert_not_called()
 
     def test_skips_when_ca_object_missing(
-        self, mock_get_obj, mock_patch_obj, mock_api_client
+        self, mock_get_obj, mock_patch_obj, mock_api_client, source
     ):
         # The CA CR is gone (e.g. deleted) - nothing to reconcile or persist.
         mock_get_obj.return_value = None
 
-        self._call(self._index())
+        self._call(source, self._index(source))
 
         mock_api_client.x509_certificate_authority_create.assert_not_called()
         mock_patch_obj.assert_not_called()
@@ -415,17 +505,18 @@ class TestCertificateAuthoritySecretWatch:
         mock_get_obj,
         mock_patch_obj,
         mock_api_client,
-        mock_get_certificate_from_secret,
+        mock_get_certificate,
         mock_fingerprint,
+        source,
     ):
         # Reconcile blows up (cert not ready yet) - the error is logged and the
         # patch is not persisted.
         mock_get_obj.return_value = {
             "metadata": {"namespace": "default", "name": "my-ca"},
-            "spec": {"name": "My CA", "secretRef": {"name": "gateway-tls"}},
+            "spec": source.spec(),
         }
-        mock_get_certificate_from_secret.return_value = None
+        mock_get_certificate.return_value = None
 
-        self._call(self._index())
+        self._call(source, self._index(source))
 
         mock_patch_obj.assert_not_called()

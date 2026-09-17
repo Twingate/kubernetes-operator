@@ -6,9 +6,10 @@ import pytest
 
 from app.api.client_certificate_authorities import CertificateAuthority
 from app.api.exceptions import GraphQLMutationError
+from app.crds import CACertificateReferenceKind
 from app.handlers.handlers_certificate_authorities import (
     twingate_ca_config_map_update,
-    twingate_ca_source_index,
+    twingate_ca_reference_index,
     twingate_ca_tls_secret_update,
     twingate_certificate_authority_create,
     twingate_certificate_authority_delete,
@@ -331,62 +332,66 @@ class TestCertificateAuthorityDeleteHandler:
             _call_delete(secret_spec(with_id=True), _STATUS)
 
 
-class TestCertificateAuthoritySourceIndex:
+class TestCertificateAuthorityReferenceIndex:
     def test_maps_secret_to_ca(self):
-        result = twingate_ca_source_index(
+        result = twingate_ca_reference_index(
             namespace="default", name="my-ca", spec=secret_spec()
         )
         assert result == {
-            ("Secret", "default", "gateway-tls"): {
+            (CACertificateReferenceKind.SECRET, "default", "gateway-tls"): {
                 "namespace": "default",
                 "name": "my-ca",
             }
         }
 
     def test_maps_config_map_to_ca(self):
-        result = twingate_ca_source_index(
+        result = twingate_ca_reference_index(
             namespace="default", name="my-ca", spec=config_map_spec()
         )
         assert result == {
-            ("ConfigMap", "default", "gateway-ca"): {
+            (CACertificateReferenceKind.CONFIG_MAP, "default", "gateway-ca"): {
                 "namespace": "default",
                 "name": "my-ca",
             }
         }
 
     def test_uses_ref_namespace_when_set(self):
-        result = twingate_ca_source_index(
+        result = twingate_ca_reference_index(
             namespace="ns1",
             name="my-ca",
             spec={"name": "My CA", "configMapRef": {"name": "ca", "namespace": "ns2"}},
         )
         assert result == {
-            ("ConfigMap", "ns2", "ca"): {"namespace": "ns1", "name": "my-ca"}
+            (CACertificateReferenceKind.CONFIG_MAP, "ns2", "ca"): {
+                "namespace": "ns1",
+                "name": "my-ca",
+            }
         }
 
-    def test_none_without_source(self):
+    def test_none_without_reference(self):
         assert (
-            twingate_ca_source_index(
+            twingate_ca_reference_index(
                 namespace="default", name="my-ca", spec={"name": "My CA"}
             )
             is None
         )
         assert (
-            twingate_ca_source_index(namespace="default", name="my-ca", spec={}) is None
+            twingate_ca_reference_index(namespace="default", name="my-ca", spec={})
+            is None
         )
 
 
 # The Secret and ConfigMap watchers share reconcile_cas_referencing; run the same
 # scenarios through each.
-CA_SOURCES = [
+CA_REFERENCES = [
     SimpleNamespace(
-        kind="Secret",
+        kind=CACertificateReferenceKind.SECRET,
         name="gateway-tls",
         handler=twingate_ca_tls_secret_update,
         spec=secret_spec,
     ),
     SimpleNamespace(
-        kind="ConfigMap",
+        kind=CACertificateReferenceKind.CONFIG_MAP,
         name="gateway-ca",
         handler=twingate_ca_config_map_update,
         spec=config_map_spec,
@@ -394,13 +399,13 @@ CA_SOURCES = [
 ]
 
 
-@pytest.mark.parametrize("source", CA_SOURCES, ids=lambda s: s.kind)
+@pytest.mark.parametrize("reference", CA_REFERENCES, ids=lambda s: s.kind)
 @patch("app.handlers.handlers_certificate_authorities.k8s_patch_twingate_custom_object")
 @patch("app.handlers.handlers_certificate_authorities.k8s_get_twingate_custom_object")
-class TestCertificateAuthoritySourceWatch:
+class TestCertificateAuthorityReferenceWatch:
     @staticmethod
-    def _index(source, refs=None, kind=None):
-        key = (kind or source.kind, "default", source.name)
+    def _index(reference, refs=None, kind=None):
+        key = (kind or reference.kind, "default", reference.name)
         return {
             key: refs
             if refs is not None
@@ -408,14 +413,14 @@ class TestCertificateAuthoritySourceWatch:
         }
 
     @staticmethod
-    def _call(source, index, event_type="MODIFIED"):
-        source.handler(
+    def _call(reference, index, event_type="MODIFIED"):
+        reference.handler(
             event={"type": event_type},
             namespace="default",
-            name=source.name,
+            name=reference.name,
             memo=MagicMock(),
             logger=MagicMock(),
-            twingate_ca_source_index=index,
+            twingate_ca_reference_index=index,
         )
 
     def test_reconciles_referenced_cas_on_drift(
@@ -426,14 +431,14 @@ class TestCertificateAuthoritySourceWatch:
         mock_api_client,
         mock_get_certificate,
         mock_fingerprint,
-        source,
+        reference,
     ):
         # Two CAs reference the same object - the handler must reconcile both, not
         # just the first ref.
         mock_get_obj.side_effect = [
             {
                 "metadata": {"namespace": "default", "name": name},
-                "spec": source.spec(with_id=True),
+                "spec": reference.spec(with_id=True),
             }
             for name in ("my-ca", "my-ca-2")
         ]
@@ -445,9 +450,9 @@ class TestCertificateAuthoritySourceWatch:
         )
 
         self._call(
-            source,
+            reference,
             self._index(
-                source,
+                reference,
                 [
                     {"namespace": "default", "name": "my-ca"},
                     {"namespace": "default", "name": "my-ca-2"},
@@ -464,38 +469,38 @@ class TestCertificateAuthoritySourceWatch:
             assert shim.spec == {"id": "recreated-id"}
 
     def test_skips_non_modified_events(
-        self, mock_get_obj, mock_patch_obj, mock_api_client, source
+        self, mock_get_obj, mock_patch_obj, mock_api_client, reference
     ):
         # E.g. every namespace has a kube-root-ca.crt ConfigMap with data.ca.crt; only
         # MODIFIED events for objects a CA references do any work.
-        self._call(source, self._index(source), event_type="ADDED")
+        self._call(reference, self._index(reference), event_type="ADDED")
         mock_get_obj.assert_not_called()
         mock_patch_obj.assert_not_called()
 
     def test_skips_unreferenced_object(
-        self, mock_get_obj, mock_patch_obj, mock_api_client, source
+        self, mock_get_obj, mock_patch_obj, mock_api_client, reference
     ):
-        self._call(source, {})
+        self._call(reference, {})
         mock_get_obj.assert_not_called()
         mock_patch_obj.assert_not_called()
 
     def test_skips_same_named_object_of_other_kind(
-        self, mock_get_obj, mock_patch_obj, mock_api_client, source
+        self, mock_get_obj, mock_patch_obj, mock_api_client, reference
     ):
         # A CA reading from a same-named object of the other kind must not be
         # reconciled - the index key carries the kind.
-        other_kind = "ConfigMap" if source.kind == "Secret" else "Secret"
-        self._call(source, self._index(source, kind=other_kind))
+        other_kind = next(k for k in CACertificateReferenceKind if k != reference.kind)
+        self._call(reference, self._index(reference, kind=other_kind))
         mock_get_obj.assert_not_called()
         mock_patch_obj.assert_not_called()
 
     def test_skips_when_ca_object_missing(
-        self, mock_get_obj, mock_patch_obj, mock_api_client, source
+        self, mock_get_obj, mock_patch_obj, mock_api_client, reference
     ):
         # The CA CR is gone (e.g. deleted) - nothing to reconcile or persist.
         mock_get_obj.return_value = None
 
-        self._call(source, self._index(source))
+        self._call(reference, self._index(reference))
 
         mock_api_client.x509_certificate_authority_create.assert_not_called()
         mock_patch_obj.assert_not_called()
@@ -507,16 +512,16 @@ class TestCertificateAuthoritySourceWatch:
         mock_api_client,
         mock_get_certificate,
         mock_fingerprint,
-        source,
+        reference,
     ):
         # Reconcile blows up (cert not ready yet) - the error is logged and the
         # patch is not persisted.
         mock_get_obj.return_value = {
             "metadata": {"namespace": "default", "name": "my-ca"},
-            "spec": source.spec(),
+            "spec": reference.spec(),
         }
         mock_get_certificate.return_value = None
 
-        self._call(source, self._index(source))
+        self._call(reference, self._index(reference))
 
         mock_patch_obj.assert_not_called()

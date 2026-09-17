@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from app.api.tests.factories import VALID_CA_CERT
 from app.crds import (
+    CACertificateReferenceKind,
     CertificateAuthoritySpec,
     CertificateAuthorityType,
     TwingateCertificateAuthorityCRD,
@@ -74,7 +75,7 @@ def test_ca_config_map_ref_deserialization(sample_ca_object):
     assert ca.spec.config_map_ref.resolve_namespace("default") == "ca-ns"
 
 
-def test_ca_certificate_source_required():
+def test_ca_certificate_reference_required():
     with pytest.raises(
         ValidationError, match="Exactly one of secretRef or configMapRef must be set"
     ):
@@ -92,7 +93,7 @@ def test_ca_rejects_both_secret_ref_and_config_map_ref():
         )
 
 
-def test_ca_certificate_ref_is_the_configured_source():
+def test_ca_certificate_ref_is_the_configured_reference():
     secret_spec = CertificateAuthoritySpec(
         name="My CA", secret_ref={"name": "gateway-tls"}
     )
@@ -100,9 +101,12 @@ def test_ca_certificate_ref_is_the_configured_source():
         name="My CA", config_map_ref={"name": "gateway-ca"}
     )
 
-    assert secret_spec.certificate_ref == ("Secret", secret_spec.secret_ref)
+    assert secret_spec.certificate_ref == (
+        CACertificateReferenceKind.SECRET,
+        secret_spec.secret_ref,
+    )
     assert config_map_spec.certificate_ref == (
-        "ConfigMap",
+        CACertificateReferenceKind.CONFIG_MAP,
         config_map_spec.config_map_ref,
     )
 

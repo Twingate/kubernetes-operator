@@ -72,7 +72,6 @@ def k8s_secret_mock():
 
 @pytest.fixture
 def k8s_configmap_mock():
-    # ConfigMap `data` holds plain text (no base64), unlike Secret `data`.
     return kubernetes.client.V1ConfigMap(
         metadata=kubernetes.client.V1ObjectMeta(name="gateway-ca"),
         data={"ca.crt": VALID_CA_CERT},

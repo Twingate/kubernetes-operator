@@ -337,6 +337,13 @@ class CertificateAuthorityType(StrEnum):
     X509 = "X509"
 
 
+class CACertificateReferenceKind(StrEnum):
+    """Kind of Kubernetes object the CA's public certificate (`ca.crt`) is read from."""
+
+    SECRET = "Secret"  # noqa: S105  # nosec B105
+    CONFIG_MAP = "ConfigMap"
+
+
 class CertificateAuthoritySpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
@@ -351,26 +358,30 @@ class CertificateAuthoritySpec(BaseModel):
     config_map_ref: _KubernetesObjectRef | None = None
 
     @model_validator(mode="after")
-    def check_certificate_source(self):
+    def check_certificate_reference(self):
         if (self.secret_ref is None) == (self.config_map_ref is None):
             raise ValueError("Exactly one of secretRef or configMapRef must be set.")
         return self
 
     @property
-    def certificate_ref(self) -> tuple[str, _KubernetesObjectRef]:
+    def certificate_ref(
+        self,
+    ) -> tuple[CACertificateReferenceKind, _KubernetesObjectRef]:
         """``(kind, ref)`` of the Secret or ConfigMap `ca.crt` is read from."""
         if self.config_map_ref is not None:
-            return "ConfigMap", self.config_map_ref
+            return CACertificateReferenceKind.CONFIG_MAP, self.config_map_ref
 
-        # check_certificate_source guarantees secret_ref is set when config_map_ref is not.
-        return "Secret", cast(_KubernetesObjectRef, self.secret_ref)
+        # check_certificate_reference guarantees secret_ref is set when config_map_ref is not.
+        return CACertificateReferenceKind.SECRET, cast(
+            _KubernetesObjectRef, self.secret_ref
+        )
 
     def get_certificate(self, owner_namespace: str) -> str | None:
         """`ca.crt` from the referenced object, or None if it does not exist (yet)."""
         kind, ref = self.certificate_ref
         namespace = ref.resolve_namespace(owner_namespace)
 
-        if kind == "ConfigMap":
+        if kind == CACertificateReferenceKind.CONFIG_MAP:
             if config_map := k8s_read_namespaced_config_map(namespace, ref.name):
                 return self.read_certificate_authority_cert_from_config_map(config_map)
             return None

@@ -18,9 +18,16 @@ from tests_integration.utils import (
 )
 
 
+def ca_reference_manifest(ref_key, name, common_name="Test CA"):
+    """Secret or ConfigMap (per the CA's ``ref_key``) carrying a fresh CA `ca.crt`."""
+    if ref_key == "configMapRef":
+        return create_ca_config_map(name, generate_ca_cert(common_name))
+    return create_tls_secret(name, generate_base64_ca_cert(common_name))
+
+
 @pytest.mark.parametrize("ref_key", ["secretRef", "configMapRef"])
 def test_gateway_flows(run_kopf, random_name_generator, ref_key):
-    source_name = random_name_generator("gw-src")
+    reference_name = random_name_generator("gw-ref")
     svc_name = random_name_generator("gw-svc")
     ca_name = random_name_generator("gw-ca")
     gw_name = random_name_generator("gw")
@@ -51,7 +58,7 @@ def test_gateway_flows(run_kopf, random_name_generator, ref_key):
         spec:
           name: {ca_name}
           {ref_key}:
-            name: {source_name}
+            name: {reference_name}
     """
 
     GW_OBJ = f"""
@@ -83,7 +90,7 @@ def test_gateway_flows(run_kopf, random_name_generator, ref_key):
     with run_kopf() as runner:
         try:
             # The CA handler reads ca.crt from this Secret / ConfigMap.
-            kubectl_create(ca_source_manifest(ref_key, source_name))
+            kubectl_create(ca_reference_manifest(ref_key, reference_name))
             # The Gateway resolves its address from this Service.
             kubectl_create(SERVICE_OBJ)
 
@@ -117,13 +124,13 @@ def test_gateway_flows(run_kopf, random_name_generator, ref_key):
                 f"Resource spec.id not set: {resource['spec']}"
             )
 
-            # 4. Rotate the source's ca.crt. The Secret or ConfigMap event handler
+            # 4. Rotate the referenced object's ca.crt. The Secret or ConfigMap event handler
             #    re-reconciles the CA, re-creating it with a new backend ID; the CA
             #    ID-change handler (twingate_ca_id_changed) then propagates that ID
             #    onto the Gateway.
             original_ca_id = ca["spec"]["id"]
             assert gw["status"]["x509CaId"] == original_ca_id
-            kubectl_apply(ca_source_manifest(ref_key, source_name, "Rotated CA"))
+            kubectl_apply(ca_reference_manifest(ref_key, reference_name, "Rotated CA"))
 
             ca = kubectl_wait_object(
                 "tgca",
@@ -177,7 +184,7 @@ def test_gateway_flows(run_kopf, random_name_generator, ref_key):
         finally:
             # run_kopf only cleans up twingate CRs, not these helper objects.
             kubectl(f"delete service {svc_name} --ignore-not-found")
-            kubectl(f"delete secret,configmap {source_name} --ignore-not-found")
+            kubectl(f"delete secret,configmap {reference_name} --ignore-not-found")
 
     # run_kopf asserts runner.exception is None / exit_code == 0 on exit.
     logs = load_stdout(runner.output)
@@ -188,7 +195,7 @@ def test_gateway_flows(run_kopf, random_name_generator, ref_key):
         logs, "Handler 'twingate_gateway_create_update' succeeded."
     )
     assert_log_message_contains(logs, "Handler 'twingate_resource_create' succeeded.")
-    # The cert-rotation propagation chain: source change -> CA re-reconcile -> Gateway.
+    # The cert-rotation propagation chain: reference change -> CA re-reconcile -> Gateway.
     assert_log_message_contains(logs, "changed, reconciling certificate authority")
     assert_log_message_contains(logs, "id changed, reconciling gateway")
     # Out-of-order teardown retried each delete until its dependent was gone.
@@ -197,10 +204,3 @@ def test_gateway_flows(run_kopf, random_name_generator, ref_key):
         logs, "Certificate authority still in use by a Gateway, retrying."
     )
     assert_log_message_contains(logs, "Handler 'twingate_gateway_delete' succeeded.")
-
-
-def ca_source_manifest(ref_key, name, common_name="Test CA"):
-    """Secret or ConfigMap (per the CA's ``ref_key``) carrying a fresh CA `ca.crt`."""
-    if ref_key == "configMapRef":
-        return create_ca_config_map(name, generate_ca_cert(common_name))
-    return create_tls_secret(name, generate_base64_ca_cert(common_name))

@@ -6,7 +6,11 @@ import kopf
 
 from app.api import TwingateAPIClient
 from app.api.exceptions import GraphQLMutationError
-from app.crds import CertificateAuthoritySpec, TwingateCertificateAuthorityCRD
+from app.crds import (
+    CACertificateReferenceKind,
+    CertificateAuthoritySpec,
+    TwingateCertificateAuthorityCRD,
+)
 from app.handlers.base import success
 from app.utils import x509_sha256_fingerprint
 from app.utils_k8s import (
@@ -154,12 +158,15 @@ def twingate_certificate_authority_delete(
 
 
 @kopf.index(TwingateCertificateAuthorityCRD.PLURAL)
-def twingate_ca_source_index(namespace, name, spec, **_):
+def twingate_ca_reference_index(namespace, name, spec, **_):
     """Index CAs by ``(kind, namespace, name)`` of the object their `ca.crt` is read from.
 
     The kind is part of the key because a Secret and a ConfigMap may share a name.
     """
-    for kind, ref_key in (("Secret", "secretRef"), ("ConfigMap", "configMapRef")):
+    for kind, ref_key in (
+        (CACertificateReferenceKind.SECRET, "secretRef"),
+        (CACertificateReferenceKind.CONFIG_MAP, "configMapRef"),
+    ):
         ref = spec.get(ref_key, {})
         if ref_name := ref.get("name"):
             return {
@@ -217,20 +224,32 @@ def reconcile_cas_referencing(kind, event, namespace, name, memo, logger, index)
 
 @kopf.on.event("", "v1", "secrets", field=("data", "ca.crt"))  # type: ignore[arg-type]
 def twingate_ca_tls_secret_update(
-    event, namespace, name, memo, logger, twingate_ca_source_index, **_
+    event, namespace, name, memo, logger, twingate_ca_reference_index, **_
 ):
     reconcile_cas_referencing(
-        "Secret", event, namespace, name, memo, logger, twingate_ca_source_index
+        CACertificateReferenceKind.SECRET,
+        event,
+        namespace,
+        name,
+        memo,
+        logger,
+        twingate_ca_reference_index,
     )
 
 
 @kopf.on.event("", "v1", "configmaps", field=("data", "ca.crt"))  # type: ignore[arg-type]
 def twingate_ca_config_map_update(
-    event, namespace, name, memo, logger, twingate_ca_source_index, **_
+    event, namespace, name, memo, logger, twingate_ca_reference_index, **_
 ):
     # Every namespace has a kube-root-ca.crt ConfigMap with data.ca.crt, so this
     # fires for far more objects than CAs reference; the index lookup is what keeps
     # those a no-op.
     reconcile_cas_referencing(
-        "ConfigMap", event, namespace, name, memo, logger, twingate_ca_source_index
+        CACertificateReferenceKind.CONFIG_MAP,
+        event,
+        namespace,
+        name,
+        memo,
+        logger,
+        twingate_ca_reference_index,
     )

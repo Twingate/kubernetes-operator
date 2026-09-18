@@ -251,8 +251,36 @@ class TestWebAppResourceModel:
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
             assert resource.get_spec_diff(crd, owner_namespace="default") == {
-                "downstream": Diff(remote=resource.downstream.port, local=8443),
-                "upstream": Diff(remote=resource.upstream.port, local=9090),
+                "downstream": Diff(
+                    remote={"port": resource.downstream.port, "tls": False},
+                    local={"port": 8443, "tls": False},
+                ),
+                "upstream": Diff(
+                    remote={"port": resource.upstream.port, "tls": False},
+                    local={"port": 9090, "tls": False},
+                ),
+            }
+
+    def test_get_spec_diff_for_tls_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            downstream={"port": resource.downstream.port, "tls": True},
+            upstream={"port": resource.upstream.port, "tls": True},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "downstream": Diff(
+                    remote={"port": resource.downstream.port, "tls": False},
+                    local={"port": resource.downstream.port, "tls": True},
+                ),
+                "upstream": Diff(
+                    remote={"port": resource.upstream.port, "tls": False},
+                    local={"port": resource.upstream.port, "tls": True},
+                ),
             }
 
     def test_get_spec_diff_ignores_protocols(self, web_app_resource_factory):
@@ -752,7 +780,11 @@ class TestTwingateResourceAPIs:
     def test_web_app_resource_create(
         self, test_url, api_client, web_app_resource_factory, mocked_responses
     ):
-        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        resource = web_app_resource_factory(
+            gateway=ResourceGateway(id="gw-1"),
+            downstream__tls=True,
+            upstream__tls=True,
+        )
         crd = resource.to_spec(
             id=None,
             gateway_ref={"name": "my-gateway"},
@@ -777,8 +809,14 @@ class TestTwingateResourceAPIs:
                     {
                         "variables": {
                             "gatewayId": "gw-1",
-                            "downstream": {"port": resource.downstream.port},
-                            "upstream": {"port": resource.upstream.port},
+                            "downstream": {
+                                "port": resource.downstream.port,
+                                "tls": resource.downstream.tls,
+                            },
+                            "upstream": {
+                                "port": resource.upstream.port,
+                                "tls": resource.upstream.tls,
+                            },
                         }
                     },
                     strict_match=False,

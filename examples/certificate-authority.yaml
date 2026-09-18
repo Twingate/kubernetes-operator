@@ -5,9 +5,10 @@ metadata:
 spec:
   name: Example Gateway CA
   type: X509
-  # Exactly one of `secretRef` or `configMapRef` names the object whose `ca.crt`
-  # is registered with Twingate as the X509 CA. Both are immutable, and the choice
-  # between them cannot be changed after creation.
+  # Exactly one of `secretRef` or `configMapRef` must be set. It points to the
+  # Secret or ConfigMap whose `ca.crt` key is registered with Twingate as the
+  # X509 CA. The reference is immutable: neither its target nor the choice of
+  # `secretRef` versus `configMapRef` can change after creation.
   secretRef:
     name: gateway-tls
     namespace: twingate

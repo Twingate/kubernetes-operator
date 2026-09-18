@@ -5,14 +5,14 @@ import pytest
 from tests_integration.utils import kubectl_apply, kubectl_create, kubectl_delete
 
 
-def _ca_manifest(name, ref_key, labels=""):
+def ca_manifest(name, ref_key):
     """CA manifest reading `ca.crt` from ``ref_key`` (secretRef / configMapRef)."""
     reference_names = {"secretRef": "gateway-tls", "configMapRef": "gateway-ca"}
     return f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateCertificateAuthority
         metadata:
-          name: {name}{labels}
+          name: {name}
         spec:
           name: My CA
           {ref_key}:
@@ -238,11 +238,11 @@ def test_config_map_ref_is_immutable(unique_resource_name):
 def test_certificate_reference_cannot_change_after_creation(
     unique_resource_name, ref_key, new_ref_key
 ):
-    result = kubectl_apply(_ca_manifest(unique_resource_name, ref_key))
+    result = kubectl_apply(ca_manifest(unique_resource_name, ref_key))
     assert result.returncode == 0
 
     with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_apply(_ca_manifest(unique_resource_name, new_ref_key))
+        kubectl_apply(ca_manifest(unique_resource_name, new_ref_key))
 
     stderr = ex.value.stderr.decode()
     assert "Cannot switch between `secretRef` and `configMapRef`." in stderr

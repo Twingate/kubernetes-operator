@@ -241,9 +241,6 @@ def twingate_ca_tls_secret_update(
 def twingate_ca_config_map_update(
     event, namespace, name, memo, logger, twingate_ca_reference_index, **_
 ):
-    # Every namespace has a kube-root-ca.crt ConfigMap with data.ca.crt, so this
-    # fires for far more objects than CAs reference; the index lookup is what keeps
-    # those a no-op.
     reconcile_cas_referencing(
         CACertificateReferenceKind.CONFIG_MAP,
         event,

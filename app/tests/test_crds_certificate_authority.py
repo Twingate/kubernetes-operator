@@ -62,6 +62,11 @@ def test_ca_rejects_invalid_type():
         )
 
 
+def test_ca_name_required():
+    with pytest.raises(ValidationError, match="name"):
+        CertificateAuthoritySpec(secret_ref={"name": "gateway-tls"})
+
+
 def test_ca_config_map_ref_deserialization(sample_ca_object):
     sample_ca_object["spec"] = {
         "name": "My CA",

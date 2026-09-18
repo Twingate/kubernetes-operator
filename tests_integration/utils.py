@@ -12,6 +12,9 @@ from cryptography.x509.oid import NameOID
 
 KUBECTL_COMMAND = os.environ.get("KUBECTL_COMMAND", "kubectl")
 
+DEFAULT_ALLOWED_KUBE_CONTEXT = "minikube"
+ALLOWED_KUBE_CONTEXTS_ENV = "TWINGATE_ALLOWED_KUBE_CONTEXTS"
+
 # ruff: noqa: S602 (subprocess_popen_with_shell_equals_true)
 
 
@@ -75,6 +78,25 @@ def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProce
         capture_output=True,
         input=input.encode() if input else None,
     )
+
+
+def get_allowed_kube_contexts() -> set[str]:
+    """Kubernetes contexts the integration tests are allowed to run against.
+
+    Defaults to just ``minikube``. ``TWINGATE_ALLOWED_KUBE_CONTEXTS`` (comma
+    separated) is a deliberate escape hatch for pointing at another cluster.
+    """
+    override = os.environ.get(ALLOWED_KUBE_CONTEXTS_ENV, "")
+    extra = {ctx.strip() for ctx in override.split(",") if ctx.strip()}
+    return {DEFAULT_ALLOWED_KUBE_CONTEXT} | extra
+
+
+def get_current_kube_context() -> str | None:
+    """The current kubectl context, or ``None`` if kubectl cannot report one."""
+    try:
+        return kubectl("config current-context").stdout.decode().strip() or None
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+        return None
 
 
 def kubectl_create(obj: str) -> subprocess.CompletedProcess:

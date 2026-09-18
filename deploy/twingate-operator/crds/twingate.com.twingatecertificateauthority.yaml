@@ -56,7 +56,7 @@ spec:
                 configMapRef:
                   type: object
                   required: ["name"]
-                  description: "Reference to the ConfigMap the CA's public certificate under the ca.crt key in PEM format."
+                  description: "Reference to the ConfigMap the CA's public certificate is read from under the `ca.crt` key in PEM format."
                   x-kubernetes-validations:
                     - rule: "self == oldSelf"
                       message: "configMapRef is immutable"

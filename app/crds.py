@@ -354,7 +354,7 @@ class CertificateAuthoritySpec(BaseModel):
     type: CertificateAuthorityType = CertificateAuthorityType.X509
     # Secret (kubernetes.io/tls) the CA's public certificate under the `ca.crt` key in base64 format is read from.
     secret_ref: _KubernetesObjectRef | None = None
-    # ConfigMap the CA's public certificate under the `ca.crt` key in PEM format is read from.
+    # ConfigMap the CA's public certificate is read from under the `ca.crt` key in PEM format.
     config_map_ref: _KubernetesObjectRef | None = None
 
     @model_validator(mode="after")

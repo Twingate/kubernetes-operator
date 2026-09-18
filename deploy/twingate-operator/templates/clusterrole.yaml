@@ -25,8 +25,12 @@ rules:
     verbs: [ "*" ]
 
   - apiGroups: ["*"]
-    resources: [pods, services, secrets, configmaps, services/status]
+    resources: [pods, services, secrets, services/status]
     verbs: [list, watch, patch, get, create, delete]
+
+  - apiGroups: ["*"]
+    resources: [configmaps]
+    verbs: [get, list, watch]
 
   - apiGroups: ["apps"]
     resources: ["deployments"]

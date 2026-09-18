@@ -47,7 +47,6 @@ should render:
           - pods
           - services
           - secrets
-          - configmaps
           - services/status
         verbs:
           - list
@@ -56,6 +55,14 @@ should render:
           - get
           - create
           - delete
+      - apiGroups:
+          - '*'
+        resources:
+          - configmaps
+        verbs:
+          - get
+          - list
+          - watch
       - apiGroups:
           - apps
         resources:

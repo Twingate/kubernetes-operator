@@ -17,7 +17,12 @@ spec:
             spec:
               type: object
               description: "TwingateCertificateAuthoritySpec defines the desired state of TwingateCertificateAuthority"
-              required: ["name", "secretRef"]
+              required: ["name"]
+              x-kubernetes-validations:
+                - rule: (has(self.secretRef) && !has(self.configMapRef)) || (!has(self.secretRef) && has(self.configMapRef))
+                  message: "Exactly one of `secretRef` or `configMapRef` must be set."
+                - rule: has(self.secretRef) == has(oldSelf.secretRef) && has(self.configMapRef) == has(oldSelf.configMapRef)
+                  message: "Cannot switch between `secretRef` and `configMapRef`."
               properties:
                 id:
                   type: string
@@ -48,6 +53,21 @@ spec:
                       type: string
                       nullable: true
                       description: "Namespace of the Secret object. Defaults to the TwingateCertificateAuthority's own namespace when omitted."
+                configMapRef:
+                  type: object
+                  required: ["name"]
+                  description: "Reference to the ConfigMap the CA's public certificate is read from under the `ca.crt` key in PEM format."
+                  x-kubernetes-validations:
+                    - rule: "self == oldSelf"
+                      message: "configMapRef is immutable"
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the ConfigMap object."
+                    namespace:
+                      type: string
+                      nullable: true
+                      description: "Namespace of the ConfigMap object. Defaults to the TwingateCertificateAuthority's own namespace when omitted."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
@@ -69,6 +89,16 @@ spec:
           type: string
           description: "Name of the Secret the CA's public certificate is read from."
           jsonPath: .spec.secretRef.name
+          priority: 1
+        - name: ConfigMap Namespace
+          type: string
+          description: "Namespace of the ConfigMap the CA's public certificate is read from."
+          jsonPath: .spec.configMapRef.namespace
+          priority: 1
+        - name: ConfigMap
+          type: string
+          description: "Name of the ConfigMap the CA's public certificate is read from."
+          jsonPath: .spec.configMapRef.name
           priority: 1
         - name: Age
           type: date

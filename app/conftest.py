@@ -4,7 +4,7 @@ import kubernetes
 import pytest
 import responses
 
-from app.api.tests.factories import BASE64_OF_VALID_CA_CERT
+from app.api.tests.factories import BASE64_OF_VALID_CA_CERT, VALID_CA_CERT
 
 
 @pytest.fixture
@@ -67,4 +67,12 @@ def k8s_secret_mock():
         type="kubernetes.io/tls",
         metadata=kubernetes.client.V1ObjectMeta(name="gateway-tls"),
         data={"ca.crt": BASE64_OF_VALID_CA_CERT},
+    )
+
+
+@pytest.fixture
+def k8s_configmap_mock():
+    return kubernetes.client.V1ConfigMap(
+        metadata=kubernetes.client.V1ObjectMeta(name="gateway-ca"),
+        data={"ca.crt": VALID_CA_CERT},
     )

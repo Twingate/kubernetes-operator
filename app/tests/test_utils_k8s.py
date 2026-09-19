@@ -9,6 +9,7 @@ from app.utils_k8s import (
     k8s_delete_pod,
     k8s_get_twingate_custom_object,
     k8s_patch_twingate_custom_object,
+    k8s_read_namespaced_config_map,
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
     k8s_read_namespaced_secret,
@@ -80,6 +81,21 @@ class TestReadNamespacedSecret:
         )
         with pytest.raises(kubernetes.client.exceptions.ApiException):
             k8s_read_namespaced_secret("default", "test")
+
+
+class TestReadNamespacedConfigMap:
+    def test_handles_404_returns_none(self, k8s_core_client_mock):
+        k8s_core_client_mock.read_namespaced_config_map.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=404)
+        )
+        assert k8s_read_namespaced_config_map("default", "test") is None
+
+    def test_reraises_non_404_exceptions(self, k8s_core_client_mock):
+        k8s_core_client_mock.read_namespaced_config_map.side_effect = (
+            kubernetes.client.exceptions.ApiException(status=500)
+        )
+        with pytest.raises(kubernetes.client.exceptions.ApiException):
+            k8s_read_namespaced_config_map("default", "test")
 
 
 class TestGetTwingateCustomObject:

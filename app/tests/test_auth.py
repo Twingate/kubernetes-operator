@@ -1,19 +1,14 @@
 import dataclasses
 import datetime
-import importlib
 import ssl
-import sys
 from unittest.mock import MagicMock, patch
 
 import kopf
-import kubernetes
 import pytest
-from urllib3.util import create_urllib3_context
 
 from app.auth import (
     K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV,
     NonStrictX509ConnectionInfo,
-    NonStrictX509RESTClientObject,
     is_strict_x509_verification_disabled,
     login_without_strict_x509,
 )
@@ -29,33 +24,6 @@ def test_non_strict_connection_info_clears_only_the_strict_flag():
     assert context.verify_flags == baseline.verify_flags & ~ssl.VERIFY_X509_STRICT
     assert context.verify_mode == ssl.CERT_REQUIRED
     assert context.check_hostname is True
-
-
-def test_non_strict_rest_client_clears_only_the_strict_flag():
-    baseline = create_urllib3_context()
-
-    context = NonStrictX509RESTClientObject(
-        kubernetes.client.Configuration()
-    ).pool_manager.connection_pool_kw["ssl_context"]
-
-    # Guard against over-clearing: only the strict bit may go, while the intermediate-CA
-    # trust, certificate validation, and hostname checks must stay enforced.
-    assert context.verify_flags == baseline.verify_flags & ~ssl.VERIFY_X509_STRICT
-    assert context.verify_mode == ssl.CERT_REQUIRED
-    assert context.check_hostname is True
-
-
-def test_non_strict_rest_client_with_insecure_ssl_configuration():
-    configuration = kubernetes.client.Configuration()
-    configuration.verify_ssl = False
-
-    context = NonStrictX509RESTClientObject(
-        configuration
-    ).pool_manager.connection_pool_kw["ssl_context"]
-
-    assert not context.verify_flags & ssl.VERIFY_X509_STRICT
-    assert context.verify_mode == ssl.CERT_NONE
-    assert context.check_hostname is False
 
 
 @pytest.mark.parametrize(
@@ -94,45 +62,3 @@ def test_login_without_strict_x509_wraps_the_default_login():
 def test_login_without_strict_x509_passes_through_missing_credentials():
     with patch("kopf.login_via_client", return_value=None):
         assert login_without_strict_x509(logger=MagicMock()) is None
-
-
-@pytest.fixture
-def fresh_main_import(monkeypatch):
-    # import main.py fresh per test, and undo its class swap.
-    monkeypatch.setattr(
-        kubernetes.client.rest,
-        "RESTClientObject",
-        NonStrictX509RESTClientObject.__base__,
-    )
-    sys.modules.pop("main", None)
-
-
-def test_main_relaxes_the_kubernetes_client_when_strict_verification_is_disabled(
-    monkeypatch, fresh_main_import
-):
-    monkeypatch.setenv(K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV, "true")
-
-    importlib.import_module("main")
-
-    assert kubernetes.client.rest.RESTClientObject is NonStrictX509RESTClientObject
-
-    # New API object should use the non-strict pool
-    rest_client = kubernetes.client.CoreV1Api().api_client.rest_client
-    assert isinstance(rest_client, NonStrictX509RESTClientObject)
-    context = rest_client.pool_manager.connection_pool_kw["ssl_context"]
-    assert not context.verify_flags & ssl.VERIFY_X509_STRICT
-
-
-def test_main_keeps_the_kubernetes_client_strict_by_default(
-    monkeypatch, fresh_main_import
-):
-    monkeypatch.delenv(K8S_API_SERVER_STRICT_X509_VERIFICATION_ENV, raising=False)
-
-    importlib.import_module("main")
-
-    assert (
-        kubernetes.client.rest.RESTClientObject
-        is NonStrictX509RESTClientObject.__base__
-    )
-    rest_client = kubernetes.client.CoreV1Api().api_client.rest_client
-    assert "ssl_context" not in rest_client.pool_manager.connection_pool_kw

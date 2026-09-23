@@ -6,12 +6,12 @@ import kubernetes
 from pydantic import ValidationError
 
 from app.auth import (
-    NonStrictX509RESTClientObject,
     is_strict_x509_verification_disabled,
     login_without_strict_x509,
 )
 from app.handlers import *  # noqa: F403
 from app.settings import TwingateOperatorSettings
+from app.utils_k8s import NonStrictX509RESTClientObject
 
 if is_strict_x509_verification_disabled():
     # Every ``kubernetes.client.*Api()`` builds the REST client using this class.

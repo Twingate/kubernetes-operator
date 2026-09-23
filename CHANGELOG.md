@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.3.2 (2026-09-23)
+
+### Bug Fixes
+
+- Relax `ssl.VERIFY_X509_STRICT` for all Kubernetes clients
+  ([#1169](https://github.com/Twingate/kubernetes-operator/pull/1169),
+  [`3814ea4`](https://github.com/Twingate/kubernetes-operator/commit/3814ea4eb12825dd9e9f720f25e9c3bbc506f73d))
+
+
 ## v1.3.1 (2026-08-24)
 
 ### Bug Fixes

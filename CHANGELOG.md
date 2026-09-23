@@ -1,12 +1,33 @@
 # CHANGELOG
 
-## v1.3.2 (2026-09-23)
 
-### Bug Fixes
+## v2.0.4 (2026-09-23)
 
-- Relax `ssl.VERIFY_X509_STRICT` for all Kubernetes clients
-  ([#1169](https://github.com/Twingate/kubernetes-operator/pull/1169),
-  [`3814ea4`](https://github.com/Twingate/kubernetes-operator/commit/3814ea4eb12825dd9e9f720f25e9c3bbc506f73d))
+### Chores
+
+- Bump https://github.com/igorshubovych/markdownlint-cli from v0.43.0 to 0.49.1
+  ([#1172](https://github.com/Twingate/kubernetes-operator/pull/1172),
+  [`43c86ae`](https://github.com/Twingate/kubernetes-operator/commit/43c86aeff9d5298eb4e0518d014c43fdafcc466f))
+
+- Bump https://github.com/koalaman/shellcheck-precommit from v0.10.0 to 0.11.0
+  ([#1170](https://github.com/Twingate/kubernetes-operator/pull/1170),
+  [`0088f9e`](https://github.com/Twingate/kubernetes-operator/commit/0088f9ed13f423518342d5be7932bc415debae75))
+
+- Bump https://github.com/pre-commit/pre-commit-hooks from v4.6.0 to 6.0.0
+  ([#1173](https://github.com/Twingate/kubernetes-operator/pull/1173),
+  [`6f342ac`](https://github.com/Twingate/kubernetes-operator/commit/6f342acc4ed09ed96e4583a4cebd8f49721cf1f3))
+
+- Bump https://github.com/scop/pre-commit-shfmt from v3.8.0-1 to 3.14.1.pre.1
+  ([#1171](https://github.com/Twingate/kubernetes-operator/pull/1171),
+  [`60d5f31`](https://github.com/Twingate/kubernetes-operator/commit/60d5f313cd247a5bdb2df674b86187cd45e1ca89))
+
+- Fix and extend Dependabot configuration
+  ([#1143](https://github.com/Twingate/kubernetes-operator/pull/1143),
+  [`0151712`](https://github.com/Twingate/kubernetes-operator/commit/0151712efef9e832a3da6c7d00067a5cd9c8bbcc))
+
+- Update hotfix v1.3.2 release in CHANGELOG
+  ([`663b0df`](https://github.com/Twingate/kubernetes-operator/commit/663b0df4a39b3ebbf622cf936ded712aa6fdc1ce))
+
 
 ## v2.0.3 (2026-09-23)
 
@@ -66,6 +87,7 @@
   ([#1158](https://github.com/Twingate/kubernetes-operator/pull/1158),
   [`ddc7b52`](https://github.com/Twingate/kubernetes-operator/commit/ddc7b52f4c016e8225e6748c15e1e48803085f56))
 
+
 ## v2.0.2 (2026-09-04)
 
 ### Chores
@@ -123,6 +145,7 @@
   ([#1136](https://github.com/Twingate/kubernetes-operator/pull/1136),
   [`ad8e6ec`](https://github.com/Twingate/kubernetes-operator/commit/ad8e6ec0859ff3427e56cbb668eddb7db81589e4))
 
+
 ## v2.0.1 (2026-08-24)
 
 ### Bug Fixes
@@ -159,6 +182,7 @@
 - Bump types-pyyaml from 6.0.12.20260724 to 6.0.12.20260815
   ([#1130](https://github.com/Twingate/kubernetes-operator/pull/1130),
   [`21cb935`](https://github.com/Twingate/kubernetes-operator/commit/21cb9351579a8bb4580e13bec509a8009b416a34))
+
 
 ## v2.0.0 (2026-08-12)
 
@@ -483,6 +507,7 @@
   ([#1119](https://github.com/Twingate/kubernetes-operator/pull/1119),
   [`fe21549`](https://github.com/Twingate/kubernetes-operator/commit/fe21549622194e6675884b478a865d05b3dbf780))
 
+
 ## v1.1.2 (2026-06-16)
 
 ### Chores
@@ -510,6 +535,7 @@
 - Upgrade Poetry to 2.4.1 and fix SemVer version handling
   ([#1034](https://github.com/Twingate/kubernetes-operator/pull/1034),
   [`c05633b`](https://github.com/Twingate/kubernetes-operator/commit/c05633bcaae121da2a775ac5aa0dcfcfbb7a19c3))
+
 
 ## v1.1.1 (2026-06-10)
 
@@ -543,6 +569,7 @@
 - Unblock kopf updates by running semantic-release via pipx
   ([#1030](https://github.com/Twingate/kubernetes-operator/pull/1030),
   [`a5e34ba`](https://github.com/Twingate/kubernetes-operator/commit/a5e34ba37ec733a8727907cb897515967498b1e4))
+
 
 ## v1.1.0 (2026-06-08)
 
@@ -644,6 +671,7 @@
   ([#994](https://github.com/Twingate/kubernetes-operator/pull/994),
   [`4d6959f`](https://github.com/Twingate/kubernetes-operator/commit/4d6959fdff49e1c8037d85076bfdfc2105f9a5e6))
 
+
 ## v1.0.2 (2026-05-18)
 
 ### Chores
@@ -715,6 +743,7 @@
   ([#989](https://github.com/Twingate/kubernetes-operator/pull/989),
   [`96ba32c`](https://github.com/Twingate/kubernetes-operator/commit/96ba32c56358c9e41d39790fd598bbf603f5eeec))
 
+
 ## v1.0.1 (2026-05-05)
 
 ### Chores
@@ -722,6 +751,7 @@
 - Bump gateway from 0.15.0 to 0.16.0 in /deploy/twingate-operator
   ([#980](https://github.com/Twingate/kubernetes-operator/pull/980),
   [`f6af933`](https://github.com/Twingate/kubernetes-operator/commit/f6af933b749af452732452b584df0ed5ae570067))
+
 
 ## v1.0.0 (2026-05-05)
 
@@ -946,6 +976,7 @@
   ([#965](https://github.com/Twingate/kubernetes-operator/pull/965),
   [`f747b6a`](https://github.com/Twingate/kubernetes-operator/commit/f747b6a28d7eb710becb2e35dce563f40dde2750))
 
+
 ## v0.30.0 (2026-03-16)
 
 ### Bug Fixes
@@ -1104,6 +1135,7 @@
   ([#808](https://github.com/Twingate/kubernetes-operator/pull/808),
   [`180852d`](https://github.com/Twingate/kubernetes-operator/commit/180852d978b2c3987f32e8c10dc61acb4bbf7076))
 
+
 ## v0.29.0 (2026-01-21)
 
 ### Chores
@@ -1188,6 +1220,7 @@
 - Log the diff when updating resource in `twingate_resource_sync`
   ([#863](https://github.com/Twingate/kubernetes-operator/pull/863),
   [`778123c`](https://github.com/Twingate/kubernetes-operator/commit/778123c3cdf87b70f7f6b40d001b39cb706bc09c))
+
 
 ## v0.28.0 (2025-12-09)
 
@@ -1284,6 +1317,7 @@
   ([#853](https://github.com/Twingate/kubernetes-operator/pull/853),
   [`2e1799b`](https://github.com/Twingate/kubernetes-operator/commit/2e1799bc051a1dba502f7293ac32078be740fbe7))
 
+
 ## v0.27.1 (2025-11-06)
 
 ### Bug Fixes
@@ -1301,6 +1335,7 @@
 - Bump pydantic from 2.12.3 to 2.12.4
   ([#827](https://github.com/Twingate/kubernetes-operator/pull/827),
   [`c884733`](https://github.com/Twingate/kubernetes-operator/commit/c884733c621eecc3820df5e070f0379b3b7b8f42))
+
 
 ## v0.27.0 (2025-10-31)
 
@@ -1362,6 +1397,7 @@
 - Fix environment for integration tests
   ([#823](https://github.com/Twingate/kubernetes-operator/pull/823),
   [`22fa6c2`](https://github.com/Twingate/kubernetes-operator/commit/22fa6c21ffa095e498770ad0ea6c24a39b7dfc0d))
+
 
 ## v0.26.4 (2025-10-14)
 
@@ -1431,6 +1467,7 @@
 
 - Upgrade Poetry to 2.2.1 ([#804](https://github.com/Twingate/kubernetes-operator/pull/804),
   [`96098a7`](https://github.com/Twingate/kubernetes-operator/commit/96098a776f2159d4a8150456c5fe3061d56f4d5f))
+
 
 ## v0.26.3 (2025-09-17)
 
@@ -1510,6 +1547,7 @@
   ([#790](https://github.com/Twingate/kubernetes-operator/pull/790),
   [`253d155`](https://github.com/Twingate/kubernetes-operator/commit/253d15531749ac24c94a553d8256c7b4bb9b3b00))
 
+
 ## v0.26.2 (2025-09-02)
 
 ### Bug Fixes
@@ -1584,6 +1622,7 @@
 - Upgrade Poetry to 2.1.4 ([#759](https://github.com/Twingate/kubernetes-operator/pull/759),
   [`5728aff`](https://github.com/Twingate/kubernetes-operator/commit/5728aff0733c8d84f60886b247d147af1ff3d4c1))
 
+
 ## v0.26.1 (2025-08-12)
 
 ### Bug Fixes
@@ -1613,6 +1652,7 @@
 - Bump types-requests from 2.32.4.20250611 to 2.32.4.20250809
   ([#747](https://github.com/Twingate/kubernetes-operator/pull/747),
   [`7586e60`](https://github.com/Twingate/kubernetes-operator/commit/7586e60c9316f817d30070b8659592e08b5a9b4a))
+
 
 ## v0.26.0 (2025-08-11)
 
@@ -1649,6 +1689,7 @@
 - Allow scoping Operator installation on specific namespaces
   ([#738](https://github.com/Twingate/kubernetes-operator/pull/738),
   [`22f2b77`](https://github.com/Twingate/kubernetes-operator/commit/22f2b77f1f62ebbbab85bacfa3e56bd234321709))
+
 
 ## v0.25.2 (2025-08-04)
 
@@ -1688,6 +1729,7 @@
 - Update dependabot.yml to remove Go which doesnt exist anymore
   ([`fbd6078`](https://github.com/Twingate/kubernetes-operator/commit/fbd607818148c1ac7e68c38cae6e2a102735eb39))
 
+
 ## v0.25.1 (2025-07-17)
 
 ### Chores
@@ -1709,6 +1751,7 @@
 
 - Bump ruff from 0.12.2 to 0.12.3 ([#720](https://github.com/Twingate/kubernetes-operator/pull/720),
   [`7bfe88b`](https://github.com/Twingate/kubernetes-operator/commit/7bfe88bd0ed6f25c7630a9a58af53d562195d6dd))
+
 
 ## v0.25.0 (2025-07-09)
 
@@ -1746,6 +1789,7 @@
   ([#710](https://github.com/Twingate/kubernetes-operator/pull/710),
   [`2d89df1`](https://github.com/Twingate/kubernetes-operator/commit/2d89df10c110e396ff44bb02a8a7b58abaabc0b9))
 
+
 ## v0.24.0 (2025-06-30)
 
 ### Chores
@@ -1773,6 +1817,7 @@
   ([#704](https://github.com/Twingate/kubernetes-operator/pull/704),
   [`be00936`](https://github.com/Twingate/kubernetes-operator/commit/be009365012285fa7ab7541d79777909d5a0dff1))
 
+
 ## v0.23.1 (2025-06-26)
 
 ### Chores
@@ -1795,6 +1840,7 @@
 
 - Update changelog for v0.23.0
   ([`31eab1c`](https://github.com/Twingate/kubernetes-operator/commit/31eab1c040556086d3b351a9973fe516035e15bb))
+
 
 ## v0.23.0 (2025-06-24)
 
@@ -1976,6 +2022,7 @@
   ([#690](https://github.com/Twingate/kubernetes-operator/pull/690),
   [`1b76b4e`](https://github.com/Twingate/kubernetes-operator/commit/1b76b4ed0d587c919ed5b5458b4bcd379593a2b1))
 
+
 ## v0.22.1 (2025-05-23)
 
 ### Bug Fixes
@@ -2010,6 +2057,7 @@
 - Operator no longer beta!
   ([`3a9efaf`](https://github.com/Twingate/kubernetes-operator/commit/3a9efaf22cdb719ed8825e1ae9f21e5ce5753675))
 
+
 ## v0.22.0 (2025-05-19)
 
 ### Bug Fixes
@@ -2037,6 +2085,7 @@
 - Change TwingateConnector to use Deployment or Pod
   ([#633](https://github.com/Twingate/kubernetes-operator/pull/633),
   [`6d342a7`](https://github.com/Twingate/kubernetes-operator/commit/6d342a725bc85ac4251d45afa5a3f84be5837c81))
+
 
 ## v0.21.2 (2025-05-13)
 
@@ -2070,6 +2119,7 @@
   ([#640](https://github.com/Twingate/kubernetes-operator/pull/640),
   [`5f08dda`](https://github.com/Twingate/kubernetes-operator/commit/5f08dda0f638b2d36e960ee56003fef2c2fd22e4))
 
+
 ## v0.21.1 (2025-05-08)
 
 ### Bug Fixes
@@ -2077,6 +2127,7 @@
 - Update operator ClusterRole permissions for twingate.com apiGroup
   ([#636](https://github.com/Twingate/kubernetes-operator/pull/636),
   [`dae0916`](https://github.com/Twingate/kubernetes-operator/commit/dae0916092dc677ee49112a9cc13a515298861de))
+
 
 ## v0.21.0 (2025-05-07)
 
@@ -2109,6 +2160,7 @@
 - Add default value for repository source to streamline configuration process
   ([#631](https://github.com/Twingate/kubernetes-operator/pull/631),
   [`7cbcd7f`](https://github.com/Twingate/kubernetes-operator/commit/7cbcd7f6356f4562ca867fa8dcec6fc488c2b606))
+
 
 ## v0.20.2 (2025-04-30)
 
@@ -2146,6 +2198,7 @@
 - Removed duplicate “RSE” ruff rule and added “UP”
   ([`3e7d29c`](https://github.com/Twingate/kubernetes-operator/commit/3e7d29c4993df6d536b1fa52b83dcc5cf9f93d69))
 
+
 ## v0.20.1 (2025-04-18)
 
 ### Bug Fixes
@@ -2172,6 +2225,7 @@
 - Improve tests for `get_connector_pod()` and `test_handler_resources`
   ([#619](https://github.com/Twingate/kubernetes-operator/pull/619),
   [`3322937`](https://github.com/Twingate/kubernetes-operator/commit/3322937ea0d67cd8235240a439ab5de2d09c4c8d))
+
 
 ## v0.20.0 (2025-04-16)
 
@@ -2229,6 +2283,7 @@
   ([#613](https://github.com/Twingate/kubernetes-operator/pull/613),
   [`a623091`](https://github.com/Twingate/kubernetes-operator/commit/a623091f3724698d9f6193a38342fac89f5690c9))
 
+
 ## v0.19.0 (2025-04-08)
 
 ### Bug Fixes
@@ -2278,6 +2333,7 @@
 - Improve logs for better debugging experience
   ([#592](https://github.com/Twingate/kubernetes-operator/pull/592),
   [`c6ec9e2`](https://github.com/Twingate/kubernetes-operator/commit/c6ec9e2d42fe03023a48d6e6cdc6cac041aeab7f))
+
 
 ## v0.18.0 (2025-03-26)
 
@@ -2388,6 +2444,7 @@
   ([#579](https://github.com/Twingate/kubernetes-operator/pull/579),
   [`f8255f1`](https://github.com/Twingate/kubernetes-operator/commit/f8255f16cd512aa823def435bb73aa04c1284098))
 
+
 ## v0.17.0 (2025-02-25)
 
 ### Chores
@@ -2491,6 +2548,7 @@
   ([#560](https://github.com/Twingate/kubernetes-operator/pull/560),
   [`d6302dc`](https://github.com/Twingate/kubernetes-operator/commit/d6302dc81d7932396b3e6d31487ea527f5b7f0f1))
 
+
 ## v0.16.2 (2025-01-28)
 
 ### Bug Fixes
@@ -2580,6 +2638,7 @@
   ([#520](https://github.com/Twingate/kubernetes-operator/pull/520),
   [`32c12cb`](https://github.com/Twingate/kubernetes-operator/commit/32c12cbfca55673fd85408e6d967b59dcb94333d))
 
+
 ## v0.16.1 (2025-01-06)
 
 ### Bug Fixes
@@ -2611,6 +2670,7 @@
 - Bump ruff from 0.8.5 to 0.8.6 ([#507](https://github.com/Twingate/kubernetes-operator/pull/507),
   [`98892cb`](https://github.com/Twingate/kubernetes-operator/commit/98892cb8ada9425be86bb174ba5087afcac0a721))
 
+
 ## v0.16.0 (2024-12-26)
 
 ### Features
@@ -2618,6 +2678,7 @@
 - Helm chart - Add `existingRemoteNetworkIdSecret`
   ([#500](https://github.com/Twingate/kubernetes-operator/pull/500),
   [`5061de0`](https://github.com/Twingate/kubernetes-operator/commit/5061de07afb2fcd13af63d0295d1c47d135e0d7b))
+
 
 ## v0.15.0 (2024-12-23)
 
@@ -2666,6 +2727,7 @@
   ([#479](https://github.com/Twingate/kubernetes-operator/pull/479),
   [`971ba7e`](https://github.com/Twingate/kubernetes-operator/commit/971ba7ee9703202fb2cd632299ca5025c267779a))
 
+
 ## v0.14.1 (2024-12-16)
 
 ### Bug Fixes
@@ -2673,6 +2735,7 @@
 - Allow extra env vars in the operator's Chart
   ([#491](https://github.com/Twingate/kubernetes-operator/pull/491),
   [`81bf885`](https://github.com/Twingate/kubernetes-operator/commit/81bf885b6c5c27dc075dab8b1f932f36170bff9c))
+
 
 ## v0.14.0 (2024-12-16)
 
@@ -2716,6 +2779,7 @@
 - Enable Configuration of Kopf Watch Settings via Environment Variables
   ([#487](https://github.com/Twingate/kubernetes-operator/pull/487),
   [`3da4225`](https://github.com/Twingate/kubernetes-operator/commit/3da4225865e767fe8ca74477f477bf2b3ca8fc02))
+
 
 ## v0.13.0 (2024-12-06)
 
@@ -2807,6 +2871,7 @@
 - Upgrade to Python 3.12.8 ([#478](https://github.com/Twingate/kubernetes-operator/pull/478),
   [`3c5cb73`](https://github.com/Twingate/kubernetes-operator/commit/3c5cb73e390abe0fdc3a243885aa3ce601e485ec))
 
+
 ## v0.12.1 (2024-11-08)
 
 ### Chores
@@ -2814,6 +2879,7 @@
 - Bump python-semantic-release from 9.12.0 to 9.12.1
   ([#453](https://github.com/Twingate/kubernetes-operator/pull/453),
   [`40cfedc`](https://github.com/Twingate/kubernetes-operator/commit/40cfedc570d263351a1e8d0c865749e74fcadfd4))
+
 
 ## v0.12.0 (2024-11-04)
 
@@ -3189,6 +3255,7 @@
 - Re-enable test_resource_access_flows tests
   ([`1ff633f`](https://github.com/Twingate/kubernetes-operator/commit/1ff633f3dfd38e60fc581b4ed17d5565e390ebb6))
 
+
 ## v0.11.5 (2024-07-03)
 
 ### Chores
@@ -3218,6 +3285,7 @@
 - Bump tenacity from 8.4.1 to 8.4.2
   ([#336](https://github.com/Twingate/kubernetes-operator/pull/336),
   [`3b91830`](https://github.com/Twingate/kubernetes-operator/commit/3b9183015f6fe73f93fbdbbddf582ea9880b2ec4))
+
 
 ## v0.11.4 (2024-06-24)
 
@@ -3376,6 +3444,7 @@
 - More stable integration tests
   ([`be6da04`](https://github.com/Twingate/kubernetes-operator/commit/be6da046b5b101e9640211e2008227f2c47a268d))
 
+
 ## v0.11.3 (2024-05-20)
 
 ### Bug Fixes
@@ -3400,6 +3469,7 @@
 - Increase test coverage ([#285](https://github.com/Twingate/kubernetes-operator/pull/285),
   [`28b69f5`](https://github.com/Twingate/kubernetes-operator/commit/28b69f52ce812c43721383397497ac4616f41faa))
 
+
 ## v0.11.2 (2024-05-12)
 
 ### Bug Fixes
@@ -3417,12 +3487,14 @@
 - Bump ruff from 0.4.3 to 0.4.4 ([#280](https://github.com/Twingate/kubernetes-operator/pull/280),
   [`261998c`](https://github.com/Twingate/kubernetes-operator/commit/261998c4b84615418d707672a58a8cf65ccfde8d))
 
+
 ## v0.11.1 (2024-05-08)
 
 ### Bug Fixes
 
 - TwingateResourceAccess timer too frequent
   ([`c1645f4`](https://github.com/Twingate/kubernetes-operator/commit/c1645f4a9a5aa43e26ac7ecbe0a2f0a6d0743bc8))
+
 
 ## v0.11.0 (2024-05-07)
 
@@ -3459,6 +3531,7 @@
 - Allow defining custom resource Name for annotated service resource
   ([#279](https://github.com/Twingate/kubernetes-operator/pull/279),
   [`91d3263`](https://github.com/Twingate/kubernetes-operator/commit/91d3263e9de4a1da0e99ea939818e16244d00878))
+
 
 ## v0.10.1 (2024-05-03)
 
@@ -3506,6 +3579,7 @@
 
 - Update README
   ([`6516435`](https://github.com/Twingate/kubernetes-operator/commit/65164351a4881d77f7d53b795f1779e22ab2fea4))
+
 
 ## v0.10.0 (2024-04-24)
 
@@ -3572,6 +3646,7 @@
   ([#243](https://github.com/Twingate/kubernetes-operator/pull/243),
   [`9d6cb8c`](https://github.com/Twingate/kubernetes-operator/commit/9d6cb8ce3eaec241ed1b660df790892b79625189))
 
+
 ## v0.9.0 (2024-04-08)
 
 ### Chores
@@ -3596,6 +3671,7 @@
 - Added TwingateConnector `logAnalytics` flag
   ([#237](https://github.com/Twingate/kubernetes-operator/pull/237),
   [`a98acc3`](https://github.com/Twingate/kubernetes-operator/commit/a98acc3f96e7a03d3298e3d94c959ef991f1d821))
+
 
 ## v0.8.0 (2024-04-03)
 
@@ -3629,6 +3705,7 @@
   ([#234](https://github.com/Twingate/kubernetes-operator/pull/234),
   [`835da7c`](https://github.com/Twingate/kubernetes-operator/commit/835da7cc3848c8040096d41938f5d36926ad1618))
 
+
 ## v0.7.0 (2024-03-26)
 
 ### Bug Fixes
@@ -3650,6 +3727,7 @@
 - Twingateresourceaccess - allow specifying principal by name
   ([#62](https://github.com/Twingate/kubernetes-operator/pull/62),
   [`0b1e69b`](https://github.com/Twingate/kubernetes-operator/commit/0b1e69b14fb2006ff0e30af5d23567b5e718d4f9))
+
 
 ## v0.6.3 (2024-03-25)
 
@@ -3751,6 +3829,7 @@
   ([#205](https://github.com/Twingate/kubernetes-operator/pull/205),
   [`6f53ebf`](https://github.com/Twingate/kubernetes-operator/commit/6f53ebf45a52a76b6fb35b8d190a51bf827e6c2d))
 
+
 ## v0.6.2 (2024-03-11)
 
 ### Bug Fixes
@@ -3758,6 +3837,7 @@
 - Resource restricted policy should allow empty ports
   ([#193](https://github.com/Twingate/kubernetes-operator/pull/193),
   [`e9aec7d`](https://github.com/Twingate/kubernetes-operator/commit/e9aec7d9ee7be6944d4c69b8d9d73107d3a38df5))
+
 
 ## v0.6.1 (2024-03-07)
 
@@ -3775,6 +3855,7 @@
 - Set poetry to package-mode = false
   ([#188](https://github.com/Twingate/kubernetes-operator/pull/188),
   [`f91f57a`](https://github.com/Twingate/kubernetes-operator/commit/f91f57a17905d648041b0099dc5568700440a121))
+
 
 ## v0.6.0 (2024-03-06)
 
@@ -3808,6 +3889,7 @@
 - Improved TwingateConnector reconciliation
   ([#180](https://github.com/Twingate/kubernetes-operator/pull/180),
   [`e0a4f25`](https://github.com/Twingate/kubernetes-operator/commit/e0a4f25c14f706de4e6149e302d61e41d6515a68))
+
 
 ## v0.5.0 (2024-03-01)
 
@@ -3921,6 +4003,7 @@
   ([#170](https://github.com/Twingate/kubernetes-operator/pull/170),
   [`f03f851`](https://github.com/Twingate/kubernetes-operator/commit/f03f851bdc1b9cf7f59e618205a5c3ae3baf55f5))
 
+
 ## v0.4.0 (2024-02-15)
 
 ### Bug Fixes
@@ -4032,6 +4115,7 @@
   ([#128](https://github.com/Twingate/kubernetes-operator/pull/128),
   [`e2d233c`](https://github.com/Twingate/kubernetes-operator/commit/e2d233c86569ec38ce905f1d8e244fff94090b60))
 
+
 ## v0.3.0 (2024-01-30)
 
 ### Build System
@@ -4080,6 +4164,7 @@
 
 - Add seccompProfile by default ([#104](https://github.com/Twingate/kubernetes-operator/pull/104),
   [`e3ef8d6`](https://github.com/Twingate/kubernetes-operator/commit/e3ef8d6ad9350ccdf95dcf3eb022ed73e845c530))
+
 
 ## v0.2.0 (2024-01-18)
 
@@ -4320,6 +4405,7 @@
   ([#40](https://github.com/Twingate/kubernetes-operator/pull/40),
   [`8b3d012`](https://github.com/Twingate/kubernetes-operator/commit/8b3d0129a1cb4b403ea87d3dbb2ec2ca923c69b9))
 
+
 ## v0.1.2 (2023-11-01)
 
 ### Bug Fixes
@@ -4339,6 +4425,7 @@
   ([#23](https://github.com/Twingate/kubernetes-operator/pull/23),
   [`8aa5621`](https://github.com/Twingate/kubernetes-operator/commit/8aa5621aa02f1efc0fef1dc49fb1624b3309ee4f))
 
+
 ## v0.1.1 (2023-10-30)
 
 ### Bug Fixes
@@ -4346,6 +4433,7 @@
 - ResourceAccessSpec.get_resource_ref_object fetching wrong version
   ([#20](https://github.com/Twingate/kubernetes-operator/pull/20),
   [`86b6557`](https://github.com/Twingate/kubernetes-operator/commit/86b6557107ea927ec0244ba91ccacb680aab9751))
+
 
 ## v0.1.0 (2023-10-30)
 
@@ -4406,6 +4494,7 @@
 - Support protocol restrictions on twingateresource
   ([#16](https://github.com/Twingate/kubernetes-operator/pull/16),
   [`0c95107`](https://github.com/Twingate/kubernetes-operator/commit/0c95107414e14d1624caf1e30b1acf5335a2a01c))
+
 
 ## v0.0.1 (2023-10-20)
 

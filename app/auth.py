@@ -64,9 +64,6 @@ def login_without_strict_x509(
     if info is None:
         return None
 
-    # Every ``kubernetes.client.*Api()`` builds the REST client using this class.
-    kubernetes.client.rest.RESTClientObject = NonStrictX509RESTClientObject
-
     logger.warning(
         "Strict X.509 verification is disabled for the Kubernetes API connection.",
     )

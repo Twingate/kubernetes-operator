@@ -1,5 +1,23 @@
+import ssl
+
 import kopf
 import kubernetes
+from urllib3.util import create_urllib3_context
+
+
+class NonStrictX509RESTClientObject(kubernetes.client.rest.RESTClientObject):
+    """A ``kubernetes`` REST client whose SSL context skips RFC 5280 strict checks."""
+
+    def __init__(self, configuration: kubernetes.client.Configuration, *args, **kwargs):
+        super().__init__(configuration, *args, **kwargs)
+        pool_kw = self.pool_manager.connection_pool_kw
+        # Inherit the pool's TLS settings (cert_reqs) and drop only the strict bit.
+        context = create_urllib3_context(cert_reqs=pool_kw.get("cert_reqs"))
+        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+        # Loads the system roots when no CA is provided
+        if not pool_kw.get("ca_certs"):
+            context.load_default_certs()
+        pool_kw["ssl_context"] = context
 
 
 def k8s_read_namespaced_pod(

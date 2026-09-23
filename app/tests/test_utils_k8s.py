@@ -307,6 +307,29 @@ class TestNonStrictX509RESTClientObject:
         assert context.verify_mode == ssl.CERT_NONE
         assert context.check_hostname is False
 
+    def test_trusts_system_roots_when_no_ca_is_configured(self):
+        configuration = kubernetes.client.Configuration()
+        assert configuration.ssl_ca_cert is None
+
+        context = NonStrictX509RESTClientObject(
+            configuration
+        ).pool_manager.connection_pool_kw["ssl_context"]
+
+        system_roots = ssl.create_default_context().cert_store_stats()
+        assert context.cert_store_stats() == system_roots
+
+    def test_loads_no_system_roots_when_a_ca_is_configured(self):
+        # urllib3 loads the configured CA into the context itself on connect, so
+        # the context must start empty or the system roots would widen the trust.
+        configuration = kubernetes.client.Configuration()
+        configuration.ssl_ca_cert = "/path/to/ca.crt"
+
+        context = NonStrictX509RESTClientObject(
+            configuration
+        ).pool_manager.connection_pool_kw["ssl_context"]
+
+        assert context.cert_store_stats()["x509"] == 0
+
 
 @pytest.fixture
 def fresh_main_import(monkeypatch):

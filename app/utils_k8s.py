@@ -14,6 +14,9 @@ class NonStrictX509RESTClientObject(kubernetes.client.rest.RESTClientObject):
         # Inherit the pool's TLS settings (cert_reqs) and drop only the strict bit.
         context = create_urllib3_context(cert_reqs=pool_kw.get("cert_reqs"))
         context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+        # Loads the system roots when no CA is provided
+        if not pool_kw.get("ca_certs"):
+            context.load_default_certs()
         pool_kw["ssl_context"] = context
 
 

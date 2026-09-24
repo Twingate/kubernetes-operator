@@ -8,6 +8,7 @@ DOCKER_BUILDX_CACHE ?=
 SEMANTIC_RELEASE_VERSION ?= 10.5.3
 SEMANTIC_RELEASE = pipx run --spec python-semantic-release==$(SEMANTIC_RELEASE_VERSION) semantic-release
 BUILD_ID ?= local
+KUBECTL_COMMAND ?= kubectl
 RELEASE_BRANCH_PATTERN ?= ^(main|master|hotfix(/.*)?)$$
 PROD_TAGS = $(shell ./scripts/split_semver.sh $(VERSION) | awk -v image="-t $(IMAGE_NAME)" '{ print image ":" $$0 }')
 
@@ -86,8 +87,19 @@ test: ##@tests Runs all tests
 test-cov: ##@tests Runs all tests with coverage
 	poetry run pytest --cov=app --cov-branch --cov-report html --cov-report xml --junitxml=junit.xml -o junit_family=legacy -m "not integration"
 
+.PHONY: check-kube-context
+check-kube-context: ##@tests Fails unless the current kubectl context is allowed for integration tests
+	@allowed="minikube$${TWINGATE_ALLOWED_KUBE_CONTEXTS:+,$$TWINGATE_ALLOWED_KUBE_CONTEXTS}"; \
+	ctx=$$($(KUBECTL_COMMAND) config current-context 2>/dev/null); \
+	if ! echo ",$$allowed," | grep -q ",$$ctx,"; then \
+		echo "Error: kube context '$$ctx' is not allowed for integration tests (allowed: $$allowed)."; \
+		echo "Integration tests apply CRDs and delete Twingate objects cluster-wide."; \
+		echo "Run 'minikube start && kubectl config use-context minikube', or set TWINGATE_ALLOWED_KUBE_CONTEXTS."; \
+		exit 1; \
+	fi
+
 .PHONY: test-int
-test-int: ##@tests Runs integration tests
+test-int: check-kube-context ##@tests Runs integration tests
 	poetry run pytest  -m "integration" -vv -l -x
 
 .PHONY: test-helm

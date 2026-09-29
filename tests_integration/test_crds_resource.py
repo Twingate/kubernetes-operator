@@ -584,6 +584,59 @@ def test_web_app_resource_rejects_out_of_range_port(unique_resource_name):
     assert "spec.downstream.port" in stderr
 
 
+def test_web_app_resource_with_tls_mode_accepted(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My WebApp Resource
+          address: "webapp.default.svc.cluster.local"
+          type: WebApp
+          gatewayRef:
+            name: my-gateway
+          downstream:
+            port: 443
+            tlsMode: TLS13
+          upstream:
+            port: 8443
+            tlsMode: VERIFY_FULL
+        """
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_web_app_resource_rejects_unknown_tls_mode(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My WebApp Resource
+              address: "webapp.default.svc.cluster.local"
+              type: WebApp
+              gatewayRef:
+                name: my-gateway
+              downstream:
+                port: 443
+                tlsMode: VERIFY_FULL
+              upstream:
+                port: 8443
+                tlsMode: TLS13
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.downstream.tlsMode" in stderr
+    assert "spec.upstream.tlsMode" in stderr
+
+
 def test_web_app_resource_with_request_header_rewrites_accepted(unique_resource_name):
     result = kubectl_create(
         f"""

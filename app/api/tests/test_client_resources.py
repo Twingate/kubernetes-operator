@@ -251,8 +251,36 @@ class TestWebAppResourceModel:
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
         ):
             assert resource.get_spec_diff(crd, owner_namespace="default") == {
-                "downstream": Diff(remote=resource.downstream.port, local=8443),
-                "upstream": Diff(remote=resource.upstream.port, local=9090),
+                "downstream": Diff(
+                    remote={"port": resource.downstream.port, "tls_mode": "NONE"},
+                    local={"port": 8443, "tls_mode": "NONE"},
+                ),
+                "upstream": Diff(
+                    remote={"port": resource.upstream.port, "tls_mode": "NONE"},
+                    local={"port": 9090, "tls_mode": "NONE"},
+                ),
+            }
+
+    def test_get_spec_diff_for_tls_mode_drift(self, web_app_resource_factory):
+        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            downstream={"port": resource.downstream.port, "tls_mode": "TLS13"},
+            upstream={"port": resource.upstream.port, "tls_mode": "VERIFY_FULL"},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "downstream": Diff(
+                    remote={"port": resource.downstream.port, "tls_mode": "NONE"},
+                    local={"port": resource.downstream.port, "tls_mode": "TLS13"},
+                ),
+                "upstream": Diff(
+                    remote={"port": resource.upstream.port, "tls_mode": "NONE"},
+                    local={"port": resource.upstream.port, "tls_mode": "VERIFY_FULL"},
+                ),
             }
 
     def test_get_spec_diff_ignores_protocols(self, web_app_resource_factory):
@@ -752,7 +780,11 @@ class TestTwingateResourceAPIs:
     def test_web_app_resource_create(
         self, test_url, api_client, web_app_resource_factory, mocked_responses
     ):
-        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        resource = web_app_resource_factory(
+            gateway=ResourceGateway(id="gw-1"),
+            downstream__tls_mode="TLS13",
+            upstream__tls_mode="VERIFY_FULL",
+        )
         crd = resource.to_spec(
             id=None,
             gateway_ref={"name": "my-gateway"},
@@ -777,8 +809,14 @@ class TestTwingateResourceAPIs:
                     {
                         "variables": {
                             "gatewayId": "gw-1",
-                            "downstream": {"port": resource.downstream.port},
-                            "upstream": {"port": resource.upstream.port},
+                            "downstream": {
+                                "port": resource.downstream.port,
+                                "tlsMode": "TLS13",
+                            },
+                            "upstream": {
+                                "port": resource.upstream.port,
+                                "tlsMode": "VERIFY_FULL",
+                            },
                         }
                     },
                     strict_match=False,

@@ -148,12 +148,25 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
+class TLSServerMode(StrEnum):
+    TLS13 = "TLS13"
+    NONE = "NONE"
+
+
 class ResourceDownstream(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
     port: Port
+    tls_mode: TLSServerMode = TLSServerMode.NONE
+
+
+class TLSClientMode(StrEnum):
+    VERIFY_FULL = "VERIFY_FULL"
+    VERIFY_CA = "VERIFY_CA"
+    INSECURE = "INSECURE"
+    NONE = "NONE"
 
 
 class ResourceUpstream(BaseModel):
@@ -162,6 +175,7 @@ class ResourceUpstream(BaseModel):
     )
 
     port: Port
+    tls_mode: TLSClientMode = TLSClientMode.NONE
 
 
 class RequestHeaderRewrite(BaseModel):

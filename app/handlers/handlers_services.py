@@ -1,11 +1,12 @@
 import json
 from collections.abc import Callable
+from enum import StrEnum
 
 import kopf
 import kubernetes
 from kopf import Body
 
-from app.crds import ResourceType
+from app.crds import ResourceType, TLSClientMode, TLSServerMode
 from app.utils import to_bool
 
 
@@ -35,7 +36,9 @@ ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
 GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
+DOWNSTREAM_TLS_MODE_ANNOTATION = "resource.twingate.com/downstreamTLSMode"
 UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
+UPSTREAM_TLS_MODE_ANNOTATION = "resource.twingate.com/upstreamTLSMode"
 REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
 
 
@@ -123,6 +126,16 @@ def web_app_spec(service_body: Body, namespace: str) -> dict:
         "upstream": {"port": upstream},
     }
 
+    if downstream_tls_mode := meta.annotations.get(DOWNSTREAM_TLS_MODE_ANNOTATION):
+        result["downstream"]["tlsMode"] = parse_tls_mode_annotation(
+            DOWNSTREAM_TLS_MODE_ANNOTATION, downstream_tls_mode, TLSServerMode
+        )
+
+    if upstream_tls_mode := meta.annotations.get(UPSTREAM_TLS_MODE_ANNOTATION):
+        result["upstream"]["tlsMode"] = parse_tls_mode_annotation(
+            UPSTREAM_TLS_MODE_ANNOTATION, upstream_tls_mode, TLSClientMode
+        )
+
     if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
         invalid_msg = (
             f"{REQUEST_HEADER_REWRITES_ANNOTATION} annotation must be a JSON "
@@ -180,6 +193,17 @@ def parse_port_annotation(annotation: str, value: str) -> int:
     except ValueError:
         raise kopf.PermanentError(
             f"{annotation} annotation must be an integer."
+        ) from None
+
+
+def parse_tls_mode_annotation[T: StrEnum](
+    annotation: str, value: str, mode_enum: type[T]
+) -> T:
+    try:
+        return mode_enum(value)
+    except ValueError:
+        raise kopf.PermanentError(
+            f"{annotation} annotation must be one of {[m.value for m in mode_enum]}."
         ) from None
 
 

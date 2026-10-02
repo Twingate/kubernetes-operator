@@ -35,6 +35,12 @@ metadata:
     # Optional. Upstream (target) port. Defaults to the Service's port when it
     # exposes exactly one; required if the Service exposes multiple ports.
     # resource.twingate.com/upstreamPort: "8080"
+    # Optional. TLS mode of the downstream (client-facing) connection: "TLS13" or
+    # "NONE" (default).
+    # resource.twingate.com/downstreamTLSMode: "TLS13"
+    # Optional. TLS mode of the upstream (target) connection: "VERIFY_FULL",
+    # "VERIFY_CA", "INSECURE" or "NONE" (default).
+    # resource.twingate.com/upstreamTLSMode: "VERIFY_FULL"
     # Optional. HTTP headers to rewrite on requests to the upstream (WebApp only).
     # resource.twingate.com/requestHeaderRewrites: '{"Host":"example.com"}'
     resource.twingate.com/alias: "webapp.internal"

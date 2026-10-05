@@ -169,6 +169,11 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "The downstream port."
+                    tlsMode:
+                      type: string
+                      enum: ["TLS13", "NONE"]
+                      default: "NONE"
+                      description: "TLS mode for the downstream (client-facing) connection."
                 upstream:
                   type: object
                   required: ["port"]
@@ -179,6 +184,11 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "The upstream port."
+                    tlsMode:
+                      type: string
+                      enum: ["VERIFY_FULL", "VERIFY_CA", "INSECURE", "NONE"]
+                      default: "NONE"
+                      description: "TLS mode for the upstream (target) connection."
                 requestHeaderRewrites:
                   type: array
                   description: "HTTP headers to rewrite on requests to the upstream of a WebApp Resource."

@@ -9,6 +9,6 @@ sources:
   - https://github.com/Twingate/kubernetes-operator
 dependencies:
   - name: gateway
-    version: 1.1.0
+    version: 2.0.0-dev-5ed8e12
     repository: "oci://ghcr.io/twingate/helmcharts"
     condition: gateway.enabled

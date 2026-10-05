@@ -93,8 +93,8 @@ should enable Gateway:
                 - mountPath: /etc/gateway
                   name: config
                   readOnly: true
-                - mountPath: /etc/gateway/tls
-                  name: tls-certs
+                - mountPath: /etc/gateway/tls/0
+                  name: tls-certs-0
                   readOnly: true
           securityContext:
             seccompProfile:
@@ -104,9 +104,9 @@ should enable Gateway:
             - configMap:
                 name: RELEASE-NAME-gateway-config
               name: config
-            - name: tls-certs
+            - name: tls-certs-0
               secret:
-                secretName: RELEASE-NAME-gateway-tls
+                secretName: RELEASE-NAME-gateway-tls-0
   4: |
     apiVersion: v1
     data:
@@ -118,13 +118,17 @@ should enable Gateway:
         port: 8443
         metricsPort: 9090
 
-        auditLog:
-          flushInterval: 5m
-          flushSizeThreshold: 1e+06
+        log:
+          sessionRecording:
+            segment:
+              maxDuration: "5m"
+              maxSize: "64KB"
 
         tls:
-          certificateFile: "/etc/gateway/tls/tls.crt"
-          privateKeyFile: "/etc/gateway/tls/tls.key"
+          certificates:
+            files:
+              - certificateFile: "/etc/gateway/tls/0/tls.crt"
+                privateKeyFile: "/etc/gateway/tls/0/tls.key"
 
         kubernetes: {}
     kind: ConfigMap
@@ -177,7 +181,7 @@ should enable Gateway:
       tls.key: PHRscyBrZXk+
     kind: Secret
     metadata:
-      name: RELEASE-NAME-gateway-tls
+      name: RELEASE-NAME-gateway-tls-0
     type: kubernetes.io/tls
   8: |
     apiVersion: twingate.com/v1beta
@@ -193,7 +197,7 @@ should enable Gateway:
     spec:
       name: RELEASE-NAME-gateway-ca-ae3f578ff6303ac5
       secretRef:
-        name: RELEASE-NAME-gateway-tls
+        name: RELEASE-NAME-gateway-tls-0
         namespace: NAMESPACE
       type: X509
   9: |

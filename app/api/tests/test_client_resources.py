@@ -82,15 +82,11 @@ class TestBaseResourceModel:
 
     def test_get_spec_diff(self, mock_resource_data):
         resource = BaseResource(**mock_resource_data)
-        crd_protocols = ResourceProtocols(
-            tcp=ResourceProtocol(policy=ProtocolPolicy.RESTRICTED)
-        ).model_dump()
         crd = ResourceSpec(
             name="new-name",
             address="new-address.internal",
             is_visible=False,
             alias="new-alias.internal",
-            protocols=crd_protocols,
             remote_network_id="new-rn-id",
             security_policy_id="new-sp-id",
         )
@@ -103,9 +99,6 @@ class TestBaseResourceModel:
             ),
             "is_visible": Diff(remote=True, local=False),
             "alias": Diff(remote="my-k8s-resource", local="new-alias.internal"),
-            "protocols": Diff(
-                remote=resource.protocols.model_dump(), local=crd_protocols
-            ),
             "remote_network_id": Diff(remote="rn1", local="new-rn-id"),
             "security_policy_id": Diff(remote="sp1", local="new-sp-id"),
         }
@@ -146,6 +139,19 @@ class TestNetworkResourceModel:
 
         assert resource.get_spec_diff(crd, owner_namespace="default") == {
             "is_browser_shortcut_enabled": Diff(remote=False, local=True)
+        }
+
+    def test_get_spec_diff_with_protocols(self, network_resource_factory):
+        resource = network_resource_factory()
+        crd_protocols = ResourceProtocols(
+            tcp=ResourceProtocol(policy=ProtocolPolicy.RESTRICTED)
+        ).model_dump()
+        crd = resource.to_spec(protocols=crd_protocols)
+
+        assert resource.get_spec_diff(crd, owner_namespace="default") == {
+            "protocols": Diff(
+                remote=resource.protocols.model_dump(), local=crd_protocols
+            )
         }
 
     def test_is_matching_case_protocols(self):
@@ -283,22 +289,6 @@ class TestWebAppResourceModel:
                 ),
             }
 
-    def test_get_spec_diff_ignores_protocols(self, web_app_resource_factory):
-        # WebApp is not port-based; protocols are not sent on update, so they must
-        # not appear in the diff even when the CRD sets non-default protocols.
-        resource = web_app_resource_factory(gateway=ResourceGateway(id="gw-1"))
-        crd = resource.to_spec(
-            gateway_ref={"name": "my-gateway"},
-            protocols=ResourceProtocols(
-                tcp=ResourceProtocol(policy=ProtocolPolicy.RESTRICTED)
-            ).model_dump(),
-        )
-
-        with patch(
-            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
-        ):
-            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
-
     def test_get_spec_diff_ignores_header_rewrite_ordering(
         self, web_app_resource_factory
     ):
@@ -352,7 +342,14 @@ class TestTwingateResourceAPIs:
     def test_get_network_resource_with_valid_id_succeeds(
         self, test_url, api_client, network_resource_factory, mocked_responses
     ):
-        resource = network_resource_factory()
+        resource = network_resource_factory(
+            protocols=ResourceProtocols(
+                tcp=ResourceProtocol(
+                    policy=ProtocolPolicy.RESTRICTED,
+                    ports=[{"start": 443, "end": 443}],
+                )
+            )
+        )
 
         success_response = json.dumps(
             {
@@ -375,6 +372,9 @@ class TestTwingateResourceAPIs:
         )
         result = api_client.get_resource(resource.id)
         assert result == resource
+
+        request_query = json.loads(mocked_responses.calls[0].request.body)["query"]
+        assert "protocols" in request_query
 
     def test_get_kubernetes_resource(
         self, test_url, api_client, kubernetes_resource_factory, mocked_responses

@@ -772,6 +772,34 @@ def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     )
 
 
+@pytest.mark.parametrize("resource_type", ["Kubernetes", "WebApp"])
+def test_non_network_resource_cannot_have_protocols(
+    unique_resource_name, resource_type
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My Resource
+              address: "foo.default.cluster.local"
+              type: {resource_type}
+              protocols:
+                tcp:
+                  policy: RESTRICTED
+                  ports:
+                    - start: 443
+                      end: 443
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "protocols can only be set for Network Resources" in stderr
+
+
 def test_remote_network_id(unique_resource_name):
     result = kubectl_create(
         f"""

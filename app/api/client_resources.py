@@ -94,7 +94,6 @@ class BaseResource(BaseModel):
     security_policy: ResourceSecurityPolicy | None = Field(
         alias="securityPolicy", default=None
     )
-    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
     tags: list[Tag]
 
     @staticmethod
@@ -113,23 +112,6 @@ class BaseResource(BaseModel):
                 isVisible
                 remoteNetwork { id }
                 securityPolicy { id }
-                protocols {
-                    allowIcmp
-                    tcp {
-                        policy
-                        ports {
-                            start
-                            end
-                        }
-                    }
-                    udp {
-                        policy
-                        ports {
-                            start
-                            end
-                        }
-                    }
-                }
                 tags {
                     key
                     value
@@ -153,11 +135,6 @@ class BaseResource(BaseModel):
         if self.is_visible != crd.is_visible:
             diff["is_visible"] = Diff(remote=self.is_visible, local=crd.is_visible)
 
-        self_protocols = self.protocols.model_dump() if self.protocols else None
-        crd_protocols = crd.protocols.model_dump() if crd.protocols else None
-        if self_protocols != crd_protocols:
-            diff["protocols"] = Diff(remote=self_protocols, local=crd_protocols)
-
         if self.remote_network.id != crd.remote_network_id:
             diff["remote_network_id"] = Diff(
                 remote=self.remote_network.id, local=crd.remote_network_id
@@ -172,16 +149,7 @@ class BaseResource(BaseModel):
         return diff
 
     def to_spec_dict(self) -> dict[str, Any]:
-        data = self.model_dump(
-            include={
-                "id",
-                "name",
-                "alias",
-                "is_visible",
-                "protocols",
-                "tags",
-            }
-        )
+        data = self.model_dump(include={"id", "name", "alias", "is_visible", "tags"})
         data["address"] = self.address.value
         data["remote_network_id"] = self.remote_network.id
         data["security_policy_id"] = (
@@ -202,16 +170,42 @@ class BaseResource(BaseModel):
         return {tag.key: tag.value for tag in self.tags}
 
 
+_PROTOCOLS_FRAGMENT = """
+    fragment ProtocolsFields on Resource {
+        protocols {
+            allowIcmp
+            tcp {
+                policy
+                ports {
+                    start
+                    end
+                }
+            }
+            udp {
+                policy
+                ports {
+                    start
+                    end
+                }
+            }
+        }
+    }
+"""
+
+
 class NetworkResource(BaseResource):
     is_browser_shortcut_enabled: bool
+    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
 
     @staticmethod
     def get_graphql_fragment():
         return (
             BaseResource.get_graphql_fragment()
+            + _PROTOCOLS_FRAGMENT
             + """
             fragment NetworkResourceFields on NetworkResource {
                 ...BaseResourceFields
+                ...ProtocolsFields
                 isBrowserShortcutEnabled
             }
             """
@@ -227,6 +221,11 @@ class NetworkResource(BaseResource):
                 local=crd.is_browser_shortcut_enabled,
             )
 
+        self_protocols = self.protocols.model_dump()
+        crd_protocols = (crd.protocols or ResourceProtocols()).model_dump()
+        if self_protocols != crd_protocols:
+            diff["protocols"] = Diff(remote=self_protocols, local=crd_protocols)
+
         return diff
 
     def to_spec(self, **overrides: Any) -> ResourceSpec:
@@ -234,6 +233,7 @@ class NetworkResource(BaseResource):
             {
                 "type": ResourceType.NETWORK,
                 "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
+                "protocols": self.protocols.model_dump(),
             }
             | super().to_spec_dict()
             | overrides
@@ -309,9 +309,6 @@ class WebAppResource(BaseResource):
         self, crd: ResourceSpec, *, owner_namespace: str
     ) -> dict[str, Diff]:
         diff = super().get_spec_diff(crd, owner_namespace=owner_namespace)
-        # WebApp is not port-based; protocols are not sent on update, so diffing
-        # them would cause a non-converging reconcile loop.
-        diff.pop("protocols", None)
 
         remote_gateway_id = self.gateway.id if self.gateway else None
         crd_gateway_id = (
@@ -367,12 +364,13 @@ _NETWORK_RESOURCE_FRAGMENT = NetworkResource.get_graphql_fragment()
 _KUBERNETES_RESOURCE_FRAGMENT = KubernetesResource.get_graphql_fragment()
 _WEB_APP_RESOURCE_FRAGMENT = WebAppResource.get_graphql_fragment()
 
-QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + """
+QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + _PROTOCOLS_FRAGMENT + """
     query GetResource($id: ID!) {
         resource(id: $id) {
             __typename
             ...BaseResourceFields
             ... on NetworkResource {
+                ...ProtocolsFields
                 isBrowserShortcutEnabled
             }
             ... on KubernetesResource {
@@ -428,7 +426,6 @@ MUT_CREATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
         $address: String!
         $alias: String
         $isVisible: Boolean
-        $protocols: ProtocolsInput
         $remoteNetworkId: ID!
         $securityPolicyId: ID
         $tags: [TagInput!]
@@ -439,7 +436,6 @@ MUT_CREATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
             address: $address
             alias: $alias
             isVisible: $isVisible
-            protocols: $protocols
             remoteNetworkId: $remoteNetworkId
             securityPolicyId: $securityPolicyId
             tags: $tags
@@ -536,7 +532,6 @@ MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
         $address: String
         $alias: String
         $isVisible: Boolean
-        $protocols: ProtocolsInput
         $remoteNetworkId: ID
         $securityPolicyId: ID
         $tags: [TagInput!]
@@ -548,7 +543,6 @@ MUT_UPDATE_KUBERNETES_RESOURCE = _KUBERNETES_RESOURCE_FRAGMENT + """
             address: $address
             alias: $alias
             isVisible: $isVisible
-            protocols: $protocols
             remoteNetworkId: $remoteNetworkId
             securityPolicyId: $securityPolicyId
             tags: $tags
@@ -695,7 +689,6 @@ class TwingateResourceAPIs:
         is_visible: bool,
         remote_network_id: str,
         security_policy_id: str | None,
-        protocols: dict[str, Any],
         tags: list[dict[str, str]],
         gateway_id: str,
     ) -> KubernetesResource:
@@ -710,7 +703,6 @@ class TwingateResourceAPIs:
                     "isVisible": is_visible,
                     "remoteNetworkId": remote_network_id,
                     "securityPolicyId": security_policy_id,
-                    "protocols": protocols,
                     "tags": tags,
                     "gatewayId": gateway_id,
                 },
@@ -812,7 +804,6 @@ class TwingateResourceAPIs:
         is_visible: bool,
         remote_network_id: str,
         security_policy_id: str | None,
-        protocols: dict[str, Any],
         tags: list[dict[str, str]],
         gateway_id: str,
     ) -> KubernetesResource | None:
@@ -828,7 +819,6 @@ class TwingateResourceAPIs:
                     "isVisible": is_visible,
                     "remoteNetworkId": remote_network_id,
                     "securityPolicyId": security_policy_id,
-                    "protocols": protocols,
                     "tags": tags,
                     "gatewayId": gateway_id,
                 },

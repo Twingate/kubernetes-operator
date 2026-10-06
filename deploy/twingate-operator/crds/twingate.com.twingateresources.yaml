@@ -26,6 +26,8 @@ spec:
                   message: "WebApp Resource requires downstream and upstream; other Resource types allow neither"
                 - rule: '!has(self.requestHeaderRewrites) || self.type == "WebApp"'
                   message: "requestHeaderRewrites can only be set for WebApp Resources"
+                - rule: '!has(self.protocols) || self.type == "Network"'
+                  message: "protocols can only be set for Network Resources"
                 - rule: (self.isBrowserShortcutEnabled && self.type == "Network") || (self.isBrowserShortcutEnabled == false)
                   message: "isBrowserShortcutEnabled can only be set to true for Network Resources"
                 - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
@@ -64,7 +66,7 @@ spec:
                 protocols:
                   type: object
                   nullable: true
-                  description: "protocols specifies the resource's protocol policies."
+                  description: "protocols specifies the resource's protocol policies. Only allowed for Network Resources."
                   properties:
                     allowIcmp:
                       type: boolean

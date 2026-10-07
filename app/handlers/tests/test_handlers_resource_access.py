@@ -14,11 +14,13 @@ from app.crds import (
     K8sMetadata,
 )
 from app.handlers.handlers_resource_access import (
+    PrincipalLookupError,
     get_principal_id,
     has_unmigrated_recorded_access,
     twingate_group_id_changed,
     twingate_resource_access_by_group,
     twingate_resource_access_by_resource,
+    twingate_resource_access_change,
     twingate_resource_access_delete,
     twingate_resource_access_migrate_status,
     twingate_resource_access_sync,
@@ -62,15 +64,15 @@ class TestGetPrincipalId:
         access_crd.get_group_ref_object.return_value = {"spec": {"id": "group-id"}}
         assert get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
 
-    def test_id_from_group_ref_object_not_ready_raises_temoraryerror(self):
+    def test_id_from_group_ref_object_not_ready_raises_lookup_error(self):
         access_crd = MagicMock()
         access_crd.principal_id = None
         access_crd.principal_external_ref = None
         access_crd.get_group_ref_object.return_value = {"spec": {"id": None}}
-        with pytest.raises(kopf.TemporaryError):
-            assert (
-                get_principal_id(access_crd, None, MagicMock(), "default") == "group-id"
-            )
+        with pytest.raises(
+            PrincipalLookupError, match=r"TwingateGroup object doesn't have an id yet"
+        ):
+            get_principal_id(access_crd, None, MagicMock(), "default")
 
     def test_from_external_ref_group(self, mock_api_client):
         access_crd = MagicMock()
@@ -191,6 +193,7 @@ class TestResourceAccessChangeHandler:
         assert patch_shim.status == {
             "resourceId": resource_spec.id,
             "principalId": "R3JvdXA6MTE1NzI2MA==",
+            "principalLookupFailure": None,
         }
         kopf_info_mock.assert_called_once_with("", reason="Success", message=ANY)
 
@@ -492,6 +495,120 @@ class TestResourceAccessChangeHandler:
         assert call_kwargs["approval_mode"] == AccessApprovalMode.AUTOMATIC
 
 
+MISSING_PRINCIPAL_SPEC = {
+    "resourceRef": {"name": "a-resource"},
+    "principalExternalRef": {"type": "group", "name": "missing-group"},
+}
+
+
+class TestBoundedPrincipalLookup:
+    """The principal lookup is retried 3 times, then left until the spec changes."""
+
+    def run_change(self, patch_shim, retry, resource_spec, status=None):
+        resource_crd_mock = MagicMock()
+        resource_crd_mock.spec = resource_spec
+        resource_crd_mock.metadata = K8sMetadata(uid="uid", name="foo", namespace="bar")
+
+        with patch(
+            "app.handlers.handlers_resource_access.ResourceAccessSpec.get_resource",
+            return_value=resource_crd_mock,
+        ):
+            return twingate_resource_access_change(
+                body={},
+                namespace="default",
+                spec=MISSING_PRINCIPAL_SPEC,
+                memo=MagicMock(),
+                logger=MagicMock(),
+                patch=patch_shim,
+                status=status or {},
+                retry=retry,
+            )
+
+    @pytest.mark.parametrize("retry", [0, 1])
+    def test_retries_are_temporary_until_the_budget_runs_out(
+        self, retry, network_resource_factory, mock_api_client
+    ):
+        mock_api_client.get_group_id.return_value = None
+        patch_shim = SimpleNamespace(spec={}, status={})
+
+        with pytest.raises(kopf.TemporaryError, match=r"Principal group missing-group not found"):  # fmt: skip
+            self.run_change(patch_shim, retry, network_resource_factory().to_spec())
+
+        # Nothing is recorded while retries are still allowed, so the sync timer keeps working.
+        assert patch_shim.status == {}
+
+    def test_gives_up_permanently_on_the_last_attempt(
+        self, network_resource_factory, mock_api_client
+    ):
+        mock_api_client.get_group_id.return_value = None
+        patch_shim = SimpleNamespace(spec={}, status={})
+
+        with (
+            patch("kopf.warn") as kopf_warn_mock,
+            pytest.raises(kopf.PermanentError, match=r"Gave up after 3 attempts"),
+        ):
+            self.run_change(patch_shim, 2, network_resource_factory().to_spec())
+
+        assert patch_shim.status == {
+            "principalLookupFailure": {
+                "attempts": 3,
+                "error": "Principal group missing-group not found.",
+            }
+        }
+        kopf_warn_mock.assert_called_once_with(
+            {}, reason="PrincipalLookupFailed", message=ANY
+        )
+
+    def test_sync_skips_a_recorded_give_up(self, mock_api_client):
+        logger_mock = MagicMock()
+        result = twingate_resource_access_sync(
+            body={},
+            namespace="default",
+            spec=MISSING_PRINCIPAL_SPEC,
+            memo=MagicMock(),
+            logger=logger_mock,
+            patch=SimpleNamespace(spec={}, status={}),
+            status={
+                "principalLookupFailure": {
+                    "attempts": 3,
+                    "error": "Principal group missing-group not found.",
+                }
+            },
+        )
+
+        assert result is None
+        mock_api_client.get_group_id.assert_not_called()
+        logger_mock.warning.assert_called_once()
+
+    def test_the_budget_restarts_after_the_spec_changes(
+        self, network_resource_factory, kopf_info_mock, mock_api_client
+    ):
+        # Kopf counts the attempts per cause, so a spec change arrives with retry=0 even
+        # though the previous cause had given up.
+        mock_api_client.get_group_id.return_value = "a-group-id"
+        patch_shim = SimpleNamespace(spec={}, status={})
+        resource_spec = network_resource_factory().to_spec()
+
+        result = self.run_change(
+            patch_shim,
+            0,
+            resource_spec,
+            status={
+                "principalLookupFailure": {
+                    "attempts": 3,
+                    "error": "Principal group missing-group not found.",
+                }
+            },
+        )
+
+        assert result["success"] is True
+        assert patch_shim.status == {
+            "resourceId": resource_spec.id,
+            "principalId": "a-group-id",
+            "principalLookupFailure": None,
+        }
+
+
 class TestDeleteOldAccess:
     PRINCIPAL_ID = "R3JvdXA6MTE1NzI2MA=="
 
@@ -665,6 +782,7 @@ class TestDeleteOldAccess:
         assert patch_shim.status == {
             "resourceId": "new-resource-id",
             "principalId": self.PRINCIPAL_ID,
+            "principalLookupFailure": None,
         }
 
     def test_fails_when_the_deletion_is_rejected(

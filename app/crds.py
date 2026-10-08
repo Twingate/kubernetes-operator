@@ -13,6 +13,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    ValidationError,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -541,7 +542,14 @@ class ResourceAccessSpec(BaseModel):
         if not resource_ref_object:
             return None
 
-        resource = ResourceSpec(**resource_ref_object.pop("spec"))
+        try:
+            resource = ResourceSpec(**resource_ref_object.pop("spec"))
+        except ValidationError as err:
+            raise kopf.PermanentError(
+                f"TwingateResource {self.resource_ref.fullname(owner_namespace)} "
+                f"is invalid: {err}"
+            ) from err
+
         metadata = K8sMetadata(**resource_ref_object.pop("metadata"))
         return TwingateResourceCRD(
             metadata=metadata, spec=resource, **resource_ref_object

@@ -743,6 +743,33 @@ class TestResourceSyncTimer:
         assert patch_mock.spec == {"gatewayRef": {"name": "gw", "namespace": "default"}}
         mock_api_client.resource_update.assert_not_called()
 
+    def test_sync_with_invalid_spec_fails_permanently(
+        self, mock_api_client, mock_k8s_metadata, mock_memo
+    ):
+        with pytest.raises(
+            kopf.PermanentError, match="Only Network resources can set `protocols`"
+        ):
+            twingate_resource_sync(
+                "my-resource",
+                "default",
+                mock_k8s_metadata,
+                mock_k8s_metadata["labels"],
+                {
+                    "id": "UmVzb3VyY2U6OTMxODE3",
+                    "address": "kubernetes.default.svc.cluster.local",
+                    "name": "my-cluster",
+                    "type": ResourceType.KUBERNETES,
+                    "gatewayRef": {"name": "gw"},
+                    "protocols": {"allowIcmp": True},
+                },
+                {},
+                mock_memo,
+                MagicMock(),
+                MagicMock(),
+            )
+
+        mock_api_client.get_resource.assert_not_called()
+
     def test_sync_when_resource_exists_and_doesnt_need_update(
         self, network_resource_factory, mock_api_client, mock_k8s_metadata, mock_memo
     ):

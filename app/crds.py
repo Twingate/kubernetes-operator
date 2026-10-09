@@ -13,6 +13,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    ValidationError,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -208,7 +209,8 @@ class ResourceSpec(BaseModel):
     security_policy_id: str | None = None
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
-    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
+    # (Network only) port-based access restrictions.
+    protocols: ResourceProtocols | None = None
     sync_labels: bool = True
     type: ResourceType = ResourceType.NETWORK
     # Reference to the TwingateGateway serving this Kubernetes or WebApp resource.
@@ -240,6 +242,9 @@ class ResourceSpec(BaseModel):
             or self.upstream is not None
             or self.request_header_rewrites is not None
         )
+
+        if self.type != ResourceType.NETWORK and self.protocols is not None:
+            raise ValueError("Only Network resources can set `protocols`.")
 
         match self.type:
             case ResourceType.NETWORK:
@@ -278,6 +283,7 @@ class ResourceSpec(BaseModel):
         exclude = exclude or set()
         default_exclude_fields = {
             "is_browser_shortcut_enabled",
+            "protocols",
             "sync_labels",
             "type",
             "gateway_ref",
@@ -287,7 +293,6 @@ class ResourceSpec(BaseModel):
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
-            "protocols": self.protocols.model_dump(by_alias=True),
             "tags": (
                 [{"key": key, "value": value} for key, value in labels.items()]
                 if self.sync_labels
@@ -297,8 +302,12 @@ class ResourceSpec(BaseModel):
 
         match self.type:
             case ResourceType.NETWORK:
+                # Only Network Resources are port-based, so only they send protocols.
                 graphql_args |= {
                     "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
+                    "protocols": (self.protocols or ResourceProtocols()).model_dump(
+                        by_alias=True
+                    ),
                 }
             case ResourceType.KUBERNETES:
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
@@ -310,8 +319,6 @@ class ResourceSpec(BaseModel):
                     ),
                 }
             case ResourceType.WEB_APP:
-                # WebApp Resources are not port-based, so protocols don't apply.
-                graphql_args.pop("protocols", None)
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
                 downstream = cast(ResourceDownstream, self.downstream)
                 upstream = cast(ResourceUpstream, self.upstream)
@@ -535,7 +542,14 @@ class ResourceAccessSpec(BaseModel):
         if not resource_ref_object:
             return None
 
-        resource = ResourceSpec(**resource_ref_object.pop("spec"))
+        try:
+            resource = ResourceSpec(**resource_ref_object.pop("spec"))
+        except ValidationError as err:
+            raise kopf.PermanentError(
+                f"TwingateResource {self.resource_ref.fullname(owner_namespace)} "
+                f"is invalid: {err}"
+            ) from err
+
         metadata = K8sMetadata(**resource_ref_object.pop("metadata"))
         return TwingateResourceCRD(
             metadata=metadata, spec=resource, **resource_ref_object

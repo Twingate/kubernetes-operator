@@ -169,9 +169,6 @@ def sample_kubernetes_resource_object():
             "address": "my.default.cluster.local",
             "id": "UmVzb3VyY2U6OTM3Mzkw",
             "name": "My K8S Resource",
-            "protocols": {
-                "tcp": {"policy": "RESTRICTED", "ports": [{"start": 80, "end": 80}]}
-            },
             "type": ResourceType.KUBERNETES,
             "gatewayRef": {"name": "my-gateway", "namespace": "twingate"},
         },
@@ -390,15 +387,11 @@ def test_kubernetes_resource_spec_to_graphql_arguments(
         "remote_network_id": "UmVtb3RlTmV0d29yazoxMjMK",
         "security_policy_id": None,
         "is_visible": True,
-        "protocols": {
-            "allowIcmp": True,
-            "tcp": {"policy": "RESTRICTED", "ports": [{"start": 80, "end": 80}]},
-            "udp": {"policy": "ALLOW_ALL", "ports": []},
-        },
         "tags": [{"key": "key", "value": "value"}],
         "gateway_id": "R2F0ZXdheTo5Nwo=",
     }
     assert "gateway_ref" not in graphql_arguments
+    assert "protocols" not in graphql_arguments
 
 
 def test_kubernetes_resource_requires_gateway_ref():
@@ -418,6 +411,21 @@ def test_kubernetes_resource_accepts_gateway_ref():
         gateway_ref=_KubernetesObjectRef(name="my-gateway"),
     )
     assert resource_spec.gateway_ref is not None
+
+
+@pytest.mark.parametrize(
+    "resource_type", [ResourceType.KUBERNETES, ResourceType.WEB_APP]
+)
+def test_non_network_resource_rejects_protocols(resource_type):
+    with pytest.raises(ValueError, match="Only Network resources can set `protocols`"):
+        ResourceSpec(
+            name="My Resource",
+            address="foo.default.cluster.local",
+            type=resource_type,
+            protocols={
+                "tcp": {"policy": "RESTRICTED", "ports": [{"start": 443, "end": 443}]}
+            },
+        )
 
 
 def test_network_resource_rejects_gateway_ref():

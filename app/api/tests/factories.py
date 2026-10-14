@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from base64 import b64encode
 
 import factory.fuzzy
@@ -67,8 +67,8 @@ class BaseResourceFactory(factory.Factory):
 
     id = factory.Sequence(lambda n: to_global_id("Resource", str(n)))
     name = factory.Faker("slug")
-    created_at = factory.LazyFunction(datetime.datetime.now)
-    updated_at = factory.LazyFunction(datetime.datetime.now)
+    created_at = factory.LazyFunction(dt.datetime.now)
+    updated_at = factory.LazyFunction(dt.datetime.now)
     address = factory.SubFactory(
         ResourceAddressFactory, hostname=factory.SelfAttribute("..name")
     )

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import orjson as json
 import pytest
@@ -89,7 +89,7 @@ class TestResourceAccessAPIs:
     ):
         resource_id = "test-resource"
         principal_id = "test-principal"
-        expires_at = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+        expires_at = datetime(2026, 12, 31, 23, 59, 59, tzinfo=UTC)
 
         expected_variables = {
             "resourceId": resource_id,

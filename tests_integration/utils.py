@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import os
 import subprocess
 import time
@@ -34,7 +34,7 @@ def assert_log_message_contains(logs, message):
 def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
     key = ed25519.Ed25519PrivateKey.generate()
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
-    now = datetime.datetime.now(datetime.UTC)
+    now = dt.datetime.now(dt.UTC)
     cert = (
         x509.CertificateBuilder()
         .subject_name(name)
@@ -42,7 +42,7 @@ def generate_base64_ca_cert(common_name: str = "Test CA") -> str:
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(now)
-        .not_valid_after(now + datetime.timedelta(days=365))
+        .not_valid_after(now + dt.timedelta(days=365))
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(key, None)
     )
@@ -117,7 +117,6 @@ def kubectl_wait_to_exist(
         try:
             return kubectl_get(resource_type, resource_name)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            # ruff: noqa: PERF203
             retry += 1
             if retry > max_retries:
                 raise

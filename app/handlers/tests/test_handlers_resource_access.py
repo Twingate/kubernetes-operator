@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import ANY, MagicMock, patch
 
@@ -414,7 +414,7 @@ class TestResourceAccessChangeHandler:
 
         call_kwargs = mock_api_client.resource_access_add.call_args.kwargs
         assert call_kwargs["expires_at"] == datetime(
-            2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc
+            2026, 12, 31, 23, 59, 59, tzinfo=UTC
         )
         assert call_kwargs["access_policy"] is None
         assert call_kwargs["approval_mode"] is None

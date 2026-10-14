@@ -1,13 +1,13 @@
 import binascii
 import logging
 import os
+import tomllib
 from base64 import b64decode
 from typing import Annotated, ClassVar
 from urllib.parse import urlparse
 
 import kopf
 import requests
-import tomllib
 from pydantic.functional_validators import AfterValidator
 from pydantic_core._pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict

@@ -1,5 +1,5 @@
 import dataclasses
-import datetime
+import datetime as dt
 import ssl
 from unittest.mock import MagicMock, patch
 
@@ -47,7 +47,7 @@ def test_login_without_strict_x509_wraps_the_default_login():
         token="token",  # nosec
         default_namespace="default",
         priority=10,
-        expiration=datetime.datetime(2036, 1, 1, tzinfo=datetime.UTC),
+        expiration=dt.datetime(2036, 1, 1, tzinfo=dt.UTC),
     )
     logger = MagicMock()
     with patch("kopf.login_via_client", return_value=original) as login_mock:

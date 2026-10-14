@@ -2,7 +2,7 @@ import base64
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import Annotated, Any, ClassVar, cast
 
 import kopf
@@ -83,7 +83,7 @@ class _KubernetesObjectRef(BaseModel):
 # region TwingateResourceCRD
 
 
-class ProtocolPolicy(str, Enum):
+class ProtocolPolicy(StrEnum):
     ALLOW_ALL = "ALLOW_ALL"
     RESTRICTED = "RESTRICTED"
 
@@ -567,7 +567,7 @@ class TwingateResourceAccessCRD(BaseK8sModel):
 # region TwingateConnector
 
 
-class ConnectorImagePolicyProvidersEnum(str, Enum):
+class ConnectorImagePolicyProvidersEnum(StrEnum):
     dockerhub = "dockerhub"
     google = "google"
 

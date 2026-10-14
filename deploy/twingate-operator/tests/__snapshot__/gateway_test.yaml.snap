@@ -119,10 +119,19 @@ should enable Gateway:
         metricsPort: 9090
 
         log:
+          system:
+            level: "info"
+            output:
+              stderr: {}
+          audit:
+            output:
+              stderr: {}
           sessionRecording:
             segment:
               maxDuration: "5m"
-              maxSize: "64KB"
+              maxSize: "64KiB"
+            output:
+              stderr: {}
 
         tls:
           certificates:

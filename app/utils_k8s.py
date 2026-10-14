@@ -1,4 +1,5 @@
 import ssl
+from typing import cast
 
 import kopf
 import kubernetes
@@ -83,8 +84,11 @@ def k8s_get_twingate_custom_object(
 ) -> dict | None:
     kapi = kapi or kubernetes.client.CustomObjectsApi()
     try:
-        return kapi.get_namespaced_custom_object(
-            "twingate.com", "v1beta", namespace, plural, name
+        return cast(
+            dict,
+            kapi.get_namespaced_custom_object(
+                "twingate.com", "v1beta", namespace, plural, name
+            ),
         )
     except kubernetes.client.exceptions.ApiException as ex:
         if ex.status == 404:
@@ -165,7 +169,7 @@ def resolve_service_address(
             ) from ex
         raise
 
-    service_type = service.spec.type
+    service_type = service.spec.type if service.spec else None
     if service_type == "LoadBalancer":
         load_balancer = service.status.load_balancer if service.status else None
         ingress = (load_balancer.ingress or []) if load_balancer else []

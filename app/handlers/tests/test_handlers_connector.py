@@ -3,6 +3,7 @@ from unittest.mock import ANY, MagicMock, patch
 import kopf
 import pendulum
 import pytest
+from kubernetes.client import ApiClient
 
 from app.api.client_connectors import ConnectorTokens
 from app.crds import (
@@ -379,7 +380,11 @@ class TestTwingateConnectorPodReconciler_Image:
 
         k8s_apps_client_mock.read_namespaced_deployment.return_value = None
 
-        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        run = kopf_handler_runner(
+            twingate_connector_pod_reconciler,
+            crd,
+            MagicMock(**{"twingate_settings.full_url": "https://test.twingate.com"}),
+        )
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.create_namespaced_deployment.assert_called_once()
 
@@ -394,7 +399,11 @@ class TestTwingateConnectorPodReconciler_Image:
             status={"twingate_connector_create": {"success": True}}, with_id=True
         )
 
-        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        run = kopf_handler_runner(
+            twingate_connector_pod_reconciler,
+            crd,
+            MagicMock(**{"twingate_settings.full_url": "https://test.twingate.com"}),
+        )
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
 
@@ -444,7 +453,11 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
-        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        run = kopf_handler_runner(
+            twingate_connector_pod_reconciler,
+            crd,
+            MagicMock(**{"twingate_settings.full_url": "https://test.twingate.com"}),
+        )
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
         assert run.patch_mock.meta["annotations"] == {
@@ -467,7 +480,11 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
             with_id=True,
         )
 
-        run = kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        run = kopf_handler_runner(
+            twingate_connector_pod_reconciler,
+            crd,
+            MagicMock(**{"twingate_settings.full_url": "https://test.twingate.com"}),
+        )
         assert run.result == {"success": True, "ts": ANY}
         run.k8s_apps_client_mock.replace_namespaced_deployment.assert_called_once()
         assert run.patch_mock.meta["annotations"] == {
@@ -522,7 +539,11 @@ class TestTwingateConnectorPodReconciler_ImagePolicy:
         # Deployment doesnt exist, so we expect it to be created
         k8s_apps_client_mock.read_namespaced_deployment.return_value = None
 
-        kopf_handler_runner(twingate_connector_pod_reconciler, crd, MagicMock())
+        kopf_handler_runner(
+            twingate_connector_pod_reconciler,
+            crd,
+            MagicMock(**{"twingate_settings.full_url": "https://test.twingate.com"}),
+        )
 
         k8s_apps_client_mock.create_namespaced_deployment.assert_called_once()
 
@@ -540,8 +561,9 @@ class TestGetConnectorDeployment:
         _, crd = get_connector_and_crd()
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
 
-        assert dep.spec["template"]["spec"] == {
+        assert dep_spec["template"]["spec"] == {
             "containers": [
                 {
                     "env": [
@@ -610,7 +632,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        container = dep.spec["template"]["spec"]["containers"][0]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        container = dep_spec["template"]["spec"]["containers"][0]
         expected_env_vars = [
             {
                 "name": "TWINGATE_LABEL_VERSION_POLICY_SCHEDULE",
@@ -640,7 +663,8 @@ class TestGetConnectorDeployment:
             spec_overrides={"log_analytics": log_analytics_enabled}
         )
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        container = dep.spec["template"]["spec"]["containers"][0]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        container = dep_spec["template"]["spec"]["containers"][0]
 
         env_var = {"name": "TWINGATE_LOG_ANALYTICS", "value": "v2"}
         container_env = container["env"]
@@ -657,7 +681,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        container = dep.spec["template"]["spec"]["containers"][0]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        container = dep_spec["template"]["spec"]["containers"][0]
 
         assert extra_env in container["env"]
 
@@ -673,7 +698,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        container = dep.spec["template"]["spec"]["containers"][0]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        container = dep_spec["template"]["spec"]["containers"][0]
 
         assert container["volumeMounts"] == [
             {"name": "twingate-socket", "mountPath": "/var/run/twingate"},
@@ -689,7 +715,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        containers = dep.spec["template"]["spec"]["containers"]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        containers = dep_spec["template"]["spec"]["containers"]
 
         assert containers[1] == sidecar_container
 
@@ -700,7 +727,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        pod_spec = dep.spec["template"]["spec"]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        pod_spec = dep_spec["template"]["spec"]
 
         assert pod_spec["volumes"] == [
             {"name": "twingate-socket", "emptyDir": {}},
@@ -714,7 +742,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        pod_metadata = dep.spec["template"]["metadata"]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        pod_metadata = dep_spec["template"]["metadata"]
 
         assert pod_metadata["annotations"] == annotations
 
@@ -725,7 +754,8 @@ class TestGetConnectorDeployment:
         )
 
         dep = get_connector_deployment(crd, mock_tenant_url, mock_image)
-        pod_metadata = dep.spec["template"]["metadata"]
+        dep_spec = ApiClient().sanitize_for_serialization(dep.spec)
+        pod_metadata = dep_spec["template"]["metadata"]
 
         assert pod_metadata["labels"] == labels | {
             "connector.twingate.com/name": crd.metadata.name,

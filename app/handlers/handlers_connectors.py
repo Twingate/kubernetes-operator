@@ -136,7 +136,8 @@ def get_connector_deployment(
 
     # fmt: on
     return kubernetes.client.V1Deployment(
-        spec=deployment_spec, metadata=deployment_meta
+        spec=deployment_spec,  # type: ignore[arg-type]
+        metadata=deployment_meta,
     )
 
 
@@ -172,7 +173,8 @@ def delete_deployment_if_using_old_selector(
         return
 
     # Check if the deployment is using the old selector, delete it if it is
-    if not k8s_deployment.spec.selector.match_labels.get("connector.twingate.com/name"):
+    match_labels = k8s_deployment.spec.selector.match_labels or {}
+    if not match_labels.get("connector.twingate.com/name"):
         kapi_apps.delete_namespaced_deployment(name=name, namespace=namespace)
 
 
@@ -182,7 +184,7 @@ def create_or_replace_deployment(
     connector: TwingateConnectorCRD,
     tenant_url: str,
     *,
-    kapi: kubernetes.client.AppsV1Api = None,
+    kapi: kubernetes.client.AppsV1Api | None = None,
 ):
     kapi = kapi or kubernetes.client.AppsV1Api()
     expected_image = connector.spec.get_image()

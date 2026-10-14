@@ -377,8 +377,8 @@ class CertificateAuthoritySpec(BaseModel):
     def read_certificate_authority_cert_from_secret(
         secret: kubernetes.client.V1Secret,
     ) -> str:
-        secret_name = secret.metadata.name
-        if not (ca_cert := secret.data.get("ca.crt")):
+        secret_name = secret.metadata.name if secret.metadata else None
+        if not (ca_cert := (secret.data or {}).get("ca.crt")):
             raise kopf.PermanentError(
                 f"Kubernetes Secret object: {secret_name} is missing ca.crt."
             )
@@ -511,7 +511,7 @@ class ResourceAccessSpec(BaseModel):
                 log_prefix,
                 response,
             )
-            return response
+            return cast(MutableMapping, response)
         except kubernetes.client.exceptions.ApiException as api_ex:
             if api_ex.status == 404:
                 logger.warning("%s resource not found.", log_prefix)

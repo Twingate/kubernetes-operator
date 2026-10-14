@@ -15,7 +15,7 @@ from app.utils_k8s import NonStrictX509RESTClientObject
 
 if is_strict_x509_verification_disabled():
     # Every ``kubernetes.client.*Api()`` builds the REST client using this class.
-    kubernetes.client.rest.RESTClientObject = NonStrictX509RESTClientObject
+    kubernetes.client.rest.RESTClientObject = NonStrictX509RESTClientObject  # type: ignore[misc]
     kopf.on.login()(login_without_strict_x509)
 
 

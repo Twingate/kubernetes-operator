@@ -1,6 +1,7 @@
 import json
 from collections.abc import Callable
 from enum import StrEnum
+from typing import cast
 
 import kopf
 import kubernetes
@@ -15,8 +16,11 @@ def k8s_get_twingate_resource(
 ) -> dict | None:
     kapi = kapi or kubernetes.client.CustomObjectsApi()
     try:
-        return kapi.get_namespaced_custom_object(
-            "twingate.com", "v1beta", namespace, "twingateresources", name
+        return cast(
+            dict,
+            kapi.get_namespaced_custom_object(
+                "twingate.com", "v1beta", namespace, "twingateresources", name
+            ),
         )
     except kubernetes.client.exceptions.ApiException as ex:
         if ex.status == 404:

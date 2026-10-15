@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PYTHON_VERSION: 3.14.7
-  POETRY_VERSION: 2.4.1
+  PYTHON_VERSION: 3.14.8
+  POETRY_VERSION: 2.5.1
 
 jobs:
   dockerfile-lint:

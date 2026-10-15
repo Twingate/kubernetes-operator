@@ -1,6 +1,100 @@
 # CHANGELOG
 
 
+## v3.0.0 (2026-10-14)
+
+### Chores
+
+- Bump cryptography from 50.0.1 to 50.0.2
+  ([#1187](https://github.com/Twingate/kubernetes-operator/pull/1187),
+  [`4598a70`](https://github.com/Twingate/kubernetes-operator/commit/4598a7056876ad52a4fb7f35bd7d7c6db850267b))
+
+- Bump gateway subchart to 2.0.0
+  ([#1197](https://github.com/Twingate/kubernetes-operator/pull/1197),
+  [`b5be9b4`](https://github.com/Twingate/kubernetes-operator/commit/b5be9b4a2ac30f8e4c445fc0a9cfc3d3db594773))
+
+- Bump gateway subchart to 2.0.0-dev-5ed8e12
+  ([#1183](https://github.com/Twingate/kubernetes-operator/pull/1183),
+  [`543ff6f`](https://github.com/Twingate/kubernetes-operator/commit/543ff6fa91572b4dcc0ad9ec9ed8274c436296a4))
+
+- Bump gateway subchart to `2.0.0-dev-f3e36c8`
+  ([#1196](https://github.com/Twingate/kubernetes-operator/pull/1196),
+  [`e4c2d56`](https://github.com/Twingate/kubernetes-operator/commit/e4c2d567a1ad19c158af74bb2e89d36195dca225))
+
+- Bump google-cloud-artifact-registry from 1.22.0 to 1.23.0
+  ([#1186](https://github.com/Twingate/kubernetes-operator/pull/1186),
+  [`fb6bf43`](https://github.com/Twingate/kubernetes-operator/commit/fb6bf43e79fb32ec34fec6745278703491b2a0bc))
+
+- Bump gql from 4.0.0 to 4.4.0 ([#1181](https://github.com/Twingate/kubernetes-operator/pull/1181),
+  [`1ccd2b3`](https://github.com/Twingate/kubernetes-operator/commit/1ccd2b392ac22c2dc2b92ab790a03a37a23071fc))
+
+- Bump kubernetes from 36.0.3 to 37.0.1
+  ([#1195](https://github.com/Twingate/kubernetes-operator/pull/1195),
+  [`d49b147`](https://github.com/Twingate/kubernetes-operator/commit/d49b1471b1beae9f4ff33eb8ca8c1da907a115c2))
+
+- Bump multidict from 6.7.1 to 6.9.1
+  ([#1190](https://github.com/Twingate/kubernetes-operator/pull/1190),
+  [`bb1fe53`](https://github.com/Twingate/kubernetes-operator/commit/bb1fe5350d1764726bb15d4947c0496e67312f07))
+
+- Bump oauthlib from 3.3.1 to 4.0.0
+  ([#1179](https://github.com/Twingate/kubernetes-operator/pull/1179),
+  [`3492393`](https://github.com/Twingate/kubernetes-operator/commit/34923939c6ab15420ecfa7c5097fe949ea9091ea))
+
+- Bump orjson from 3.12.0 to 3.13.0
+  ([#1192](https://github.com/Twingate/kubernetes-operator/pull/1192),
+  [`33a5333`](https://github.com/Twingate/kubernetes-operator/commit/33a53339fdf716d28836bdfb4ba31f7adef91fc0))
+
+- Bump pydantic from 2.13.5 to 2.14.0
+  ([#1193](https://github.com/Twingate/kubernetes-operator/pull/1193),
+  [`aa0b6cb`](https://github.com/Twingate/kubernetes-operator/commit/aa0b6cb83c6e1c83968b95a746cb02750df8b480))
+
+- Bump ruff from 0.16.8 to 0.16.9 in the dev-dependencies group
+  ([#1174](https://github.com/Twingate/kubernetes-operator/pull/1174),
+  [`b4d4c46`](https://github.com/Twingate/kubernetes-operator/commit/b4d4c4630d02e727f443e2518217bca2a5559720))
+
+- Bump tenacity from 9.1.4 to 9.2.1
+  ([#1194](https://github.com/Twingate/kubernetes-operator/pull/1194),
+  [`2ac8fb4`](https://github.com/Twingate/kubernetes-operator/commit/2ac8fb4efa9bc8a243ce79b184dcd6b12c685593))
+
+- Bump the dev-dependencies group across 1 directory with 2 updates
+  ([#1191](https://github.com/Twingate/kubernetes-operator/pull/1191),
+  [`bee7401`](https://github.com/Twingate/kubernetes-operator/commit/bee7401a226188e35a89173ee047a64c3cd3440d))
+
+- Bump the dev-dependencies group with 2 updates
+  ([#1189](https://github.com/Twingate/kubernetes-operator/pull/1189),
+  [`65a43a6`](https://github.com/Twingate/kubernetes-operator/commit/65a43a6e8050774ca33d21c86d1fc59302311ef0))
+
+- Bump the dev-dependencies group with 2 updates
+  ([#1185](https://github.com/Twingate/kubernetes-operator/pull/1185),
+  [`2eeea4a`](https://github.com/Twingate/kubernetes-operator/commit/2eeea4ab0cf53b6157dd31274de0648193a0a2bb))
+
+- Bump urllib3 from 2.7.0 to 2.8.0
+  ([#1178](https://github.com/Twingate/kubernetes-operator/pull/1178),
+  [`825383b`](https://github.com/Twingate/kubernetes-operator/commit/825383b48c5a376c0116a1e8178ab9fe46bd1a97))
+
+- Bump virtualenv from 21.4.2 to 21.7.12
+  ([#1180](https://github.com/Twingate/kubernetes-operator/pull/1180),
+  [`dca0654`](https://github.com/Twingate/kubernetes-operator/commit/dca06548ef14ae8062ceff2844ab1b331b2e73b7))
+
+- Bump virtualenv from 21.7.12 to 21.7.13
+  ([#1182](https://github.com/Twingate/kubernetes-operator/pull/1182),
+  [`705382e`](https://github.com/Twingate/kubernetes-operator/commit/705382e376f319c2f527ef4ed30288b8f8b20603))
+
+- Gateway 2.0 subchart with breaking TLS values schema
+  ([#1184](https://github.com/Twingate/kubernetes-operator/pull/1184),
+  [`a8d571b`](https://github.com/Twingate/kubernetes-operator/commit/a8d571be9d58af4db1be6535fcd6878a504245bc))
+
+### Features
+
+- Only allow protocols on Network `TwingateResources`
+  ([#1188](https://github.com/Twingate/kubernetes-operator/pull/1188),
+  [`0660788`](https://github.com/Twingate/kubernetes-operator/commit/0660788796ff164921ce8a31bdd758d6e2c7d34b))
+
+- Support `tlsMode` for `WebApp` resources
+  ([#1177](https://github.com/Twingate/kubernetes-operator/pull/1177),
+  [`71777c4`](https://github.com/Twingate/kubernetes-operator/commit/71777c4f78bbd0a52aacb077cf8fb583b524f8c3))
+
+
 ## v2.0.4 (2026-09-23)
 
 ### Chores

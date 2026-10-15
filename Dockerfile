@@ -1,4 +1,6 @@
-ARG PYTHON_VERSION
+# Keep in sync with `.tool-versions`. CI and the Makefile always pass
+# --build-arg PYTHON_VERSION; the default only applies to a bare `docker build`.
+ARG PYTHON_VERSION=3.14.8
 FROM python:${PYTHON_VERSION}-slim AS base
 
 ENV LC_ALL=C.UTF-8 \

@@ -1,6 +1,51 @@
 # CHANGELOG
 
 
+## v3.0.1 (2026-10-21)
+
+### Chores
+
+- Bump aiohttp from 3.14.3 to 3.14.4
+  ([#1207](https://github.com/Twingate/kubernetes-operator/pull/1207),
+  [`132d5c2`](https://github.com/Twingate/kubernetes-operator/commit/132d5c2abe9a08a652b947249e6450325924369b))
+
+- Bump gateway from 2.0.0 to 2.0.1 in /deploy/twingate-operator
+  ([#1208](https://github.com/Twingate/kubernetes-operator/pull/1208),
+  [`a6c4991`](https://github.com/Twingate/kubernetes-operator/commit/a6c4991a2b7cd3a1845bea7f4951dcaa68bbdec4))
+
+- Bump kopf from 1.44.6 to 1.45.0
+  ([#1202](https://github.com/Twingate/kubernetes-operator/pull/1202),
+  [`fe5bde8`](https://github.com/Twingate/kubernetes-operator/commit/fe5bde8727e6832aa79c38ff7addd685cbe927ec))
+
+- Bump kopf from 1.45.0 to 1.45.1
+  ([#1206](https://github.com/Twingate/kubernetes-operator/pull/1206),
+  [`2fb4afe`](https://github.com/Twingate/kubernetes-operator/commit/2fb4afe3ce181df08f25c2eb9eb842f0867a8ded))
+
+- Bump pendulum from 3.2.0 to 3.3.0
+  ([#1203](https://github.com/Twingate/kubernetes-operator/pull/1203),
+  [`7d6e84e`](https://github.com/Twingate/kubernetes-operator/commit/7d6e84ec52248ed09750d14715a3934a125e6daa))
+
+- Bump pre-commit from 4.6.2 to 4.7.0 in the dev-dependencies group
+  ([#1201](https://github.com/Twingate/kubernetes-operator/pull/1201),
+  [`76eb4d9`](https://github.com/Twingate/kubernetes-operator/commit/76eb4d90f847b7f1f64ed5571caecb20da62e0b0))
+
+- Bump pydantic from 2.14.0 to 2.14.1
+  ([#1200](https://github.com/Twingate/kubernetes-operator/pull/1200),
+  [`819f492`](https://github.com/Twingate/kubernetes-operator/commit/819f492f105638ee37e78a4e6a2e76d6101dfbb2))
+
+- Bump pydantic-settings from 2.15.0 to 2.16.0
+  ([#1205](https://github.com/Twingate/kubernetes-operator/pull/1205),
+  [`d366670`](https://github.com/Twingate/kubernetes-operator/commit/d36667045741a9726d025c361827075e1eea2e11))
+
+- Bump ruff from 0.17.0 to 0.17.1 in the dev-dependencies group
+  ([#1204](https://github.com/Twingate/kubernetes-operator/pull/1204),
+  [`2ada3f1`](https://github.com/Twingate/kubernetes-operator/commit/2ada3f1980c70879849cedd80d289c62a877a262))
+
+- Upgrade Python to 3.14.8 and Poetry to 2.5.1
+  ([#1198](https://github.com/Twingate/kubernetes-operator/pull/1198),
+  [`2d7108c`](https://github.com/Twingate/kubernetes-operator/commit/2d7108c78dfb6f232eecdb0e74ab388ec9fa09de))
+
+
 ## v3.0.0 (2026-10-14)
 
 ### Chores

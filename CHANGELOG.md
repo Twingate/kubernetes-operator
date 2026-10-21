@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v3.0.2 (2026-10-21)
+
+### Chores
+
+- Bump certifi from 2026.7.22 to 2026.10.19
+  ([#1210](https://github.com/Twingate/kubernetes-operator/pull/1210),
+  [`c7ce4ee`](https://github.com/Twingate/kubernetes-operator/commit/c7ce4ee1fe0a3cb93cee49c36069095687215083))
+
+
 ## v3.0.1 (2026-10-21)
 
 ### Chores

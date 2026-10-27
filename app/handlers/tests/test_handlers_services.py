@@ -321,6 +321,55 @@ class TestServiceToTwingateResource:
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
 
+    def test_webapp_resource_tls_mode_annotations(self, example_webapp_service_body):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamTLSMode"
+        ] = "TLS13"
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamTLSMode"
+        ] = "VERIFY_FULL"
+
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["downstream"] == {"port": 80, "tlsMode": "TLS13"}
+        assert result["spec"]["upstream"] == {"port": 8080, "tlsMode": "VERIFY_FULL"}
+
+    def test_webapp_resource_without_tls_mode_annotations(
+        self, example_webapp_service_body
+    ):
+        result = service_to_twingate_resource(example_webapp_service_body, "default")
+
+        assert result["spec"]["downstream"] == {"port": 80}
+        assert result["spec"]["upstream"] == {"port": 8080}
+
+    def test_webapp_resource_invalid_downstream_tls_mode(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/downstreamTLSMode"
+        ] = "VERIFY_FULL"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/downstreamTLSMode annotation must be one of "
+            r"\['TLS13', 'NONE'\]",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_webapp_resource_invalid_upstream_tls_mode(
+        self, example_webapp_service_body
+    ):
+        example_webapp_service_body.metadata["annotations"][
+            "resource.twingate.com/upstreamTLSMode"
+        ] = "TLS13"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/upstreamTLSMode annotation must be one of "
+            r"\['VERIFY_FULL', 'VERIFY_CA', 'INSECURE', 'NONE'\]",
+        ):
+            service_to_twingate_resource(example_webapp_service_body, "default")
+
     def test_webapp_resource_request_header_rewrites(self, example_webapp_service_body):
         example_webapp_service_body.metadata["annotations"][
             "resource.twingate.com/requestHeaderRewrites"

@@ -2,7 +2,7 @@ import base64
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import Annotated, Any, ClassVar, cast
 
 import kopf
@@ -13,6 +13,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    ValidationError,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -82,7 +83,7 @@ class _KubernetesObjectRef(BaseModel):
 # region TwingateResourceCRD
 
 
-class ProtocolPolicy(str, Enum):
+class ProtocolPolicy(StrEnum):
     ALLOW_ALL = "ALLOW_ALL"
     RESTRICTED = "RESTRICTED"
 
@@ -148,12 +149,25 @@ class ResourceProtocols(BaseModel):
     udp: ResourceProtocol = Field(default_factory=ResourceProtocol)
 
 
+class TLSServerMode(StrEnum):
+    TLS13 = "TLS13"
+    NONE = "NONE"
+
+
 class ResourceDownstream(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
     port: Port
+    tls_mode: TLSServerMode = TLSServerMode.NONE
+
+
+class TLSClientMode(StrEnum):
+    VERIFY_FULL = "VERIFY_FULL"
+    VERIFY_CA = "VERIFY_CA"
+    INSECURE = "INSECURE"
+    NONE = "NONE"
 
 
 class ResourceUpstream(BaseModel):
@@ -162,6 +176,7 @@ class ResourceUpstream(BaseModel):
     )
 
     port: Port
+    tls_mode: TLSClientMode = TLSClientMode.NONE
 
 
 class RequestHeaderRewrite(BaseModel):
@@ -194,7 +209,8 @@ class ResourceSpec(BaseModel):
     security_policy_id: str | None = None
     is_visible: bool = True
     is_browser_shortcut_enabled: bool = True
-    protocols: ResourceProtocols = Field(default_factory=ResourceProtocols)
+    # (Network only) port-based access restrictions.
+    protocols: ResourceProtocols | None = None
     sync_labels: bool = True
     type: ResourceType = ResourceType.NETWORK
     # Reference to the TwingateGateway serving this Kubernetes or WebApp resource.
@@ -226,6 +242,9 @@ class ResourceSpec(BaseModel):
             or self.upstream is not None
             or self.request_header_rewrites is not None
         )
+
+        if self.type != ResourceType.NETWORK and self.protocols is not None:
+            raise ValueError("Only Network resources can set `protocols`.")
 
         match self.type:
             case ResourceType.NETWORK:
@@ -264,6 +283,7 @@ class ResourceSpec(BaseModel):
         exclude = exclude or set()
         default_exclude_fields = {
             "is_browser_shortcut_enabled",
+            "protocols",
             "sync_labels",
             "type",
             "gateway_ref",
@@ -273,7 +293,6 @@ class ResourceSpec(BaseModel):
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
-            "protocols": self.protocols.model_dump(by_alias=True),
             "tags": (
                 [{"key": key, "value": value} for key, value in labels.items()]
                 if self.sync_labels
@@ -283,8 +302,12 @@ class ResourceSpec(BaseModel):
 
         match self.type:
             case ResourceType.NETWORK:
+                # Only Network Resources are port-based, so only they send protocols.
                 graphql_args |= {
                     "is_browser_shortcut_enabled": self.is_browser_shortcut_enabled,
+                    "protocols": (self.protocols or ResourceProtocols()).model_dump(
+                        by_alias=True
+                    ),
                 }
             case ResourceType.KUBERNETES:
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
@@ -296,8 +319,6 @@ class ResourceSpec(BaseModel):
                     ),
                 }
             case ResourceType.WEB_APP:
-                # WebApp Resources are not port-based, so protocols don't apply.
-                graphql_args.pop("protocols", None)
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
                 downstream = cast(ResourceDownstream, self.downstream)
                 upstream = cast(ResourceUpstream, self.upstream)
@@ -356,8 +377,8 @@ class CertificateAuthoritySpec(BaseModel):
     def read_certificate_authority_cert_from_secret(
         secret: kubernetes.client.V1Secret,
     ) -> str:
-        secret_name = secret.metadata.name
-        if not (ca_cert := secret.data.get("ca.crt")):
+        secret_name = secret.metadata.name if secret.metadata else None
+        if not (ca_cert := (secret.data or {}).get("ca.crt")):
             raise kopf.PermanentError(
                 f"Kubernetes Secret object: {secret_name} is missing ca.crt."
             )
@@ -490,7 +511,7 @@ class ResourceAccessSpec(BaseModel):
                 log_prefix,
                 response,
             )
-            return response
+            return cast(MutableMapping, response)
         except kubernetes.client.exceptions.ApiException as api_ex:
             if api_ex.status == 404:
                 logger.warning("%s resource not found.", log_prefix)
@@ -521,7 +542,14 @@ class ResourceAccessSpec(BaseModel):
         if not resource_ref_object:
             return None
 
-        resource = ResourceSpec(**resource_ref_object.pop("spec"))
+        try:
+            resource = ResourceSpec(**resource_ref_object.pop("spec"))
+        except ValidationError as err:
+            raise kopf.PermanentError(
+                f"TwingateResource {self.resource_ref.fullname(owner_namespace)} "
+                f"is invalid: {err}"
+            ) from err
+
         metadata = K8sMetadata(**resource_ref_object.pop("metadata"))
         return TwingateResourceCRD(
             metadata=metadata, spec=resource, **resource_ref_object
@@ -539,7 +567,7 @@ class TwingateResourceAccessCRD(BaseK8sModel):
 # region TwingateConnector
 
 
-class ConnectorImagePolicyProvidersEnum(str, Enum):
+class ConnectorImagePolicyProvidersEnum(StrEnum):
     dockerhub = "dockerhub"
     google = "google"
 

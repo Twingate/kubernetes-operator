@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import kopf
 import kubernetes.client
 import pytest
 
@@ -440,6 +441,26 @@ def test_spec_get_resource(
     assert response.spec.name == "My K8S Resource"
     assert response.metadata.name == "foo"
     assert response.metadata.uid == "c560d138-a93a-4463-8b44-d7717851a265"
+
+
+def test_spec_get_resource_with_invalid_spec_fails_permanently(
+    mock_get_namespaced_custom_object,
+    sample_resourceaccess_object,
+    sample_resource_object,
+):
+    sample_resource_object["spec"] |= {
+        "type": "Kubernetes",
+        "gatewayRef": {"name": "my-gateway"},
+        "protocols": {"allowIcmp": True},
+    }
+    mock_get_namespaced_custom_object.return_value = sample_resource_object
+    crd = TwingateResourceAccessCRD(**sample_resourceaccess_object)
+
+    with pytest.raises(
+        kopf.PermanentError,
+        match=r"(?s)TwingateResource default/foo is invalid: .*Only Network resources",
+    ):
+        crd.spec.get_resource("default")
 
 
 def test_spec_get_resource_failure_returns_none(

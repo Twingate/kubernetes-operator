@@ -2,6 +2,7 @@ import os
 from datetime import timedelta
 
 import kopf
+from pydantic import ValidationError
 
 from app.api import TwingateAPIClient
 from app.crds import ResourceSpec, ResourceType, TwingateGatewayCRD
@@ -82,12 +83,23 @@ def _release_service_ownership(meta, spec, patch, logger):
     patch.meta["ownerReferences"] = remaining
 
 
+def _parse_resource_spec(spec) -> ResourceSpec:
+    """Validate ``spec``, raising ``kopf.PermanentError`` if it is invalid."""
+    # Validation depends only on the spec, so retrying cannot succeed until the spec is
+    # edited, and Kopf reruns the handlers on that edit. CRD validation rules only run
+    # on writes, so a TwingateResource stored before a rule was added can still fail.
+    try:
+        return ResourceSpec(**spec)
+    except ValidationError as err:
+        raise kopf.PermanentError(str(err)) from err
+
+
 @kopf.on.create("twingateresource")
 def twingate_resource_create(
     body, namespace, labels, spec, memo, logger, patch, **kwargs
 ):
     logger.info("Got a create request: %s. Labels: %s", spec, labels)
-    resource = ResourceSpec(**spec)
+    resource = _parse_resource_spec(spec)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     graphql_arguments = resource.to_graphql_arguments(
@@ -133,7 +145,7 @@ def twingate_resource_update(
 
     _release_service_ownership(meta, spec, patch, logger)
 
-    crd = ResourceSpec(**spec)
+    crd = _parse_resource_spec(spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     graphql_arguments = crd.to_graphql_arguments(
         labels=labels, owner_namespace=namespace
@@ -197,7 +209,7 @@ def twingate_resource_sync(
 
     _release_service_ownership(meta, spec, patch, logger)
 
-    crd = ResourceSpec(**spec)
+    crd = _parse_resource_spec(spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)

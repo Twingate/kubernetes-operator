@@ -73,6 +73,11 @@ repos:
     rev: v0.50.0
     hooks:
       - id: markdownlint
+        # pre-commit ignores version-manager shims, so it cannot reuse the
+        # nodejs from .tool-versions and falls back to asking nodeenv for
+        # "latest" - currently a 27.x alpha that nodeenv fails to parse.
+        # Pin explicitly; keep in sync with .tool-versions.
+        language_version: "26.13.0"
         args: ["--fix"]
         exclude: >
           (?x)^(

@@ -12,6 +12,13 @@ from cryptography.x509.oid import NameOID
 
 KUBECTL_COMMAND = os.environ.get("KUBECTL_COMMAND", "kubectl")
 
+DEFAULT_TIMEOUT = 10
+
+# Deletes block until the operator's delete handlers have round-tripped the
+# Twingate API and dropped their finalizers, which can take far longer than a
+# plain read. Used for bulk cleanup deletes.
+DELETE_TIMEOUT = 60
+
 # ruff: noqa: S602 (subprocess_popen_with_shell_equals_true)
 
 
@@ -66,12 +73,14 @@ def create_tls_secret(secret_name, base64_ca_cert):
 """
 
 
-def kubectl(command: str, input: str | None = None) -> subprocess.CompletedProcess:
+def kubectl(
+    command: str, input: str | None = None, *, timeout: int = DEFAULT_TIMEOUT
+) -> subprocess.CompletedProcess:
     return subprocess.run(
         f"{KUBECTL_COMMAND} {command}",
         shell=True,
         check=True,
-        timeout=10,
+        timeout=timeout,
         capture_output=True,
         input=input.encode() if input else None,
     )

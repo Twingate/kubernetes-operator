@@ -31,8 +31,7 @@
 1. We use [direnv](https://direnv.net/) to manage environment variables. Install
    it and then run `direnv allow` in the root of this repo to allow it to manage
    your environment variables.
-1. We use [minikube](https://minikube.sigs.k8s.io/docs/start/) to run Kubernetes cluster locally.
-   Install it and then run `minikube start`.
+1. Start a local Kubernetes cluster — see [Local cluster](#local-cluster) below.
 1. Apply the custom CRDs to the cluster:
 
    ```bash
@@ -43,6 +42,40 @@
 1. You can now edit code and run `make run` to run the operator locally.
    1. You'll also want to `poetry run pre-commit install` to make sure you have
       the pre-commit checks running locally.
+
+> [!WARNING]
+> `make test-int` runs against whatever your current kubectl context is, with no
+> guard. It applies CRDs cluster-wide and its teardown runs `kubectl delete
+> twingate --all`. Always confirm `kubectl config current-context` points at your
+> local cluster before running it.
+
+### Local cluster
+
+#### macOS (recommended): kvz
+
+[kvz](https://github.com/kvz-platform/kvz) is a native macOS Kubernetes distribution — the control
+plane is a single macOS process with no Linux VM, so the cluster is ready in seconds. Requires an
+Apple Silicon Mac on macOS 26 or later.
+
+```bash
+brew install kvz-platform/tap/kvz
+kvz server --disable metrics-server     # leave running in its own terminal
+export KUBECONFIG=~/.kvz/kubeconfig.yaml
+```
+
+kvz registers a `metrics.k8s.io` APIService that has no backing pod. Kopf scans every API group at
+startup, so the 503 it returns kills the operator and every flow test with
+`APIServerError: service unavailable`. `--disable metrics-server` stops kvz redeploying it, but the
+registration persists in etcd — if you started kvz without the flag even once, delete it:
+
+```bash
+kubectl delete apiservice v1beta1.metrics.k8s.io
+```
+
+#### Linux, or as a fallback
+
+[minikube](https://minikube.sigs.k8s.io/docs/start/) — install it and run `minikube start`. This is
+also what CI uses (`scripts/minikube-smoketests.sh`, Linux only).
 
 ### PyCharm & IDEs
 

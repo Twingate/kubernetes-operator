@@ -41,3 +41,19 @@ spec:
   requestHeaderRewrites:
     - name: Authorization
       value: "Bearer {{ jwt }}"
+---
+# Take the address from a load balancer that a controller provisions for an
+# Ingress (or a `type: LoadBalancer` Service via `serviceRef`). The operator
+# waits until `status.loadBalancer.ingress[0]` is set, and updates the Resource
+# if the load balancer is recreated with a new hostname.
+apiVersion: twingate.com/v1beta
+kind: TwingateResource
+metadata:
+  name: my-alb-resource
+  namespace: my-app
+spec:
+  name: My App
+  alias: my-app.internal.example.com
+  addressFrom:
+    ingressRef:
+      name: my-app

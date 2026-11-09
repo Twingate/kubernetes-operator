@@ -29,11 +29,18 @@ POLL_MIN_INTERVAL = float(os.environ.get("TG_TEST_POLL_MIN_INTERVAL", "0.3"))
 POLL_MAX_INTERVAL = float(os.environ.get("TG_TEST_POLL_MAX_INTERVAL", "2.0"))
 POLL_BACKOFF = 1.6
 
-# Deadlines are >= the retry-count budgets they replace (5x10s, 10x5s, 5x5s), so
-# nothing that passes today starts failing on a slow machine.
-WAIT_OBJECT_TIMEOUT = 60
-DELETE_WAIT_TIMEOUT = 60
-WAIT_TO_EXIST_TIMEOUT = 30
+# Deadlines are >= the worst case of the retry-count budgets they replace. That
+# worst case is not just the sleeps: every iteration also ran a kubectl
+# subprocess that could burn DEFAULT_TIMEOUT before raising, so for N retries it
+# is (N + 1) * DEFAULT_TIMEOUT + N * sleep_time. These deadlines cover both, so a
+# slow cluster keeps at least the tolerance it had:
+#   wait_object    5 retries x 10s sleep -> 6*10 + 5*10 = 110s
+#   delete_wait   10 retries x  5s sleep -> 11*10 + 10*5 = 160s
+#   wait_to_exist  5 retries x  5s sleep -> 6*10 + 5*5  =  85s
+# They bound failures only - a passing wait returns as soon as its predicate does.
+WAIT_OBJECT_TIMEOUT = 120
+DELETE_WAIT_TIMEOUT = 180
+WAIT_TO_EXIST_TIMEOUT = 90
 # Connector deployments pull an image and wait on a /connectorctl health probe,
 # so genuine availability can take far longer than the other waits.
 DEPLOYMENT_TIMEOUT = 120

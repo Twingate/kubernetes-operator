@@ -33,7 +33,8 @@ Use `@kopf.on.create/update/delete/timer` decorators. Handler params: `body`, `s
 
 ### Pydantic CRDs (app/crds.py)
 
-Models use `frozen=True`, `populate_by_name=True`, `alias_generator=to_camel`. Frozen models require `model_copy()` for modifications.
+Models use `frozen=True`, `populate_by_name=True`, `alias_generator=to_camel`. Frozen models require
+`model_copy()` for modifications.
 
 ### API Client
 

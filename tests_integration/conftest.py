@@ -10,7 +10,7 @@ import kopf
 import pytest
 from kopf.testing import KopfRunner
 
-from .utils import kubectl
+from .utils import DELETE_TIMEOUT, kubectl
 
 
 @pytest.fixture(scope="session")
@@ -100,7 +100,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
                 yield runner
             finally:
                 if cleanup:
-                    kubectl("delete twingate --all")
+                    kubectl("delete twingate --all", timeout=DELETE_TIMEOUT)
                     time.sleep(5)
 
         assert runner.exception is None

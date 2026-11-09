@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 from base64 import b64encode
+from collections.abc import Callable
 
 import orjson as json
 from cryptography import x509
@@ -18,6 +19,24 @@ DEFAULT_TIMEOUT = 10
 # Twingate API and dropped their finalizers, which can take far longer than a
 # plain read. Used for bulk cleanup deletes.
 DELETE_TIMEOUT = 60
+
+# Polling cadence for the wait helpers below. What they wait on is typically a
+# single Twingate API round-trip (~1-2s), so poll sub-second at first and back
+# off. Both are overridable, so a test that starts failing can be re-run at the
+# old coarse granularity to tell a real race from a polling artifact:
+#   TG_TEST_POLL_MIN_INTERVAL=10 TG_TEST_POLL_MAX_INTERVAL=10 make test-int
+POLL_MIN_INTERVAL = float(os.environ.get("TG_TEST_POLL_MIN_INTERVAL", "0.3"))
+POLL_MAX_INTERVAL = float(os.environ.get("TG_TEST_POLL_MAX_INTERVAL", "2.0"))
+POLL_BACKOFF = 1.6
+
+# Deadlines are >= the retry-count budgets they replace (5x10s, 10x5s, 5x5s), so
+# nothing that passes today starts failing on a slow machine.
+WAIT_OBJECT_TIMEOUT = 60
+DELETE_WAIT_TIMEOUT = 60
+WAIT_TO_EXIST_TIMEOUT = 30
+# Connector deployments pull an image and wait on a /connectorctl health probe,
+# so genuine availability can take far longer than the other waits.
+DEPLOYMENT_TIMEOUT = 120
 
 # ruff: noqa: S602 (subprocess_popen_with_shell_equals_true)
 
@@ -95,15 +114,14 @@ def kubectl_apply(obj: str) -> subprocess.CompletedProcess:
 
 
 def kubectl_delete(
-    resource_type: str, resource_name: str, *, force: bool = False
+    resource_type: str, resource_name: str
 ) -> subprocess.CompletedProcess:
-    if force:
-        patch_str = '{"metadata":{"finalizers":null}}'
-        kubectl(
-            f"kubectl patch {resource_type}/{resource_name} -p '{patch_str}' --type=merge"
-        )
-
-    return kubectl(f"delete {resource_type}/{resource_name}")
+    # kubectl delete defaults to --wait=true, so this blocks until the operator's
+    # delete handler has round-tripped the Twingate API and dropped its finalizer.
+    # That is not comparable to a plain read, hence DELETE_TIMEOUT rather than the
+    # default: under the 10s default this is killed mid-delete and surfaces as a
+    # TimeoutExpired escaping the caller's retry loop.
+    return kubectl(f"delete {resource_type}/{resource_name}", timeout=DELETE_TIMEOUT)
 
 
 def kubectl_get(resource_type: str, resource_name: str) -> dict:
@@ -118,90 +136,103 @@ def kubectl_patch(
     return kubectl(f"patch {resource} -p '{patch_str}' --type={merge_type}")
 
 
-def kubectl_wait_to_exist(
-    resource_type: str, resource_name: str, max_retries: int = 5
-) -> dict:
-    retry = 0
+def poll_until[T](
+    attempt: Callable[[], T | None], *, timeout: float, description: str
+) -> T:
+    """Call ``attempt`` until it returns a non-``None`` value, or time out.
+
+    ``attempt`` returns ``None`` to mean "not yet". The interval starts at
+    ``POLL_MIN_INTERVAL`` and grows towards ``POLL_MAX_INTERVAL``, with a floor
+    proportional to the probe's own cost: CI runs with
+    ``KUBECTL_COMMAND="minikube kubectl -- "``, where every invocation costs
+    200-500ms, and polling faster than that is pure exec overhead.
+    """
+    deadline = time.monotonic() + timeout
+    interval = POLL_MIN_INTERVAL
+
     while True:
+        started = time.monotonic()
+        result = attempt()
+        if result is not None:
+            return result
+        probe_cost = time.monotonic() - started
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(f"Timed out after {timeout}s waiting for {description}")
+
+        time.sleep(min(max(interval, probe_cost / 2), POLL_MAX_INTERVAL, remaining))
+        interval = min(interval * POLL_BACKOFF, POLL_MAX_INTERVAL)
+
+
+def kubectl_wait_to_exist(
+    resource_type: str, resource_name: str, *, timeout: float = WAIT_TO_EXIST_TIMEOUT
+) -> dict:
+    def _attempt() -> dict | None:
         try:
             return kubectl_get(resource_type, resource_name)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            retry += 1
-            if retry > max_retries:
-                raise
-            time.sleep(5)
+            return None
+
+    return poll_until(
+        _attempt,
+        timeout=timeout,
+        description=f"{resource_type}/{resource_name} to exist",
+    )
 
 
 def kubectl_delete_wait(
     resource_type: str,
     resource_name: str,
     *,
-    force: bool = False,
-    max_retries: int = 10,
-    sleep_time: int = 5,
+    timeout: float = DELETE_WAIT_TIMEOUT,
     perform_deletion: bool = True,
 ) -> None:
     if perform_deletion:
-        kubectl_delete(resource_type, resource_name, force=force)
+        kubectl_delete(resource_type, resource_name)
 
-    retry = 0
-    while True:
+    def _attempt() -> bool | None:
         try:
             kubectl_get(resource_type, resource_name)
         except subprocess.CalledProcessError:
-            return
+            return True  # gone
         except subprocess.TimeoutExpired:
-            pass
+            return None
+        return None
 
-        retry += 1
-        if retry > max_retries:
-            raise
-        time.sleep(sleep_time)
-
-
-def kubectl_wait_pod_status(
-    pod_name: str, expected_status: str, max_retries: int = 10
-) -> dict:
-    retry = 0
-    latest_status = None
-    while True:
-        try:
-            pod = kubectl_get("pod", pod_name)
-            latest_status = pod["status"]["phase"]
-            if latest_status == expected_status:
-                return pod
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            pass
-
-        retry += 1
-        if retry > max_retries:
-            raise RuntimeError(
-                f"Pod {pod_name} did not reach status {expected_status}. Last status is {latest_status}"
-            )
-        time.sleep(5)
-
-
-def kubectl_wait_pod_running(pod_name: str, max_retries: int = 10) -> dict:
-    return kubectl_wait_pod_status(pod_name, "Running", max_retries=max_retries)
+    poll_until(
+        _attempt,
+        timeout=timeout,
+        description=f"{resource_type}/{resource_name} to be deleted",
+    )
 
 
 def kubectl_wait_deployment_available(
-    deployment_name: str, *, max_retries: int = 5
+    deployment_name: str, *, timeout: float = DEPLOYMENT_TIMEOUT
 ) -> dict:
-    retry = 0
-    while True:
-        try:
-            result = kubectl(
-                f"wait --for=condition=available --timeout=60s deployment/{deployment_name} -o json"
-            )
-            return json.loads(result.stdout)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            pass
+    deadline = time.monotonic() + timeout
 
-        retry += 1
-        if retry > max_retries:
-            raise RuntimeError(f"Deployment {deployment_name} isn't available")
-        time.sleep(5)
+    def _attempt() -> dict | None:
+        remaining = max(1, int(deadline - time.monotonic()))
+        try:
+            # The subprocess budget must exceed kubectl's own --timeout, otherwise
+            # the watch is killed and restarted before it can ever be used.
+            result = kubectl(
+                f"wait --for=condition=available --timeout={remaining}s "
+                f"deployment/{deployment_name} -o json",
+                timeout=remaining + 10,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            # Not created yet (kubectl wait fails fast on a missing object), or
+            # not available within the remaining budget.
+            return None
+        return json.loads(result.stdout)
+
+    return poll_until(
+        _attempt,
+        timeout=timeout,
+        description=f"deployment/{deployment_name} to become available",
+    )
 
 
 def kubectl_wait_object_handler_success(
@@ -210,7 +241,7 @@ def kubectl_wait_object_handler_success(
     handler_name: str,
     *,
     message: str | None = None,
-    max_retries: int = 5,
+    timeout: float = WAIT_OBJECT_TIMEOUT,
 ):
     def _handler_succeeded(obj: dict) -> bool:
         handler_status = obj.get("status", {}).get(handler_name, {})
@@ -223,35 +254,49 @@ def kubectl_wait_object_handler_success(
         resource_name,
         _handler_succeeded,
         description=f"handler '{handler_name}' success",
-        max_retries=max_retries,
+        timeout=timeout,
     )
 
 
 def kubectl_wait_object(
     resource_type: str,
     resource_name: str,
-    predicate,
+    predicate: Callable[[dict], bool],
     *,
     description: str = "expected condition",
-    max_retries: int = 5,
-    sleep_time: int = 10,
+    exclude_uid: str | None = None,
+    timeout: float = WAIT_OBJECT_TIMEOUT,
 ) -> dict:
-    """Poll an object until ``predicate(obj)`` is truthy, then return it."""
-    retry = 0
-    while True:
+    """Poll an object until ``predicate(obj)`` is truthy, then return it.
+
+    Polling sub-second is safe here because none of the Twingate CRDs declare a
+    ``status`` subresource, so kopf writes spec, status, the handler result and
+    its progress annotation in a single PATCH. There is no window in which a
+    handler reads as successful before the spec it produced is visible. **If a
+    status subresource is ever added to these CRDs, revisit every predicate.**
+    """
+
+    def _attempt() -> dict | None:
         try:
             obj = kubectl_get(resource_type, resource_name)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             # Tolerate the object being absent: it may not exist yet, and an operator
             # that recreates an object deletes it first, so it is briefly missing.
-            obj = None
+            # This does not cover observing the OLD generation while its finalizer
+            # still holds it - a predicate spanning a recreate must itself require
+            # changed state (or pass exclude_uid).
+            return None
 
-        if obj is not None and predicate(obj):
-            return obj
+        if (
+            exclude_uid is not None
+            and obj.get("metadata", {}).get("uid") == exclude_uid
+        ):
+            return None
 
-        retry += 1
-        if retry > max_retries:
-            raise RuntimeError(
-                f"{resource_type}/{resource_name} did not reach {description}"
-            )
-        time.sleep(sleep_time)
+        return obj if predicate(obj) else None
+
+    return poll_until(
+        _attempt,
+        timeout=timeout,
+        description=f"{resource_type}/{resource_name} to reach {description}",
+    )

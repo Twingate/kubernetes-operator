@@ -101,6 +101,29 @@ class TestGatewayCreateUpdateHandler:
             x509_ca_id="ca-backend-id",
         )
 
+    def test_create_with_address_override(
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_resolve_service_address,
+        call_create_update,
+    ):
+        mock_api_client.gateway_create.return_value = Gateway(
+            id="new-gateway-id", address="addr"
+        )
+
+        _result, patch_mock = call_create_update(
+            _spec() | {"address": "gateway.corp.internal:8443"}
+        )
+
+        mock_resolve_service_address.assert_not_called()
+        mock_api_client.gateway_create.assert_called_once_with(
+            address="gateway.corp.internal:8443",
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+            x509_ca_id="ca-backend-id",
+        )
+        assert patch_mock.status["address"] == "gateway.corp.internal:8443"
+
     def test_update_existing(self, mock_api_client, call_create_update):
         mock_api_client.get_gateway.return_value = Gateway(
             id="gateway-id", address="old-addr"

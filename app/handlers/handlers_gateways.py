@@ -26,7 +26,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
     # Resolve both references before mutating status so a TemporaryError from
     # either resolver doesn't leave status advertising an address for a Gateway
     # that was never created/updated.
-    address = resolve_service_address(
+    address = gw_spec.address or resolve_service_address(
         gw_spec.service_ref.resolve_namespace(owner_namespace),
         gw_spec.service_ref.name,
         gw_spec.service_ref.port,

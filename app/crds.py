@@ -424,6 +424,9 @@ class GatewaySpec(BaseModel):
     # host from the Service and combines it with `serviceRef.port` into the
     # `status.address` the Twingate Client connects to.
     service_ref: _ServiceRef
+    # Overrides the address resolved from `serviceRef`, for when the Gateway is
+    # reached indirectly (e.g. through a proxy, ingress, or private endpoint).
+    address: str | None = None
     # Reference to the TwingateCertificateAuthority whose backend id signs this
     # Gateway's TLS certs.
     x509_certificate_authority_ref: _KubernetesObjectRef

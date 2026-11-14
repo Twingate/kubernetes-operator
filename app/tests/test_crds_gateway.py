@@ -28,6 +28,7 @@ def test_gateway_deserialization(sample_gateway_object):
     assert gateway.spec.service_ref.name == "my-gateway-svc"
     assert gateway.spec.service_ref.namespace is None
     assert gateway.spec.service_ref.port == 443
+    assert gateway.spec.address is None
     assert gateway.spec.x509_certificate_authority_ref.name == "my-ca"
     assert gateway.spec.x509_certificate_authority_ref.namespace is None
 
@@ -71,6 +72,12 @@ def test_gateway_service_ref_port_out_of_range(port):
             service_ref={"name": "my-gateway-svc", "port": port},
             x509_certificate_authority_ref={"name": "my-ca"},
         )
+
+
+def test_gateway_address(sample_gateway_object):
+    sample_gateway_object["spec"]["address"] = "gateway.corp.internal:8443"
+    gateway = TwingateGatewayCRD(**sample_gateway_object)
+    assert gateway.spec.address == "gateway.corp.internal:8443"
 
 
 def test_gateway_ca_ref_required():

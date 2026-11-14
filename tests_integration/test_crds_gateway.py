@@ -194,6 +194,50 @@ def test_service_ref_port_out_of_range(unique_resource_name, port):
     assert "spec.serviceRef.port" in stderr
 
 
+def test_address(unique_resource_name):
+    result = kubectl_create(f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateGateway
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          serviceRef:
+            name: my-gateway-svc
+            port: 443
+          address: gateway.corp.internal:8443
+          x509CertificateAuthorityRef:
+            name: my-ca
+    """)
+
+    assert result.returncode == 0
+
+    data = kubectl_get("tggw", unique_resource_name)
+    assert data["spec"]["address"] == "gateway.corp.internal:8443"
+
+    kubectl_delete("tggw", unique_resource_name)
+
+
+@pytest.mark.parametrize("address", ["gateway.corp.internal", "gateway corp:443"])
+def test_address_invalid_pattern(unique_resource_name, address):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateGateway
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              serviceRef:
+                name: my-gateway-svc
+                port: 443
+              address: "{address}"
+              x509CertificateAuthorityRef:
+                name: my-ca
+        """)
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.address in body should match" in stderr
+
+
 def test_ca_ref_required(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(f"""

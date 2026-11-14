@@ -46,6 +46,10 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "Port the Gateway is reachable on."
+                address:
+                  type: string
+                  pattern: "^\\S+:[0-9]{1,5}$"
+                  description: "Address (host:port) the Gateway is reachable at. Overrides the address resolved from serviceRef, for when the Gateway is reached indirectly, e.g. through a proxy, ingress, or private endpoint."
                 x509CertificateAuthorityRef:
                   type: object
                   required: ["name"]

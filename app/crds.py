@@ -23,7 +23,11 @@ from semantic_version import NpmSpec
 
 from app.settings import get_settings
 from app.utils import validate_pem_x509_certificate
-from app.utils_k8s import k8s_read_namespaced_secret, resolve_ref_to_twingate_id
+from app.utils_k8s import (
+    k8s_read_namespaced_secret,
+    resolve_load_balancer_host,
+    resolve_ref_to_twingate_id,
+)
 from app.version_policy_providers import get_provider
 
 K8sObject = MutableMapping[Any, Any]
@@ -188,6 +192,48 @@ class RequestHeaderRewrite(BaseModel):
     value: str
 
 
+class AddressSourceKind(StrEnum):
+    SERVICE = "Service"
+    INGRESS = "Ingress"
+
+
+class ResourceAddressFrom(BaseModel):
+    """Where to read a Resource's address from instead of a literal ``address``.
+
+    Exactly one of ``serviceRef`` (a ``LoadBalancer`` Service) or ``ingressRef``
+    is set; the address is the host in its ``status.loadBalancer.ingress[0]``.
+    """
+
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    service_ref: _KubernetesObjectRef | None = None
+    ingress_ref: _KubernetesObjectRef | None = None
+
+    @model_validator(mode="after")
+    def check_exactly_one_ref(self):
+        if (self.service_ref is None) == (self.ingress_ref is None):
+            raise ValueError(
+                "addressFrom requires exactly one of `serviceRef` or `ingressRef`."
+            )
+
+        return self
+
+    @property
+    def source(self) -> tuple[AddressSourceKind, _KubernetesObjectRef]:
+        if self.service_ref is not None:
+            return AddressSourceKind.SERVICE, self.service_ref
+
+        return AddressSourceKind.INGRESS, cast(_KubernetesObjectRef, self.ingress_ref)
+
+    def resolve(self, owner_namespace: str) -> str:
+        kind, ref = self.source
+        return resolve_load_balancer_host(
+            kind, ref.resolve_namespace(owner_namespace), ref.name
+        )
+
+
 class ResourceType(StrEnum):
     NETWORK = "Network"
     KUBERNETES = "Kubernetes"
@@ -201,7 +247,10 @@ class ResourceSpec(BaseModel):
 
     id: str | None = None
     name: str
-    address: str
+    # Exactly one of `address` or `address_from` is set. Handlers resolve
+    # `address_from` into `address` via `with_resolved_address()` before syncing.
+    address: str | None = None
+    address_from: ResourceAddressFrom | None = None
     alias: str | None = None
     remote_network_id: str = Field(
         default_factory=lambda: get_settings().remote_network_id
@@ -223,7 +272,27 @@ class ResourceSpec(BaseModel):
     request_header_rewrites: list[RequestHeaderRewrite] | None = None
 
     def __is_wildcard(self):
-        return "*" in self.address or "?" in self.address
+        return self.address is not None and ("*" in self.address or "?" in self.address)
+
+    @model_validator(mode="after")
+    def check_address_or_address_from(self):
+        if (self.address is None) == (self.address_from is None):
+            raise ValueError("Exactly one of `address` or `addressFrom` must be set.")
+
+        return self
+
+    def with_resolved_address(self, owner_namespace: str) -> "ResourceSpec":
+        """Return a copy whose ``address`` is resolved from ``address_from``.
+
+        Raises ``kopf.TemporaryError`` while the referenced load balancer is not
+        provisioned yet. Specs with a literal ``address`` are returned unchanged.
+        """
+        if self.address_from is None:
+            return self
+
+        return self.model_copy(
+            update={"address": self.address_from.resolve(owner_namespace)}
+        )
 
     @model_validator(mode="after")
     def check_address_if_is_browser_shortcut_enabled(self):
@@ -280,8 +349,14 @@ class ResourceSpec(BaseModel):
         owner_namespace: str,
         exclude: set[str] | None = None,
     ) -> dict[str, Any]:
+        if self.address is None:
+            raise ValueError(
+                "`addressFrom` must be resolved with `with_resolved_address()` first."
+            )
+
         exclude = exclude or set()
         default_exclude_fields = {
+            "address_from",
             "is_browser_shortcut_enabled",
             "protocols",
             "sync_labels",

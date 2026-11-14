@@ -7,9 +7,12 @@ from app.crds import ResourceSpec, ResourceType
 from app.handlers.handlers_resource import (
     _release_service_ownership,
     _repair_missing_gateway_ref,
+    twingate_resource_address_from_index,
     twingate_resource_create,
     twingate_resource_delete,
     twingate_resource_gateway_index,
+    twingate_resource_ingress_load_balancer_changed,
+    twingate_resource_service_load_balancer_changed,
     twingate_resource_sync,
     twingate_resource_update,
 )
@@ -975,3 +978,376 @@ class TestTwingateResourceGatewayIndex:
         )
 
         assert result is None
+
+
+LB_HOST = "internal-my-app-1234.us-east-1.elb.amazonaws.com"
+NEW_LB_HOST = "internal-my-app-5678.us-east-1.elb.amazonaws.com"
+ADDRESS_FROM_SPEC = {
+    "id": "UmVzb3VyY2U6OTMxODE3",
+    "name": "my-app",
+    "alias": "my-app.internal.example.com",
+    "addressFrom": {"ingressRef": {"name": "my-app"}},
+}
+
+
+@pytest.fixture
+def mock_resolve_lb_host():
+    with patch(
+        "app.crds.resolve_load_balancer_host", return_value=LB_HOST
+    ) as resolve_mock:
+        yield resolve_mock
+
+
+def _patch_mock():
+    patch_mock = MagicMock()
+    patch_mock.spec = {}
+    patch_mock.status = {}
+    return patch_mock
+
+
+class TestResourceAddressFrom:
+    def test_create_resolves_address_from_ingress(
+        self,
+        network_resource_factory,
+        kopf_info_mock,
+        mock_api_client,
+        mock_memo,
+        mock_resolve_lb_host,
+    ):
+        resource = network_resource_factory()
+        mock_api_client.resource_create.return_value = resource
+        spec = {k: v for k, v in ADDRESS_FROM_SPEC.items() if k != "id"}
+        patch_mock = _patch_mock()
+
+        twingate_resource_create(
+            body="",
+            namespace="my-app",
+            labels={},
+            spec=spec,
+            memo=mock_memo,
+            logger=MagicMock(),
+            patch=patch_mock,
+        )
+
+        mock_resolve_lb_host.assert_called_once_with("Ingress", "my-app", "my-app")
+        call_kwargs = mock_api_client.resource_create.call_args.kwargs
+        assert call_kwargs["address"] == LB_HOST
+        assert call_kwargs["alias"] == "my-app.internal.example.com"
+        assert "address_from" not in call_kwargs
+        assert patch_mock.spec == {"id": resource.id}
+        assert patch_mock.status == {"address": LB_HOST}
+
+    def test_create_waits_for_the_load_balancer(
+        self, mock_api_client, mock_memo, mock_resolve_lb_host
+    ):
+        mock_resolve_lb_host.side_effect = kopf.TemporaryError("not ready", delay=30)
+        spec = {k: v for k, v in ADDRESS_FROM_SPEC.items() if k != "id"}
+
+        with pytest.raises(kopf.TemporaryError):
+            twingate_resource_create(
+                body="",
+                namespace="my-app",
+                labels={},
+                spec=spec,
+                memo=mock_memo,
+                logger=MagicMock(),
+                patch=_patch_mock(),
+            )
+
+        mock_api_client.resource_create.assert_not_called()
+        mock_api_client.resource_update.assert_not_called()
+
+    def test_update_switching_to_address_from(
+        self, mock_api_client, mock_k8s_metadata, mock_memo, mock_resolve_lb_host
+    ):
+        mock_api_client.resource_update.return_value = MagicMock(
+            id=ADDRESS_FROM_SPEC["id"]
+        )
+        diff = (
+            ("remove", ("spec", "address"), "my-app.internal", None),
+            ("add", ("spec", "addressFrom"), None, ADDRESS_FROM_SPEC["addressFrom"]),
+        )
+        patch_mock = _patch_mock()
+
+        twingate_resource_update(
+            name="my-app",
+            namespace="my-app",
+            meta=mock_k8s_metadata,
+            labels={},
+            spec=ADDRESS_FROM_SPEC,
+            diff=diff,
+            status={},
+            memo=mock_memo,
+            logger=MagicMock(),
+            patch=patch_mock,
+        )
+
+        mock_api_client.resource_update.assert_called_once()
+        call_kwargs = mock_api_client.resource_update.call_args.kwargs
+        assert call_kwargs["id"] == ADDRESS_FROM_SPEC["id"]
+        assert call_kwargs["address"] == LB_HOST
+        assert patch_mock.status == {"address": LB_HOST}
+
+    def test_update_without_relevant_changes_does_not_resolve(
+        self, mock_api_client, mock_k8s_metadata, mock_memo, mock_resolve_lb_host
+    ):
+        diff = (("change", ("metadata", "annotations", "foo"), "a", "b"),)
+
+        twingate_resource_update(
+            name="my-app",
+            namespace="my-app",
+            meta=mock_k8s_metadata,
+            labels={},
+            spec=ADDRESS_FROM_SPEC,
+            diff=diff,
+            status={},
+            memo=mock_memo,
+            logger=MagicMock(),
+            patch=_patch_mock(),
+        )
+
+        mock_resolve_lb_host.assert_not_called()
+        mock_api_client.resource_update.assert_not_called()
+
+    def test_sync_pushes_a_recreated_load_balancer(
+        self,
+        network_resource_factory,
+        mock_api_client,
+        mock_k8s_metadata,
+        mock_memo,
+        mock_resolve_lb_host,
+    ):
+        # Twingate still has the old load balancer's hostname.
+        resource = network_resource_factory(
+            id=ADDRESS_FROM_SPEC["id"],
+            name="my-app",
+            alias="my-app.internal.example.com",
+            address={"type": "DNS", "value": LB_HOST},
+        )
+        mock_api_client.get_resource.return_value = resource
+        mock_resolve_lb_host.return_value = NEW_LB_HOST
+        patch_mock = _patch_mock()
+
+        twingate_resource_sync(
+            "my-app",
+            "my-app",
+            mock_k8s_metadata,
+            resource.to_metadata_labels(),
+            ADDRESS_FROM_SPEC
+            | {"remoteNetworkId": resource.remote_network.id, "isVisible": True},
+            {},
+            mock_memo,
+            MagicMock(),
+            patch_mock,
+        )
+
+        mock_api_client.resource_update.assert_called_once()
+        assert mock_api_client.resource_update.call_args.kwargs["address"] == (
+            NEW_LB_HOST
+        )
+        assert patch_mock.status == {"address": NEW_LB_HOST}
+
+
+class TestTwingateResourceAddressFromIndex:
+    @pytest.mark.parametrize(
+        ("address_from", "key"),
+        [
+            ({"ingressRef": {"name": "web"}}, ("Ingress", "default", "web")),
+            (
+                {"serviceRef": {"name": "lb", "namespace": "infra"}},
+                ("Service", "infra", "lb"),
+            ),
+        ],
+    )
+    def test_maps_source_to_resource(self, address_from, key):
+        result = twingate_resource_address_from_index(
+            namespace="default", name="my-app", spec={"addressFrom": address_from}
+        )
+
+        assert result == {key: {"namespace": "default", "name": "my-app"}}
+
+    def test_none_without_address_from(self):
+        assert (
+            twingate_resource_address_from_index(
+                namespace="default", name="my-app", spec={"address": "a.internal"}
+            )
+            is None
+        )
+
+
+class TestLoadBalancerChangedHandlers:
+    @pytest.fixture
+    def mock_get_custom_object(self):
+        with patch(
+            "app.handlers.handlers_resource.k8s_get_twingate_custom_object"
+        ) as mock:
+            mock.return_value = {
+                "metadata": {"name": "my-app", "labels": {"team": "web"}},
+                "spec": ADDRESS_FROM_SPEC,
+                "status": {"address": LB_HOST},
+            }
+            yield mock
+
+    @pytest.fixture
+    def mock_patch_custom_object(self):
+        with patch(
+            "app.handlers.handlers_resource.k8s_patch_twingate_custom_object"
+        ) as mock:
+            yield mock
+
+    @pytest.fixture
+    def index(self):
+        return {
+            ("Ingress", "my-app", "my-app"): [{"namespace": "my-app", "name": "my-app"}]
+        }
+
+    def _run(self, index, event_type="MODIFIED", handler=None, name="my-app"):
+        handler = handler or twingate_resource_ingress_load_balancer_changed
+        handler(
+            event={"type": event_type},
+            namespace="my-app",
+            name=name,
+            memo=MagicMock(
+                twingate_settings=TwingateOperatorSettings(
+                    network="slug",
+                    host="test.com",
+                    api_key="test_key",
+                    remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+                )
+            ),
+            logger=MagicMock(),
+            twingate_resource_address_from_index=index,
+        )
+
+    def test_updates_resource_when_load_balancer_changes(
+        self,
+        index,
+        mock_api_client,
+        mock_get_custom_object,
+        mock_patch_custom_object,
+        mock_resolve_lb_host,
+    ):
+        mock_resolve_lb_host.return_value = NEW_LB_HOST
+
+        self._run(index)
+
+        mock_get_custom_object.assert_called_once_with(
+            "twingateresources", "my-app", "my-app"
+        )
+        mock_api_client.resource_update.assert_called_once()
+        kwargs = mock_api_client.resource_update.call_args.kwargs
+        assert kwargs["id"] == ADDRESS_FROM_SPEC["id"]
+        assert kwargs["address"] == NEW_LB_HOST
+        assert kwargs["tags"] == [{"key": "team", "value": "web"}]
+        mock_patch_custom_object.assert_called_once()
+        args = mock_patch_custom_object.call_args.args
+        assert args[:3] == ("twingateresources", "my-app", "my-app")
+        assert args[3].status == {"address": NEW_LB_HOST}
+        assert args[3].spec == {}
+
+    def test_service_handler_uses_service_key(
+        self,
+        mock_api_client,
+        mock_get_custom_object,
+        mock_patch_custom_object,
+        mock_resolve_lb_host,
+    ):
+        mock_get_custom_object.return_value["spec"] = ADDRESS_FROM_SPEC | {
+            "addressFrom": {"serviceRef": {"name": "my-lb"}}
+        }
+        mock_resolve_lb_host.return_value = NEW_LB_HOST
+        index = {
+            ("Service", "my-app", "my-lb"): [{"namespace": "my-app", "name": "my-app"}]
+        }
+
+        self._run(
+            index,
+            handler=twingate_resource_service_load_balancer_changed,
+            name="my-lb",
+        )
+
+        mock_resolve_lb_host.assert_called_once_with("Service", "my-app", "my-lb")
+        mock_api_client.resource_update.assert_called_once()
+
+    def test_no_update_when_address_is_unchanged(
+        self,
+        index,
+        mock_api_client,
+        mock_get_custom_object,
+        mock_patch_custom_object,
+        mock_resolve_lb_host,
+    ):
+        self._run(index)
+
+        mock_api_client.resource_update.assert_not_called()
+        mock_patch_custom_object.assert_not_called()
+
+    def test_ignores_unreferenced_objects(
+        self, mock_api_client, mock_get_custom_object, mock_resolve_lb_host
+    ):
+        self._run({}, name="unrelated")
+
+        mock_get_custom_object.assert_not_called()
+        mock_api_client.resource_update.assert_not_called()
+
+    def test_ignores_deleted_events(
+        self, index, mock_api_client, mock_get_custom_object
+    ):
+        self._run(index, event_type="DELETED")
+
+        mock_get_custom_object.assert_not_called()
+
+    def test_skips_resources_not_created_yet(
+        self,
+        index,
+        mock_api_client,
+        mock_get_custom_object,
+        mock_patch_custom_object,
+        mock_resolve_lb_host,
+    ):
+        spec = {k: v for k, v in ADDRESS_FROM_SPEC.items() if k != "id"}
+        mock_get_custom_object.return_value["spec"] = spec
+
+        self._run(index)
+
+        mock_resolve_lb_host.assert_not_called()
+        mock_api_client.resource_update.assert_not_called()
+
+    def test_skips_until_the_load_balancer_is_ready(
+        self,
+        index,
+        mock_api_client,
+        mock_get_custom_object,
+        mock_patch_custom_object,
+        mock_resolve_lb_host,
+    ):
+        mock_resolve_lb_host.side_effect = kopf.TemporaryError("not ready")
+
+        self._run(index)
+
+        mock_api_client.resource_update.assert_not_called()
+        mock_patch_custom_object.assert_not_called()
+
+    def test_failed_update_does_not_record_the_new_address(
+        self,
+        mock_api_client,
+        mock_get_custom_object,
+        mock_patch_custom_object,
+        mock_resolve_lb_host,
+    ):
+        # Two Resources share the Ingress: the first update fails, the second
+        # still goes through, and only the second records the new address.
+        index = {
+            ("Ingress", "my-app", "my-app"): [
+                {"namespace": "my-app", "name": "first"},
+                {"namespace": "my-app", "name": "second"},
+            ]
+        }
+        mock_resolve_lb_host.return_value = NEW_LB_HOST
+        mock_api_client.resource_update.side_effect = [Exception("boom"), None]
+
+        self._run(index)
+
+        assert mock_api_client.resource_update.call_count == 2
+        mock_patch_custom_object.assert_called_once()
+        assert mock_patch_custom_object.call_args.args[2] == "second"

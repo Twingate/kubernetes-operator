@@ -26,11 +26,14 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
     # Resolve both references before mutating status so a TemporaryError from
     # either resolver doesn't leave status advertising an address for a Gateway
     # that was never created/updated.
-    address = resolve_service_address(
-        gw_spec.service_ref.resolve_namespace(owner_namespace),
-        gw_spec.service_ref.name,
-        gw_spec.service_ref.port,
-    )
+    if gw_spec.service_ref:
+        address = resolve_service_address(
+            gw_spec.service_ref.resolve_namespace(owner_namespace),
+            gw_spec.service_ref.name,
+            gw_spec.service_ref.port,
+        )
+    else:
+        address = gw_spec.address
     x509_ca_id = resolve_ref_to_twingate_id(
         TwingateCertificateAuthorityCRD.PLURAL,
         gw_spec.x509_certificate_authority_ref.resolve_namespace(owner_namespace),

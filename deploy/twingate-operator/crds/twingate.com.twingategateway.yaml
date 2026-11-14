@@ -17,10 +17,12 @@ spec:
             spec:
               type: object
               description: "TwingateGatewaySpec defines the desired state of TwingateGateway"
-              required: ["serviceRef", "x509CertificateAuthorityRef"]
+              required: ["x509CertificateAuthorityRef"]
               x-kubernetes-validations:
                 - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
                   message: "remoteNetworkId is immutable once set"
+                - rule: has(self.serviceRef) != has(self.address)
+                  message: "exactly one of serviceRef or address must be set"
               properties:
                 id:
                   type: string
@@ -32,7 +34,7 @@ spec:
                 serviceRef:
                   type: object
                   required: ["name", "port"]
-                  description: "Reference to the Service fronting the Gateway. The operator resolves the host from the Service and combines it with port into status.address."
+                  description: "Reference to the Service fronting the Gateway. The operator resolves the host from the Service and combines it with port into status.address. Mutually exclusive with address."
                   properties:
                     name:
                       type: string
@@ -46,6 +48,12 @@ spec:
                       minimum: 1
                       maximum: 65535
                       description: "Port the Gateway is reachable on."
+                address:
+                  type: string
+                  x-kubernetes-validations:
+                    - rule: self.matches(r'^\S+:[0-9]{1,5}$') && int(self.substring(self.lastIndexOf(':') + 1)) >= 1 && int(self.substring(self.lastIndexOf(':') + 1)) <= 65535
+                      message: "address must be host:port with a port between 1 and 65535"
+                  description: "Address (host:port) Connectors dial to reach the Gateway, for when they reach it indirectly, e.g. through a proxy, ingress, or private endpoint. The host is a DNS name or an IPv4 address, and the port is between 1 and 65535. Mutually exclusive with serviceRef."
                 x509CertificateAuthorityRef:
                   type: object
                   required: ["name"]

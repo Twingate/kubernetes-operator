@@ -420,10 +420,13 @@ class GatewaySpec(BaseModel):
     remote_network_id: str = Field(
         default_factory=lambda: get_settings().remote_network_id
     )
-    # Reference to the Service fronting the Gateway. The operator resolves the
-    # host from the Service and combines it with `serviceRef.port` into the
-    # `status.address` the Twingate Client connects to.
-    service_ref: _ServiceRef
+    # The operator resolves the host from the Service and combines it with
+    # `serviceRef.port` into the `status.address` the Twingate Client connects to.
+    service_ref: _ServiceRef | None = None
+    # Explicit `host:port`, for when Connectors reach the Gateway indirectly
+    # (e.g. through a proxy, ingress, or private endpoint). The backend accepts
+    # a DNS name or an IPv4 address as the host.
+    address: str | None = None
     # Reference to the TwingateCertificateAuthority whose backend id signs this
     # Gateway's TLS certs.
     x509_certificate_authority_ref: _KubernetesObjectRef

@@ -71,10 +71,23 @@ def test_gateway_service_ref_port_out_of_range(port):
 
 def test_gateway_address(sample_gateway_object):
     del sample_gateway_object["spec"]["serviceRef"]
-    sample_gateway_object["spec"]["address"] = "gateway.corp.internal:8443"
+    sample_gateway_object["spec"]["address"] = {
+        "host": "gateway.corp.internal",
+        "port": 8443,
+    }
     gateway = TwingateGatewayCRD(**sample_gateway_object)
     assert gateway.spec.service_ref is None
-    assert gateway.spec.address == "gateway.corp.internal:8443"
+    assert gateway.spec.address.host == "gateway.corp.internal"
+    assert gateway.spec.address.port == 8443
+
+
+@pytest.mark.parametrize("port", [0, 65536])
+def test_gateway_address_port_out_of_range(port):
+    with pytest.raises(ValidationError, match="port"):
+        GatewaySpec(
+            address={"host": "gateway.corp.internal", "port": port},
+            x509_certificate_authority_ref={"name": "my-ca"},
+        )
 
 
 def test_gateway_ca_ref_required():

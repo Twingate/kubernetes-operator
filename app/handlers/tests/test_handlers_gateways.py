@@ -112,7 +112,7 @@ class TestGatewayCreateUpdateHandler:
         mock_api_client.gateway_create.return_value = Gateway(
             id="new-gateway-id", address="addr"
         )
-        spec = _spec(address="gateway.corp.internal:8443")
+        spec = _spec(address={"host": "gateway.corp.internal", "port": 8443})
 
         _result, patch_mock = call_create_update(spec)
 

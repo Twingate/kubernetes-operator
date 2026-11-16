@@ -411,6 +411,12 @@ class _ServiceRef(_KubernetesObjectRef):
     port: Port
 
 
+class _GatewayAddress(BaseModel):
+    # The backend accepts a DNS name or an IPv4 address.
+    host: str
+    port: Port
+
+
 class GatewaySpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
@@ -423,10 +429,9 @@ class GatewaySpec(BaseModel):
     # The operator resolves the host from the Service and combines it with
     # `serviceRef.port` into the `status.address` the Twingate Client connects to.
     service_ref: _ServiceRef | None = None
-    # Explicit `host:port`, for when Connectors reach the Gateway indirectly
-    # (e.g. through a proxy, ingress, or private endpoint). The backend accepts
-    # a DNS name or an IPv4 address as the host.
-    address: str | None = None
+    # Explicit address, for when Connectors reach the Gateway indirectly
+    # (e.g. through a proxy, ingress, or private endpoint).
+    address: _GatewayAddress | None = None
     # Reference to the TwingateCertificateAuthority whose backend id signs this
     # Gateway's TLS certs.
     x509_certificate_authority_ref: _KubernetesObjectRef

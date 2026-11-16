@@ -33,7 +33,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
             gw_spec.service_ref.port,
         )
     else:
-        address = gw_spec.address
+        address = f"{gw_spec.address.host}:{gw_spec.address.port}"
     x509_ca_id = resolve_ref_to_twingate_id(
         TwingateCertificateAuthorityCRD.PLURAL,
         gw_spec.x509_certificate_authority_ref.resolve_namespace(owner_namespace),

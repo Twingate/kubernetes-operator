@@ -577,3 +577,105 @@ def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(
     )
 
     assert graphql_arguments["tags"] == []
+
+
+class TestResourceSpecAddressFrom:
+    def test_requires_address_or_address_from(self):
+        with pytest.raises(
+            ValueError, match="Exactly one of `address` or `addressFrom`"
+        ):
+            ResourceSpec(name="My Resource")
+
+    def test_address_and_address_from_are_mutually_exclusive(self):
+        with pytest.raises(
+            ValueError, match="Exactly one of `address` or `addressFrom`"
+        ):
+            ResourceSpec(
+                name="My Resource",
+                address="my.default.cluster.local",
+                addressFrom={"ingressRef": {"name": "my-app"}},
+            )
+
+    @pytest.mark.parametrize(
+        "address_from",
+        [
+            {},
+            {"serviceRef": {"name": "my-lb"}, "ingressRef": {"name": "my-app"}},
+        ],
+    )
+    def test_address_from_requires_exactly_one_ref(self, address_from):
+        with pytest.raises(ValueError, match="exactly one of `serviceRef`"):
+            ResourceSpec(name="My Resource", addressFrom=address_from)
+
+    @pytest.mark.parametrize(
+        ("address_from", "expected_call"),
+        [
+            (
+                {"ingressRef": {"name": "my-app"}},
+                ("Ingress", "default", "my-app"),
+            ),
+            (
+                {"serviceRef": {"name": "my-lb", "namespace": "infra"}},
+                ("Service", "infra", "my-lb"),
+            ),
+        ],
+    )
+    def test_with_resolved_address(self, address_from, expected_call):
+        spec = ResourceSpec(name="My Resource", addressFrom=address_from)
+        assert spec.address is None
+
+        with patch(
+            "app.crds.resolve_load_balancer_host",
+            return_value="internal-my-app-123.us-east-1.elb.amazonaws.com",
+        ) as resolve_mock:
+            resolved = spec.with_resolved_address("default")
+
+        resolve_mock.assert_called_once_with(*expected_call)
+        assert resolved.address == "internal-my-app-123.us-east-1.elb.amazonaws.com"
+        assert resolved.address_from == spec.address_from
+        # The original spec is left untouched.
+        assert spec.address is None
+
+    def test_with_resolved_address_keeps_literal_address(self):
+        spec = ResourceSpec(name="My Resource", address="my.default.cluster.local")
+
+        with patch("app.crds.resolve_load_balancer_host") as resolve_mock:
+            assert spec.with_resolved_address("default") is spec
+
+        resolve_mock.assert_not_called()
+
+    def test_to_graphql_arguments_requires_resolved_address(self):
+        spec = ResourceSpec(
+            name="My Resource", addressFrom={"ingressRef": {"name": "a"}}
+        )
+
+        with pytest.raises(ValueError, match="must be resolved"):
+            spec.to_graphql_arguments(labels={}, owner_namespace="default")
+
+    def test_to_graphql_arguments_sends_resolved_address_only(self):
+        spec = ResourceSpec(
+            name="My Resource", addressFrom={"ingressRef": {"name": "a"}}
+        )
+        with patch("app.crds.resolve_load_balancer_host", return_value="lb.example"):
+            resolved = spec.with_resolved_address("default")
+
+        args = resolved.to_graphql_arguments(labels={}, owner_namespace="default")
+
+        assert args["address"] == "lb.example"
+        assert "address_from" not in args
+
+    def test_crd_with_address_from_parses(self):
+        crd = TwingateResourceCRD(
+            apiVersion="twingate.com/v1beta",
+            kind="TwingateResource",
+            metadata={"uid": "uid", "name": "my-app", "namespace": "default"},
+            spec={
+                "name": "My App",
+                "alias": "my-app.internal.example.com",
+                "addressFrom": {"ingressRef": {"name": "my-app"}},
+            },
+        )
+
+        assert crd.spec.address is None
+        assert crd.spec.address_from is not None
+        assert crd.spec.address_from.ingress_ref == _KubernetesObjectRef(name="my-app")

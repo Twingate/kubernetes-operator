@@ -18,7 +18,9 @@ spec:
               type: object
               description: "TwingateResourceSpec defines the desired state of TwingateResource"
               x-kubernetes-validations:
-                - rule: (self.isBrowserShortcutEnabled && !(self.address.contains('*') || self.address.contains('?'))) || (self.isBrowserShortcutEnabled == false)
+                - rule: has(self.address) != has(self.addressFrom)
+                  message: "exactly one of address or addressFrom must be set"
+                - rule: (self.isBrowserShortcutEnabled && !(has(self.address) && (self.address.contains('*') || self.address.contains('?')))) || (self.isBrowserShortcutEnabled == false)
                   message: "if isBrowserShortcutEnabled is set to true, then address can't be wildcard"
                 - rule: (self.type == "Network" && !has(self.gatewayRef)) || ((self.type == "Kubernetes" || self.type == "WebApp") && has(self.gatewayRef))
                   message: "Kubernetes and WebApp Resources require gatewayRef; Network Resources do not allow it"
@@ -32,7 +34,7 @@ spec:
                   message: "isBrowserShortcutEnabled can only be set to true for Network Resources"
                 - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
                   message: "remoteNetworkId is immutable once set"
-              required: ["name", "address"]
+              required: ["name"]
               properties:
                 id:
                   type: string
@@ -42,7 +44,38 @@ spec:
                   description: "Name of the resource."
                 address:
                   type: string
-                  description: "Address of the resource."
+                  description: "Address of the resource. Mutually exclusive with addressFrom."
+                addressFrom:
+                  type: object
+                  description: "Resolve the address from the load balancer of a Service or Ingress (status.loadBalancer.ingress[0] hostname, falling back to ip) instead of setting address. The operator waits until the load balancer is provisioned and updates the Resource when it changes. Mutually exclusive with address."
+                  x-kubernetes-validations:
+                    - rule: has(self.serviceRef) != has(self.ingressRef)
+                      message: "addressFrom requires exactly one of serviceRef or ingressRef"
+                  properties:
+                    serviceRef:
+                      type: object
+                      required: ["name"]
+                      description: "Reference to a Service of type LoadBalancer."
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the Service."
+                        namespace:
+                          type: string
+                          nullable: true
+                          description: "Namespace of the Service. Defaults to the TwingateResource's own namespace when omitted."
+                    ingressRef:
+                      type: object
+                      required: ["name"]
+                      description: "Reference to an Ingress."
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the Ingress."
+                        namespace:
+                          type: string
+                          nullable: true
+                          description: "Namespace of the Ingress. Defaults to the TwingateResource's own namespace when omitted."
                 alias:
                   type: string
                   nullable: true

@@ -875,3 +875,125 @@ def test_remote_network_id_is_immutable(unique_resource_name):
         assert "remoteNetworkId is immutable once set" in stderr
     finally:
         kubectl_delete("tgr", unique_resource_name)
+
+
+def test_address_from_ingress_ref(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My App
+          alias: my-app.internal.example.com
+          addressFrom:
+            ingressRef:
+              name: my-app
+        """
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_address_from_service_ref_with_namespace(unique_resource_name):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+          name: {unique_resource_name}
+        spec:
+          name: My App
+          isBrowserShortcutEnabled: true
+          addressFrom:
+            serviceRef:
+              name: my-lb
+              namespace: infra
+        """
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_address_or_address_from_is_required(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My App
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "exactly one of address or addressFrom must be set" in stderr
+
+
+def test_address_and_address_from_are_mutually_exclusive(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My App
+              address: my-app.internal
+              addressFrom:
+                ingressRef:
+                  name: my-app
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "exactly one of address or addressFrom must be set" in stderr
+
+
+@pytest.mark.parametrize(
+    "address_from",
+    [
+        "{}",
+        "{serviceRef: {name: my-lb}, ingressRef: {name: my-app}}",
+    ],
+)
+def test_address_from_requires_exactly_one_ref(unique_resource_name, address_from):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My App
+              addressFrom: {address_from}
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "addressFrom requires exactly one of serviceRef or ingressRef" in stderr
+
+
+def test_address_from_ref_requires_name(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My App
+              addressFrom:
+                ingressRef:
+                  namespace: my-app
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.addressFrom.ingressRef.name: Required value" in stderr

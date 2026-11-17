@@ -191,3 +191,61 @@ def resolve_service_address(
         )
 
     return f"{host}:{port}"
+
+
+def _load_balancer_host(status) -> str | None:
+    """Host of the first ``status.loadBalancer.ingress`` entry, if provisioned.
+
+    Prefers ``hostname`` over ``ip``: providers that publish a hostname (e.g. AWS
+    ELB/ALB) keep it stable while the IPs behind it change.
+    """
+    load_balancer = status.load_balancer if status else None
+    ingress = (load_balancer.ingress or []) if load_balancer else []
+    if not ingress:
+        return None
+
+    return ingress[0].hostname or ingress[0].ip or None
+
+
+def resolve_load_balancer_host(
+    kind: str, namespace: str, name: str, *, delay: int = 30
+) -> str:
+    """Resolve a ``Service`` or ``Ingress`` to the host of its load balancer.
+
+    Reads ``status.loadBalancer.ingress[0]`` (``hostname``, falling back to ``ip``).
+    Raises ``kopf.TemporaryError`` (so the caller retries) while the object does not
+    exist or its load balancer has not been provisioned yet, and
+    ``kopf.PermanentError`` for a Service that will never get one.
+    """
+    obj: kubernetes.client.V1Service | kubernetes.client.V1Ingress
+    try:
+        if kind == "Service":
+            obj = kubernetes.client.CoreV1Api().read_namespaced_service(name, namespace)
+            service_type = obj.spec.type if obj.spec else None
+            if service_type != "LoadBalancer":
+                raise kopf.PermanentError(
+                    f"Service '{name}' in namespace '{namespace}' has type "
+                    f"'{service_type}'; addressFrom.serviceRef requires a "
+                    "LoadBalancer Service."
+                )
+        elif kind == "Ingress":
+            obj = kubernetes.client.NetworkingV1Api().read_namespaced_ingress(
+                name, namespace
+            )
+        else:
+            raise ValueError(f"Unsupported load balancer source kind {kind!r}")
+    except kubernetes.client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            raise kopf.TemporaryError(
+                f"{kind} '{name}' in namespace '{namespace}' not found.",
+                delay=delay,
+            ) from ex
+        raise
+
+    if host := _load_balancer_host(obj.status):
+        return host
+
+    raise kopf.TemporaryError(
+        f"{kind} '{name}' in namespace '{namespace}' has no load balancer address yet.",
+        delay=delay,
+    )

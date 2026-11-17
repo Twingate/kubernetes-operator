@@ -18,6 +18,7 @@ from app.utils_k8s import (
     k8s_read_namespaced_deployment,
     k8s_read_namespaced_pod,
     k8s_read_namespaced_secret,
+    resolve_load_balancer_host,
     resolve_ref_to_twingate_id,
     resolve_service_address,
 )
@@ -371,3 +372,121 @@ class TestMainKubernetesClientGate:
         )
         rest_client = kubernetes.client.CoreV1Api().api_client.rest_client
         assert "ssl_context" not in rest_client.pool_manager.connection_pool_kw
+
+
+def _lb_ingress(hostname: str | None = None, ip: str | None = None) -> MagicMock:
+    return MagicMock(hostname=hostname, ip=ip)
+
+
+def _ingress(lb_ingress: list | None = None) -> MagicMock:
+    ingress = MagicMock()
+    ingress.status.load_balancer.ingress = lb_ingress
+    return ingress
+
+
+class TestResolveLoadBalancerHost:
+    @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
+    def test_service_resolves_to_hostname(self, core_api_mock):
+        core_api_mock.return_value.read_namespaced_service.return_value = _service(
+            "LoadBalancer", [_lb_ingress(hostname="a1b2.elb.amazonaws.com")]
+        )
+
+        assert (
+            resolve_load_balancer_host("Service", "default", "my-lb")
+            == "a1b2.elb.amazonaws.com"
+        )
+        core_api_mock.return_value.read_namespaced_service.assert_called_once_with(
+            "my-lb", "default"
+        )
+
+    @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
+    def test_service_falls_back_to_ip(self, core_api_mock):
+        core_api_mock.return_value.read_namespaced_service.return_value = _service(
+            "LoadBalancer", [_lb_ingress(ip="203.0.113.10")]
+        )
+
+        assert resolve_load_balancer_host("Service", "default", "my-lb") == (
+            "203.0.113.10"
+        )
+
+    @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
+    def test_prefers_hostname_over_ip(self, core_api_mock):
+        core_api_mock.return_value.read_namespaced_service.return_value = _service(
+            "LoadBalancer",
+            [_lb_ingress(hostname="a1b2.elb.amazonaws.com", ip="203.0.113.10")],
+        )
+
+        assert resolve_load_balancer_host("Service", "default", "my-lb") == (
+            "a1b2.elb.amazonaws.com"
+        )
+
+    @pytest.mark.parametrize("lb_ingress", [None, [], [_lb_ingress()]])
+    @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
+    def test_service_without_load_balancer_yet_retries(self, core_api_mock, lb_ingress):
+        core_api_mock.return_value.read_namespaced_service.return_value = _service(
+            "LoadBalancer", lb_ingress
+        )
+
+        with pytest.raises(kopf.TemporaryError, match="no load balancer address"):
+            resolve_load_balancer_host("Service", "default", "my-lb")
+
+    @pytest.mark.parametrize("service_type", ["ClusterIP", "NodePort", "ExternalName"])
+    @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
+    def test_service_that_is_not_a_load_balancer_fails_permanently(
+        self, core_api_mock, service_type
+    ):
+        core_api_mock.return_value.read_namespaced_service.return_value = _service(
+            service_type
+        )
+
+        with pytest.raises(kopf.PermanentError, match="requires a LoadBalancer"):
+            resolve_load_balancer_host("Service", "default", "my-lb")
+
+    @patch("app.utils_k8s.kubernetes.client.NetworkingV1Api")
+    def test_ingress_resolves_to_hostname(self, networking_api_mock):
+        read = networking_api_mock.return_value.read_namespaced_ingress
+        read.return_value = _ingress(
+            [_lb_ingress(hostname="internal-my-app-1234.us-east-1.elb.amazonaws.com")]
+        )
+
+        assert (
+            resolve_load_balancer_host("Ingress", "my-app", "my-app")
+            == "internal-my-app-1234.us-east-1.elb.amazonaws.com"
+        )
+        read.assert_called_once_with("my-app", "my-app")
+
+    @patch("app.utils_k8s.kubernetes.client.NetworkingV1Api")
+    def test_ingress_without_load_balancer_yet_retries(self, networking_api_mock):
+        read = networking_api_mock.return_value.read_namespaced_ingress
+        read.return_value = _ingress(None)
+
+        with pytest.raises(kopf.TemporaryError):
+            resolve_load_balancer_host("Ingress", "default", "my-app")
+
+    @pytest.mark.parametrize(
+        ("kind", "api", "method"),
+        [
+            ("Service", "CoreV1Api", "read_namespaced_service"),
+            ("Ingress", "NetworkingV1Api", "read_namespaced_ingress"),
+        ],
+    )
+    def test_missing_object_retries(self, kind, api, method):
+        with patch(f"app.utils_k8s.kubernetes.client.{api}") as api_mock:
+            getattr(
+                api_mock.return_value, method
+            ).side_effect = kubernetes.client.exceptions.ApiException(status=404)
+
+            with pytest.raises(kopf.TemporaryError, match="not found"):
+                resolve_load_balancer_host(kind, "default", "my-app")
+
+    @patch("app.utils_k8s.kubernetes.client.NetworkingV1Api")
+    def test_reraises_non_404_exceptions(self, networking_api_mock):
+        read = networking_api_mock.return_value.read_namespaced_ingress
+        read.side_effect = kubernetes.client.exceptions.ApiException(status=403)
+
+        with pytest.raises(kubernetes.client.exceptions.ApiException):
+            resolve_load_balancer_host("Ingress", "default", "my-app")
+
+    def test_unsupported_kind(self):
+        with pytest.raises(ValueError, match="Unsupported"):
+            resolve_load_balancer_host("Gateway", "default", "my-app")

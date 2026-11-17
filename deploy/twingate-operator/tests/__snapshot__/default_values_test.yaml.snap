@@ -56,6 +56,14 @@ should render:
           - create
           - delete
       - apiGroups:
+          - networking.k8s.io
+        resources:
+          - ingresses
+        verbs:
+          - get
+          - list
+          - watch
+      - apiGroups:
           - apps
         resources:
           - deployments

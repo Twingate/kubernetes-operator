@@ -1,13 +1,19 @@
 import os
 from datetime import timedelta
+from types import SimpleNamespace
 
 import kopf
 from pydantic import ValidationError
 
 from app.api import TwingateAPIClient
-from app.crds import ResourceSpec, ResourceType, TwingateGatewayCRD
+from app.crds import AddressSourceKind, ResourceSpec, ResourceType, TwingateGatewayCRD
 from app.handlers.base import fail, success
-from app.utils_k8s import k8s_get_twingate_custom_object
+from app.utils_k8s import (
+    k8s_get_twingate_custom_object,
+    k8s_patch_twingate_custom_object,
+)
+
+TWINGATE_RESOURCE_PLURAL = "twingateresources"
 
 
 def _repair_missing_gateway_ref(name, namespace, spec, patch, logger) -> bool:
@@ -94,12 +100,26 @@ def _parse_resource_spec(spec) -> ResourceSpec:
         raise kopf.PermanentError(str(err)) from err
 
 
+def _resolve_address(resource: ResourceSpec, namespace, patch) -> ResourceSpec:
+    """Resolve ``addressFrom`` into ``address`` and record it in ``status.address``.
+
+    Raises ``kopf.TemporaryError`` while the referenced load balancer is not ready,
+    so Kopf requeues the handler until the address is known.
+    """
+    if resource.address_from is None:
+        return resource
+
+    resource = resource.with_resolved_address(namespace)
+    patch.status["address"] = resource.address
+    return resource
+
+
 @kopf.on.create("twingateresource")
 def twingate_resource_create(
     body, namespace, labels, spec, memo, logger, patch, **kwargs
 ):
     logger.info("Got a create request: %s. Labels: %s", spec, labels)
-    resource = _parse_resource_spec(spec)
+    resource = _resolve_address(_parse_resource_spec(spec), namespace, patch)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     graphql_arguments = resource.to_graphql_arguments(
@@ -147,9 +167,6 @@ def twingate_resource_update(
 
     crd = _parse_resource_spec(spec)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
-    graphql_arguments = crd.to_graphql_arguments(
-        labels=labels, owner_namespace=namespace
-    )
 
     if not crd.id:
         return fail(error="Resource ID is missing in the spec")
@@ -166,6 +183,10 @@ def twingate_resource_update(
     if len(diff) == 1 and diff[0][:3] == ("add", ("spec", "id"), None):
         return success(twingate_id=crd.id, message="No update required")
 
+    crd = _resolve_address(crd, namespace, patch)
+    graphql_arguments = crd.to_graphql_arguments(
+        labels=labels, owner_namespace=namespace
+    )
     logger.info("Updating resource %s", crd.id)
     client = TwingateAPIClient(memo.twingate_settings, logger=logger)
     resource = client.resource_update(resource_type=crd.type, **graphql_arguments)
@@ -209,7 +230,7 @@ def twingate_resource_sync(
 
     _release_service_ownership(meta, spec, patch, logger)
 
-    crd = _parse_resource_spec(spec)
+    crd = _resolve_address(_parse_resource_spec(spec), namespace, patch)
     labels = memo.twingate_settings.default_resource_tags | dict(labels)
     if resource_id := crd.id:
         logger.info("Checking resource %s is up to date...", resource_id)
@@ -265,3 +286,150 @@ def twingate_resource_gateway_index(namespace, name, spec, **_):
             "name": name,
         },
     }
+
+
+@kopf.index("twingateresource")
+def twingate_resource_address_from_index(namespace, name, spec, **_):
+    """Index Resources by the Service/Ingress their ``addressFrom`` points at."""
+    address_from = spec.get("addressFrom") or {}
+    for kind, ref_key in (
+        (AddressSourceKind.SERVICE, "serviceRef"),
+        (AddressSourceKind.INGRESS, "ingressRef"),
+    ):
+        if ref_name := (address_from.get(ref_key) or {}).get("name"):
+            ref_namespace = address_from[ref_key].get("namespace") or namespace
+            return {
+                (str(kind), ref_namespace, ref_name): {
+                    "namespace": namespace,
+                    "name": name,
+                },
+            }
+
+    return None
+
+
+def _sync_resources_addressed_from(
+    kind: AddressSourceKind,
+    event,
+    namespace,
+    name,
+    memo,
+    logger,
+    twingate_resource_address_from_index,
+):
+    """Push a changed load balancer address to the Resources that reference it.
+
+    Only Resources already synced to Twingate (with ``spec.id``) are updated; the
+    create handler keeps retrying the rest until the address is known. The Resource
+    timer stays as a backstop if this update fails.
+    """
+    if event.get("type") == "DELETED":
+        return
+
+    resource_refs = twingate_resource_address_from_index.get(
+        (str(kind), namespace, name), []
+    )
+    for resource_ref in resource_refs:
+        res_namespace = resource_ref["namespace"]
+        res_name = resource_ref["name"]
+        obj = k8s_get_twingate_custom_object(
+            TWINGATE_RESOURCE_PLURAL, res_namespace, res_name
+        )
+        if not obj:
+            continue
+
+        try:
+            crd = ResourceSpec(**obj.get("spec", {}))
+            if crd.address_from is None or not crd.id:
+                continue
+
+            crd = crd.with_resolved_address(res_namespace)
+        except kopf.TemporaryError:
+            # Load balancer not provisioned yet; a later event will carry it.
+            continue
+        except (ValidationError, kopf.PermanentError):
+            logger.exception(
+                "Cannot resolve the address of Resource %s/%s from %s %s",
+                res_namespace,
+                res_name,
+                kind,
+                name,
+            )
+            continue
+
+        if crd.address == (obj.get("status") or {}).get("address"):
+            continue
+
+        logger.info(
+            "%s %s/%s load balancer changed, updating Resource %s/%s address to %s.",
+            kind,
+            namespace,
+            name,
+            res_namespace,
+            res_name,
+            crd.address,
+        )
+        labels = memo.twingate_settings.default_resource_tags | dict(
+            obj.get("metadata", {}).get("labels") or {}
+        )
+        try:
+            client = TwingateAPIClient(memo.twingate_settings, logger=logger)
+            client.resource_update(
+                resource_type=crd.type,
+                **crd.to_graphql_arguments(
+                    labels=labels, owner_namespace=res_namespace
+                ),
+            )
+        except Exception:
+            logger.exception(
+                "Failed to update Resource %s/%s after %s %s changed",
+                res_namespace,
+                res_name,
+                kind,
+                name,
+            )
+            continue
+
+        k8s_patch_twingate_custom_object(
+            TWINGATE_RESOURCE_PLURAL,
+            res_namespace,
+            res_name,
+            SimpleNamespace(spec={}, status={"address": crd.address}),
+        )
+
+
+@kopf.on.event(  # type: ignore[arg-type]
+    "", "v1", "services", field=("status", "loadBalancer", "ingress")
+)
+def twingate_resource_service_load_balancer_changed(
+    event, namespace, name, memo, logger, twingate_resource_address_from_index, **_
+):
+    _sync_resources_addressed_from(
+        AddressSourceKind.SERVICE,
+        event,
+        namespace,
+        name,
+        memo,
+        logger,
+        twingate_resource_address_from_index,
+    )
+
+
+@kopf.on.event(  # type: ignore[arg-type]
+    "networking.k8s.io",
+    "v1",
+    "ingresses",
+    field=("status", "loadBalancer", "ingress"),
+)
+def twingate_resource_ingress_load_balancer_changed(
+    event, namespace, name, memo, logger, twingate_resource_address_from_index, **_
+):
+    _sync_resources_addressed_from(
+        AddressSourceKind.INGRESS,
+        event,
+        namespace,
+        name,
+        memo,
+        logger,
+        twingate_resource_address_from_index,
+    )

@@ -166,6 +166,20 @@ def test_gateway_flows(run_kopf, random_name_generator):
                 ),
                 description="a recorded in-use delete retry",
             )
+            # Same for the CA: wait for its in-use rejection while the Gateway still
+            # holds it, so the "still in use by a Gateway" log assert below doesn't
+            # race the Gateway's delete succeeding first.
+            kubectl_wait_object(
+                "tgca",
+                ca_name,
+                lambda o: (
+                    "still in use by a Gateway"
+                    in o["metadata"]
+                    .get("annotations", {})
+                    .get("twingate.com/twingate_certificate_authority_delete", "")
+                ),
+                description="a recorded CA in-use delete retry",
+            )
 
             # Removing the Resource frees the Gateway, whose removal frees the CA.
             kubectl_delete_wait("tgr", resource_name)

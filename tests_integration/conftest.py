@@ -1,7 +1,6 @@
 import os
 import random
 import string
-import subprocess
 import sys
 import time
 import uuid
@@ -103,15 +102,12 @@ def run_kopf(kopf_runner_args, kopf_settings):
                 if cleanup:
                     kubectl("delete twingate --all", timeout=DELETE_TIMEOUT)
 
+                    remaining: list[str] = []
+
                     def _all_deleted() -> bool | None:
-                        try:
-                            result = kubectl("get twingate -o name")
-                        except (
-                            subprocess.CalledProcessError,
-                            subprocess.TimeoutExpired,
-                        ):
-                            return None
-                        return True if not result.stdout.strip() else None
+                        result = kubectl("get twingate -o name")
+                        remaining[:] = result.stdout.decode().split()
+                        return True if not remaining else None
 
                     # The delete above already blocks on finalizers, so this
                     # normally returns on the first poll. It replaces a blind
@@ -120,6 +116,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
                         _all_deleted,
                         timeout=DELETE_TIMEOUT,
                         description="all twingate resources to be deleted",
+                        last_seen=lambda: remaining,
                     )
                     # Brief settle before the operator is torn down.
                     time.sleep(0.5)

@@ -143,30 +143,65 @@ def kubectl_patch(
     return kubectl(f"patch {resource} -p '{patch_str}' --type={merge_type}")
 
 
+# kubectl errors that waiting will not fix. Polling through them would only turn
+# a clear failure into a timeout minutes later.
+_NON_TRANSIENT_KUBECTL_ERRORS = (b"(Forbidden)", b"doesn't have a resource type")
+
+
 def poll_until[T](
-    attempt: Callable[[], T | None], *, timeout: float, description: str
+    attempt: Callable[[], T | None],
+    *,
+    timeout: float,
+    description: str,
+    last_seen: Callable[[], object] | None = None,
 ) -> T:
     """Call ``attempt`` until it returns a non-``None`` value, or time out.
 
-    ``attempt`` returns ``None`` to mean "not yet". The interval starts at
-    ``POLL_MIN_INTERVAL`` and grows towards ``POLL_MAX_INTERVAL``, with a floor
-    proportional to the probe's own cost: CI runs with
-    ``KUBECTL_COMMAND="minikube kubectl -- "``, where every invocation costs
-    200-500ms, and polling faster than that is pure exec overhead.
+    ``attempt`` returns ``None`` to mean "not yet". A kubectl failure it raises
+    (``CalledProcessError`` / ``TimeoutExpired``) also counts as "not yet" and is
+    kept for the timeout error, except for non-transient errors such as
+    Forbidden, which are re-raised right away.
+
+    The interval starts at ``POLL_MIN_INTERVAL`` and grows towards
+    ``POLL_MAX_INTERVAL``, with a floor proportional to the probe's own cost: CI
+    runs with ``KUBECTL_COMMAND="minikube kubectl -- "``, where every invocation
+    costs 200-500ms, and polling faster than that is pure exec overhead.
+
+    On timeout, raises ``TimeoutError`` naming the last kubectl error and, if
+    ``last_seen`` is given, the last state it reports.
     """
     deadline = time.monotonic() + timeout
     interval = POLL_MIN_INTERVAL
+    last_exc: subprocess.SubprocessError | None = None
 
     while True:
         started = time.monotonic()
-        result = attempt()
+        try:
+            result = attempt()
+            last_exc = None
+        except subprocess.CalledProcessError as e:
+            if any(err in (e.stderr or b"") for err in _NON_TRANSIENT_KUBECTL_ERRORS):
+                raise
+            result, last_exc = None, e
+        except subprocess.TimeoutExpired as e:
+            result, last_exc = None, e
         if result is not None:
             return result
         probe_cost = time.monotonic() - started
 
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise RuntimeError(f"Timed out after {timeout}s waiting for {description}")
+            message = (
+                f"Timed out after {round(timeout, 1):g}s waiting for {description}"
+            )
+            if last_seen is not None:
+                message += f"; last seen: {last_seen()!r}"
+            if isinstance(last_exc, subprocess.CalledProcessError):
+                stderr = (last_exc.stderr or b"").decode(errors="replace").strip()
+                message += f"; last kubectl error: {stderr}"
+            elif last_exc is not None:
+                message += f"; last kubectl error: {last_exc}"
+            raise TimeoutError(message) from last_exc
 
         time.sleep(min(max(interval, probe_cost / 2), POLL_MAX_INTERVAL, remaining))
         interval = min(interval * POLL_BACKOFF, POLL_MAX_INTERVAL)
@@ -175,14 +210,9 @@ def poll_until[T](
 def kubectl_wait_to_exist(
     resource_type: str, resource_name: str, *, timeout: float = WAIT_TO_EXIST_TIMEOUT
 ) -> dict:
-    def _attempt() -> dict | None:
-        try:
-            return kubectl_get(resource_type, resource_name)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            return None
-
+    # poll_until treats the NotFound from kubectl_get as "not yet".
     return poll_until(
-        _attempt,
+        lambda: kubectl_get(resource_type, resource_name),
         timeout=timeout,
         description=f"{resource_type}/{resource_name} to exist",
     )
@@ -195,21 +225,28 @@ def kubectl_delete_wait(
     timeout: float = DELETE_WAIT_TIMEOUT,
     perform_deletion: bool = True,
 ) -> None:
+    deadline = time.monotonic() + timeout
     if perform_deletion:
-        kubectl_delete(resource_type, resource_name)
+        # --wait=false so the poll below covers the whole wait and `timeout` is
+        # the total budget, rather than a blocking delete running first under
+        # its own DELETE_TIMEOUT.
+        kubectl(f"delete {resource_type}/{resource_name} --wait=false")
 
     def _attempt() -> bool | None:
         try:
             kubectl_get(resource_type, resource_name)
-        except subprocess.CalledProcessError:
-            return True  # gone
-        except subprocess.TimeoutExpired:
-            return None
+        except subprocess.CalledProcessError as e:
+            # Only NotFound means gone. Any other failure (connection refused,
+            # 5xx, ...) is re-raised for poll_until to retry, so a broken
+            # kubectl can't make a deletion check pass.
+            if b"(NotFound)" in (e.stderr or b""):
+                return True
+            raise
         return None
 
     poll_until(
         _attempt,
-        timeout=timeout,
+        timeout=max(0.0, deadline - time.monotonic()),
         description=f"{resource_type}/{resource_name} to be deleted",
     )
 
@@ -221,18 +258,15 @@ def kubectl_wait_deployment_available(
 
     def _attempt() -> dict | None:
         remaining = max(1, int(deadline - time.monotonic()))
-        try:
-            # The subprocess budget must exceed kubectl's own --timeout, otherwise
-            # the watch is killed and restarted before it can ever be used.
-            result = kubectl(
-                f"wait --for=condition=available --timeout={remaining}s "
-                f"deployment/{deployment_name} -o json",
-                timeout=remaining + 10,
-            )
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            # Not created yet (kubectl wait fails fast on a missing object), or
-            # not available within the remaining budget.
-            return None
+        # The subprocess budget must exceed kubectl's own --timeout, otherwise
+        # the watch is killed and restarted before it can ever be used. A
+        # failure here (not created yet - kubectl wait fails fast on a missing
+        # object - or not available in time) is retried by poll_until.
+        result = kubectl(
+            f"wait --for=condition=available --timeout={remaining}s "
+            f"deployment/{deployment_name} -o json",
+            timeout=remaining + 10,
+        )
         return json.loads(result.stdout)
 
     return poll_until(
@@ -271,7 +305,6 @@ def kubectl_wait_object(
     predicate: Callable[[dict], bool],
     *,
     description: str = "expected condition",
-    exclude_uid: str | None = None,
     timeout: float = WAIT_OBJECT_TIMEOUT,
 ) -> dict:
     """Poll an object until ``predicate(obj)`` is truthy, then return it.
@@ -282,28 +315,21 @@ def kubectl_wait_object(
     handler reads as successful before the spec it produced is visible. **If a
     status subresource is ever added to these CRDs, revisit every predicate.**
     """
+    last_obj: dict | None = None
 
     def _attempt() -> dict | None:
-        try:
-            obj = kubectl_get(resource_type, resource_name)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            # Tolerate the object being absent: it may not exist yet, and an operator
-            # that recreates an object deletes it first, so it is briefly missing.
-            # This does not cover observing the OLD generation while its finalizer
-            # still holds it - a predicate spanning a recreate must itself require
-            # changed state (or pass exclude_uid).
-            return None
+        nonlocal last_obj
+        last_obj = kubectl_get(resource_type, resource_name)
+        return last_obj if predicate(last_obj) else None
 
-        if (
-            exclude_uid is not None
-            and obj.get("metadata", {}).get("uid") == exclude_uid
-        ):
-            return None
-
-        return obj if predicate(obj) else None
-
+    # poll_until tolerates the object being absent (kubectl_get raising
+    # NotFound): it may not exist yet, and an operator that recreates an object
+    # deletes it first, so it is briefly missing. This does not cover observing
+    # the OLD generation while its finalizer still holds it - a predicate
+    # spanning a recreate must itself require changed state.
     return poll_until(
         _attempt,
         timeout=timeout,
         description=f"{resource_type}/{resource_name} to reach {description}",
+        last_seen=lambda: last_obj,
     )

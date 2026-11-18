@@ -8,23 +8,19 @@ from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import (
+    POSTGRESQL_AUTH_FIELDS,
     BaseResource,
     Diff,
     NetworkResource,
-    RemotePostgreSQLAWSIAMAuth,
-    RemotePostgreSQLGCPIAMAuth,
-    RemotePostgreSQLPasswordAuth,
     ResourceGateway,
     ResourceProtocol,
     ResourceProtocols,
 )
 from app.crds import (
+    PostgreSQLAuth,
     PostgreSQLAWSIAMAuth,
-    PostgreSQLAWSIAMAuthEntry,
     PostgreSQLGCPIAMAuth,
-    PostgreSQLGCPIAMAuthEntry,
     PostgreSQLPasswordAuth,
-    PostgreSQLPasswordAuthEntry,
     ProtocolPolicy,
     RequestHeaderRewrite,
     ResourceSpec,
@@ -33,10 +29,13 @@ from app.crds import (
 
 
 def postgresql_resource_response(resource):
+    typenames = {field: name for name, field in POSTGRESQL_AUTH_FIELDS.items()}
     return resource.model_dump(by_alias=True) | {
         "auths": [
-            {"__typename": auth.typename} | auth.model_dump(by_alias=True)
+            {"__typename": typenames[field]}
+            | getattr(auth, field).model_dump(by_alias=True)
             for auth in resource.auths
+            for field in auth.model_fields_set
         ]
     }
 
@@ -352,7 +351,7 @@ class TestWebAppResourceModel:
 
 class TestPostgreSQLResourceModel:
     @pytest.mark.parametrize(
-        ("remote_auth", "expected_type", "crd_auth"),
+        ("remote_auth", "crd_auth"),
         [
             (
                 {
@@ -360,8 +359,7 @@ class TestPostgreSQLResourceModel:
                     "user": "viewer",
                     "credential": "prod-viewer",
                 },
-                RemotePostgreSQLPasswordAuth,
-                PostgreSQLPasswordAuthEntry(
+                PostgreSQLAuth(
                     password=PostgreSQLPasswordAuth(
                         user="viewer", credential="prod-viewer"
                     )
@@ -374,8 +372,7 @@ class TestPostgreSQLResourceModel:
                     "region": "us-east-1",
                     "assumeRoleArn": None,
                 },
-                RemotePostgreSQLAWSIAMAuth,
-                PostgreSQLAWSIAMAuthEntry(
+                PostgreSQLAuth(
                     aws_iam=PostgreSQLAWSIAMAuth(user="viewer", region="us-east-1")
                 ),
             ),
@@ -384,8 +381,7 @@ class TestPostgreSQLResourceModel:
                     "__typename": "PostgreSQLGCPIAMAuth",
                     "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com",
                 },
-                RemotePostgreSQLGCPIAMAuth,
-                PostgreSQLGCPIAMAuthEntry(
+                PostgreSQLAuth(
                     gcp_iam=PostgreSQLGCPIAMAuth(
                         impersonate_service_account="viewer@proj.iam.gserviceaccount.com"
                     )
@@ -394,13 +390,11 @@ class TestPostgreSQLResourceModel:
         ],
     )
     def test_auths_are_parsed_by_typename(
-        self, postgre_sql_resource_factory, remote_auth, expected_type, crd_auth
+        self, postgre_sql_resource_factory, remote_auth, crd_auth
     ):
         resource = postgre_sql_resource_factory(auths=[remote_auth])
 
-        [auth] = resource.auths
-        assert type(auth) is expected_type
-        assert auth.to_crd_auth() == crd_auth
+        assert resource.auths == [crd_auth]
 
     def test_unknown_auth_typename_is_rejected(self, postgre_sql_resource_factory):
         with pytest.raises(ValidationError, match="PostgreSQLKerberosAuth"):
@@ -501,9 +495,9 @@ class TestPostgreSQLResourceModel:
         ):
             assert resource.get_spec_diff(crd, owner_namespace="default") == {
                 "auths": Diff(
-                    remote=[auth.to_crd_auth().model_dump() for auth in resource.auths],
+                    remote=[auth.model_dump() for auth in resource.auths],
                     local=[
-                        PostgreSQLAWSIAMAuthEntry(
+                        PostgreSQLAuth(
                             aws_iam={"user": "viewer", "region": "us-east-1"}
                         ).model_dump()
                     ],

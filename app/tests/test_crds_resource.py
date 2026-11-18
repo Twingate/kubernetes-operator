@@ -1,13 +1,10 @@
 from unittest.mock import patch
 
 import pytest
-from pydantic import TypeAdapter, ValidationError
+from pydantic import ValidationError
 
 from app.crds import (
     PostgreSQLAuth,
-    PostgreSQLAWSIAMAuthEntry,
-    PostgreSQLGCPIAMAuthEntry,
-    PostgreSQLPasswordAuthEntry,
     ProtocolPolicy,
     ProtocolRange,
     ResourceDownstream,
@@ -654,40 +651,29 @@ def test_non_postgresql_resource_rejects_database_and_auths(postgresql_fields):
 )
 def test_postgresql_auth_requires_exactly_one_known_auth_type(auth):
     with pytest.raises(ValidationError):
-        TypeAdapter(PostgreSQLAuth).validate_python(auth)
+        PostgreSQLAuth.model_validate(auth)
 
 
 @pytest.mark.parametrize(
-    ("auth", "expected_type"),
+    ("auth", "expected_field"),
     [
-        (
-            {"password": {"user": "viewer", "credential": "prod-viewer"}},
-            PostgreSQLPasswordAuthEntry,
-        ),
-        (
-            {"awsIam": {"user": "viewer", "region": "us-east-1"}},
-            PostgreSQLAWSIAMAuthEntry,
-        ),
+        ({"password": {"user": "viewer", "credential": "prod-viewer"}}, "password"),
+        ({"awsIam": {"user": "viewer", "region": "us-east-1"}}, "aws_iam"),
         (
             {"gcpIam": {"impersonateServiceAccount": "a@b.iam.gserviceaccount.com"}},
-            PostgreSQLGCPIAMAuthEntry,
+            "gcp_iam",
         ),
     ],
 )
-def test_postgresql_auth_is_chosen_by_the_key_present(auth, expected_type):
-    adapter = TypeAdapter(PostgreSQLAuth)
+def test_postgresql_auth_is_chosen_by_the_key_present(auth, expected_field):
+    parsed = PostgreSQLAuth.model_validate(auth)
 
-    parsed = adapter.validate_python(auth)
-
-    assert type(parsed) is expected_type
-    assert adapter.validate_python(parsed) is parsed
-    assert adapter.validate_python(
-        adapter.dump_python(parsed, by_alias=True, exclude_none=True)
-    ) == (parsed)
+    assert parsed.model_fields_set == {expected_field}
+    assert parsed.model_dump(by_alias=True, exclude_none=True) == auth
 
 
 def test_postgresql_gcp_iam_auth_normalizes_impersonate_service_account():
-    auth = TypeAdapter(PostgreSQLAuth).validate_python(
+    auth = PostgreSQLAuth.model_validate(
         {
             "gcpIam": {
                 "impersonateServiceAccount": " Viewer@Proj.iam.gserviceaccount.com "
@@ -732,16 +718,20 @@ def test_postgresql_resource_spec_to_graphql_arguments(postgresql_resource_spec,
         )
 
     resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
-    assert graphql_arguments["gateway_id"] == "R2F0ZXdheTo5Nwo="
-    assert graphql_arguments["downstream"] == {"port": 5432}
-    assert graphql_arguments["upstream"] == {"port": 5433, "tlsMode": "VERIFY_FULL"}
-    assert graphql_arguments["database"] == "orders"
-    assert graphql_arguments["auths"] == [auth]
-    assert "gateway_ref" not in graphql_arguments
-    assert "type" not in graphql_arguments
-    assert "protocols" not in graphql_arguments
-    assert "request_header_rewrites" not in graphql_arguments
-    assert "is_browser_shortcut_enabled" not in graphql_arguments
+    assert graphql_arguments == {
+        "name": "My PostgreSQL Resource",
+        "address": "postgresql.default.cluster.local",
+        "alias": None,
+        "remote_network_id": "UmVtb3RlTmV0d29yazoxMjMK",
+        "security_policy_id": None,
+        "is_visible": True,
+        "tags": [{"key": "key", "value": "value"}],
+        "gateway_id": "R2F0ZXdheTo5Nwo=",
+        "downstream": {"port": 5432},
+        "upstream": {"port": 5433, "tlsMode": "VERIFY_FULL"},
+        "database": "orders",
+        "auths": [auth],
+    }
 
 
 def test_postgresql_resource_spec_to_graphql_arguments_defaults_database(

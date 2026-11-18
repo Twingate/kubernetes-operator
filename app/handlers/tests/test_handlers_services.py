@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import kopf
@@ -521,8 +522,27 @@ class TestServiceToTwingateResource:
         ):
             service_to_twingate_resource(example_postgresql_service_body, "default")
 
+    def test_postgresql_resource_auths_not_json(self, example_postgresql_service_body):
+        example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/auths"
+        ] = "not-json"
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/auths annotation is not valid JSON\.",
+        ):
+            service_to_twingate_resource(example_postgresql_service_body, "default")
+
     @pytest.mark.parametrize(
-        "auths", ["not-json", '{"password": {"user": "viewer"}}', '["password"]']
+        "auths",
+        [
+            '{"password": {"user": "viewer"}}',
+            '["password"]',
+            "[]",
+            "[{}]",
+            '[{"password": {"user": "a", "credential": "b"}, "gcpIam": {}}]',
+            '[{"foo": {"user": "viewer"}}]',
+        ],
     )
     def test_postgresql_resource_invalid_auths(
         self, example_postgresql_service_body, auths
@@ -537,6 +557,61 @@ class TestServiceToTwingateResource:
         ):
             service_to_twingate_resource(example_postgresql_service_body, "default")
 
+    def test_postgresql_resource_auths_are_normalized(
+        self, example_postgresql_service_body
+    ):
+        example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/auths"
+        ] = json.dumps(
+            [
+                {"awsIam": {"user": "viewer", "region": "us-east-1"}},
+                {
+                    "gcpIam": {
+                        "impersonateServiceAccount": (
+                            " Viewer@Proj.iam.gserviceaccount.com "
+                        )
+                    }
+                },
+            ]
+        )
+
+        result = service_to_twingate_resource(
+            example_postgresql_service_body, "default"
+        )
+
+        assert result["spec"]["auths"] == [
+            {"awsIam": {"user": "viewer", "region": "us-east-1"}},
+            {
+                "gcpIam": {
+                    "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com"
+                }
+            },
+        ]
+
+    @pytest.mark.parametrize(
+        ("auths", "auth_type"),
+        [
+            ('[{"password": {"user": "viewer"}}]', "password"),
+            ('[{"awsIam": {"user": "viewer"}}]', "awsIam"),
+            ('[{"gcpIam": {}}]', "gcpIam"),
+            ('[{"password": {"user": 1, "credential": "b"}}]', "password"),
+            ('[{"password": "viewer"}]', "password"),
+        ],
+    )
+    def test_postgresql_resource_invalid_auth_fields(
+        self, example_postgresql_service_body, auths, auth_type
+    ):
+        example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/auths"
+        ] = auths
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=rf"^resource.twingate.com/auths annotation has an invalid "
+            rf"{auth_type} auth\.$",
+        ):
+            service_to_twingate_resource(example_postgresql_service_body, "default")
+
     @pytest.mark.parametrize(
         ("annotation", "value"),
         [
@@ -544,7 +619,7 @@ class TestServiceToTwingateResource:
             ("resource.twingate.com/requestHeaderRewrites", '{"Host": "example.com"}'),
         ],
     )
-    def test_postgresql_resource_rejects_web_app_only_annotations(
+    def test_postgresql_resource_rejects_non_postgresql_annotations(
         self, example_postgresql_service_body, annotation, value
     ):
         example_postgresql_service_body.metadata["annotations"][annotation] = value

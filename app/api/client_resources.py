@@ -1,21 +1,16 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple
 
 from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import (
     DEFAULT_POSTGRESQL_DATABASE,
-    PostgreSQLAWSIAMAuth,
-    PostgreSQLAWSIAMAuthEntry,
-    PostgreSQLGCPIAMAuth,
-    PostgreSQLGCPIAMAuthEntry,
-    PostgreSQLPasswordAuth,
-    PostgreSQLPasswordAuthEntry,
+    PostgreSQLAuth,
     ProtocolPolicy,
     RequestHeaderRewrite,
     ResourceDownstream,
@@ -365,37 +360,11 @@ class WebAppResource(BaseResource):
         return ResourceSpec(**data)
 
 
-class RemotePostgreSQLPasswordAuth(PostgreSQLPasswordAuth):
-    typename: Literal["PostgreSQLPasswordAuth"] = Field(
-        alias="__typename", exclude=True
-    )
-
-    def to_crd_auth(self) -> PostgreSQLPasswordAuthEntry:
-        return PostgreSQLPasswordAuthEntry.model_validate(
-            {"password": self.model_dump()}
-        )
-
-
-class RemotePostgreSQLAWSIAMAuth(PostgreSQLAWSIAMAuth):
-    typename: Literal["PostgreSQLAWSIAMAuth"] = Field(alias="__typename", exclude=True)
-
-    def to_crd_auth(self) -> PostgreSQLAWSIAMAuthEntry:
-        return PostgreSQLAWSIAMAuthEntry.model_validate({"aws_iam": self.model_dump()})
-
-
-class RemotePostgreSQLGCPIAMAuth(PostgreSQLGCPIAMAuth):
-    typename: Literal["PostgreSQLGCPIAMAuth"] = Field(alias="__typename", exclude=True)
-
-    def to_crd_auth(self) -> PostgreSQLGCPIAMAuthEntry:
-        return PostgreSQLGCPIAMAuthEntry.model_validate({"gcp_iam": self.model_dump()})
-
-
-RemotePostgreSQLAuth = Annotated[
-    RemotePostgreSQLPasswordAuth
-    | RemotePostgreSQLAWSIAMAuth
-    | RemotePostgreSQLGCPIAMAuth,
-    Field(discriminator="typename"),
-]
+POSTGRESQL_AUTH_FIELDS = {
+    "PostgreSQLPasswordAuth": "password",
+    "PostgreSQLAWSIAMAuth": "aws_iam",
+    "PostgreSQLGCPIAMAuth": "gcp_iam",
+}
 
 
 class PostgreSQLResource(BaseResource):
@@ -403,7 +372,17 @@ class PostgreSQLResource(BaseResource):
     downstream: ResourceDownstream
     upstream: ResourceUpstream
     database: str
-    auths: list[RemotePostgreSQLAuth]
+    auths: list[PostgreSQLAuth]
+
+    @field_validator("auths", mode="before")
+    @classmethod
+    def key_auths_by_typename(cls, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        for auth in value:
+            if auth["__typename"] not in POSTGRESQL_AUTH_FIELDS:
+                raise ValueError(
+                    f"Unknown PostgreSQL auth type {auth['__typename']!r}."
+                )
+        return [{POSTGRESQL_AUTH_FIELDS[auth["__typename"]]: auth} for auth in value]
 
     @staticmethod
     def get_graphql_fragment():
@@ -461,7 +440,7 @@ class PostgreSQLResource(BaseResource):
         if self.database != crd_database:
             diff["database"] = Diff(remote=self.database, local=crd_database)
 
-        auths = [auth.to_crd_auth().model_dump() for auth in self.auths]
+        auths = [auth.model_dump() for auth in self.auths]
         crd_auths = [auth.model_dump() for auth in (crd.auths or [])]
         if auths != crd_auths:
             diff["auths"] = Diff(remote=auths, local=crd_auths)
@@ -475,7 +454,7 @@ class PostgreSQLResource(BaseResource):
                 "downstream": self.downstream,
                 "upstream": self.upstream,
                 "database": self.database,
-                "auths": [auth.to_crd_auth() for auth in self.auths],
+                "auths": self.auths,
             }
             | super().to_spec_dict()
             | overrides

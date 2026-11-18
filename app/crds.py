@@ -3,7 +3,7 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, ClassVar, Literal, cast
+from typing import Annotated, Any, ClassVar, cast
 
 import kopf
 import kubernetes.client
@@ -11,7 +11,6 @@ import pendulum
 from croniter import croniter
 from pydantic import (
     BaseModel,
-    BeforeValidator,
     ConfigDict,
     Field,
     ValidationError,
@@ -223,45 +222,23 @@ class PostgreSQLGCPIAMAuth(BaseModel):
         return value.strip().lower()
 
 
-class PostgreSQLPasswordAuthEntry(BaseModel):
+class PostgreSQLAuth(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    type: Literal["password"] = Field("password", exclude=True)
-    password: PostgreSQLPasswordAuth
+    password: PostgreSQLPasswordAuth | None = None
+    aws_iam: PostgreSQLAWSIAMAuth | None = None
+    gcp_iam: PostgreSQLGCPIAMAuth | None = None
 
-
-class PostgreSQLAWSIAMAuthEntry(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel
-    )
-
-    type: Literal["awsIam"] = Field("awsIam", exclude=True)
-    aws_iam: PostgreSQLAWSIAMAuth
-
-
-class PostgreSQLGCPIAMAuthEntry(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, populate_by_name=True, alias_generator=to_camel
-    )
-
-    type: Literal["gcpIam"] = Field("gcpIam", exclude=True)
-    gcp_iam: PostgreSQLGCPIAMAuth
-
-
-def add_postgresql_auth_type(value: Any) -> Any:
-    if isinstance(value, dict) and "type" not in value:
-        [key] = value  # the CRD schema allows exactly one key per entry
-        return value | {"type": key}
-    return value
-
-
-PostgreSQLAuth = Annotated[
-    PostgreSQLPasswordAuthEntry | PostgreSQLAWSIAMAuthEntry | PostgreSQLGCPIAMAuthEntry,
-    Field(discriminator="type"),
-    BeforeValidator(add_postgresql_auth_type),
-]
+    @model_validator(mode="after")
+    def validate_exactly_one_auth_type(self):
+        auths = (self.password, self.aws_iam, self.gcp_iam)
+        if sum(auth is not None for auth in auths) != 1:
+            raise ValueError(
+                "Exactly one of `password`, `awsIam` or `gcpIam` must be set."
+            )
+        return self
 
 
 class ResourceType(StrEnum):

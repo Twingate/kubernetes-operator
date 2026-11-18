@@ -163,7 +163,7 @@ spec:
                 gatewayRef:
                   type: object
                   required: ["name"]
-                  description: "Reference to the TwingateGateway this Kubernetes or WebApp Resource is served by."
+                  description: "Reference to the TwingateGateway this Kubernetes, WebApp or PostgreSQL Resource is served by."
                   properties:
                     name:
                       type: string
@@ -175,7 +175,7 @@ spec:
                 downstream:
                   type: object
                   required: ["port"]
-                  description: "Downstream (client-facing) configuration for a WebApp Resource."
+                  description: "Downstream (client-facing) configuration for a WebApp or PostgreSQL Resource."
                   properties:
                     port:
                       type: integer
@@ -186,11 +186,11 @@ spec:
                       type: string
                       enum: ["TLS13", "NONE"]
                       default: "NONE"
-                      description: "TLS mode for the downstream (client-facing) connection."
+                      description: "TLS mode for the downstream (client-facing) connection. TLS is not supported for PostgreSQL Resource."
                 upstream:
                   type: object
                   required: ["port"]
-                  description: "Upstream (target) configuration for a WebApp Resource."
+                  description: "Upstream (target) configuration for a WebApp or PostgreSQL Resource."
                   properties:
                     port:
                       type: integer
@@ -224,7 +224,7 @@ spec:
                 auths:
                   type: array
                   minItems: 1
-                  description: "The database users the Gateway logs in as for a PostgreSQL Resource, and how it authenticates as each one. At least one entry is required."
+                  description: "The authentication method used by Gateway to login to the PostgreSQL resource. At least one entry is required."
                   items:
                     type: object
                     description: "Exactly one of password, awsIam or gcpIam."

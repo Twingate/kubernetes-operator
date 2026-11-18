@@ -6,8 +6,14 @@ from typing import cast
 import kopf
 import kubernetes
 from kopf import Body
+from pydantic import ValidationError
 
-from app.crds import ResourceType, TLSClientMode, TLSServerMode
+from app.crds import (
+    PostgreSQLAuth,
+    ResourceType,
+    TLSClientMode,
+    TLSServerMode,
+)
 from app.utils import to_bool
 
 
@@ -91,7 +97,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     return result
 
 
-def gateway_endpoints_spec(
+def gateway_spec(
     service_body: Body, namespace: str, resource_type: ResourceType
 ) -> dict:
     meta = service_body.metadata
@@ -152,7 +158,7 @@ def gateway_endpoints_spec(
 
 def web_app_spec(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
-    result = gateway_endpoints_spec(service_body, namespace, ResourceType.WEB_APP)
+    result = gateway_spec(service_body, namespace, ResourceType.WEB_APP)
 
     if downstream_tls_mode := meta.annotations.get(DOWNSTREAM_TLS_MODE_ANNOTATION):
         result["downstream"]["tlsMode"] = parse_tls_mode_annotation(
@@ -198,19 +204,42 @@ def postgresql_spec(service_body: Body, namespace: str) -> dict:
             f"{AUTHS_ANNOTATION} annotation is required for PostgreSQL resources."
         )
 
-    invalid_msg = f"{AUTHS_ANNOTATION} annotation must be a JSON list of auth objects."
     try:
         parsed = json.loads(auths)
     except json.JSONDecodeError as ex:
-        raise kopf.PermanentError(invalid_msg) from ex
+        raise kopf.PermanentError(
+            f"{AUTHS_ANNOTATION} annotation is not valid JSON."
+        ) from ex
 
-    if not isinstance(parsed, list) or not all(
-        isinstance(auth, dict) for auth in parsed
+    invalid_msg = (
+        f"{AUTHS_ANNOTATION} annotation must be a JSON list of one or more auth "
+        "objects, each with exactly one of password, awsIam or gcpIam."
+    )
+    if (
+        not isinstance(parsed, list)
+        or not parsed
+        or not all(isinstance(auth, dict) and len(auth) == 1 for auth in parsed)
     ):
         raise kopf.PermanentError(invalid_msg)
 
-    result = gateway_endpoints_spec(service_body, namespace, ResourceType.POSTGRESQL)
-    result["auths"] = parsed
+    validated_auths = []
+    for auth in parsed:
+        [auth_type] = auth
+        if auth_type not in ("password", "awsIam", "gcpIam"):
+            raise kopf.PermanentError(invalid_msg)
+        try:
+            validated_auths.append(
+                PostgreSQLAuth.model_validate(auth).model_dump(
+                    by_alias=True, exclude_none=True
+                )
+            )
+        except ValidationError as ex:
+            raise kopf.PermanentError(
+                f"{AUTHS_ANNOTATION} annotation has an invalid {auth_type} auth."
+            ) from ex
+
+    result = gateway_spec(service_body, namespace, ResourceType.POSTGRESQL)
+    result["auths"] = validated_auths
 
     if database := meta.annotations.get(DATABASE_ANNOTATION):
         result["database"] = database

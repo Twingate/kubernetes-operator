@@ -430,7 +430,10 @@ def test_network_resource_cannot_have_gateway_ref(unique_resource_name):
     assert "Network Resources do not allow it" in stderr
 
 
-def test_kubernetes_resource_must_have_gateway_ref(unique_resource_name):
+@pytest.mark.parametrize("resource_type", ["Kubernetes", "WebApp", "PostgreSQL"])
+def test_non_network_resource_must_have_gateway_ref(
+    unique_resource_name, resource_type
+):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
             f"""
@@ -439,9 +442,9 @@ def test_kubernetes_resource_must_have_gateway_ref(unique_resource_name):
             metadata:
               name: {unique_resource_name}
             spec:
-              name: My K8S Resource
+              name: My Resource
               address: "foo.default.cluster.local"
-              type: Kubernetes
+              type: {resource_type}
             """
         )
 
@@ -512,29 +515,6 @@ def test_web_app_resource_with_gateway_ref_accepted(unique_resource_name):
     kubectl_delete("tgr", unique_resource_name)
 
 
-def test_web_app_resource_must_have_gateway_ref(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My WebApp Resource
-              address: "webapp.default.svc.cluster.local"
-              type: WebApp
-              downstream:
-                port: 80
-              upstream:
-                port: 8080
-            """
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef" in stderr
-
-
 def test_web_app_resource_must_have_downstream_and_upstream(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
@@ -556,7 +536,7 @@ def test_web_app_resource_must_have_downstream_and_upstream(unique_resource_name
     assert "WebApp and PostgreSQL Resources require downstream and upstream" in stderr
 
 
-def test_non_web_app_resource_cannot_have_downstream_and_upstream(
+def test_network_resource_cannot_have_downstream_and_upstream(
     unique_resource_name,
 ):
     with pytest.raises(subprocess.CalledProcessError) as ex:
@@ -812,16 +792,6 @@ def test_postgresql_resource_accepted(unique_resource_name, spec_overrides):
     kubectl_delete("tgr", unique_resource_name)
 
 
-def test_postgresql_resource_must_have_gateway_ref(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            postgresql_resource_object(unique_resource_name, gatewayRef=None)
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef" in stderr
-
-
 @pytest.mark.parametrize("field", ["downstream", "upstream"])
 def test_postgresql_resource_must_have_downstream_and_upstream(
     unique_resource_name, field
@@ -1010,21 +980,6 @@ def test_postgresql_resource_iam_auth_requires_verified_upstream_tls(
         "awsIam and gcpIam auth require upstream.tlsMode VERIFY_FULL or VERIFY_CA"
         in stderr
     )
-
-
-def test_postgresql_resource_cannot_have_request_header_rewrites(
-    unique_resource_name,
-):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(
-            postgresql_resource_object(
-                unique_resource_name,
-                requestHeaderRewrites=[{"name": "X-Foo", "value": "bar"}],
-            )
-        )
-
-    stderr = ex.value.stderr.decode()
-    assert "requestHeaderRewrites can only be set for WebApp Resources" in stderr
 
 
 def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):

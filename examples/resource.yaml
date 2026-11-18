@@ -53,6 +53,10 @@ spec:
   alias: postgresql.int
   gatewayRef:
     name: example-gateway
+  downstream:
+    port: 5432
+  upstream:
+    port: 5432
   auths:
     - password:
         user: viewer

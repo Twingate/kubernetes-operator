@@ -52,3 +52,37 @@ spec:
       port: 80
       targetPort: 8000
       name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-postgresql
+  annotations:
+    resource.twingate.com: "true"
+    resource.twingate.com/type: "PostgreSQL"
+    # Name of the TwingateGateway fronting this PostgreSQL database.
+    resource.twingate.com/gatewayName: "example-gateway"
+    # Optional. Namespace of the TwingateGateway. Defaults to the Service's namespace.
+    # resource.twingate.com/gatewayNamespace: "twingate"
+    # Optional. Downstream (client-facing) port. Defaults to the Service's port when
+    # it exposes exactly one; required if the Service exposes multiple ports.
+    # resource.twingate.com/downstreamPort: "5432"
+    # Optional. Upstream (target) port. Defaults to the Service's port when it
+    # exposes exactly one; required if the Service exposes multiple ports.
+    # resource.twingate.com/upstreamPort: "5432"
+    # Optional. TLS mode of the upstream (target) connection: "VERIFY_FULL",
+    # "VERIFY_CA", "INSECURE" or "NONE" (default). awsIam and gcpIam auth require
+    # "VERIFY_FULL" or "VERIFY_CA".
+    resource.twingate.com/upstreamTLSMode: "VERIFY_FULL"
+    # Optional. Default database in the connection string. Defaults to "postgres".
+    # resource.twingate.com/database: "postgres"
+    # A JSON list of the authentication methods the Gateway uses to log in to
+    # the database. Each entry is one method ("password", "awsIam" or "gcpIam").
+    resource.twingate.com/auths: '[{"password":{"user":"viewer","credential":"prod-viewer"}}]'
+spec:
+  selector:
+    app.kubernetes.io/name: MyPostgreSQL
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

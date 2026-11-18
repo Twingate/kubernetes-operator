@@ -8,6 +8,7 @@ from app.api.client_resources import (
     BaseResource,
     KubernetesResource,
     NetworkResource,
+    PostgreSQLResource,
     ResourceAddress,
     ResourceRemoteNetwork,
     ResourceSecurityPolicy,
@@ -111,6 +112,26 @@ class WebAppResourceFactory(BaseResourceFactory):
 
     downstream = factory.SubFactory(ResourceDownstreamFactory)
     upstream = factory.SubFactory(ResourceUpstreamFactory)
+
+
+class PostgreSQLResourceFactory(BaseResourceFactory):
+    class Meta:
+        model = PostgreSQLResource
+
+    downstream = factory.SubFactory(ResourceDownstreamFactory, port=5432)
+    upstream = factory.SubFactory(
+        ResourceUpstreamFactory, port=5432, tls_mode="VERIFY_FULL"
+    )
+    database = "postgres"
+    auths = factory.List(
+        [
+            {
+                "__typename": "PostgreSQLPasswordAuth",
+                "user": "viewer",
+                "credential": "prod-viewer",
+            }
+        ]
+    )
 
 
 class ConnectorFactory(factory.Factory):

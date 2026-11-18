@@ -461,6 +461,177 @@ def test_service_flows_with_webapp_resource(run_kopf, random_name_generator):
     assert runner.exit_code == 0
 
 
+def test_service_flows_with_postgresql_resource(run_kopf, random_name_generator):
+    secret_name = random_name_generator("gw-tls")
+    ca_name = random_name_generator("gw-ca")
+    gw_svc_name = random_name_generator("gw-svc")
+    gw_name = random_name_generator("gw")
+    gw_port = 8443
+    service_name = random_name_generator("test-svc")
+    resource_name = f"{service_name}-resource"
+
+    CA_OBJ = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateCertificateAuthority
+        metadata:
+          name: {ca_name}
+        spec:
+          name: {ca_name}
+          secretRef:
+            name: {secret_name}
+    """
+
+    GW_SERVICE_OBJ = f"""
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: {gw_svc_name}
+          namespace: default
+        spec:
+          type: ClusterIP
+          ports:
+            - protocol: TCP
+              port: {gw_port}
+              targetPort: {gw_port}
+          selector:
+            app.kubernetes.io/name: nonexistent
+    """
+
+    GW_OBJ = f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateGateway
+        metadata:
+          name: {gw_name}
+        spec:
+          serviceRef:
+            name: {gw_svc_name}
+            port: {gw_port}
+          x509CertificateAuthorityRef:
+            name: {ca_name}
+    """
+
+    SERVICE_OBJ = f"""
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: {service_name}
+          annotations:
+            resource.twingate.com: "true"
+            resource.twingate.com/type: "PostgreSQL"
+            resource.twingate.com/gatewayName: "{gw_name}"
+            resource.twingate.com/downstreamPort: "6432"
+            resource.twingate.com/upstreamTLSMode: "VERIFY_FULL"
+            resource.twingate.com/alias: "postgresql.internal"
+            resource.twingate.com/database: "orders"
+            resource.twingate.com/auths: '[{{"password": {{"user": "viewer", "credential": "prod-viewer"}}}}]'
+        spec:
+          selector:
+            app.kubernetes.io/name: MyPostgreSQL
+          ports:
+            - protocol: TCP
+              port: 5432
+              targetPort: 5432
+    """
+
+    with run_kopf(
+        enable_connector_reconciler=False,
+        enable_group_reconciler=False,
+        enable_resource_reconciler=True,
+    ) as runner:
+        try:
+            # The PostgreSQL resource's gatewayRef needs a synced Gateway, which needs a CA + Service.
+            kubectl_create(create_tls_secret(secret_name, generate_base64_ca_cert()))
+            kubectl_create(CA_OBJ)
+            kubectl_wait_object_handler_success(
+                "tgca", ca_name, "twingate_certificate_authority_create"
+            )
+            kubectl_create(GW_SERVICE_OBJ)
+            kubectl_create(GW_OBJ)
+            gw = kubectl_wait_object_handler_success(
+                "tggw", gw_name, "twingate_gateway_create_update"
+            )
+            assert gw["spec"]["id"], f"Gateway spec.id not set: {gw['spec']}"
+
+            # The annotated Service creates a PostgreSQL resource bound to the Gateway.
+            kubectl_create(SERVICE_OBJ)
+            tgr = kubectl_wait_object_handler_success(
+                "twingateresource", resource_name, "twingate_resource_create"
+            )
+            assert tgr["spec"] == {
+                "address": f"{service_name}.default.svc.cluster.local",
+                "alias": "postgresql.internal",
+                "gatewayRef": {"name": gw_name, "namespace": "default"},
+                "downstream": {"port": 6432, "tlsMode": "NONE"},
+                "upstream": {"port": 5432, "tlsMode": "VERIFY_FULL"},
+                "database": "orders",
+                "auths": [
+                    {"password": {"user": "viewer", "credential": "prod-viewer"}}
+                ],
+                "id": ANY,
+                "isBrowserShortcutEnabled": False,
+                "isVisible": True,
+                "name": resource_name,
+                "syncLabels": True,
+                "type": "PostgreSQL",
+            }
+
+            # The reconciler reads the resource back and finds it matches the spec.
+            tgr = kubectl_wait_object_handler_success(
+                "twingateresource",
+                resource_name,
+                "twingate_resource_sync",
+                message="No update required",
+            )
+            last_updated_at = (
+                tgr.get("status", {})
+                .get("twingate_resource_update", {})
+                .get("updated_at")
+            )
+
+            # Changing the database annotation updates the resource on Twingate.
+            kubectl_patch(
+                f"svc/{service_name}",
+                [
+                    {
+                        "op": "replace",
+                        "path": "/metadata/annotations/resource.twingate.com~1database",
+                        "value": "inventory",
+                    }
+                ],
+                "json",
+            )
+            # The Service handler writes spec.database before Twingate is called, so
+            # only a new updated_at from the update handler proves the update ran.
+            kubectl_wait_object(
+                "twingateresource",
+                resource_name,
+                lambda obj: (
+                    obj["spec"].get("database") == "inventory"
+                    and obj.get("status", {})
+                    .get("twingate_resource_update", {})
+                    .get("updated_at")
+                    not in (None, last_updated_at)
+                ),
+                description="the updated database",
+            )
+
+            # Deleting the service deletes the resource, then tear down the Gateway/CA.
+            kubectl_delete_wait("svc", service_name)
+            kubectl_delete_wait(
+                "twingateresource", resource_name, perform_deletion=False
+            )
+            kubectl_delete_wait("tggw", gw_name)
+            kubectl_delete_wait("tgca", ca_name)
+        finally:
+            # run_kopf only cleans up twingate CRs, not these helper objects.
+            kubectl(f"delete service {service_name} --ignore-not-found")
+            kubectl(f"delete service {gw_svc_name} --ignore-not-found")
+            kubectl(f"delete secret {secret_name} --ignore-not-found")
+
+    assert runner.exception is None
+    assert runner.exit_code == 0
+
+
 def test_service_flows_resource_type_change(run_kopf, random_name_generator):
     secret_name = random_name_generator("gw-tls")
     ca_name = random_name_generator("gw-ca")

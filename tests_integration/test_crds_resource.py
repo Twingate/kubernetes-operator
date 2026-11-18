@@ -1,5 +1,6 @@
 import subprocess
 
+import orjson as json
 import pytest
 
 from tests_integration.utils import (
@@ -8,6 +9,26 @@ from tests_integration.utils import (
     kubectl_delete,
     kubectl_get,
 )
+
+
+def postgresql_resource_object(name: str, **spec_overrides) -> str:
+    spec = {
+        "name": "My PostgreSQL Resource",
+        "address": "postgresql.default.svc.cluster.local",
+        "type": "PostgreSQL",
+        "gatewayRef": {"name": "my-gateway"},
+        "downstream": {"port": 5432},
+        "upstream": {"port": 5432, "tlsMode": "VERIFY_FULL"},
+        "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}],
+    } | spec_overrides
+    return json.dumps(
+        {
+            "apiVersion": "twingate.com/v1beta",
+            "kind": "TwingateResource",
+            "metadata": {"name": name},
+            "spec": {key: value for key, value in spec.items() if value is not None},
+        }
+    ).decode()
 
 
 def test_spec_is_required(unique_resource_name):
@@ -425,7 +446,7 @@ def test_kubernetes_resource_must_have_gateway_ref(unique_resource_name):
         )
 
     stderr = ex.value.stderr.decode()
-    assert "Kubernetes and WebApp Resources require gatewayRef" in stderr
+    assert "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef" in stderr
 
 
 def test_kubernetes_resource_with_gateway_ref_accepted(unique_resource_name):
@@ -511,7 +532,7 @@ def test_web_app_resource_must_have_gateway_ref(unique_resource_name):
         )
 
     stderr = ex.value.stderr.decode()
-    assert "Kubernetes and WebApp Resources require gatewayRef" in stderr
+    assert "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef" in stderr
 
 
 def test_web_app_resource_must_have_downstream_and_upstream(unique_resource_name):
@@ -532,7 +553,7 @@ def test_web_app_resource_must_have_downstream_and_upstream(unique_resource_name
         )
 
     stderr = ex.value.stderr.decode()
-    assert "WebApp Resource requires downstream and upstream" in stderr
+    assert "WebApp and PostgreSQL Resources require downstream and upstream" in stderr
 
 
 def test_non_web_app_resource_cannot_have_downstream_and_upstream(
@@ -747,6 +768,265 @@ def test_non_web_app_resource_cannot_have_request_header_rewrites(
     assert "requestHeaderRewrites can only be set for WebApp Resources" in stderr
 
 
+@pytest.mark.parametrize(
+    "spec_overrides",
+    [
+        {},
+        {"database": "orders"},
+        {"upstream": {"port": 5432}},
+        {"auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]},
+        {
+            "upstream": {"port": 5432, "tlsMode": "VERIFY_CA"},
+            "auths": [
+                {
+                    "awsIam": {
+                        "user": "viewer",
+                        "region": "us-east-1",
+                        "assumeRoleArn": "arn:aws:iam::123456789012:role/gateway-db",
+                    }
+                }
+            ],
+        },
+        {
+            "auths": [
+                {
+                    "gcpIam": {
+                        "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com"
+                    }
+                }
+            ]
+        },
+        {
+            "auths": [
+                {"password": {"user": "viewer", "credential": "prod-viewer"}},
+                {"password": {"user": "editor", "credential": "prod-editor"}},
+            ]
+        },
+    ],
+)
+def test_postgresql_resource_accepted(unique_resource_name, spec_overrides):
+    result = kubectl_create(
+        postgresql_resource_object(unique_resource_name, **spec_overrides)
+    )
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_postgresql_resource_must_have_gateway_ref(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(unique_resource_name, gatewayRef=None)
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef" in stderr
+
+
+@pytest.mark.parametrize("field", ["downstream", "upstream"])
+def test_postgresql_resource_must_have_downstream_and_upstream(
+    unique_resource_name, field
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(unique_resource_name, **{field: None})
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "WebApp and PostgreSQL Resources require downstream and upstream" in stderr
+
+
+def test_postgresql_resource_must_have_auths(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(postgresql_resource_object(unique_resource_name, auths=None))
+
+    stderr = ex.value.stderr.decode()
+    assert "PostgreSQL Resource requires auths" in stderr
+
+
+def test_non_postgresql_resource_cannot_have_auths(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My Network Resource
+              address: "network.default.svc.cluster.local"
+              auths:
+                - password:
+                    user: viewer
+                    credential: prod-viewer
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "other Resource types do not allow it" in stderr
+
+
+def test_non_postgresql_resource_cannot_have_database(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+              name: {unique_resource_name}
+            spec:
+              name: My Network Resource
+              address: "network.default.svc.cluster.local"
+              database: orders
+            """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "database can only be set for PostgreSQL Resources" in stderr
+
+
+def test_postgresql_resource_rejects_empty_database(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(postgresql_resource_object(unique_resource_name, database=""))
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.database" in stderr
+
+
+def test_postgresql_resource_must_have_at_least_one_auth(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(postgresql_resource_object(unique_resource_name, auths=[]))
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.auths" in stderr
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {},
+        {
+            "password": {"user": "viewer", "credential": "prod-viewer"},
+            "awsIam": {"user": "viewer", "region": "us-east-1"},
+        },
+    ],
+)
+def test_postgresql_resource_auth_must_have_exactly_one_auth_type(
+    unique_resource_name, auth
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(postgresql_resource_object(unique_resource_name, auths=[auth]))
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.auths[0]" in stderr
+
+
+@pytest.mark.parametrize(
+    ("auth", "field"),
+    [
+        ({"password": {"credential": "prod-viewer"}}, "password.user"),
+        ({"password": {"user": "viewer"}}, "password.credential"),
+        ({"password": {"user": "", "credential": "prod-viewer"}}, "password.user"),
+        ({"password": {"user": "viewer", "credential": ""}}, "password.credential"),
+        ({"awsIam": {"region": "us-east-1"}}, "awsIam.user"),
+        ({"awsIam": {"user": "viewer"}}, "awsIam.region"),
+        ({"awsIam": {"user": "", "region": "us-east-1"}}, "awsIam.user"),
+        ({"awsIam": {"user": "viewer", "region": ""}}, "awsIam.region"),
+        (
+            {"awsIam": {"user": "viewer", "region": "us-east-1", "assumeRoleArn": ""}},
+            "awsIam.assumeRoleArn",
+        ),
+        ({"gcpIam": {}}, "gcpIam.impersonateServiceAccount"),
+        (
+            {"gcpIam": {"impersonateServiceAccount": "viewer@example.com"}},
+            "gcpIam.impersonateServiceAccount",
+        ),
+        (
+            {"gcpIam": {"impersonateServiceAccount": ".gserviceaccount.com"}},
+            "gcpIam.impersonateServiceAccount",
+        ),
+    ],
+)
+def test_postgresql_resource_rejects_invalid_auth(unique_resource_name, auth, field):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(postgresql_resource_object(unique_resource_name, auths=[auth]))
+
+    stderr = ex.value.stderr.decode()
+    assert f"spec.auths[0].{field}" in stderr
+
+
+@pytest.mark.parametrize(
+    "address", ["*.default.svc.cluster.local", "postgresql-?.int", "10.0.0.0/24"]
+)
+def test_postgresql_resource_rejects_wildcard_and_cidr_address(
+    unique_resource_name, address
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(unique_resource_name, address=address)
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "PostgreSQL Resource address can't be a wildcard or a CIDR range" in stderr
+
+
+def test_postgresql_resource_rejects_downstream_tls(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(
+                unique_resource_name, downstream={"port": 5432, "tlsMode": "TLS13"}
+            )
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "PostgreSQL Resource does not support downstream TLS" in stderr
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {"awsIam": {"user": "viewer", "region": "us-east-1"}},
+        {
+            "gcpIam": {
+                "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com"
+            }
+        },
+    ],
+)
+@pytest.mark.parametrize("tls_mode", ["NONE", "INSECURE"])
+def test_postgresql_resource_iam_auth_requires_verified_upstream_tls(
+    unique_resource_name, auth, tls_mode
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(
+                unique_resource_name,
+                upstream={"port": 5432, "tlsMode": tls_mode},
+                auths=[auth],
+            )
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert (
+        "awsIam and gcpIam auth require upstream.tlsMode VERIFY_FULL or VERIFY_CA"
+        in stderr
+    )
+
+
+def test_postgresql_resource_cannot_have_request_header_rewrites(
+    unique_resource_name,
+):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(
+                unique_resource_name,
+                requestHeaderRewrites=[{"name": "X-Foo", "value": "bar"}],
+            )
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "requestHeaderRewrites can only be set for WebApp Resources" in stderr
+
+
 def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
@@ -772,7 +1052,7 @@ def test_kubernetes_resource_cannot_have_browser_shortcut(unique_resource_name):
     )
 
 
-@pytest.mark.parametrize("resource_type", ["Kubernetes", "WebApp"])
+@pytest.mark.parametrize("resource_type", ["Kubernetes", "WebApp", "PostgreSQL"])
 def test_non_network_resource_cannot_have_protocols(
     unique_resource_name, resource_type
 ):

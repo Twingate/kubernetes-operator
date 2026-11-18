@@ -3,7 +3,7 @@ import logging
 from collections.abc import MutableMapping
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, ClassVar, cast
+from typing import Annotated, Any, ClassVar, Literal, cast
 
 import kopf
 import kubernetes.client
@@ -11,6 +11,7 @@ import pendulum
 from croniter import croniter
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     ValidationError,
@@ -35,6 +36,8 @@ MIN_PORT = 1
 MAX_PORT = 65535
 
 Port = Annotated[int, Field(ge=MIN_PORT, le=MAX_PORT)]
+
+DEFAULT_POSTGRESQL_DATABASE = "postgres"
 
 
 class K8sMetadata(BaseModel):
@@ -188,10 +191,84 @@ class RequestHeaderRewrite(BaseModel):
     value: str
 
 
+class PostgreSQLPasswordAuth(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    user: str
+    credential: str
+
+
+class PostgreSQLAWSIAMAuth(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    user: str
+    region: str
+    assume_role_arn: str | None = None
+
+
+class PostgreSQLGCPIAMAuth(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    impersonate_service_account: str
+
+    @field_validator("impersonate_service_account")
+    @classmethod
+    def normalize_impersonate_service_account(cls, value: str) -> str:
+        return value.strip().lower()
+
+
+class PostgreSQLPasswordAuthEntry(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    type: Literal["password"] = Field("password", exclude=True)
+    password: PostgreSQLPasswordAuth
+
+
+class PostgreSQLAWSIAMAuthEntry(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    type: Literal["awsIam"] = Field("awsIam", exclude=True)
+    aws_iam: PostgreSQLAWSIAMAuth
+
+
+class PostgreSQLGCPIAMAuthEntry(BaseModel):
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, alias_generator=to_camel
+    )
+
+    type: Literal["gcpIam"] = Field("gcpIam", exclude=True)
+    gcp_iam: PostgreSQLGCPIAMAuth
+
+
+def add_postgresql_auth_type(value: Any) -> Any:
+    if isinstance(value, dict) and "type" not in value:
+        [key] = value  # the CRD schema allows exactly one key per entry
+        return value | {"type": key}
+    return value
+
+
+PostgreSQLAuth = Annotated[
+    PostgreSQLPasswordAuthEntry | PostgreSQLAWSIAMAuthEntry | PostgreSQLGCPIAMAuthEntry,
+    Field(discriminator="type"),
+    BeforeValidator(add_postgresql_auth_type),
+]
+
+
 class ResourceType(StrEnum):
     NETWORK = "Network"
     KUBERNETES = "Kubernetes"
     WEB_APP = "WebApp"
+    POSTGRESQL = "PostgreSQL"
 
 
 class ResourceSpec(BaseModel):
@@ -213,14 +290,19 @@ class ResourceSpec(BaseModel):
     protocols: ResourceProtocols | None = None
     sync_labels: bool = True
     type: ResourceType = ResourceType.NETWORK
-    # Reference to the TwingateGateway serving this Kubernetes or WebApp resource.
+    # Reference to the TwingateGateway serving this Kubernetes, WebApp or PostgreSQL
+    # resource.
     gateway_ref: _KubernetesObjectRef | None = None
-    # (WebApp only) connection configuration relative to the gateway
+    # (WebApp and PostgreSQL only) connection configuration relative to the gateway
     # (downstream = client-facing, upstream = backend).
     downstream: ResourceDownstream | None = None
     upstream: ResourceUpstream | None = None
     # (WebApp only) HTTP headers to rewrite on requests to the upstream.
     request_header_rewrites: list[RequestHeaderRewrite] | None = None
+    # (PostgreSQL only) default database in the connection string.
+    database: str | None = None
+    # (PostgreSQL only) database user the gateway logs in as and how it authenticates.
+    auths: list[PostgreSQLAuth] | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -246,6 +328,11 @@ class ResourceSpec(BaseModel):
         if self.type != ResourceType.NETWORK and self.protocols is not None:
             raise ValueError("Only Network resources can set `protocols`.")
 
+        if self.type != ResourceType.POSTGRESQL and (
+            self.database is not None or self.auths is not None
+        ):
+            raise ValueError("Only PostgreSQL resources can set `database` or `auths`.")
+
         match self.type:
             case ResourceType.NETWORK:
                 if has_gateway_ref:
@@ -270,6 +357,19 @@ class ResourceSpec(BaseModel):
                     raise ValueError(
                         "WebApp resources require `downstream` and `upstream`."
                     )
+            case ResourceType.POSTGRESQL:
+                if not has_gateway_ref:
+                    raise ValueError("PostgreSQL resources require `gatewayRef`.")
+                if self.downstream is None or self.upstream is None:
+                    raise ValueError(
+                        "PostgreSQL resources require `downstream` and `upstream`."
+                    )
+                if self.request_header_rewrites is not None:
+                    raise ValueError(
+                        "PostgreSQL resources cannot set `requestHeaderRewrites`."
+                    )
+                if not self.auths:
+                    raise ValueError("PostgreSQL resources require `auths`.")
 
         return self
 
@@ -290,6 +390,8 @@ class ResourceSpec(BaseModel):
             "downstream",
             "upstream",
             "request_header_rewrites",
+            "database",
+            "auths",
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
@@ -333,6 +435,24 @@ class ResourceSpec(BaseModel):
                     "request_header_rewrites": [
                         {"key": h.name, "value": h.value}
                         for h in (self.request_header_rewrites or [])
+                    ],
+                }
+            case ResourceType.POSTGRESQL:
+                gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
+                downstream = cast(ResourceDownstream, self.downstream)
+                upstream = cast(ResourceUpstream, self.upstream)
+                graphql_args |= {
+                    "gateway_id": resolve_ref_to_twingate_id(
+                        "twingategateways",
+                        gateway_ref.resolve_namespace(owner_namespace),
+                        gateway_ref.name,
+                    ),
+                    "downstream": {"port": downstream.port},
+                    "upstream": upstream.model_dump(by_alias=True),
+                    "database": self.database or DEFAULT_POSTGRESQL_DATABASE,
+                    "auths": [
+                        auth.model_dump(by_alias=True, exclude_none=True)
+                        for auth in (self.auths or [])
                     ],
                 }
 

@@ -81,6 +81,34 @@ def example_webapp_service_body():
 
 
 @pytest.fixture
+def example_postgresql_service_body():
+    yaml_str = """
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: postgresql
+      labels:
+        env: dev
+      annotations:
+        resource.twingate.com: "true"
+        resource.twingate.com/type: "PostgreSQL"
+        resource.twingate.com/gatewayName: "example-gateway"
+        resource.twingate.com/upstreamTLSMode: "VERIFY_FULL"
+        resource.twingate.com/database: "orders"
+        resource.twingate.com/auths: '[{"password":{"user":"viewer","credential":"prod-viewer"}}]'
+    spec:
+      selector:
+        app.kubernetes.io/name: postgresql
+      type: ClusterIP
+      ports:
+        - protocol: TCP
+          port: 5432
+          targetPort: 5432
+    """
+    return kopf.Body(yaml.safe_load(yaml_str))
+
+
+@pytest.fixture
 def k8s_customobjects_client_mock():
     client_mock = MagicMock()
     with patch("kubernetes.client.CustomObjectsApi") as k8sclient_mock:
@@ -414,6 +442,118 @@ class TestServiceToTwingateResource:
             match=r"resource.twingate.com/requestHeaderRewrites annotation must be a JSON",
         ):
             service_to_twingate_resource(example_webapp_service_body, "default")
+
+    def test_postgresql_resource_type_annotation(self, example_postgresql_service_body):
+        namespace = "custom-namespace"
+
+        result = service_to_twingate_resource(
+            example_postgresql_service_body, namespace
+        )
+
+        assert result["spec"] == {
+            "name": "postgresql-resource",
+            "address": "postgresql.custom-namespace.svc.cluster.local",
+            "type": ResourceType.POSTGRESQL,
+            "gatewayRef": {
+                "name": "example-gateway",
+                "namespace": namespace,
+            },
+            "downstream": {"port": 5432},
+            "upstream": {"port": 5432, "tlsMode": "VERIFY_FULL"},
+            "database": "orders",
+            "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}],
+        }
+
+    def test_postgresql_resource_with_port_and_gateway_namespace_annotations(
+        self, example_postgresql_service_body
+    ):
+        annotations = example_postgresql_service_body.metadata["annotations"]
+        annotations["resource.twingate.com/gatewayNamespace"] = "gateway-namespace"
+        annotations["resource.twingate.com/downstreamPort"] = "6432"
+        annotations["resource.twingate.com/upstreamPort"] = "5432"
+
+        result = service_to_twingate_resource(
+            example_postgresql_service_body, "default"
+        )
+
+        assert result["spec"]["gatewayRef"] == {
+            "name": "example-gateway",
+            "namespace": "gateway-namespace",
+        }
+        assert result["spec"]["downstream"] == {"port": 6432}
+        assert result["spec"]["upstream"] == {"port": 5432, "tlsMode": "VERIFY_FULL"}
+
+    def test_postgresql_resource_without_database(
+        self, example_postgresql_service_body
+    ):
+        del example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/database"
+        ]
+
+        result = service_to_twingate_resource(
+            example_postgresql_service_body, "default"
+        )
+
+        assert "database" not in result["spec"]
+
+    def test_postgresql_resource_without_gateway_name(
+        self, example_postgresql_service_body
+    ):
+        del example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/gatewayName"
+        ]
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/gatewayName annotation is required for "
+            r"PostgreSQL resources",
+        ):
+            service_to_twingate_resource(example_postgresql_service_body, "default")
+
+    def test_postgresql_resource_without_auths(self, example_postgresql_service_body):
+        del example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/auths"
+        ]
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/auths annotation is required",
+        ):
+            service_to_twingate_resource(example_postgresql_service_body, "default")
+
+    @pytest.mark.parametrize(
+        "auths", ["not-json", '{"password": {"user": "viewer"}}', '["password"]']
+    )
+    def test_postgresql_resource_invalid_auths(
+        self, example_postgresql_service_body, auths
+    ):
+        example_postgresql_service_body.metadata["annotations"][
+            "resource.twingate.com/auths"
+        ] = auths
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=r"resource.twingate.com/auths annotation must be a JSON list",
+        ):
+            service_to_twingate_resource(example_postgresql_service_body, "default")
+
+    @pytest.mark.parametrize(
+        ("annotation", "value"),
+        [
+            ("resource.twingate.com/downstreamTLSMode", "NONE"),
+            ("resource.twingate.com/requestHeaderRewrites", '{"Host": "example.com"}'),
+        ],
+    )
+    def test_postgresql_resource_rejects_web_app_only_annotations(
+        self, example_postgresql_service_body, annotation, value
+    ):
+        example_postgresql_service_body.metadata["annotations"][annotation] = value
+
+        with pytest.raises(
+            kopf.PermanentError,
+            match=rf"{annotation} annotation is not supported for PostgreSQL resources",
+        ):
+            service_to_twingate_resource(example_postgresql_service_body, "default")
 
 
 class TestK8sGetTwingateResource:

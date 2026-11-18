@@ -1,4 +1,3 @@
-import time
 from unittest.mock import ANY
 
 from tests_integration.utils import (
@@ -91,8 +90,18 @@ def test_service_flows(run_kopf, random_name_generator):
             ],
             "json",
         )
-        time.sleep(2)
-        tgr = kubectl_get("twingateresource", resource_name)
+        tgr = kubectl_wait_object(
+            "twingateresource",
+            resource_name,
+            lambda o: (
+                {"end": 443, "start": 443}
+                in o.get("spec", {})
+                .get("protocols", {})
+                .get("tcp", {})
+                .get("ports", [])
+            ),
+            description="the added 443 port",
+        )
         assert tgr["spec"] == {
             "address": f"{service_name}.default.svc.cluster.local",
             "alias": "myapp.internal",
@@ -124,8 +133,12 @@ def test_service_flows(run_kopf, random_name_generator):
             ],
             "json",
         )
-        time.sleep(2)
-        tgr = kubectl_get("twingateresource", resource_name)
+        tgr = kubectl_wait_object(
+            "twingateresource",
+            resource_name,
+            lambda o: o.get("spec", {}).get("alias") == "myappchanged.internal",
+            description="the updated alias",
+        )
         assert tgr["spec"]["alias"] == "myappchanged.internal"
 
         # Test removing the service annotations and labels updates the resource
@@ -143,8 +156,17 @@ def test_service_flows(run_kopf, random_name_generator):
             ],
             "json",
         )
-        time.sleep(2)
-        tgr = kubectl_get("twingateresource", resource_name)
+        # Both come from the same replace_namespaced_custom_object call in the
+        # service handler, so one predicate covering both is correct.
+        tgr = kubectl_wait_object(
+            "twingateresource",
+            resource_name,
+            lambda o: (
+                "alias" not in o.get("spec", {})
+                and o.get("metadata", {}).get("labels") == {"env": "dev"}
+            ),
+            description="the removed alias and team label",
+        )
         assert "alias" not in tgr["spec"]
         assert tgr["metadata"]["labels"] == {"env": "dev"}
 
@@ -220,8 +242,8 @@ def test_service_flows_annotation_removed(run_kopf, random_name_generator):
             ],
             "json",
         )
-        time.sleep(2)
-        # Test resource was deleted
+        # Test resource was deleted. No sleep needed: kubectl_delete_wait polls
+        # for the object to disappear, which is exactly what we are waiting on.
         kubectl_delete_wait("twingateresource", resource_name, perform_deletion=False)
 
         # cleanup
@@ -296,8 +318,8 @@ def test_service_flows_annotation_changed_to_false(run_kopf, random_name_generat
             ],
             "json",
         )
-        time.sleep(2)
-        # Test resource was deleted
+        # Test resource was deleted. No sleep needed: kubectl_delete_wait polls
+        # for the object to disappear, which is exactly what we are waiting on.
         kubectl_delete_wait("twingateresource", resource_name, perform_deletion=False)
 
         # cleanup

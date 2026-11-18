@@ -239,16 +239,20 @@ class TestResolveServiceAddress:
         with pytest.raises(kopf.PermanentError):
             resolve_service_address("twingate", "gateway", 443)
 
+    @pytest.mark.parametrize(
+        ("ip", "expected"),
+        [("203.0.113.10", "203.0.113.10:8443"), ("2001:db8::1", "[2001:db8::1]:8443")],
+    )
     @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
-    def test_load_balancer_resolves_to_ip(self, core_api_mock):
-        ingress = [MagicMock(ip="203.0.113.10", hostname=None)]
+    def test_load_balancer_resolves_to_ip(self, core_api_mock, ip, expected):
+        ingress = [MagicMock(ip=ip, hostname=None)]
         core_api_mock.return_value.read_namespaced_service.return_value = _service(
             "LoadBalancer", ingress
         )
 
         address = resolve_service_address("twingate", "gateway", 8443)
 
-        assert address == "203.0.113.10:8443"
+        assert address == expected
 
     @patch("app.utils_k8s.kubernetes.client.CoreV1Api")
     def test_load_balancer_resolves_to_hostname(self, core_api_mock):

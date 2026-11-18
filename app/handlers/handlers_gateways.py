@@ -9,6 +9,7 @@ from app.api.exceptions import GraphQLMutationError
 from app.crds import GatewaySpec, TwingateCertificateAuthorityCRD, TwingateGatewayCRD
 from app.handlers.base import fail, success
 from app.handlers.handlers_certificate_authorities import try_delete_ca
+from app.utils import join_host_port
 from app.utils_k8s import (
     k8s_get_twingate_custom_object,
     k8s_patch_twingate_custom_object,
@@ -30,7 +31,7 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
             gw_spec.service_ref.port,
         )
     else:
-        address = f"{gw_spec.address.host}:{gw_spec.address.port}"
+        address = join_host_port(gw_spec.address.host, gw_spec.address.port)
     x509_ca_id = resolve_ref_to_twingate_id(
         TwingateCertificateAuthorityCRD.PLURAL,
         gw_spec.x509_certificate_authority_ref.resolve_namespace(owner_namespace),

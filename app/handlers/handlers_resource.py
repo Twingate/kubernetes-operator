@@ -45,7 +45,12 @@ def _repair_missing_gateway_ref(name, namespace, spec, patch, logger) -> bool:
     # Only adopt a Gateway whose serviceRef points at the Service this Resource was
     # generated from, so a same-named but unrelated Gateway can't capture the access.
     # serviceRef.namespace defaults to the Gateway's own, matching resolve_namespace().
-    service_ref = gateway.get("spec", {}).get("serviceRef", {})
+    service_ref = gateway.get("spec", {}).get("serviceRef")
+    if service_ref is None:
+        raise kopf.PermanentError(
+            f"TwingateGateway '{gateway_name}' sets an explicit address instead of "
+            f"a serviceRef; set gatewayRef on '{name}' explicitly."
+        )
     service_ref_namespace = service_ref.get("namespace") or namespace
     if service_ref.get("name") != gateway_name or service_ref_namespace != namespace:
         raise kopf.PermanentError(

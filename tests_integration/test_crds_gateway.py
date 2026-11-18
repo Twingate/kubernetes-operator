@@ -216,7 +216,15 @@ def test_service_ref_port_out_of_range(unique_resource_name, port):
     assert "spec.serviceRef.port" in stderr
 
 
-def test_address(unique_resource_name):
+@pytest.mark.parametrize(
+    ("host", "port"),
+    [
+        ("gateway.corp.internal", 8443),
+        ("10.0.0.1", 1),
+        ("gateway.corp.internal", 65535),
+    ],
+)
+def test_address(unique_resource_name, host, port):
     result = kubectl_create(f"""
         apiVersion: twingate.com/v1beta
         kind: TwingateGateway
@@ -224,8 +232,8 @@ def test_address(unique_resource_name):
           name: {unique_resource_name}
         spec:
           address:
-            host: gateway.corp.internal
-            port: 8443
+            host: "{host}"
+            port: {port}
           x509CertificateAuthorityRef:
             name: my-ca
     """)
@@ -233,7 +241,7 @@ def test_address(unique_resource_name):
     assert result.returncode == 0
 
     data = kubectl_get("tggw", unique_resource_name)
-    assert data["spec"]["address"] == {"host": "gateway.corp.internal", "port": 8443}
+    assert data["spec"]["address"] == {"host": host, "port": port}
 
     kubectl_delete("tggw", unique_resource_name)
 
@@ -241,9 +249,12 @@ def test_address(unique_resource_name):
 @pytest.mark.parametrize(
     ("address", "error"),
     [
-        ("port: 443", "spec.address.host: Required"),
-        ('host: ""', "spec.address.host"),
-        ("host: gateway.corp.internal", "spec.address.port: Required"),
+        ("{port: 443}", "spec.address.host: Required"),
+        (
+            '{host: "", port: 443}',
+            "spec.address.host in body should be at least 1 chars long",
+        ),
+        ("{host: gateway.corp.internal}", "spec.address.port: Required"),
     ],
 )
 def test_address_field_invalid(unique_resource_name, address, error):
@@ -254,8 +265,7 @@ def test_address_field_invalid(unique_resource_name, address, error):
             metadata:
               name: {unique_resource_name}
             spec:
-              address:
-                {address}
+              address: {address}
               x509CertificateAuthorityRef:
                 name: my-ca
         """)

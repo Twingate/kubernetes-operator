@@ -5,6 +5,8 @@ import kopf
 import kubernetes
 from urllib3.util import create_urllib3_context
 
+from app.utils import join_host_port
+
 
 class NonStrictX509RESTClientObject(kubernetes.client.rest.RESTClientObject):
     """A ``kubernetes`` REST client whose SSL context skips RFC 5280 strict checks."""
@@ -190,4 +192,4 @@ def resolve_service_address(
             f"'{service_type}'; expected ClusterIP, NodePort, or LoadBalancer."
         )
 
-    return f"{host}:{port}"
+    return join_host_port(host, port)

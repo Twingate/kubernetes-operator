@@ -116,15 +116,25 @@ class TestRepairMissingGatewayRef:
         assert patch_mock.spec == {}
 
     @pytest.mark.parametrize(
-        "service_ref",
-        [{"name": "unrelated"}, {"name": "gw", "namespace": "other"}],
+        ("gateway_spec", "error"),
+        [
+            ({"serviceRef": {"name": "unrelated"}}, "references Service"),
+            (
+                {"serviceRef": {"name": "gw", "namespace": "other"}},
+                "references Service",
+            ),
+            (
+                {"address": {"host": "gateway.corp.internal", "port": 8443}},
+                "sets an explicit address",
+            ),
+        ],
     )
-    def test_refuses_a_gateway_referencing_a_different_service(
-        self, mock_get_custom_object, patch_mock, service_ref
+    def test_refuses_a_gateway_not_referencing_the_service(
+        self, mock_get_custom_object, patch_mock, gateway_spec, error
     ):
-        mock_get_custom_object.return_value = {"spec": {"serviceRef": service_ref}}
+        mock_get_custom_object.return_value = {"spec": gateway_spec}
 
-        with pytest.raises(kopf.PermanentError):
+        with pytest.raises(kopf.PermanentError, match=error):
             _repair_missing_gateway_ref(
                 "gw-resource",
                 "default",

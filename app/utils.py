@@ -42,6 +42,12 @@ def to_bool(val: Any) -> bool:
     raise ValueError(f"Cannot convert value to bool: {val}")
 
 
+def join_host_port(host: str, port: int) -> str:
+    if ":" in host:
+        return f"[{host}]:{port}"
+    return f"{host}:{port}"
+
+
 def validate_pem_x509_certificate(value: str):
     try:
         x509.load_pem_x509_certificate(value.encode())

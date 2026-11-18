@@ -28,6 +28,7 @@ def test_gateway_deserialization(sample_gateway_object):
     assert gateway.spec.service_ref.name == "my-gateway-svc"
     assert gateway.spec.service_ref.namespace is None
     assert gateway.spec.service_ref.port == 443
+    assert gateway.spec.address is None
     assert gateway.spec.x509_certificate_authority_ref.name == "my-ca"
     assert gateway.spec.x509_certificate_authority_ref.namespace is None
 
@@ -51,9 +52,19 @@ def test_gateway_remote_network_id_override(sample_gateway_object):
     assert gateway.spec.remote_network_id == "UmVtb3RlTmV0d29yazo5OTkK"
 
 
-def test_gateway_service_ref_required():
-    with pytest.raises(ValidationError, match="serviceRef"):
-        GatewaySpec(x509_certificate_authority_ref={"name": "my-ca"})
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {},
+        {
+            "service_ref": {"name": "my-gateway-svc", "port": 443},
+            "address": {"host": "gateway.corp.internal", "port": 8443},
+        },
+    ],
+)
+def test_gateway_service_ref_or_address_required(fields):
+    with pytest.raises(ValidationError, match="exactly one of serviceRef or address"):
+        GatewaySpec(**fields, x509_certificate_authority_ref={"name": "my-ca"})
 
 
 def test_gateway_service_ref_port_required():
@@ -69,6 +80,27 @@ def test_gateway_service_ref_port_out_of_range(port):
     with pytest.raises(ValidationError, match="port"):
         GatewaySpec(
             service_ref={"name": "my-gateway-svc", "port": port},
+            x509_certificate_authority_ref={"name": "my-ca"},
+        )
+
+
+def test_gateway_address(sample_gateway_object):
+    del sample_gateway_object["spec"]["serviceRef"]
+    sample_gateway_object["spec"]["address"] = {
+        "host": "gateway.corp.internal",
+        "port": 8443,
+    }
+    gateway = TwingateGatewayCRD(**sample_gateway_object)
+    assert gateway.spec.service_ref is None
+    assert gateway.spec.address.host == "gateway.corp.internal"
+    assert gateway.spec.address.port == 8443
+
+
+@pytest.mark.parametrize("port", [0, 65536])
+def test_gateway_address_port_out_of_range(port):
+    with pytest.raises(ValidationError, match="port"):
+        GatewaySpec(
+            address={"host": "gateway.corp.internal", "port": port},
             x509_certificate_authority_ref={"name": "my-ca"},
         )
 

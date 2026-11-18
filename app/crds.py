@@ -411,6 +411,12 @@ class _ServiceRef(_KubernetesObjectRef):
     port: Port
 
 
+class _GatewayAddress(BaseModel):
+    # The backend accepts a DNS name or an IPv4 address.
+    host: str
+    port: Port
+
+
 class GatewaySpec(BaseModel):
     model_config = ConfigDict(
         frozen=True, populate_by_name=True, alias_generator=to_camel
@@ -420,13 +426,22 @@ class GatewaySpec(BaseModel):
     remote_network_id: str = Field(
         default_factory=lambda: get_settings().remote_network_id
     )
-    # Reference to the Service fronting the Gateway. The operator resolves the
-    # host from the Service and combines it with `serviceRef.port` into the
-    # `status.address` the Twingate Client connects to.
-    service_ref: _ServiceRef
+    # The operator resolves the host from the Service and combines it with
+    # `serviceRef.port` into the `status.address` the Twingate Client connects to.
+    service_ref: _ServiceRef | None = None
+    # Explicit address, for when Connectors reach the Gateway indirectly
+    # (e.g. through a proxy, ingress, or private endpoint).
+    address: _GatewayAddress | None = None
     # Reference to the TwingateCertificateAuthority whose backend id signs this
     # Gateway's TLS certs.
     x509_certificate_authority_ref: _KubernetesObjectRef
+
+    @model_validator(mode="after")
+    def check_service_ref_or_address(self):
+        if (self.service_ref is None) == (self.address is None):
+            raise ValueError("exactly one of serviceRef or address must be set")
+
+        return self
 
 
 class TwingateGatewayCRD(BaseK8sModel):

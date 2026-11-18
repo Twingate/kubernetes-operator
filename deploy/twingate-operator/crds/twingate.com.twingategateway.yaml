@@ -17,10 +17,12 @@ spec:
             spec:
               type: object
               description: "TwingateGatewaySpec defines the desired state of TwingateGateway"
-              required: ["serviceRef", "x509CertificateAuthorityRef"]
+              required: ["x509CertificateAuthorityRef"]
               x-kubernetes-validations:
                 - rule: (!has(oldSelf.remoteNetworkId) || self.remoteNetworkId == oldSelf.remoteNetworkId)
                   message: "remoteNetworkId is immutable once set"
+                - rule: has(self.serviceRef) != has(self.address)
+                  message: "exactly one of serviceRef or address must be set"
               properties:
                 id:
                   type: string
@@ -32,7 +34,7 @@ spec:
                 serviceRef:
                   type: object
                   required: ["name", "port"]
-                  description: "Reference to the Service fronting the Gateway. The operator resolves the host from the Service and combines it with port into status.address."
+                  description: "Reference to the Service fronting the Gateway. The operator resolves the host from the Service and combines it with port into status.address. Mutually exclusive with address."
                   properties:
                     name:
                       type: string
@@ -41,6 +43,20 @@ spec:
                       type: string
                       nullable: true
                       description: "Namespace of the Service object. Defaults to the TwingateGateway's own namespace when omitted."
+                    port:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      description: "Port the Gateway is reachable on."
+                address:
+                  type: object
+                  required: ["host", "port"]
+                  description: "Address Connectors dial to reach the Gateway, for when they reach it indirectly, e.g. through a proxy, ingress, or private endpoint. Mutually exclusive with serviceRef."
+                  properties:
+                    host:
+                      type: string
+                      minLength: 1
+                      description: "DNS name or IPv4 address of the Gateway."
                     port:
                       type: integer
                       minimum: 1

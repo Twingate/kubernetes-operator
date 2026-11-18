@@ -9,6 +9,7 @@ from app.api.exceptions import GraphQLMutationError
 from app.crds import GatewaySpec, TwingateCertificateAuthorityCRD, TwingateGatewayCRD
 from app.handlers.base import fail, success
 from app.handlers.handlers_certificate_authorities import try_delete_ca
+from app.utils import join_host_port
 from app.utils_k8s import (
     k8s_get_twingate_custom_object,
     k8s_patch_twingate_custom_object,
@@ -23,22 +24,23 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
     settings = memo.twingate_settings
     client = TwingateAPIClient(settings, logger=logger)
 
-    # Resolve both references before mutating status so a TemporaryError from
-    # either resolver doesn't leave status advertising an address for a Gateway
-    # that was never created/updated.
-    address = resolve_service_address(
-        gw_spec.service_ref.resolve_namespace(owner_namespace),
-        gw_spec.service_ref.name,
-        gw_spec.service_ref.port,
-    )
+    if gw_spec.service_ref:
+        address = resolve_service_address(
+            gw_spec.service_ref.resolve_namespace(owner_namespace),
+            gw_spec.service_ref.name,
+            gw_spec.service_ref.port,
+        )
+    else:
+        address = join_host_port(gw_spec.address.host, gw_spec.address.port)
     x509_ca_id = resolve_ref_to_twingate_id(
         TwingateCertificateAuthorityCRD.PLURAL,
         gw_spec.x509_certificate_authority_ref.resolve_namespace(owner_namespace),
         gw_spec.x509_certificate_authority_ref.name,
     )
-    patch.status["address"] = address
-    patch.status["x509CaId"] = x509_ca_id
 
+    # Status is written only after the backend accepts the mutation, so a failed
+    # resolve or a rejected address leaves it describing the backend Gateway and
+    # keeps the previous x509CaId for CA cleanup on the next successful reconcile.
     if gw_spec.id and client.get_gateway(gw_spec.id) is not None:
         logger.info("Updating gateway %s", gw_spec.id)
         client.gateway_update(
@@ -47,6 +49,8 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
             address=address,
             x509_ca_id=x509_ca_id,
         )
+        patch.status["address"] = address
+        patch.status["x509CaId"] = x509_ca_id
         old_x509_ca_id = (status or {}).get("x509CaId")
         if old_x509_ca_id and old_x509_ca_id != x509_ca_id:
             try_delete_ca(client, old_x509_ca_id, logger)
@@ -62,6 +66,8 @@ def _reconcile_gateway(body, spec, logger, memo, patch, status=None):
         x509_ca_id=x509_ca_id,
     )
     patch.spec["id"] = gateway.id
+    patch.status["address"] = address
+    patch.status["x509CaId"] = x509_ca_id
     kopf.info(
         body, reason="Success", message=f"Created Gateway on Twingate as {gateway.id}"
     )

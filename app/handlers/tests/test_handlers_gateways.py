@@ -36,11 +36,12 @@ def mock_resolve_ref_to_twingate_id():
         yield m
 
 
-def _spec(*, with_id=False):
-    spec = {
-        "serviceRef": {"name": "my-gateway-svc", "port": 443},
-        "x509CertificateAuthorityRef": {"name": "my-ca"},
-    }
+def _spec(*, with_id=False, address=None):
+    spec = {"x509CertificateAuthorityRef": {"name": "my-ca"}}
+    if address:
+        spec["address"] = address
+    else:
+        spec["serviceRef"] = {"name": "my-gateway-svc", "port": 443}
     if with_id:
         spec["id"] = "gateway-id"
     return spec
@@ -100,6 +101,28 @@ class TestGatewayCreateUpdateHandler:
             remote_network_id="UmVtb3RlTmV0d29yazo5OTkK",
             x509_ca_id="ca-backend-id",
         )
+
+    def test_create_with_address(
+        self,
+        kopf_info_mock,
+        mock_api_client,
+        mock_resolve_service_address,
+        call_create_update,
+    ):
+        mock_api_client.gateway_create.return_value = Gateway(
+            id="new-gateway-id", address="addr"
+        )
+        spec = _spec(address={"host": "gateway.corp.internal", "port": 8443})
+
+        _result, patch_mock = call_create_update(spec)
+
+        mock_resolve_service_address.assert_not_called()
+        mock_api_client.gateway_create.assert_called_once_with(
+            address="gateway.corp.internal:8443",
+            remote_network_id="UmVtb3RlTmV0d29yazoxMjMK",
+            x509_ca_id="ca-backend-id",
+        )
+        assert patch_mock.status["address"] == "gateway.corp.internal:8443"
 
     def test_update_existing(self, mock_api_client, call_create_update):
         mock_api_client.get_gateway.return_value = Gateway(
@@ -206,6 +229,7 @@ class TestGatewayCreateUpdateHandler:
 
         assert result["success"] is False
         assert patch_mock.spec == {}
+        assert patch_mock.status == {}
 
 
 class TestGatewayReconciler:

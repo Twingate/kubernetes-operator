@@ -436,6 +436,13 @@ class GatewaySpec(BaseModel):
     # Gateway's TLS certs.
     x509_certificate_authority_ref: _KubernetesObjectRef
 
+    @model_validator(mode="after")
+    def check_service_ref_or_address(self):
+        if (self.service_ref is None) == (self.address is None):
+            raise ValueError("exactly one of serviceRef or address must be set")
+
+        return self
+
 
 class TwingateGatewayCRD(BaseK8sModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="allow")

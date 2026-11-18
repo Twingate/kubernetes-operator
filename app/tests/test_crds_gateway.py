@@ -52,6 +52,21 @@ def test_gateway_remote_network_id_override(sample_gateway_object):
     assert gateway.spec.remote_network_id == "UmVtb3RlTmV0d29yazo5OTkK"
 
 
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {},
+        {
+            "service_ref": {"name": "my-gateway-svc", "port": 443},
+            "address": {"host": "gateway.corp.internal", "port": 8443},
+        },
+    ],
+)
+def test_gateway_service_ref_or_address_required(fields):
+    with pytest.raises(ValidationError, match="exactly one of serviceRef or address"):
+        GatewaySpec(**fields, x509_certificate_authority_ref={"name": "my-ca"})
+
+
 def test_gateway_service_ref_port_required():
     with pytest.raises(ValidationError, match="port"):
         GatewaySpec(

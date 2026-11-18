@@ -229,6 +229,7 @@ class TestGatewayCreateUpdateHandler:
 
         assert result["success"] is False
         assert patch_mock.spec == {}
+        assert patch_mock.status == {}
 
 
 class TestGatewayReconciler:

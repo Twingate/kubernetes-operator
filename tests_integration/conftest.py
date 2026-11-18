@@ -10,7 +10,7 @@ import kopf
 import pytest
 from kopf.testing import KopfRunner
 
-from .utils import DELETE_TIMEOUT, kubectl
+from .utils import DELETE_TIMEOUT, kubectl, poll_until
 
 
 @pytest.fixture(scope="session")
@@ -101,7 +101,25 @@ def run_kopf(kopf_runner_args, kopf_settings):
             finally:
                 if cleanup:
                     kubectl("delete twingate --all", timeout=DELETE_TIMEOUT)
-                    time.sleep(5)
+
+                    remaining: list[str] = []
+
+                    def _all_deleted() -> bool | None:
+                        result = kubectl("get twingate -o name")
+                        remaining[:] = result.stdout.decode().split()
+                        return True if not remaining else None
+
+                    # The delete above already blocks on finalizers, so this
+                    # normally returns on the first poll. It replaces a blind
+                    # sleep(5) that ran on every cleanup teardown.
+                    poll_until(
+                        _all_deleted,
+                        timeout=DELETE_TIMEOUT,
+                        description="all twingate resources to be deleted",
+                        last_seen=lambda: remaining,
+                    )
+                    # Brief settle before the operator is torn down.
+                    time.sleep(0.5)
 
         assert runner.exception is None
         assert runner.exit_code == 0

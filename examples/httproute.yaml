@@ -1,0 +1,33 @@
+# Generates a Network TwingateResource "my-app-httproute-resource" that points at
+# the parent Gateway's address (status.addresses) with the route's hostname as its
+# alias, restricted to the ports of the Gateway listeners the route attaches to.
+# Clients keep the hostname for the Host header and SNI, so the Gateway routes and
+# terminates TLS as usual. The operator watches the Gateway, so changes to its
+# address or listeners update the TwingateResource.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-app
+  annotations:
+    resource.twingate.com: "true"
+    # Optional. The hostname to use as the alias. Required unless the route has
+    # exactly one hostname without a wildcard; must match one of its hostnames.
+    # resource.twingate.com/hostname: "app.internal.example.com"
+    # Optional. The parent Gateway to route through, as "name" or "namespace/name".
+    # Required unless the route has exactly one parent Gateway.
+    # resource.twingate.com/parentGateway: "infra/internal-gateway"
+    # Optional. Same as for Services: name, securityPolicyId, isVisible,
+    # isBrowserShortcutEnabled, syncLabels. Only the Network type is supported, and
+    # the alias is always the route's hostname.
+    resource.twingate.com/name: "My App"
+spec:
+  parentRefs:
+    - name: internal-gateway
+      namespace: infra
+      sectionName: https
+  hostnames:
+    - app.internal.example.com
+  rules:
+    - backendRefs:
+        - name: my-app
+          port: 8080

@@ -31,3 +31,13 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # HTTPRoutes annotated `resource.twingate.com`: watched and patched for Kopf's
+  # state. Their parent Gateways are watched, read-only, for address and listener
+  # changes.
+  - apiGroups: [gateway.networking.k8s.io]
+    resources: [httproutes, httproutes/status]
+    verbs: [list, watch, patch, get]
+  - apiGroups: [gateway.networking.k8s.io]
+    resources: [gateways]
+    verbs: [get, list, watch]

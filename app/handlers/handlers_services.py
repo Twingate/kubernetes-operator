@@ -1,42 +1,19 @@
 import json
-from collections.abc import Callable
 from enum import StrEnum
-from typing import cast
 
 import kopf
 import kubernetes
 from kopf import Body
 
 from app.crds import ResourceType, TLSClientMode, TLSServerMode
-from app.utils import to_bool
+from app.handlers.annotated_resources import (
+    ANNOTATION,
+    create_or_update_twingate_resource,
+    delete_twingate_resource,
+    extra_annotations_spec,
+    k8s_get_twingate_resource,
+)
 
-
-def k8s_get_twingate_resource(
-    namespace: str, name: str, kapi: kubernetes.client.CustomObjectsApi | None = None
-) -> dict | None:
-    kapi = kapi or kubernetes.client.CustomObjectsApi()
-    try:
-        return cast(
-            dict,
-            kapi.get_namespaced_custom_object(
-                "twingate.com", "v1beta", namespace, "twingateresources", name
-            ),
-        )
-    except kubernetes.client.exceptions.ApiException as ex:
-        if ex.status == 404:
-            return None
-        raise
-
-
-ALLOWED_EXTRA_ANNOTATIONS: list[tuple[str, Callable]] = [
-    ("name", str),
-    ("alias", str),
-    ("isBrowserShortcutEnabled", to_bool),
-    ("securityPolicyId", str),
-    ("isVisible", to_bool),
-    ("syncLabels", to_bool),
-    ("type", str),
-]
 GATEWAY_NAME_ANNOTATION = "resource.twingate.com/gatewayName"
 GATEWAY_NAMESPACE_ANNOTATION = "resource.twingate.com/gatewayNamespace"
 DOWNSTREAM_PORT_ANNOTATION = "resource.twingate.com/downstreamPort"
@@ -64,9 +41,7 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
         },
     }
 
-    for key, convert_f in ALLOWED_EXTRA_ANNOTATIONS:
-        if value := meta.annotations.get(f"resource.twingate.com/{key}"):
-            result["spec"][key] = convert_f(value)
+    result["spec"] |= extra_annotations_spec(meta.annotations)
 
     match result["spec"].get("type"):
         case ResourceType.WEB_APP:
@@ -211,103 +186,30 @@ def parse_tls_mode_annotation[T: StrEnum](
         ) from None
 
 
-@kopf.on.resume("service", annotations={"resource.twingate.com": "true"})
-@kopf.on.create("service", annotations={"resource.twingate.com": "true"})
-@kopf.on.update("service", annotations={"resource.twingate.com": "true"})
+@kopf.on.resume("service", annotations={ANNOTATION: "true"})
+@kopf.on.create("service", annotations={ANNOTATION: "true"})
+@kopf.on.update("service", annotations={ANNOTATION: "true"})
 def twingate_service_create(body, spec, namespace, meta, logger, reason, **_):
     logger.info("twingate_service_create: %s", body)
 
     resource_subobject = service_to_twingate_resource(body, namespace)
-    kopf.adopt(resource_subobject)
-
-    resource_object_name = resource_subobject["metadata"]["name"]
-
     kapi = kubernetes.client.CustomObjectsApi()
-    if existing_resource_object := k8s_get_twingate_resource(
-        namespace, resource_object_name, kapi
-    ):
-        delete_if_resource_type_changes(
-            kapi, namespace, existing_resource_object, resource_subobject, body, logger
-        )
-
-        logger.info("TwingateResource already exists: %s", existing_resource_object)
-        existing_resource_object["spec"] = {
-            "id": existing_resource_object["spec"]["id"],
-            **resource_subobject["spec"],
-        }
-        existing_resource_object["metadata"]["labels"] = resource_subobject["metadata"][
-            "labels"
-        ]
-        kapi.replace_namespaced_custom_object(
-            "twingate.com",
-            "v1beta",
-            namespace,
-            "twingateresources",
-            resource_object_name,
-            existing_resource_object,
-        )
-        kopf.info(
-            body,
-            reason=f"twingate_service_create ({reason.value})",
-            message=f"Updated TwingateResource {resource_object_name}",
-        )
-    else:
-        api_response = kapi.create_namespaced_custom_object(
-            "twingate.com", "v1beta", namespace, "twingateresources", resource_subobject
-        )
-        logger.info("create_namespaced_custom_object response: %s", api_response)
-        kopf.info(
-            body,
-            reason=f"twingate_service_create ({reason.value})",
-            message=f"Created TwingateResource {resource_object_name}",
-        )
-
-
-def delete_if_resource_type_changes(
-    kapi: kubernetes.client.CustomObjectsApi,
-    namespace: str,
-    existing_resource_object: dict,
-    new_resource_object: dict,
-    service_body: Body,
-    logger,
-) -> None:
-    """Delete a generated TwingateResource whose type no longer matches the Service.
-
-    ``spec.type`` is immutable, so the type change is applied by deleting the Resource
-    and raising ``kopf.TemporaryError`` so a later retry registers the replacement.
-    """
-    resource_object_name = existing_resource_object["metadata"]["name"]
-    existing_type = existing_resource_object["spec"].get("type", ResourceType.NETWORK)
-    new_type = new_resource_object["spec"].get("type", ResourceType.NETWORK)
-    if existing_type == new_type:
-        return
-
-    logger.info(
-        "Deleting TwingateResource %s to recreate it as %s",
-        resource_object_name,
-        new_type,
-    )
-    kapi.delete_namespaced_custom_object(
-        "twingate.com", "v1beta", namespace, "twingateresources", resource_object_name
-    )
-    kopf.warn(
-        service_body,
-        reason="twingate_service_create",
-        message=f"Recreating TwingateResource {resource_object_name} as {new_type}: "
-        "the Twingate Resource is deprovisioned and recreated with a new ID, and group "
-        "access is re-granted on the next TwingateResourceAccess reconcile",
-    )
-    raise kopf.TemporaryError(
-        f"Deleting TwingateResource {resource_object_name} to recreate it as "
-        f"{new_type}.",
-        delay=5,
+    create_or_update_twingate_resource(
+        kapi,
+        body,
+        namespace,
+        resource_subobject,
+        existing_resource_object=k8s_get_twingate_resource(
+            namespace, resource_subobject["metadata"]["name"], kapi
+        ),
+        handler="twingate_service_create",
+        reason=reason,
+        logger=logger,
     )
 
 
 # Use Tuple for the field to properly escape dots in the annotation key.
-@kopf.on.update(
-    "service", field=("metadata", "annotations", "resource.twingate.com"), old="true"
-)
+@kopf.on.update("service", field=("metadata", "annotations", ANNOTATION), old="true")
 def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_):
     logger.info("twingate_service_annotation_removed: %s", spec)
 
@@ -335,18 +237,13 @@ def twingate_service_annotation_removed(body, spec, namespace, meta, logger, **_
             )
             return
 
-        logger.info("Deleting TwingateResource: %s", existing_resource_object)
-        kapi.delete_namespaced_custom_object(
-            "twingate.com",
-            "v1beta",
-            namespace,
-            "twingateresources",
-            resource_object_name,
-        )
-        kopf.info(
+        delete_twingate_resource(
+            kapi,
             body,
-            reason="twingate_service_annotation_removed",
-            message=f"Deleted TwingateResource {resource_object_name}",
+            namespace,
+            resource_object_name,
+            handler="twingate_service_annotation_removed",
+            logger=logger,
         )
         return
 

@@ -202,7 +202,9 @@ class ResourceSpec(BaseModel):
     id: str | None = None
     name: str
     address: str
-    alias: str | None = None
+    # An empty alias is rejected rather than treated as "no alias", so removing an
+    # alias requires deleting the field or setting it to null.
+    alias: str | None = Field(default=None, min_length=1)
     remote_network_id: str = Field(
         default_factory=lambda: get_settings().remote_network_id
     )

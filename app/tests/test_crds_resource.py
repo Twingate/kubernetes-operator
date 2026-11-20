@@ -1,8 +1,10 @@
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from app.crds import (
+    PostgreSQLAuth,
     ProtocolPolicy,
     ProtocolRange,
     ResourceDownstream,
@@ -564,6 +566,185 @@ def test_web_app_resource_spec_rejects_invalid_tls_mode(field, tls_mode):
             gateway_ref=_KubernetesObjectRef(name="my-gateway"),
             **endpoints,
         )
+
+
+@pytest.fixture
+def postgresql_resource_spec():
+    return {
+        "name": "My PostgreSQL Resource",
+        "address": "postgresql.default.cluster.local",
+        "type": ResourceType.POSTGRESQL,
+        "gateway_ref": _KubernetesObjectRef(name="my-gateway", namespace="twingate"),
+        "downstream": ResourceDownstream(port=5432),
+        "upstream": ResourceUpstream(port=5433, tls_mode=TLSClientMode.VERIFY_FULL),
+        "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}],
+    }
+
+
+def test_postgresql_resource_requires_gateway_ref(postgresql_resource_spec):
+    del postgresql_resource_spec["gateway_ref"]
+
+    with pytest.raises(ValueError, match="PostgreSQL resources require `gatewayRef`"):
+        ResourceSpec(**postgresql_resource_spec)
+
+
+@pytest.mark.parametrize("field", ["downstream", "upstream"])
+def test_postgresql_resource_requires_downstream_and_upstream(
+    postgresql_resource_spec, field
+):
+    del postgresql_resource_spec[field]
+
+    with pytest.raises(
+        ValueError, match="PostgreSQL resources require `downstream` and `upstream`"
+    ):
+        ResourceSpec(**postgresql_resource_spec)
+
+
+@pytest.mark.parametrize("auths", [None, []])
+def test_postgresql_resource_requires_auths(postgresql_resource_spec, auths):
+    postgresql_resource_spec["auths"] = auths
+
+    with pytest.raises(ValueError, match="PostgreSQL resources require `auths`"):
+        ResourceSpec(**postgresql_resource_spec)
+
+
+def test_postgresql_resource_rejects_request_header_rewrites(
+    postgresql_resource_spec,
+):
+    with pytest.raises(
+        ValueError, match="PostgreSQL resources cannot set `requestHeaderRewrites`"
+    ):
+        ResourceSpec(
+            **postgresql_resource_spec,
+            request_header_rewrites=[{"name": "X-Foo", "value": "bar"}],
+        )
+
+
+@pytest.mark.parametrize(
+    "postgresql_fields",
+    [
+        {"database": "orders"},
+        {"auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}]},
+    ],
+)
+def test_non_postgresql_resource_rejects_database_and_auths(postgresql_fields):
+    with pytest.raises(
+        ValueError, match="Only PostgreSQL resources can set `database` or `auths`"
+    ):
+        ResourceSpec(
+            name="My Network Resource",
+            address="network.default.cluster.local",
+            **postgresql_fields,
+        )
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {},
+        {
+            "password": {"user": "viewer", "credential": "prod-viewer"},
+            "awsIam": {"user": "viewer", "region": "us-east-1"},
+        },
+        {"kerberos": {"user": "viewer"}},
+    ],
+)
+def test_postgresql_auth_requires_exactly_one_known_auth_type(auth):
+    with pytest.raises(ValidationError):
+        PostgreSQLAuth.model_validate(auth)
+
+
+@pytest.mark.parametrize(
+    ("auth", "expected_field"),
+    [
+        ({"password": {"user": "viewer", "credential": "prod-viewer"}}, "password"),
+        ({"awsIam": {"user": "viewer", "region": "us-east-1"}}, "aws_iam"),
+        (
+            {"gcpIam": {"impersonateServiceAccount": "a@b.iam.gserviceaccount.com"}},
+            "gcp_iam",
+        ),
+    ],
+)
+def test_postgresql_auth_is_chosen_by_the_key_present(auth, expected_field):
+    parsed = PostgreSQLAuth.model_validate(auth)
+
+    assert parsed.model_fields_set == {expected_field}
+    assert parsed.model_dump(by_alias=True, exclude_none=True) == auth
+
+
+def test_postgresql_gcp_iam_auth_normalizes_impersonate_service_account():
+    auth = PostgreSQLAuth.model_validate(
+        {
+            "gcpIam": {
+                "impersonateServiceAccount": " Viewer@Proj.iam.gserviceaccount.com "
+            }
+        }
+    )
+
+    assert auth.gcp_iam.impersonate_service_account == (
+        "viewer@proj.iam.gserviceaccount.com"
+    )
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {"password": {"user": "viewer", "credential": "prod-viewer"}},
+        {"awsIam": {"user": "viewer", "region": "us-east-1"}},
+        {
+            "awsIam": {
+                "user": "viewer",
+                "region": "us-east-1",
+                "assumeRoleArn": "arn:aws:iam::123456789012:role/gateway-db",
+            }
+        },
+        {
+            "gcpIam": {
+                "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com"
+            }
+        },
+    ],
+)
+def test_postgresql_resource_spec_to_graphql_arguments(postgresql_resource_spec, auth):
+    resource_spec = ResourceSpec(
+        **postgresql_resource_spec | {"auths": [auth]}, database="orders"
+    )
+
+    with patch(
+        "app.crds.resolve_ref_to_twingate_id", return_value="R2F0ZXdheTo5Nwo="
+    ) as resolve_mock:
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={"key": "value"}, owner_namespace="default", exclude={"id"}
+        )
+
+    resolve_mock.assert_called_once_with("twingategateways", "twingate", "my-gateway")
+    assert graphql_arguments == {
+        "name": "My PostgreSQL Resource",
+        "address": "postgresql.default.cluster.local",
+        "alias": None,
+        "remote_network_id": "UmVtb3RlTmV0d29yazoxMjMK",
+        "security_policy_id": None,
+        "is_visible": True,
+        "tags": [{"key": "key", "value": "value"}],
+        "gateway_id": "R2F0ZXdheTo5Nwo=",
+        "downstream": {"port": 5432},
+        "upstream": {"port": 5433, "tlsMode": "VERIFY_FULL"},
+        "database": "orders",
+        "auths": [auth],
+    }
+
+
+def test_postgresql_resource_spec_to_graphql_arguments_defaults_database(
+    postgresql_resource_spec,
+):
+    resource_spec = ResourceSpec(**postgresql_resource_spec)
+
+    with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+        graphql_arguments = resource_spec.to_graphql_arguments(
+            labels={}, owner_namespace="default"
+        )
+
+    assert graphql_arguments["database"] == "postgres"
 
 
 def test_resource_spec_to_graphql_arguments_when_sync_labels_disabled(

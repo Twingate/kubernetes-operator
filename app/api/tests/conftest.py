@@ -11,6 +11,7 @@ from .factories import (
     ConnectorFactory,
     KubernetesResourceFactory,
     NetworkResourceFactory,
+    PostgreSQLResourceFactory,
     WebAppResourceFactory,
 )
 
@@ -19,6 +20,7 @@ register(BaseResourceFactory)
 register(NetworkResourceFactory)
 register(KubernetesResourceFactory)
 register(WebAppResourceFactory)
+register(PostgreSQLResourceFactory)
 
 
 @pytest.fixture

@@ -6,14 +6,8 @@ from typing import cast
 import kopf
 import kubernetes
 from kopf import Body
-from pydantic import ValidationError
 
-from app.crds import (
-    PostgreSQLAuth,
-    ResourceType,
-    TLSClientMode,
-    TLSServerMode,
-)
+from app.crds import ResourceType, TLSClientMode, TLSServerMode
 from app.utils import to_bool
 
 
@@ -50,13 +44,6 @@ DOWNSTREAM_TLS_MODE_ANNOTATION = "resource.twingate.com/downstreamTLSMode"
 UPSTREAM_PORT_ANNOTATION = "resource.twingate.com/upstreamPort"
 UPSTREAM_TLS_MODE_ANNOTATION = "resource.twingate.com/upstreamTLSMode"
 REQUEST_HEADER_REWRITES_ANNOTATION = "resource.twingate.com/requestHeaderRewrites"
-DATABASE_ANNOTATION = "resource.twingate.com/database"
-AUTHS_ANNOTATION = "resource.twingate.com/auths"
-SUPPORTED_RESOURCE_TYPES = [
-    ResourceType.NETWORK,
-    ResourceType.WEB_APP,
-    ResourceType.POSTGRESQL,
-]
 
 
 def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
@@ -84,30 +71,25 @@ def service_to_twingate_resource(service_body: Body, namespace: str) -> dict:
     match result["spec"].get("type"):
         case ResourceType.WEB_APP:
             result["spec"] |= web_app_spec(service_body, namespace)
-        case ResourceType.POSTGRESQL:
-            result["spec"] |= postgresql_spec(service_body, namespace)
         case None | ResourceType.NETWORK:
             result["spec"]["protocols"] = network_protocols(service_body)
         case unsupported:
             raise kopf.PermanentError(
                 f"Unsupported resource type {unsupported!r}; must be one of "
-                f"{[t.value for t in SUPPORTED_RESOURCE_TYPES]}."
+                f"{[ResourceType.NETWORK.value, ResourceType.WEB_APP.value]}."
             )
 
     return result
 
 
-def gateway_spec(
-    service_body: Body, namespace: str, resource_type: ResourceType
-) -> dict:
+def web_app_spec(service_body: Body, namespace: str) -> dict:
     meta = service_body.metadata
     spec = service_body.spec
     service_name = service_body.meta.name
 
     if not (gateway_name := meta.annotations.get(GATEWAY_NAME_ANNOTATION)):
         raise kopf.PermanentError(
-            f"{GATEWAY_NAME_ANNOTATION} annotation is required for {resource_type} "
-            "resources."
+            f"{GATEWAY_NAME_ANNOTATION} annotation is required for WebApp resources."
         )
 
     tcp_ports = [
@@ -122,7 +104,7 @@ def gateway_spec(
         downstream = parse_port_annotation(DOWNSTREAM_PORT_ANNOTATION, downstream_port)
     else:
         downstream = default_service_port(
-            tcp_ports, DOWNSTREAM_PORT_ANNOTATION, service_name, resource_type
+            tcp_ports, DOWNSTREAM_PORT_ANNOTATION, service_name
         )
 
     # upstream is the Service's target port, so an explicit value must match a port
@@ -136,7 +118,7 @@ def gateway_spec(
             )
     else:
         upstream = default_service_port(
-            tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name, resource_type
+            tcp_ports, UPSTREAM_PORT_ANNOTATION, service_name
         )
 
     result: dict = {
@@ -148,21 +130,14 @@ def gateway_spec(
         "upstream": {"port": upstream},
     }
 
-    if upstream_tls_mode := meta.annotations.get(UPSTREAM_TLS_MODE_ANNOTATION):
-        result["upstream"]["tlsMode"] = parse_tls_mode_annotation(
-            UPSTREAM_TLS_MODE_ANNOTATION, upstream_tls_mode, TLSClientMode
-        )
-
-    return result
-
-
-def web_app_spec(service_body: Body, namespace: str) -> dict:
-    meta = service_body.metadata
-    result = gateway_spec(service_body, namespace, ResourceType.WEB_APP)
-
     if downstream_tls_mode := meta.annotations.get(DOWNSTREAM_TLS_MODE_ANNOTATION):
         result["downstream"]["tlsMode"] = parse_tls_mode_annotation(
             DOWNSTREAM_TLS_MODE_ANNOTATION, downstream_tls_mode, TLSServerMode
+        )
+
+    if upstream_tls_mode := meta.annotations.get(UPSTREAM_TLS_MODE_ANNOTATION):
+        result["upstream"]["tlsMode"] = parse_tls_mode_annotation(
+            UPSTREAM_TLS_MODE_ANNOTATION, upstream_tls_mode, TLSClientMode
         )
 
     if rewrites := meta.annotations.get(REQUEST_HEADER_REWRITES_ANNOTATION):
@@ -187,66 +162,6 @@ def web_app_spec(service_body: Body, namespace: str) -> dict:
     return result
 
 
-def postgresql_spec(service_body: Body, namespace: str) -> dict:
-    meta = service_body.metadata
-
-    for annotation in (
-        DOWNSTREAM_TLS_MODE_ANNOTATION,
-        REQUEST_HEADER_REWRITES_ANNOTATION,
-    ):
-        if annotation in meta.annotations:
-            raise kopf.PermanentError(
-                f"{annotation} annotation is not supported for PostgreSQL resources."
-            )
-
-    if not (auths := meta.annotations.get(AUTHS_ANNOTATION)):
-        raise kopf.PermanentError(
-            f"{AUTHS_ANNOTATION} annotation is required for PostgreSQL resources."
-        )
-
-    try:
-        parsed = json.loads(auths)
-    except json.JSONDecodeError as ex:
-        raise kopf.PermanentError(
-            f"{AUTHS_ANNOTATION} annotation is not valid JSON."
-        ) from ex
-
-    invalid_msg = (
-        f"{AUTHS_ANNOTATION} annotation must be a JSON list of one or more auth "
-        "objects, each with exactly one of password, awsIam or gcpIam."
-    )
-    if (
-        not isinstance(parsed, list)
-        or not parsed
-        or not all(isinstance(auth, dict) and len(auth) == 1 for auth in parsed)
-    ):
-        raise kopf.PermanentError(invalid_msg)
-
-    validated_auths = []
-    for auth in parsed:
-        [auth_type] = auth
-        if auth_type not in ("password", "awsIam", "gcpIam"):
-            raise kopf.PermanentError(invalid_msg)
-        try:
-            validated_auths.append(
-                PostgreSQLAuth.model_validate(auth).model_dump(
-                    by_alias=True, exclude_none=True
-                )
-            )
-        except ValidationError as ex:
-            raise kopf.PermanentError(
-                f"{AUTHS_ANNOTATION} annotation has an invalid {auth_type} auth."
-            ) from ex
-
-    result = gateway_spec(service_body, namespace, ResourceType.POSTGRESQL)
-    result["auths"] = validated_auths
-
-    if database := meta.annotations.get(DATABASE_ANNOTATION):
-        result["database"] = database
-
-    return result
-
-
 # Only Network resources use port-based protocols. WebApp resources configure
 # upstream/downstream on the gateway instead.
 def network_protocols(service_body: Body) -> dict:
@@ -266,15 +181,12 @@ def network_protocols(service_body: Body) -> dict:
 
 
 def default_service_port(
-    tcp_ports: list[int],
-    annotation: str,
-    service_name: str,
-    resource_type: ResourceType,
+    tcp_ports: list[int], annotation: str, service_name: str
 ) -> int:
     if len(tcp_ports) != 1:
         raise kopf.PermanentError(
-            f"{annotation} annotation is required for {resource_type} resources unless "
-            f"the Service {service_name} exposes exactly one TCP port."
+            f"{annotation} annotation is required for WebApp resources unless the "
+            f"Service {service_name} exposes exactly one TCP port."
         )
     return tcp_ports[0]
 

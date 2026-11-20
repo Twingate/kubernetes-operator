@@ -25,6 +25,46 @@ def test_spec_is_required(unique_resource_name):
     assert "spec: Required value" in stderr
 
 
+@pytest.mark.parametrize(
+    "alias_line", ["alias: app.internal", "alias: null", "# no alias"]
+)
+def test_alias_accepted(unique_resource_name, alias_line):
+    result = kubectl_create(
+        f"""
+        apiVersion: twingate.com/v1beta
+        kind: TwingateResource
+        metadata:
+            name: {unique_resource_name}
+        spec:
+            name: My K8S Resource
+            address: my.default.cluster.local
+            {alias_line}
+    """
+    )
+
+    assert result.returncode == 0
+    kubectl_delete("tgr", unique_resource_name)
+
+
+def test_alias_cant_be_empty(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            f"""
+            apiVersion: twingate.com/v1beta
+            kind: TwingateResource
+            metadata:
+                name: {unique_resource_name}
+            spec:
+                name: My K8S Resource
+                address: my.default.cluster.local
+                alias: ""
+        """
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.alias in body should be at least 1 chars long" in stderr
+
+
 def test_browser_shortcut_false_allows_wildcard_address(unique_resource_name):
     result = kubectl_create(
         f"""

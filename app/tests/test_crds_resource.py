@@ -471,13 +471,18 @@ def test_network_resource_rejects_downstream_and_upstream():
         )
 
 
-def test_network_resource_rejects_request_header_rewrites():
+@pytest.mark.parametrize(
+    "resource_type",
+    [ResourceType.NETWORK, ResourceType.KUBERNETES, ResourceType.POSTGRESQL],
+)
+def test_non_web_app_resource_rejects_request_header_rewrites(resource_type):
     with pytest.raises(
-        ValueError, match=r"Network resources cannot set .*`requestHeaderRewrites`"
+        ValueError, match="Only WebApp resources can set `requestHeaderRewrites`"
     ):
         ResourceSpec(
-            name="My Network Resource",
-            address="network.default.cluster.local",
+            name="My Resource",
+            address="foo.default.cluster.local",
+            type=resource_type,
             request_header_rewrites=[{"name": "X-Foo", "value": "bar"}],
         )
 
@@ -606,18 +611,6 @@ def test_postgresql_resource_requires_auths(postgresql_resource_spec, auths):
 
     with pytest.raises(ValueError, match="PostgreSQL resources require `auths`"):
         ResourceSpec(**postgresql_resource_spec)
-
-
-def test_postgresql_resource_rejects_request_header_rewrites(
-    postgresql_resource_spec,
-):
-    with pytest.raises(
-        ValueError, match="PostgreSQL resources cannot set `requestHeaderRewrites`"
-    ):
-        ResourceSpec(
-            **postgresql_resource_spec,
-            request_header_rewrites=[{"name": "X-Foo", "value": "bar"}],
-        )
 
 
 @pytest.mark.parametrize(

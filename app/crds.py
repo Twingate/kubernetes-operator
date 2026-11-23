@@ -296,14 +296,16 @@ class ResourceSpec(BaseModel):
     @model_validator(mode="after")
     def check_gateway_ref(self):
         has_gateway_ref = self.gateway_ref is not None
-        has_endpoints = (
-            self.downstream is not None
-            or self.upstream is not None
-            or self.request_header_rewrites is not None
-        )
+        has_endpoints = self.downstream is not None or self.upstream is not None
 
         if self.type != ResourceType.NETWORK and self.protocols is not None:
             raise ValueError("Only Network resources can set `protocols`.")
+
+        if (
+            self.type != ResourceType.WEB_APP
+            and self.request_header_rewrites is not None
+        ):
+            raise ValueError("Only WebApp resources can set `requestHeaderRewrites`.")
 
         if self.type != ResourceType.POSTGRESQL and (
             self.database is not None or self.auths is not None
@@ -316,16 +318,14 @@ class ResourceSpec(BaseModel):
                     raise ValueError("Network resources cannot set `gatewayRef`.")
                 if has_endpoints:
                     raise ValueError(
-                        "Network resources cannot set `downstream`, `upstream`, or "
-                        "`requestHeaderRewrites`."
+                        "Network resources cannot set `downstream` or `upstream`."
                     )
             case ResourceType.KUBERNETES:
                 if not has_gateway_ref:
                     raise ValueError("Kubernetes resources require `gatewayRef`.")
                 if has_endpoints:
                     raise ValueError(
-                        "Kubernetes resources cannot set `downstream`, `upstream`, or "
-                        "`requestHeaderRewrites`."
+                        "Kubernetes resources cannot set `downstream` or `upstream`."
                     )
             case ResourceType.WEB_APP:
                 if not has_gateway_ref:
@@ -340,10 +340,6 @@ class ResourceSpec(BaseModel):
                 if self.downstream is None or self.upstream is None:
                     raise ValueError(
                         "PostgreSQL resources require `downstream` and `upstream`."
-                    )
-                if self.request_header_rewrites is not None:
-                    raise ValueError(
-                        "PostgreSQL resources cannot set `requestHeaderRewrites`."
                     )
                 if not self.auths:
                     raise ValueError("PostgreSQL resources require `auths`.")

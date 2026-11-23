@@ -196,6 +196,12 @@ def test_deserialization(sample_network_resource_object):
     assert crd.metadata.uid == "c560d138-a93a-4463-8b44-d7717851a265"
 
 
+def test_empty_alias_is_rejected(sample_network_resource_object):
+    sample_network_resource_object["spec"]["alias"] = ""
+    with pytest.raises(ValueError, match=r"alias"):
+        TwingateResourceCRD(**sample_network_resource_object)
+
+
 def test_remote_network_id_defaults_to_settings(sample_network_resource_object):
     sample_network_resource_object["spec"].pop("remoteNetworkId", None)
     crd = TwingateResourceCRD(**sample_network_resource_object)

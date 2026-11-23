@@ -46,7 +46,8 @@ spec:
                 alias:
                   type: string
                   nullable: true
-                  description: "Alias of the resource."
+                  minLength: 1
+                  description: "Alias of the resource. Remove the field or set it to null to clear the alias."
                 isBrowserShortcutEnabled:
                   type: boolean
                   default: false

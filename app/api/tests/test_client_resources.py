@@ -8,7 +8,7 @@ from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import (
-    POSTGRESQL_AUTH_FIELDS,
+    POSTGRESQL_AUTH_TYPES,
     BaseResource,
     Diff,
     NetworkResource,
@@ -29,7 +29,7 @@ from app.crds import (
 
 
 def postgresql_resource_response(resource):
-    typenames = {field: name for name, field in POSTGRESQL_AUTH_FIELDS.items()}
+    typenames = {field: name for name, field in POSTGRESQL_AUTH_TYPES.items()}
     return resource.model_dump(by_alias=True) | {
         "auths": [
             {"__typename": typenames[field]}

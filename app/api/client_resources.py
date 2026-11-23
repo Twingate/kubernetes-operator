@@ -360,7 +360,7 @@ class WebAppResource(BaseResource):
         return ResourceSpec(**data)
 
 
-POSTGRESQL_AUTH_FIELDS = {
+POSTGRESQL_AUTH_TYPES = {
     "PostgreSQLPasswordAuth": "password",
     "PostgreSQLAWSIAMAuth": "aws_iam",
     "PostgreSQLGCPIAMAuth": "gcp_iam",
@@ -378,11 +378,11 @@ class PostgreSQLResource(BaseResource):
     @classmethod
     def key_auths_by_typename(cls, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for auth in value:
-            if auth["__typename"] not in POSTGRESQL_AUTH_FIELDS:
+            if auth["__typename"] not in POSTGRESQL_AUTH_TYPES:
                 raise ValueError(
                     f"Unknown PostgreSQL auth type {auth['__typename']!r}."
                 )
-        return [{POSTGRESQL_AUTH_FIELDS[auth["__typename"]]: auth} for auth in value]
+        return [{POSTGRESQL_AUTH_TYPES[auth["__typename"]]: auth} for auth in value]
 
     @staticmethod
     def get_graphql_fragment():

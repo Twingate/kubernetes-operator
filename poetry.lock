@@ -3031,14 +3031,14 @@ files = [
 
 [[package]]
 name = "syrupy"
-version = "7.0.0"
+version = "7.0.2"
 description = "Pytest Snapshot Test Utility"
 optional = false
 python-versions = ">=3.11"
 groups = ["dev"]
 files = [
-    {file = "syrupy-7.0.0-py3-none-any.whl", hash = "sha256:c2f00abec70c444771c999295a166bb0b957da0853a015dff0d0f95930a121f7"},
-    {file = "syrupy-7.0.0.tar.gz", hash = "sha256:2e8733d9b3b42b665143be49f38b7543d77f4243e8fb29545ec410ef467c7b0a"},
+    {file = "syrupy-7.0.2-py3-none-any.whl", hash = "sha256:bb7999d6cc1cce6731154fe46ad98874b484904d3e3fba950e244c5666c53c1b"},
+    {file = "syrupy-7.0.2.tar.gz", hash = "sha256:b35d3efc800a3362c20f24026d1d116b91fcd4578a315745860ec234e023592c"},
 ]
 
 [package.dependencies]

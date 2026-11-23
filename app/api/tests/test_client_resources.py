@@ -1116,6 +1116,47 @@ class TestTwingateResourceAPIs:
 
         assert result == resource
 
+    def test_web_app_resource_update_clears_removed_alias(
+        self, test_url, api_client, web_app_resource_factory, mocked_responses
+    ):
+        resource = web_app_resource_factory(
+            alias="app.internal", gateway=ResourceGateway(id="gw-1")
+        )
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"}).model_copy(
+            update={"alias": None}
+        )
+        updated_resource = resource.model_copy(update={"alias": None})
+        success_response = json.dumps(
+            {
+                "data": {
+                    "webAppResourceUpdate": {
+                        "ok": True,
+                        "entity": updated_resource.model_dump(by_alias=True),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"alias": None}},
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+            result = api_client.web_app_resource_update(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), owner_namespace="default"
+                )
+            )
+
+        assert result == updated_resource
+
     def test_get_postgresql_resource(
         self, test_url, api_client, postgre_sql_resource_factory, mocked_responses
     ):

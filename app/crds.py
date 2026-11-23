@@ -256,7 +256,7 @@ class ResourceSpec(BaseModel):
     id: str | None = None
     name: str
     address: str
-    alias: str | None = None
+    alias: str | None = Field(default=None, min_length=1)
     remote_network_id: str = Field(
         default_factory=lambda: get_settings().remote_network_id
     )

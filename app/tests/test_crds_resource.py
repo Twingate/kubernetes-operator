@@ -588,7 +588,9 @@ def postgresql_resource_spec():
         "gateway_ref": _KubernetesObjectRef(name="my-gateway", namespace="twingate"),
         "downstream": ResourceDownstream(port=5432),
         "upstream": ResourceUpstream(port=5433, tls_mode=TLSClientMode.VERIFY_FULL),
-        "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}],
+        "postgres": {
+            "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}]
+        },
     }
 
 
@@ -611,29 +613,38 @@ def test_postgresql_resource_requires_downstream_and_upstream(
         ResourceSpec(**postgresql_resource_spec)
 
 
-@pytest.mark.parametrize("auths", [None, []])
-def test_postgresql_resource_requires_auths(postgresql_resource_spec, auths):
-    postgresql_resource_spec["auths"] = auths
+def test_postgresql_resource_requires_postgres(postgresql_resource_spec):
+    del postgresql_resource_spec["postgres"]
 
-    with pytest.raises(ValueError, match="PostgreSQL resources require `auths`"):
+    with pytest.raises(ValueError, match="PostgreSQL resources require `postgres`"):
         ResourceSpec(**postgresql_resource_spec)
 
 
-@pytest.mark.parametrize(
-    "postgresql_fields",
-    [
-        {"database": "orders"},
-        {"auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}]},
-    ],
-)
-def test_non_postgresql_resource_rejects_database_and_auths(postgresql_fields):
+@pytest.mark.parametrize("postgres", [{}, {"dbName": "orders"}, {"auths": []}])
+def test_postgresql_resource_requires_auths(postgresql_resource_spec, postgres):
+    postgresql_resource_spec["postgres"] = postgres
+
+    with pytest.raises(ValidationError, match=r"postgres\.auths"):
+        ResourceSpec(**postgresql_resource_spec)
+
+
+def test_postgresql_resource_spec_rejects_empty_db_name(postgresql_resource_spec):
+    postgresql_resource_spec["postgres"] |= {"dbName": ""}
+
+    with pytest.raises(ValidationError, match=r"postgres\.dbName"):
+        ResourceSpec(**postgresql_resource_spec)
+
+
+def test_non_postgresql_resource_rejects_postgres():
     with pytest.raises(
-        ValueError, match="Only PostgreSQL resources can set `database` or `auths`"
+        ValueError, match="Only PostgreSQL resources can set `postgres`"
     ):
         ResourceSpec(
             name="My Network Resource",
             address="network.default.cluster.local",
-            **postgresql_fields,
+            postgres={
+                "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}]
+            },
         )
 
 
@@ -706,7 +717,7 @@ def test_postgresql_gcp_iam_auth_normalizes_impersonate_service_account():
 )
 def test_postgresql_resource_spec_to_graphql_arguments(postgresql_resource_spec, auth):
     resource_spec = ResourceSpec(
-        **postgresql_resource_spec | {"auths": [auth]}, database="orders"
+        **postgresql_resource_spec | {"postgres": {"dbName": "orders", "auths": [auth]}}
     )
 
     with patch(

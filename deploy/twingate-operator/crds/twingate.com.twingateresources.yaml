@@ -24,15 +24,13 @@ spec:
                   message: "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef; Network Resources do not allow it"
                 - rule: ((self.type == "WebApp" || self.type == "PostgreSQL") && has(self.downstream) && has(self.upstream)) || (self.type != "WebApp" && self.type != "PostgreSQL" && !has(self.downstream) && !has(self.upstream))
                   message: "WebApp and PostgreSQL Resources require downstream and upstream; other Resource types allow neither"
-                - rule: (self.type == "PostgreSQL") == has(self.auths)
-                  message: "PostgreSQL Resource requires auths; other Resource types do not allow it"
-                - rule: '!has(self.database) || self.type == "PostgreSQL"'
-                  message: "database can only be set for PostgreSQL Resources"
+                - rule: (self.type == "PostgreSQL") == has(self.postgres)
+                  message: "PostgreSQL Resource requires postgres; other Resource types do not allow it"
                 - rule: self.type != "PostgreSQL" || !(self.address.contains('*') || self.address.contains('?') || self.address.contains('/'))
                   message: "PostgreSQL Resource address can't be a wildcard or a CIDR range"
                 - rule: self.type != "PostgreSQL" || !has(self.downstream) || self.downstream.tlsMode == "NONE"
                   message: "PostgreSQL Resource does not support downstream TLS"
-                - rule: self.type != "PostgreSQL" || !has(self.auths) || !has(self.upstream) || !self.auths.exists(a, has(a.awsIam) || has(a.gcpIam)) || self.upstream.tlsMode in ["VERIFY_FULL", "VERIFY_CA"]
+                - rule: self.type != "PostgreSQL" || !has(self.postgres) || !has(self.upstream) || !self.postgres.auths.exists(a, has(a.awsIam) || has(a.gcpIam)) || self.upstream.tlsMode in ["VERIFY_FULL", "VERIFY_CA"]
                   message: "awsIam and gcpIam auth require upstream.tlsMode VERIFY_FULL or VERIFY_CA"
                 - rule: '!has(self.requestHeaderRewrites) || self.type == "WebApp"'
                   message: "requestHeaderRewrites can only be set for WebApp Resources"
@@ -218,56 +216,61 @@ spec:
                       value:
                         type: string
                         description: "The header value."
-                database:
-                  type: string
-                  minLength: 1
-                  description: "The default database in the connection string of a PostgreSQL Resource. Defaults to postgres when omitted."
-                auths:
-                  type: array
-                  minItems: 1
-                  description: "The authentication method used by Gateway to login to the PostgreSQL resource. At least one entry is required."
-                  items:
-                    type: object
-                    description: "Exactly one of password, awsIam or gcpIam."
-                    minProperties: 1
-                    maxProperties: 1
-                    properties:
-                      password:
+                postgres:
+                  type: object
+                  required: ["auths"]
+                  description: "Database settings for a PostgreSQL Resource: the default database and how the Gateway logs in to it."
+                  properties:
+                    dbName:
+                      type: string
+                      minLength: 1
+                      description: "The name of the default database in the connection string. When omitted, the database named postgres is used."
+                    auths:
+                      type: array
+                      minItems: 1
+                      description: "The authentication method used by Gateway to login to the PostgreSQL resource. At least one entry is required."
+                      items:
                         type: object
-                        required: ["user", "credential"]
+                        description: "Exactly one of password, awsIam or gcpIam."
+                        minProperties: 1
+                        maxProperties: 1
                         properties:
-                          user:
-                            type: string
-                            minLength: 1
-                            description: "The database user."
-                          credential:
-                            type: string
-                            minLength: 1
-                            description: "The name of a credential defined in the Gateway configuration."
-                      awsIam:
-                        type: object
-                        required: ["user", "region"]
-                        properties:
-                          user:
-                            type: string
-                            minLength: 1
-                            description: "The database user."
-                          region:
-                            type: string
-                            minLength: 1
-                            description: "The AWS region of the database."
-                          assumeRoleArn:
-                            type: string
-                            minLength: 1
-                            description: "The ARN of an IAM role the Gateway assumes before it signs the auth token."
-                      gcpIam:
-                        type: object
-                        required: ["impersonateServiceAccount"]
-                        properties:
-                          impersonateServiceAccount:
-                            type: string
-                            pattern: '^.+\.gserviceaccount\.com$'
-                            description: "The email of the GCP service account the Gateway impersonates when logging in. The database user is derived from it."
+                          password:
+                            type: object
+                            required: ["user", "credential"]
+                            properties:
+                              user:
+                                type: string
+                                minLength: 1
+                                description: "The database user."
+                              credential:
+                                type: string
+                                minLength: 1
+                                description: "The name of a credential defined in the Gateway configuration."
+                          awsIam:
+                            type: object
+                            required: ["user", "region"]
+                            properties:
+                              user:
+                                type: string
+                                minLength: 1
+                                description: "The database user."
+                              region:
+                                type: string
+                                minLength: 1
+                                description: "The AWS region of the database."
+                              assumeRoleArn:
+                                type: string
+                                minLength: 1
+                                description: "The ARN of an IAM role the Gateway assumes before it signs the auth token."
+                          gcpIam:
+                            type: object
+                            required: ["impersonateServiceAccount"]
+                            properties:
+                              impersonateServiceAccount:
+                                type: string
+                                pattern: '^.+\.gserviceaccount\.com$'
+                                description: "The email of the GCP service account the Gateway impersonates when logging in. The database user is derived from it."
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

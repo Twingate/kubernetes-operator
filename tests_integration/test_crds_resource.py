@@ -19,7 +19,9 @@ def postgresql_resource_object(name: str, **spec_overrides) -> str:
         "gatewayRef": {"name": "my-gateway"},
         "downstream": {"port": 5432},
         "upstream": {"port": 5432, "tlsMode": "VERIFY_FULL"},
-        "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}],
+        "postgres": {
+            "auths": [{"password": {"user": "viewer", "credential": "prod-viewer"}}]
+        },
     } | spec_overrides
     return json.dumps(
         {
@@ -792,35 +794,76 @@ def test_non_web_app_resource_cannot_have_request_header_rewrites(
     "spec_overrides",
     [
         {},
-        {"database": "orders"},
+        {
+            "postgres": {
+                "dbName": "orders",
+                "auths": [
+                    {"password": {"user": "viewer", "credential": "prod-viewer"}}
+                ],
+            }
+        },
         {"upstream": {"port": 5432}},
-        {"auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]},
+        {
+            "postgres": {
+                "auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]
+            }
+        },
         {
             "upstream": {"port": 5432, "tlsMode": "VERIFY_CA"},
-            "auths": [
-                {
-                    "awsIam": {
-                        "user": "viewer",
-                        "region": "us-east-1",
-                        "assumeRoleArn": "arn:aws:iam::123456789012:role/gateway-db",
+            "postgres": {
+                "auths": [
+                    {
+                        "awsIam": {
+                            "user": "viewer",
+                            "region": "us-east-1",
+                            "assumeRoleArn": "arn:aws:iam::123456789012:role/gateway-db",
+                        }
                     }
-                }
-            ],
+                ]
+            },
         },
         {
-            "auths": [
-                {
-                    "gcpIam": {
-                        "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com"
+            "postgres": {
+                "auths": [
+                    {
+                        "gcpIam": {
+                            "impersonateServiceAccount": (
+                                "viewer@proj.iam.gserviceaccount.com"
+                            )
+                        }
                     }
-                }
-            ]
+                ]
+            }
         },
         {
-            "auths": [
-                {"password": {"user": "viewer", "credential": "prod-viewer"}},
-                {"password": {"user": "editor", "credential": "prod-editor"}},
-            ]
+            "postgres": {
+                "auths": [
+                    {"password": {"user": "viewer", "credential": "prod-viewer"}},
+                    {"password": {"user": "editor", "credential": "prod-editor"}},
+                ]
+            }
+        },
+        {
+            "postgres": {
+                "dbName": "orders",
+                "auths": [
+                    {"password": {"user": "viewer", "credential": "prod-viewer"}},
+                    {
+                        "awsIam": {
+                            "user": "viewer",
+                            "region": "us-east-1",
+                            "assumeRoleArn": "arn:aws:iam::123456789012:role/gateway-db",
+                        }
+                    },
+                    {
+                        "gcpIam": {
+                            "impersonateServiceAccount": (
+                                "viewer@proj.iam.gserviceaccount.com"
+                            )
+                        }
+                    },
+                ],
+            }
         },
     ],
 )
@@ -845,15 +888,27 @@ def test_postgresql_resource_must_have_downstream_and_upstream(
     assert "WebApp and PostgreSQL Resources require downstream and upstream" in stderr
 
 
-def test_postgresql_resource_must_have_auths(unique_resource_name):
+def test_postgresql_resource_must_have_postgres(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(postgresql_resource_object(unique_resource_name, auths=None))
+        kubectl_create(postgresql_resource_object(unique_resource_name, postgres=None))
 
     stderr = ex.value.stderr.decode()
-    assert "PostgreSQL Resource requires auths" in stderr
+    assert "PostgreSQL Resource requires postgres" in stderr
 
 
-def test_non_postgresql_resource_cannot_have_auths(unique_resource_name):
+def test_postgresql_resource_postgres_must_have_auths(unique_resource_name):
+    with pytest.raises(subprocess.CalledProcessError) as ex:
+        kubectl_create(
+            postgresql_resource_object(
+                unique_resource_name, postgres={"dbName": "orders"}
+            )
+        )
+
+    stderr = ex.value.stderr.decode()
+    assert "spec.postgres.auths: Required value" in stderr
+
+
+def test_non_postgresql_resource_cannot_have_postgres(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
             f"""
@@ -864,50 +919,48 @@ def test_non_postgresql_resource_cannot_have_auths(unique_resource_name):
             spec:
               name: My Network Resource
               address: "network.default.svc.cluster.local"
-              auths:
-                - password:
-                    user: viewer
-                    credential: prod-viewer
+              postgres:
+                dbName: orders
+                auths:
+                  - password:
+                      user: viewer
+                      credential: prod-viewer
             """
         )
 
     stderr = ex.value.stderr.decode()
-    assert "other Resource types do not allow it" in stderr
+    assert (
+        "PostgreSQL Resource requires postgres; other Resource types do not allow it"
+        in stderr
+    )
 
 
-def test_non_postgresql_resource_cannot_have_database(unique_resource_name):
+def test_postgresql_resource_rejects_empty_db_name(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
         kubectl_create(
-            f"""
-            apiVersion: twingate.com/v1beta
-            kind: TwingateResource
-            metadata:
-              name: {unique_resource_name}
-            spec:
-              name: My Network Resource
-              address: "network.default.svc.cluster.local"
-              database: orders
-            """
+            postgresql_resource_object(
+                unique_resource_name,
+                postgres={
+                    "dbName": "",
+                    "auths": [
+                        {"password": {"user": "viewer", "credential": "prod-viewer"}}
+                    ],
+                },
+            )
         )
 
     stderr = ex.value.stderr.decode()
-    assert "database can only be set for PostgreSQL Resources" in stderr
-
-
-def test_postgresql_resource_rejects_empty_database(unique_resource_name):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(postgresql_resource_object(unique_resource_name, database=""))
-
-    stderr = ex.value.stderr.decode()
-    assert "spec.database" in stderr
+    assert "spec.postgres.dbName in body should be at least 1 chars long" in stderr
 
 
 def test_postgresql_resource_must_have_at_least_one_auth(unique_resource_name):
     with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(postgresql_resource_object(unique_resource_name, auths=[]))
+        kubectl_create(
+            postgresql_resource_object(unique_resource_name, postgres={"auths": []})
+        )
 
     stderr = ex.value.stderr.decode()
-    assert "spec.auths" in stderr
+    assert "spec.postgres.auths" in stderr
 
 
 @pytest.mark.parametrize(
@@ -924,10 +977,12 @@ def test_postgresql_resource_auth_must_have_exactly_one_auth_type(
     unique_resource_name, auth
 ):
     with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(postgresql_resource_object(unique_resource_name, auths=[auth]))
+        kubectl_create(
+            postgresql_resource_object(unique_resource_name, postgres={"auths": [auth]})
+        )
 
     stderr = ex.value.stderr.decode()
-    assert "spec.auths[0]" in stderr
+    assert "spec.postgres.auths[0]" in stderr
 
 
 @pytest.mark.parametrize(
@@ -958,10 +1013,12 @@ def test_postgresql_resource_auth_must_have_exactly_one_auth_type(
 )
 def test_postgresql_resource_rejects_invalid_auth(unique_resource_name, auth, field):
     with pytest.raises(subprocess.CalledProcessError) as ex:
-        kubectl_create(postgresql_resource_object(unique_resource_name, auths=[auth]))
+        kubectl_create(
+            postgresql_resource_object(unique_resource_name, postgres={"auths": [auth]})
+        )
 
     stderr = ex.value.stderr.decode()
-    assert f"spec.auths[0].{field}" in stderr
+    assert f"spec.postgres.auths[0].{field}" in stderr
 
 
 @pytest.mark.parametrize(
@@ -1011,7 +1068,7 @@ def test_postgresql_resource_iam_auth_requires_verified_upstream_tls(
             postgresql_resource_object(
                 unique_resource_name,
                 upstream={"port": 5432, "tlsMode": tls_mode},
-                auths=[auth],
+                postgres={"auths": [auth]},
             )
         )
 

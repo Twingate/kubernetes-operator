@@ -459,7 +459,10 @@ class TestPostgreSQLResourceModel:
 
     def test_get_spec_diff_for_database_drift(self, postgre_sql_resource_factory):
         resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
-        crd = resource.to_spec(gateway_ref={"name": "my-gateway"}, database="orders")
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            postgres={"db_name": "orders", "auths": resource.auths},
+        )
 
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
@@ -474,7 +477,9 @@ class TestPostgreSQLResourceModel:
         resource = postgre_sql_resource_factory(
             gateway=ResourceGateway(id="gw-1"), database="orders"
         )
-        crd = resource.to_spec(gateway_ref={"name": "my-gateway"}, database=None)
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"}, postgres={"auths": resource.auths}
+        )
 
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
@@ -487,7 +492,7 @@ class TestPostgreSQLResourceModel:
         resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
         crd = resource.to_spec(
             gateway_ref={"name": "my-gateway"},
-            auths=[{"awsIam": {"user": "viewer", "region": "us-east-1"}}],
+            postgres={"auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]},
         )
 
         with patch(
@@ -535,7 +540,9 @@ class TestPostgreSQLResourceModel:
         resource = postgre_sql_resource_factory(
             gateway=ResourceGateway(id="gw-1"), auths=[remote_auth]
         )
-        crd = resource.to_spec(gateway_ref={"name": "my-gateway"}, auths=[crd_auth])
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"}, postgres={"auths": [crd_auth]}
+        )
 
         with patch(
             "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
@@ -756,8 +763,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
-                                "database",
-                                "auths",
+                                "postgres",
                             ],
                             by_alias=True,
                         )
@@ -810,8 +816,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
-                                "database",
-                                "auths",
+                                "postgres",
                             ],
                             by_alias=True,
                         )
@@ -930,8 +935,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
-                                "database",
-                                "auths",
+                                "postgres",
                             ],
                             by_alias=True,
                         )
@@ -1252,7 +1256,9 @@ class TestTwingateResourceAPIs:
             gateway=ResourceGateway(id="gw-1"), database="orders"
         )
         crd = resource.to_spec(
-            id=None, gateway_ref={"name": "my-gateway"}, database=None
+            id=None,
+            gateway_ref={"name": "my-gateway"},
+            postgres={"auths": resource.auths},
         )
         mocked_responses.post(
             test_url,

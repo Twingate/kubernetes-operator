@@ -9,11 +9,11 @@ from pydantic.alias_generators import to_camel
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import (
-    DEFAULT_POSTGRESQL_DATABASE,
     PostgreSQLAuth,
     ProtocolPolicy,
     RequestHeaderRewrite,
     ResourceDownstream,
+    ResourcePostgres,
     ResourceSpec,
     ResourceType,
     ResourceUpstream,
@@ -436,12 +436,14 @@ class PostgreSQLResource(BaseResource):
         if upstream != crd_upstream:
             diff["upstream"] = Diff(remote=upstream, local=crd_upstream)
 
-        crd_database = crd.database or DEFAULT_POSTGRESQL_DATABASE
+        crd_database = crd.postgres.db_name if crd.postgres else None
         if self.database != crd_database:
             diff["database"] = Diff(remote=self.database, local=crd_database)
 
         auths = [auth.model_dump() for auth in self.auths]
-        crd_auths = [auth.model_dump() for auth in (crd.auths or [])]
+        crd_auths = (
+            [auth.model_dump() for auth in crd.postgres.auths] if crd.postgres else []
+        )
         if auths != crd_auths:
             diff["auths"] = Diff(remote=auths, local=crd_auths)
 
@@ -453,8 +455,7 @@ class PostgreSQLResource(BaseResource):
                 "type": ResourceType.POSTGRESQL,
                 "downstream": self.downstream,
                 "upstream": self.upstream,
-                "database": self.database,
-                "auths": self.auths,
+                "postgres": ResourcePostgres(db_name=self.database, auths=self.auths),
             }
             | super().to_spec_dict()
             | overrides

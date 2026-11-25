@@ -8,6 +8,7 @@ from pydantic_core._pydantic_core import ValidationError
 
 from app.api.client import GraphQLMutationError
 from app.api.client_resources import (
+    POSTGRESQL_AUTH_TYPES,
     BaseResource,
     Diff,
     NetworkResource,
@@ -16,11 +17,27 @@ from app.api.client_resources import (
     ResourceProtocols,
 )
 from app.crds import (
+    PostgreSQLAuth,
+    PostgreSQLAWSIAMAuth,
+    PostgreSQLGCPIAMAuth,
+    PostgreSQLPasswordAuth,
     ProtocolPolicy,
     RequestHeaderRewrite,
     ResourceSpec,
     ResourceType,
 )
+
+
+def postgresql_resource_response(resource):
+    typenames = {field: name for name, field in POSTGRESQL_AUTH_TYPES.items()}
+    return resource.model_dump(by_alias=True) | {
+        "auths": [
+            {"__typename": typenames[field]}
+            | getattr(auth, field).model_dump(by_alias=True)
+            for auth in resource.auths
+            for field in auth.model_fields_set
+        ]
+    }
 
 
 @pytest.fixture
@@ -332,6 +349,209 @@ class TestWebAppResourceModel:
             }
 
 
+class TestPostgreSQLResourceModel:
+    @pytest.mark.parametrize(
+        ("remote_auth", "crd_auth"),
+        [
+            (
+                {
+                    "__typename": "PostgreSQLPasswordAuth",
+                    "user": "viewer",
+                    "credential": "prod-viewer",
+                },
+                PostgreSQLAuth(
+                    password=PostgreSQLPasswordAuth(
+                        user="viewer", credential="prod-viewer"
+                    )
+                ),
+            ),
+            (
+                {
+                    "__typename": "PostgreSQLAWSIAMAuth",
+                    "user": "viewer",
+                    "region": "us-east-1",
+                    "assumeRoleArn": None,
+                },
+                PostgreSQLAuth(
+                    aws_iam=PostgreSQLAWSIAMAuth(user="viewer", region="us-east-1")
+                ),
+            ),
+            (
+                {
+                    "__typename": "PostgreSQLGCPIAMAuth",
+                    "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com",
+                },
+                PostgreSQLAuth(
+                    gcp_iam=PostgreSQLGCPIAMAuth(
+                        impersonate_service_account="viewer@proj.iam.gserviceaccount.com"
+                    )
+                ),
+            ),
+        ],
+    )
+    def test_auths_are_parsed_by_typename(
+        self, postgre_sql_resource_factory, remote_auth, crd_auth
+    ):
+        resource = postgre_sql_resource_factory(auths=[remote_auth])
+
+        assert resource.auths == [crd_auth]
+
+    def test_unknown_auth_typename_is_rejected(self, postgre_sql_resource_factory):
+        with pytest.raises(ValidationError, match="PostgreSQLKerberosAuth"):
+            postgre_sql_resource_factory(
+                auths=[{"__typename": "PostgreSQLKerberosAuth", "user": "viewer"}]
+            )
+
+    def test_get_spec_diff_when_no_diff(self, postgre_sql_resource_factory):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
+
+    def test_get_spec_diff_for_gateway_drift(self, postgre_sql_resource_factory):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-2"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "gateway_id": Diff(remote="gw-1", local="gw-2"),
+            }
+
+    def test_get_spec_diff_for_port_and_tls_mode_drift(
+        self, postgre_sql_resource_factory
+    ):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            downstream={"port": 6432},
+            upstream={"port": 5433, "tls_mode": "VERIFY_CA"},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "downstream": Diff(remote={"port": 5432}, local={"port": 6432}),
+                "upstream": Diff(
+                    remote={"port": 5432, "tls_mode": "VERIFY_FULL"},
+                    local={"port": 5433, "tls_mode": "VERIFY_CA"},
+                ),
+            }
+
+    def test_get_spec_diff_ignores_downstream_tls_mode(
+        self, postgre_sql_resource_factory
+    ):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            downstream={"port": 5432, "tls_mode": "TLS13"},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
+
+    def test_get_spec_diff_for_database_drift(self, postgre_sql_resource_factory):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            postgresql={"database": "orders", "auths": resource.auths},
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "database": Diff(remote="postgres", local="orders"),
+            }
+
+    def test_get_spec_diff_reverts_omitted_database_to_postgres(
+        self, postgre_sql_resource_factory
+    ):
+        resource = postgre_sql_resource_factory(
+            gateway=ResourceGateway(id="gw-1"), database="orders"
+        )
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"}, postgresql={"auths": resource.auths}
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "database": Diff(remote="orders", local="postgres"),
+            }
+
+    def test_get_spec_diff_for_auths_drift(self, postgre_sql_resource_factory):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"},
+            postgresql={
+                "auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]
+            },
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {
+                "auths": Diff(
+                    remote=[auth.model_dump() for auth in resource.auths],
+                    local=[
+                        PostgreSQLAuth(
+                            aws_iam={"user": "viewer", "region": "us-east-1"}
+                        ).model_dump()
+                    ],
+                ),
+            }
+
+    @pytest.mark.parametrize(
+        ("remote_auth", "crd_auth"),
+        [
+            (
+                {
+                    "__typename": "PostgreSQLAWSIAMAuth",
+                    "user": "viewer",
+                    "region": "us-east-1",
+                    "assumeRoleArn": None,
+                },
+                {"awsIam": {"user": "viewer", "region": "us-east-1"}},
+            ),
+            (
+                {
+                    "__typename": "PostgreSQLGCPIAMAuth",
+                    "impersonateServiceAccount": "viewer@proj.iam.gserviceaccount.com",
+                },
+                {
+                    "gcpIam": {
+                        "impersonateServiceAccount": "Viewer@Proj.iam.gserviceaccount.com"
+                    }
+                },
+            ),
+        ],
+    )
+    def test_get_spec_diff_when_no_diff_for_iam_auths(
+        self, postgre_sql_resource_factory, remote_auth, crd_auth
+    ):
+        resource = postgre_sql_resource_factory(
+            gateway=ResourceGateway(id="gw-1"), auths=[remote_auth]
+        )
+        crd = resource.to_spec(
+            gateway_ref={"name": "my-gateway"}, postgresql={"auths": [crd_auth]}
+        )
+
+        with patch(
+            "app.api.client_resources.resolve_ref_to_twingate_id", return_value="gw-1"
+        ):
+            assert resource.get_spec_diff(crd, owner_namespace="default") == {}
+
+
 class TestResourceFactory:
     def test_name_is_used_for_address(self, base_resource_factory):
         r = base_resource_factory()
@@ -496,6 +716,30 @@ class TestTwingateResourceAPIs:
         )
         api_client.network_resource_update.assert_not_called()
 
+    def test_resource_create_with_postgresql_type(self, api_client):
+        api_client.network_resource_create = MagicMock()
+        api_client.postgresql_resource_create = MagicMock()
+
+        api_client.resource_create(
+            resource_type=ResourceType.POSTGRESQL, mock_argument=1
+        )
+
+        api_client.postgresql_resource_create.assert_called_once_with(mock_argument=1)
+        api_client.network_resource_create.assert_not_called()
+
+    def test_resource_update_with_postgresql_type(self, api_client):
+        api_client.network_resource_update = MagicMock()
+        api_client.postgresql_resource_update = MagicMock()
+
+        api_client.resource_update(
+            id="1", resource_type=ResourceType.POSTGRESQL, mock_argument=1
+        )
+
+        api_client.postgresql_resource_update.assert_called_once_with(
+            id="1", mock_argument=1
+        )
+        api_client.network_resource_update.assert_not_called()
+
     def test_resource_create_failure(
         self, test_url, api_client, network_resource_factory, mocked_responses
     ):
@@ -521,6 +765,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
+                                "postgresql",
                             ],
                             by_alias=True,
                         )
@@ -573,6 +818,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
+                                "postgresql",
                             ],
                             by_alias=True,
                         )
@@ -691,6 +937,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
+                                "postgresql",
                             ],
                             by_alias=True,
                         )
@@ -915,6 +1162,168 @@ class TestTwingateResourceAPIs:
             )
 
         assert result == updated_resource
+
+    def test_get_postgresql_resource(
+        self, test_url, api_client, postgre_sql_resource_factory, mocked_responses
+    ):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+
+        success_response = json.dumps(
+            {
+                "data": {
+                    "resource": postgresql_resource_response(resource)
+                    | {"__typename": "PostgreSQLResource"}
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"id": resource.id}}, strict_match=False
+                )
+            ],
+        )
+        result = api_client.get_resource(resource.id)
+        assert result == resource
+
+    def test_postgresql_resource_create(
+        self, test_url, api_client, postgre_sql_resource_factory, mocked_responses
+    ):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(
+            id=None,
+            gateway_ref={"name": "my-gateway"},
+        )
+        success_response = json.dumps(
+            {
+                "data": {
+                    "postgresqlResourceCreate": {
+                        "ok": True,
+                        "entity": postgresql_resource_response(resource),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {
+                        "variables": {
+                            "gatewayId": "gw-1",
+                            "downstream": {"port": 5432},
+                            "upstream": {"port": 5432, "tlsMode": "VERIFY_FULL"},
+                            "database": "postgres",
+                            "auths": [
+                                {
+                                    "password": {
+                                        "user": "viewer",
+                                        "credential": "prod-viewer",
+                                    }
+                                }
+                            ],
+                        }
+                    },
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch(
+            "app.crds.resolve_ref_to_twingate_id", return_value="gw-1"
+        ) as resolve_mock:
+            result = api_client.postgresql_resource_create(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
+                )
+            )
+
+        resolve_mock.assert_called_once_with(
+            "twingategateways", "default", "my-gateway"
+        )
+        assert result == resource
+
+    def test_postgresql_resource_create_sends_default_database(
+        self, test_url, api_client, postgre_sql_resource_factory, mocked_responses
+    ):
+        resource = postgre_sql_resource_factory(
+            gateway=ResourceGateway(id="gw-1"), database="orders"
+        )
+        crd = resource.to_spec(
+            id=None,
+            gateway_ref={"name": "my-gateway"},
+            postgresql={"auths": resource.auths},
+        )
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=json.dumps(
+                {
+                    "data": {
+                        "postgresqlResourceCreate": {
+                            "ok": True,
+                            "entity": postgresql_resource_response(resource),
+                        }
+                    }
+                }
+            ),
+        )
+
+        with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+            api_client.postgresql_resource_create(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(),
+                    owner_namespace="default",
+                    exclude={"id"},
+                )
+            )
+
+        variables = json.loads(mocked_responses.calls[0].request.body)["variables"]
+        assert variables["database"] == "postgres"
+
+    def test_postgresql_resource_update(
+        self, test_url, api_client, postgre_sql_resource_factory, mocked_responses
+    ):
+        resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
+        crd = resource.to_spec(gateway_ref={"name": "my-gateway"})
+        success_response = json.dumps(
+            {
+                "data": {
+                    "postgresqlResourceUpdate": {
+                        "ok": True,
+                        "entity": postgresql_resource_response(resource),
+                    }
+                }
+            }
+        )
+
+        mocked_responses.post(
+            test_url,
+            status=200,
+            body=success_response,
+            match=[
+                responses.matchers.json_params_matcher(
+                    {"variables": {"gatewayId": "gw-1", "database": "postgres"}},
+                    strict_match=False,
+                )
+            ],
+        )
+        with patch("app.crds.resolve_ref_to_twingate_id", return_value="gw-1"):
+            result = api_client.postgresql_resource_update(
+                **crd.to_graphql_arguments(
+                    labels=resource.to_metadata_labels(), owner_namespace="default"
+                )
+            )
+
+        assert result == resource
 
     def test_resource_delete(self, test_url, api_client, mocked_responses):
         success_response = json.dumps({"data": {"resourceDelete": {"ok": True}}})

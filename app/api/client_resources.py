@@ -3,15 +3,17 @@ from typing import Any, Literal, NamedTuple
 
 from gql import GraphQLRequest
 from gql.transport.exceptions import TransportQueryError
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 from app.api.exceptions import GraphQLMutationError
 from app.api.protocol import TwingateClientProtocol
 from app.crds import (
+    PostgreSQLAuth,
     ProtocolPolicy,
     RequestHeaderRewrite,
     ResourceDownstream,
+    ResourcePostgres,
     ResourceSpec,
     ResourceType,
     ResourceUpstream,
@@ -358,11 +360,119 @@ class WebAppResource(BaseResource):
         return ResourceSpec(**data)
 
 
+POSTGRESQL_AUTH_TYPES = {
+    "PostgreSQLPasswordAuth": "password",
+    "PostgreSQLAWSIAMAuth": "aws_iam",
+    "PostgreSQLGCPIAMAuth": "gcp_iam",
+}
+
+
+class PostgreSQLResource(BaseResource):
+    gateway: ResourceGateway | None = None
+    downstream: ResourceDownstream
+    upstream: ResourceUpstream
+    database: str
+    auths: list[PostgreSQLAuth]
+
+    @field_validator("auths", mode="before")
+    @classmethod
+    def key_auths_by_typename(cls, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        for auth in value:
+            if auth["__typename"] not in POSTGRESQL_AUTH_TYPES:
+                raise ValueError(
+                    f"Unknown PostgreSQL auth type {auth['__typename']!r}."
+                )
+        return [{POSTGRESQL_AUTH_TYPES[auth["__typename"]]: auth} for auth in value]
+
+    @staticmethod
+    def get_graphql_fragment():
+        return (
+            BaseResource.get_graphql_fragment()
+            + """
+            fragment PostgreSQLResourceFields on PostgreSQLResource {
+                ...BaseResourceFields
+                gateway { id }
+                downstream { port }
+                upstream { port tlsMode }
+                database
+                auths {
+                    __typename
+                    ... on PostgreSQLPasswordAuth { user credential }
+                    ... on PostgreSQLAWSIAMAuth { user region assumeRoleArn }
+                    ... on PostgreSQLGCPIAMAuth { impersonateServiceAccount }
+                }
+            }
+            """
+        )
+
+    def get_spec_diff(
+        self, crd: ResourceSpec, *, owner_namespace: str
+    ) -> dict[str, Diff]:
+        diff = super().get_spec_diff(crd, owner_namespace=owner_namespace)
+
+        remote_gateway_id = self.gateway.id if self.gateway else None
+        crd_gateway_id = (
+            resolve_ref_to_twingate_id(
+                "twingategateways",
+                crd.gateway_ref.resolve_namespace(owner_namespace),
+                crd.gateway_ref.name,
+            )
+            if crd.gateway_ref
+            else None
+        )
+        if remote_gateway_id != crd_gateway_id:
+            diff["gateway_id"] = Diff(remote=remote_gateway_id, local=crd_gateway_id)
+
+        # PostgreSQL has no downstream TLS, so only the port is sent and read back.
+        downstream = self.downstream.model_dump(exclude={"tls_mode"})
+        crd_downstream = (
+            crd.downstream.model_dump(exclude={"tls_mode"}) if crd.downstream else None
+        )
+        if downstream != crd_downstream:
+            diff["downstream"] = Diff(remote=downstream, local=crd_downstream)
+
+        upstream = self.upstream.model_dump()
+        crd_upstream = crd.upstream.model_dump() if crd.upstream else None
+        if upstream != crd_upstream:
+            diff["upstream"] = Diff(remote=upstream, local=crd_upstream)
+
+        crd_database = crd.postgresql.database if crd.postgresql else None
+        if self.database != crd_database:
+            diff["database"] = Diff(remote=self.database, local=crd_database)
+
+        auths = [auth.model_dump() for auth in self.auths]
+        crd_auths = (
+            [auth.model_dump() for auth in crd.postgresql.auths]
+            if crd.postgresql
+            else []
+        )
+        if auths != crd_auths:
+            diff["auths"] = Diff(remote=auths, local=crd_auths)
+
+        return diff
+
+    def to_spec(self, **overrides: Any) -> ResourceSpec:
+        data: dict[str, Any] = (
+            {
+                "type": ResourceType.POSTGRESQL,
+                "downstream": self.downstream,
+                "upstream": self.upstream,
+                "postgresql": ResourcePostgres(
+                    database=self.database, auths=self.auths
+                ),
+            }
+            | super().to_spec_dict()
+            | overrides
+        )
+        return ResourceSpec(**data)
+
+
 # fmt:off
 
 _NETWORK_RESOURCE_FRAGMENT = NetworkResource.get_graphql_fragment()
 _KUBERNETES_RESOURCE_FRAGMENT = KubernetesResource.get_graphql_fragment()
 _WEB_APP_RESOURCE_FRAGMENT = WebAppResource.get_graphql_fragment()
+_POSTGRESQL_RESOURCE_FRAGMENT = PostgreSQLResource.get_graphql_fragment()
 
 QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + _PROTOCOLS_FRAGMENT + """
     query GetResource($id: ID!) {
@@ -381,6 +491,18 @@ QUERY_GET_RESOURCE = BaseResource.get_graphql_fragment() + _PROTOCOLS_FRAGMENT +
                 downstream { port tlsMode }
                 upstream { port tlsMode }
                 requestHeaderRewrites { name: key value }
+            }
+            ... on PostgreSQLResource {
+                gateway { id }
+                downstream { port }
+                upstream { port tlsMode }
+                database
+                auths {
+                    __typename
+                    ... on PostgreSQLPasswordAuth { user credential }
+                    ... on PostgreSQLAWSIAMAuth { user region assumeRoleArn }
+                    ... on PostgreSQLGCPIAMAuth { impersonateServiceAccount }
+                }
             }
         }
     }
@@ -481,6 +603,44 @@ MUT_CREATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
             error
             entity {
               ...WebAppResourceFields
+            }
+        }
+    }
+"""
+
+MUT_CREATE_POSTGRESQL_RESOURCE = _POSTGRESQL_RESOURCE_FRAGMENT + """
+    mutation CreatePostgreSQLResource(
+        $name: String!
+        $address: String!
+        $alias: String
+        $isVisible: Boolean
+        $remoteNetworkId: ID!
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+        $gatewayId: ID!
+        $downstream: PostgreSQLDownstreamInput
+        $upstream: PostgreSQLUpstreamInput
+        $database: String!
+        $auths: [PostgreSQLAuthInput!]!
+    ) {
+        postgresqlResourceCreate(
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+            gatewayId: $gatewayId
+            downstream: $downstream
+            upstream: $upstream
+            database: $database
+            auths: $auths
+        ) {
+            ok
+            error
+            entity {
+              ...PostgreSQLResourceFields
             }
         }
     }
@@ -595,6 +755,46 @@ MUT_UPDATE_WEB_APP_RESOURCE = _WEB_APP_RESOURCE_FRAGMENT + """
     }
 """
 
+MUT_UPDATE_POSTGRESQL_RESOURCE = _POSTGRESQL_RESOURCE_FRAGMENT + """
+    mutation UpdatePostgreSQLResource(
+        $id: ID!
+        $name: String
+        $address: String
+        $alias: String
+        $isVisible: Boolean
+        $remoteNetworkId: ID
+        $securityPolicyId: ID
+        $tags: [TagInput!]
+        $gatewayId: ID
+        $downstream: PostgreSQLDownstreamInput
+        $upstream: PostgreSQLUpstreamInput
+        $database: String
+        $auths: [PostgreSQLAuthInput!]
+    ) {
+        postgresqlResourceUpdate(
+            id: $id,
+            name: $name
+            address: $address
+            alias: $alias
+            isVisible: $isVisible
+            remoteNetworkId: $remoteNetworkId
+            securityPolicyId: $securityPolicyId
+            tags: $tags
+            gatewayId: $gatewayId
+            downstream: $downstream
+            upstream: $upstream
+            database: $database
+            auths: $auths
+        ) {
+            ok
+            error
+            entity {
+                ...PostgreSQLResourceFields
+            }
+        }
+    }
+"""
+
 # endregion
 
 
@@ -615,7 +815,13 @@ MUT_DELETE_RESOURCE = """
 class TwingateResourceAPIs:
     def get_resource(
         self: TwingateClientProtocol, resource_id: str
-    ) -> NetworkResource | KubernetesResource | WebAppResource | None:
+    ) -> (
+        NetworkResource
+        | KubernetesResource
+        | WebAppResource
+        | PostgreSQLResource
+        | None
+    ):
         try:
             result = self.execute_gql(
                 GraphQLRequest(QUERY_GET_RESOURCE, variable_values={"id": resource_id})
@@ -631,6 +837,8 @@ class TwingateResourceAPIs:
                     return KubernetesResource(**result["resource"])
                 case "WebAppResource":
                     return WebAppResource(**result["resource"])
+                case "PostgreSQLResource":
+                    return PostgreSQLResource(**result["resource"])
                 case _:
                     raise ValueError(f"Invalid Resource Type: {resource_type}")
         except TransportQueryError:
@@ -639,12 +847,15 @@ class TwingateResourceAPIs:
 
     def resource_create(
         self: TwingateClientProtocol, resource_type: ResourceType, **graphql_arguments
-    ) -> NetworkResource | KubernetesResource | WebAppResource:
+    ) -> NetworkResource | KubernetesResource | WebAppResource | PostgreSQLResource:
         if resource_type == ResourceType.KUBERNETES:
             return self.kubernetes_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
 
         if resource_type == ResourceType.WEB_APP:
             return self.web_app_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
+
+        if resource_type == ResourceType.POSTGRESQL:
+            return self.postgresql_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
 
         return self.network_resource_create(**graphql_arguments)  # type: ignore[attr-defined]
 
@@ -746,17 +957,64 @@ class TwingateResourceAPIs:
         )
         return WebAppResource(**result["entity"])
 
+    def postgresql_resource_create(
+        self: TwingateClientProtocol,
+        *,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        tags: list[dict[str, str]],
+        gateway_id: str,
+        downstream: dict[str, Any],
+        upstream: dict[str, Any],
+        database: str,
+        auths: list[dict[str, Any]],
+    ) -> PostgreSQLResource:
+        result = self.execute_mutation(
+            "postgresqlResourceCreate",
+            GraphQLRequest(
+                MUT_CREATE_POSTGRESQL_RESOURCE,
+                variable_values={
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "tags": tags,
+                    "gatewayId": gateway_id,
+                    "downstream": downstream,
+                    "upstream": upstream,
+                    "database": database,
+                    "auths": auths,
+                },
+            ),
+        )
+        return PostgreSQLResource(**result["entity"])
+
     def resource_update(
         self: TwingateClientProtocol,
         id: str,
         resource_type: ResourceType,
         **graphql_arguments,
-    ) -> NetworkResource | KubernetesResource | WebAppResource | None:
+    ) -> (
+        NetworkResource
+        | KubernetesResource
+        | WebAppResource
+        | PostgreSQLResource
+        | None
+    ):
         if resource_type == ResourceType.KUBERNETES:
             return self.kubernetes_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
 
         if resource_type == ResourceType.WEB_APP:
             return self.web_app_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
+
+        if resource_type == ResourceType.POSTGRESQL:
+            return self.postgresql_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
 
         return self.network_resource_update(id=id, **graphql_arguments)  # type: ignore[attr-defined]
 
@@ -863,6 +1121,46 @@ class TwingateResourceAPIs:
             ),
         )
         return WebAppResource(**result["entity"])
+
+    def postgresql_resource_update(
+        self: TwingateClientProtocol,
+        *,
+        id: str,
+        name: str,
+        address: str,
+        alias: str | None,
+        is_visible: bool,
+        remote_network_id: str,
+        security_policy_id: str | None,
+        tags: list[dict[str, str]],
+        gateway_id: str,
+        downstream: dict[str, Any],
+        upstream: dict[str, Any],
+        database: str,
+        auths: list[dict[str, Any]],
+    ) -> PostgreSQLResource | None:
+        result = self.execute_mutation(
+            "postgresqlResourceUpdate",
+            GraphQLRequest(
+                MUT_UPDATE_POSTGRESQL_RESOURCE,
+                variable_values={
+                    "id": id,
+                    "name": name,
+                    "address": address,
+                    "alias": alias,
+                    "isVisible": is_visible,
+                    "remoteNetworkId": remote_network_id,
+                    "securityPolicyId": security_policy_id,
+                    "tags": tags,
+                    "gatewayId": gateway_id,
+                    "downstream": downstream,
+                    "upstream": upstream,
+                    "database": database,
+                    "auths": auths,
+                },
+            ),
+        )
+        return PostgreSQLResource(**result["entity"])
 
     def resource_delete(self: TwingateClientProtocol, resource_id: str) -> bool:
         try:

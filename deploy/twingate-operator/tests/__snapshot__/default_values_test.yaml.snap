@@ -67,6 +67,24 @@ should render:
           - update
           - patch
           - delete
+      - apiGroups:
+          - gateway.networking.k8s.io
+        resources:
+          - httproutes
+          - httproutes/status
+        verbs:
+          - list
+          - watch
+          - patch
+          - get
+      - apiGroups:
+          - gateway.networking.k8s.io
+        resources:
+          - gateways
+        verbs:
+          - get
+          - list
+          - watch
   2: |
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding

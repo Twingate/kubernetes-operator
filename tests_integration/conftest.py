@@ -19,9 +19,15 @@ def kopf_runner_args():
     return ["run", "--verbose", "--log-format=json", "-A", "--standalone", main_py]
 
 
+GATEWAY_API_CRDS = "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.7.0/standard-install.yaml"
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _load_crds():
     kubectl("apply -f ./deploy/twingate-operator/crds/")
+    # HTTPRoute and Gateway, for the HTTPRoute annotation flows. Server-side apply:
+    # the CRDs outgrow the client-side last-applied-configuration annotation.
+    kubectl(f"apply --server-side -f {GATEWAY_API_CRDS}", timeout=60)
 
 
 @pytest.fixture(scope="session")

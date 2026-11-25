@@ -7,9 +7,11 @@ import yaml
 from kopf._core.intents.causes import Reason
 
 from app.crds import ResourceType
-from app.handlers.handlers_services import (
+from app.handlers.annotated_resources import (
     ALLOWED_EXTRA_ANNOTATIONS,
     k8s_get_twingate_resource,
+)
+from app.handlers.handlers_services import (
     service_to_twingate_resource,
     twingate_service_annotation_removed,
     twingate_service_create,

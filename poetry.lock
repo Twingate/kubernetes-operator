@@ -3031,14 +3031,14 @@ files = [
 
 [[package]]
 name = "syrupy"
-version = "7.0.2"
+version = "7.0.3"
 description = "Pytest Snapshot Test Utility"
 optional = false
 python-versions = ">=3.11"
 groups = ["dev"]
 files = [
-    {file = "syrupy-7.0.2-py3-none-any.whl", hash = "sha256:bb7999d6cc1cce6731154fe46ad98874b484904d3e3fba950e244c5666c53c1b"},
-    {file = "syrupy-7.0.2.tar.gz", hash = "sha256:b35d3efc800a3362c20f24026d1d116b91fcd4578a315745860ec234e023592c"},
+    {file = "syrupy-7.0.3-py3-none-any.whl", hash = "sha256:020b4688b46887accb7365fdef7983e6a157f1e6984d1e00571d3d40cfebce51"},
+    {file = "syrupy-7.0.3.tar.gz", hash = "sha256:91f8b02111c3094a9a6a7eb80b6807f35a298f9d3c3d3cbf27d4e2c4c3ff8b1e"},
 ]
 
 [package.dependencies]
@@ -3089,26 +3089,26 @@ files = [
 
 [[package]]
 name = "types-croniter"
-version = "6.2.4.20261118"
+version = "6.2.4.20261122"
 description = "Typing stubs for croniter"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "types_croniter-6.2.4.20261118-py3-none-any.whl", hash = "sha256:9f8d047dd354956f098516bb3ead71bc04e693a947f2717f5684a5e046e3bff0"},
-    {file = "types_croniter-6.2.4.20261118.tar.gz", hash = "sha256:55659930b26651996e45d8cfc715d158aab1bd55767c808425a0a0e39cf9a8cf"},
+    {file = "types_croniter-6.2.4.20261122-py3-none-any.whl", hash = "sha256:0f6231c362bcc1b28f2543a4f5e1d3839b6a814a71d6d3226f39deb8f5fdcfea"},
+    {file = "types_croniter-6.2.4.20261122.tar.gz", hash = "sha256:c777dcde6a783dcc3b7959bf3b4e3ea3689dfa2da389270ff9879221b02c2bd0"},
 ]
 
 [[package]]
 name = "types-pyyaml"
-version = "6.0.12.20261113"
+version = "6.0.12.20261122"
 description = "Typing stubs for PyYAML"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "types_pyyaml-6.0.12.20261113-py3-none-any.whl", hash = "sha256:3600749e613748afdc4327f0b17c3296cf880cdbc7335f320007abd9dd815f67"},
-    {file = "types_pyyaml-6.0.12.20261113.tar.gz", hash = "sha256:0828be2580fd94151182364f4d0158e4de62fdbeeb8d4296f7f7d2b6c22bb640"},
+    {file = "types_pyyaml-6.0.12.20261122-py3-none-any.whl", hash = "sha256:689fbbe883b60471166dede9dba6ac0dbdbcf0ea98062d7ec195430f5bbdb009"},
+    {file = "types_pyyaml-6.0.12.20261122.tar.gz", hash = "sha256:7fa577c893a1db255cbb02320884ffcb97b7a219fe515bec6c5f15d5d3af41ed"},
 ]
 
 [[package]]

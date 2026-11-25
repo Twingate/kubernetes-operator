@@ -57,7 +57,7 @@ spec:
     port: 5432
   upstream:
     port: 5432
-  postgres:
+  postgresql:
     auths:
       - password:
           user: viewer

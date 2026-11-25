@@ -436,13 +436,15 @@ class PostgreSQLResource(BaseResource):
         if upstream != crd_upstream:
             diff["upstream"] = Diff(remote=upstream, local=crd_upstream)
 
-        crd_database = crd.postgres.db_name if crd.postgres else None
+        crd_database = crd.postgresql.database if crd.postgresql else None
         if self.database != crd_database:
             diff["database"] = Diff(remote=self.database, local=crd_database)
 
         auths = [auth.model_dump() for auth in self.auths]
         crd_auths = (
-            [auth.model_dump() for auth in crd.postgres.auths] if crd.postgres else []
+            [auth.model_dump() for auth in crd.postgresql.auths]
+            if crd.postgresql
+            else []
         )
         if auths != crd_auths:
             diff["auths"] = Diff(remote=auths, local=crd_auths)
@@ -455,7 +457,9 @@ class PostgreSQLResource(BaseResource):
                 "type": ResourceType.POSTGRESQL,
                 "downstream": self.downstream,
                 "upstream": self.upstream,
-                "postgres": ResourcePostgres(db_name=self.database, auths=self.auths),
+                "postgresql": ResourcePostgres(
+                    database=self.database, auths=self.auths
+                ),
             }
             | super().to_spec_dict()
             | overrides

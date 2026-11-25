@@ -244,7 +244,7 @@ class ResourcePostgres(BaseModel):
         frozen=True, populate_by_name=True, alias_generator=to_camel
     )
 
-    db_name: str = Field(default="postgres", min_length=1)
+    database: str = Field(default="postgres", min_length=1)
     auths: list[PostgreSQLAuth] = Field(min_length=1)
 
 
@@ -284,7 +284,7 @@ class ResourceSpec(BaseModel):
     # (WebApp only) HTTP headers to rewrite on requests to the upstream.
     request_header_rewrites: list[RequestHeaderRewrite] | None = None
     # (PostgreSQL only) default database and how the gateway logs in to it.
-    postgres: ResourcePostgres | None = None
+    postgresql: ResourcePostgres | None = None
 
     def __is_wildcard(self):
         return "*" in self.address or "?" in self.address
@@ -312,8 +312,8 @@ class ResourceSpec(BaseModel):
         ):
             raise ValueError("Only WebApp resources can set `requestHeaderRewrites`.")
 
-        if self.type != ResourceType.POSTGRESQL and self.postgres is not None:
-            raise ValueError("Only PostgreSQL resources can set `postgres`.")
+        if self.type != ResourceType.POSTGRESQL and self.postgresql is not None:
+            raise ValueError("Only PostgreSQL resources can set `postgresql`.")
 
         match self.type:
             case ResourceType.NETWORK:
@@ -344,8 +344,8 @@ class ResourceSpec(BaseModel):
                     raise ValueError(
                         "PostgreSQL resources require `downstream` and `upstream`."
                     )
-                if self.postgres is None:
-                    raise ValueError("PostgreSQL resources require `postgres`.")
+                if self.postgresql is None:
+                    raise ValueError("PostgreSQL resources require `postgresql`.")
 
         return self
 
@@ -366,7 +366,7 @@ class ResourceSpec(BaseModel):
             "downstream",
             "upstream",
             "request_header_rewrites",
-            "postgres",
+            "postgresql",
         }
         graphql_args = {
             **self.model_dump(exclude=exclude | default_exclude_fields),
@@ -416,7 +416,7 @@ class ResourceSpec(BaseModel):
                 gateway_ref = cast(_KubernetesObjectRef, self.gateway_ref)
                 downstream = cast(ResourceDownstream, self.downstream)
                 upstream = cast(ResourceUpstream, self.upstream)
-                postgres = cast(ResourcePostgres, self.postgres)
+                postgresql = cast(ResourcePostgres, self.postgresql)
                 graphql_args |= {
                     "gateway_id": resolve_ref_to_twingate_id(
                         "twingategateways",
@@ -425,10 +425,10 @@ class ResourceSpec(BaseModel):
                     ),
                     "downstream": {"port": downstream.port},
                     "upstream": upstream.model_dump(by_alias=True),
-                    "database": postgres.db_name,
+                    "database": postgresql.database,
                     "auths": [
                         auth.model_dump(by_alias=True, exclude_none=True)
-                        for auth in postgres.auths
+                        for auth in postgresql.auths
                     ],
                 }
 

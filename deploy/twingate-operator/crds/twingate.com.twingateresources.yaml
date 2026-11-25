@@ -24,13 +24,13 @@ spec:
                   message: "Kubernetes, WebApp and PostgreSQL Resources require gatewayRef; Network Resources do not allow it"
                 - rule: ((self.type == "WebApp" || self.type == "PostgreSQL") && has(self.downstream) && has(self.upstream)) || (self.type != "WebApp" && self.type != "PostgreSQL" && !has(self.downstream) && !has(self.upstream))
                   message: "WebApp and PostgreSQL Resources require downstream and upstream; other Resource types allow neither"
-                - rule: (self.type == "PostgreSQL") == has(self.postgres)
-                  message: "PostgreSQL Resource requires postgres; other Resource types do not allow it"
+                - rule: (self.type == "PostgreSQL") == has(self.postgresql)
+                  message: "PostgreSQL Resource requires postgresql; other Resource types do not allow it"
                 - rule: self.type != "PostgreSQL" || !(self.address.contains('*') || self.address.contains('?') || self.address.contains('/'))
                   message: "PostgreSQL Resource address can't be a wildcard or a CIDR range"
                 - rule: self.type != "PostgreSQL" || !has(self.downstream) || self.downstream.tlsMode == "NONE"
                   message: "PostgreSQL Resource does not support downstream TLS"
-                - rule: self.type != "PostgreSQL" || !has(self.postgres) || !has(self.upstream) || !self.postgres.auths.exists(a, has(a.awsIam) || has(a.gcpIam)) || self.upstream.tlsMode in ["VERIFY_FULL", "VERIFY_CA"]
+                - rule: self.type != "PostgreSQL" || !has(self.postgresql) || !has(self.upstream) || !self.postgresql.auths.exists(a, has(a.awsIam) || has(a.gcpIam)) || self.upstream.tlsMode in ["VERIFY_FULL", "VERIFY_CA"]
                   message: "awsIam and gcpIam auth require upstream.tlsMode VERIFY_FULL or VERIFY_CA"
                 - rule: '!has(self.requestHeaderRewrites) || self.type == "WebApp"'
                   message: "requestHeaderRewrites can only be set for WebApp Resources"
@@ -216,12 +216,12 @@ spec:
                       value:
                         type: string
                         description: "The header value."
-                postgres:
+                postgresql:
                   type: object
                   required: ["auths"]
                   description: "Database settings for a PostgreSQL Resource: the default database and how the Gateway logs in to it."
                   properties:
-                    dbName:
+                    database:
                       type: string
                       minLength: 1
                       description: "The name of the default database in the connection string. When omitted, the database named postgres is used."

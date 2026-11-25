@@ -461,7 +461,7 @@ class TestPostgreSQLResourceModel:
         resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
         crd = resource.to_spec(
             gateway_ref={"name": "my-gateway"},
-            postgres={"db_name": "orders", "auths": resource.auths},
+            postgresql={"database": "orders", "auths": resource.auths},
         )
 
         with patch(
@@ -478,7 +478,7 @@ class TestPostgreSQLResourceModel:
             gateway=ResourceGateway(id="gw-1"), database="orders"
         )
         crd = resource.to_spec(
-            gateway_ref={"name": "my-gateway"}, postgres={"auths": resource.auths}
+            gateway_ref={"name": "my-gateway"}, postgresql={"auths": resource.auths}
         )
 
         with patch(
@@ -492,7 +492,9 @@ class TestPostgreSQLResourceModel:
         resource = postgre_sql_resource_factory(gateway=ResourceGateway(id="gw-1"))
         crd = resource.to_spec(
             gateway_ref={"name": "my-gateway"},
-            postgres={"auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]},
+            postgresql={
+                "auths": [{"awsIam": {"user": "viewer", "region": "us-east-1"}}]
+            },
         )
 
         with patch(
@@ -541,7 +543,7 @@ class TestPostgreSQLResourceModel:
             gateway=ResourceGateway(id="gw-1"), auths=[remote_auth]
         )
         crd = resource.to_spec(
-            gateway_ref={"name": "my-gateway"}, postgres={"auths": [crd_auth]}
+            gateway_ref={"name": "my-gateway"}, postgresql={"auths": [crd_auth]}
         )
 
         with patch(
@@ -763,7 +765,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
-                                "postgres",
+                                "postgresql",
                             ],
                             by_alias=True,
                         )
@@ -816,7 +818,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
-                                "postgres",
+                                "postgresql",
                             ],
                             by_alias=True,
                         )
@@ -935,7 +937,7 @@ class TestTwingateResourceAPIs:
                                 "downstream",
                                 "upstream",
                                 "request_header_rewrites",
-                                "postgres",
+                                "postgresql",
                             ],
                             by_alias=True,
                         )
@@ -1258,7 +1260,7 @@ class TestTwingateResourceAPIs:
         crd = resource.to_spec(
             id=None,
             gateway_ref={"name": "my-gateway"},
-            postgres={"auths": resource.auths},
+            postgresql={"auths": resource.auths},
         )
         mocked_responses.post(
             test_url,

@@ -71,6 +71,7 @@ def run_kopf(kopf_runner_args, kopf_settings):
         enable_resource_reconciler=False,
         enable_resource_access_reconciler=True,
         cleanup=True,
+        extra_env=None,
     ):
         unload_operator_modules()
 
@@ -90,6 +91,10 @@ def run_kopf(kopf_runner_args, kopf_settings):
 
         if not enable_resource_access_reconciler:
             env["ENABLE_RESOURCE_ACCESS_RECONCILER"] = "false"
+
+        # The handlers read their knobs at import time, and `unload_operator_modules` above
+        # forces the re-import, so overrides passed here reach the operator.
+        env.update(extra_env or {})
 
         with KopfRunner(
             kopf_runner_args,
